@@ -7,8 +7,9 @@ namespace RootBoost.Application.Tests;
 public class PlaceOrderOnPaymentTests
 {
     private static PlaceOrderOnPayment Build(
-        FakeOrderRepository repo, FakeCatalog catalog, FakeSupplier supplier, FakeNotifier notifier)
-        => new(repo, catalog, supplier, notifier, NullLogger<PlaceOrderOnPayment>.Instance);
+        FakeOrderRepository repo, FakeCatalog catalog, FakeSupplier supplier, FakeNotifier notifier,
+        FakeConversionTracker? tracker = null)
+        => new(repo, catalog, supplier, notifier, tracker ?? new FakeConversionTracker(), NullLogger<PlaceOrderOnPayment>.Instance);
 
     [Fact]
     public async Task Paid_order_with_valid_product_is_placed_at_supplier()
@@ -112,6 +113,31 @@ public class PlaceOrderOnPaymentTests
 
         Assert.Equal(PlaceOrderOutcome.NeedsHuman, result.Outcome);
         Assert.Equal(0, supplier.Calls);
+    }
+
+    [Fact]
+    public async Task Fulfilled_order_fires_a_purchase_conversion()
+    {
+        var repo = new FakeOrderRepository();
+        var tracker = new FakeConversionTracker();
+        var sut = Build(repo, new FakeCatalog(TestData.RackProduct()), new FakeSupplier(), new FakeNotifier(), tracker);
+
+        await sut.HandleAsync(TestData.PaidRack("PAY-CONV"));
+
+        Assert.Equal(1, tracker.Purchases);
+        Assert.Equal("PAY-CONV", tracker.LastOrder!.PaymentId);
+    }
+
+    [Fact]
+    public async Task Failed_order_does_not_fire_a_purchase_conversion()
+    {
+        var repo = new FakeOrderRepository();
+        var tracker = new FakeConversionTracker();
+        var sut = Build(repo, new FakeCatalog(TestData.RackProduct()), new FakeSupplier { ShouldSucceed = false }, new FakeNotifier(), tracker);
+
+        await sut.HandleAsync(TestData.PaidRack("PAY-CONV-FAIL"));
+
+        Assert.Equal(0, tracker.Purchases);
     }
 
     [Fact]

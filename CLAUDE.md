@@ -187,20 +187,26 @@ Nunca commitar segredos. Usar variáveis de ambiente / user-secrets.
 
 ---
 
-## 8. Camada de automação de tráfego (visão — ainda não construída)
+## 8. Camada de automação de tráfego
 
-Objetivo do dono: tráfego pago Meta Ads controlado por IA. Peças previstas:
-- **Meta Conversions API (CAPI)**: disparar `Purchase`/`InitiateCheckout` server-side a partir
-  dos webhooks (temos o dado do pedido no servidor — ideal para deduplicação com o Pixel).
-- **Pipeline de criativos**: gerar imagens/vídeos de anúncio a partir da mídia do produto.
-  Ferramentas disponíveis nesta sessão: skills `higgsfield-generate` (vídeo/UGC/ads, Marketing
-  Studio, Virality Predictor) e `higgsfield-product-photoshoot` (foto de produto). Úteis para
-  variações de criativo sem refilmar.
-- **Análise/otimização**: ler performance de campanha, sugerir cortes/escala. (Definir métricas
-  e fonte de dados antes de construir.)
+Objetivo do dono: tráfego pago Meta Ads controlado por IA.
 
-> Só construir depois que o produto **provar que vende** com tráfego orgânico (Shorts) ou um
-> teste pago pequeno. Não automatizar tráfego de um produto não validado.
+- [x] **Meta Conversions API (CAPI) — groundwork feito.** Porta `IConversionTracker` (Application),
+  disparo de `Purchase` no `PlaceOrderOnPayment` só no caminho `Fulfilled` (best-effort, nunca
+  derruba o pedido). Infra: `MetaConversionTracker` (POST em `graph.facebook.com/{ver}/{pixel}/events`,
+  email em SHA-256, `event_id = PaymentId`) + `NullConversionTracker` (padrão). Liga com `Tracker=Meta`
+  + `Meta__PixelId`/`Meta__AccessToken`. **Pixel no navegador** (no template da landing) dispara
+  `Purchase` com o **mesmo `eventID = PaymentId`** → Meta deduplica server + browser. Desligado até
+  setar `metaPixelId` na landing e `Tracker=Meta` no backend.
+- [ ] **Enriquecer o match** (próximo): passar `fbp`/`fbc`/IP/user-agent do request pro CAPI
+  (hoje o Purchase server é só email+valor; o Pixel do browser já cobre o resto via `eventID`).
+- [ ] **Pipeline de criativos**: gerar imagens/vídeos de anúncio a partir da mídia do produto.
+  Skills disponíveis: `higgsfield-generate` (vídeo/UGC/ads, Marketing Studio, Virality Predictor)
+  e `higgsfield-product-photoshoot` (foto de produto).
+- [ ] **Análise/otimização**: ler performance de campanha, sugerir cortes/escala.
+
+> ⚠️ **Não gastar em anúncio** antes do produto provar que vende (Shorts orgânico ou teste pequeno).
+> O CAPI está pronto e **desligado**; ligar só quando for realmente rodar tráfego.
 
 ---
 

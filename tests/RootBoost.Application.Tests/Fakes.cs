@@ -64,6 +64,14 @@ public sealed class FakeNotifier : INotifier
     public Task AlertFulfillmentFailedAsync(Order order, CancellationToken ct = default) { Alerts++; return Task.CompletedTask; }
 }
 
+public sealed class FakeConversionTracker : IConversionTracker
+{
+    public int Purchases;
+    public Order? LastOrder;
+    public Task TrackPurchaseAsync(Order order, CancellationToken ct = default)
+    { Purchases++; LastOrder = order; return Task.CompletedTask; }
+}
+
 public static class TestData
 {
     public static ShippingAddress CompleteAddress() =>

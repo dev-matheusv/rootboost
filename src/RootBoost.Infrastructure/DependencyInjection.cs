@@ -8,6 +8,7 @@ using RootBoost.Infrastructure.Notifications;
 using RootBoost.Infrastructure.Payments;
 using RootBoost.Infrastructure.Persistence;
 using RootBoost.Infrastructure.Suppliers;
+using RootBoost.Infrastructure.Tracking;
 
 namespace RootBoost.Infrastructure;
 
@@ -63,6 +64,15 @@ public static class DependencyInjection
         // --- Payment verification + server-side checkout ---
         services.AddSingleton<PayPalClient>();
         services.AddSingleton<ICheckoutGateway, PayPalCheckoutGateway>();
+
+        // --- Conversion tracking (Meta CAPI). Null por padrão; "Meta" liga quando configurado. ---
+        services.Configure<MetaOptions>(config.GetSection(MetaOptions.Section));
+        services.AddHttpClient("meta", c => c.BaseAddress = new Uri("https://graph.facebook.com/"))
+            .AddStandardResilienceHandler();
+        if (string.Equals(config["Tracker"], "Meta", StringComparison.OrdinalIgnoreCase))
+            services.AddSingleton<IConversionTracker, MetaConversionTracker>();
+        else
+            services.AddSingleton<IConversionTracker, NullConversionTracker>();
         services.AddSingleton<PayPalWebhookVerifier>();
         services.AddSingleton<TestPaymentVerifier>();
         if (string.Equals(config["Payments:Verifier"], "Test", StringComparison.OrdinalIgnoreCase))

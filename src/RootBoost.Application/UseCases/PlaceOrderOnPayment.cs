@@ -29,6 +29,7 @@ public sealed class PlaceOrderOnPayment
     private readonly IProductCatalog _catalog;
     private readonly ISupplierClient _supplier;
     private readonly INotifier _notifier;
+    private readonly IConversionTracker _tracker;
     private readonly ILogger<PlaceOrderOnPayment> _log;
 
     public PlaceOrderOnPayment(
@@ -36,12 +37,14 @@ public sealed class PlaceOrderOnPayment
         IProductCatalog catalog,
         ISupplierClient supplier,
         INotifier notifier,
+        IConversionTracker tracker,
         ILogger<PlaceOrderOnPayment> log)
     {
         _orders = orders;
         _catalog = catalog;
         _supplier = supplier;
         _notifier = notifier;
+        _tracker = tracker;
         _log = log;
     }
 
@@ -105,6 +108,10 @@ public sealed class PlaceOrderOnPayment
         order.MarkPlacedAtSupplier(result.SupplierOrderId);
         await _orders.UpdateAsync(order, ct);
         _log.LogInformation("Order {PaymentId} placed at supplier as {SupplierOrderId}.", pay.PaymentId, result.SupplierOrderId);
+
+        // Fire the server-side Purchase conversion (best-effort; deduped with the Pixel by PaymentId).
+        await SafeNotifyAsync(() => _tracker.TrackPurchaseAsync(order, ct), pay.PaymentId, "conversion-purchase");
+
         return new PlaceOrderResult(PlaceOrderOutcome.Fulfilled, order);
     }
 

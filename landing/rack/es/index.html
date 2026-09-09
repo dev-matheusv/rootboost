@@ -222,8 +222,28 @@
   const CONFIG = {
     apiBase: "REPLACE_WITH_API_BASE",   // e.g. https://rootboost.up.railway.app ("" = mesma origem)
     productKey: "rack",
-    currency: "USD"
+    currency: "USD",
+    value: "34.99",
+    metaPixelId: "YOUR_META_PIXEL_ID"   // deixe assim pra manter o Pixel desligado
   };
+
+  // Meta Pixel (browser). Só inicializa quando metaPixelId estiver configurado.
+  (function initPixel(){
+    if (!CONFIG.metaPixelId || CONFIG.metaPixelId.indexOf("YOUR_") === 0) return;
+    !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+    fbq('init', CONFIG.metaPixelId);
+    fbq('track', 'PageView');
+  })();
+
+  // Purchase no navegador, deduplicado com o server (CAPI) pelo mesmo eventID = PaymentId.
+  function firePurchase(paymentId){
+    if (window.fbq && CONFIG.metaPixelId && CONFIG.metaPixelId.indexOf("YOUR_") !== 0) {
+      fbq('track', 'Purchase',
+        { value: Number(CONFIG.value), currency: CONFIG.currency, content_ids: [CONFIG.productKey], content_type: 'product' },
+        { eventID: paymentId });
+    }
+  }
+
   function initPayPal(){
     if (!window.paypal) {
       document.getElementById("paypal-button-container").innerHTML =
@@ -239,7 +259,8 @@
       onApprove: (data) => fetch(CONFIG.apiBase + "/paypal/capture-order", {
         method:"POST", headers:{ "Content-Type":"application/json" },
         body: JSON.stringify({ orderId: data.orderID })
-      }).then(r => r.json()).then(() => {
+      }).then(r => r.json()).then((d) => {
+        firePurchase((d && d.paymentId) ? d.paymentId : data.orderID);
         document.getElementById("thanks").style.display = "block";
         document.getElementById("paypal-button-container").style.display = "none";
       }),
