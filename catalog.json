@@ -1,0 +1,21 @@
+{
+  "_comment": "Adicionar produto = 1 entrada aqui + 1 pasta de landing. Nada de codigo novo. O 'supplierVariantId' (VID da CJ) so o humano preenche — enquanto for 'TODO_*' o produto nao e faturavel e um pedido pago cai em Failed + alerta.",
+  "products": {
+    "rack": {
+      "displayName": "SpinRack 360 Rotating Spice Rack",
+      "price": "34.99",
+      "currency": "USD",
+      "supplierVariantId": "TODO_CJ_VID_RACK",
+      "langs": ["en", "es", "pt"],
+      "logisticName": null
+    },
+    "snackspin": {
+      "displayName": "SnackSpin 360 Rotating Snack Tray",
+      "price": "29.99",
+      "currency": "USD",
+      "supplierVariantId": "TODO_CJ_VID_SNACKSPIN",
+      "langs": ["en", "es"],
+      "logisticName": null
+    }
+  }
+}

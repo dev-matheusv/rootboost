@@ -1,0 +1,19 @@
+# .NET
+bin/
+obj/
+*.user
+.vs/
+
+# EF Core / SQLite local db (persist via volume in prod, never commit)
+*.db
+*.db-shm
+*.db-wal
+
+# Secrets — NEVER commit
+.env
+appsettings.*.local.json
+secrets.json
+
+# OS / editor
+.DS_Store
+Thumbs.db
