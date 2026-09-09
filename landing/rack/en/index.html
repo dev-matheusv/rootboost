@@ -3,21 +3,22 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SpinRack — The Spice Rack That Ends Cabinet Chaos in One Spin</title>
+<title>SpinRack, the spice rack that ends cabinet chaos in one spin</title>
 
 <!--
   ============================================================
-  SHARED TEMPLATE — one file per language folder (en/es/pt).
+  SHARED TEMPLATE, one file per language folder (en/es/pt).
   The ONLY line that differs between languages is:  const LANG = "en";
-  Copy is in the I18N dictionary below.
+  Copy lives in the I18N dictionary below.
 
   EDIT BEFORE GOING LIVE:
   1. CONFIG.apiBase  -> your deployed RootBoost API origin (e.g. https://rootboost.up.railway.app)
   2. PAYPAL_CLIENT_ID in the SDK <script> near the bottom (developer.paypal.com).
   3. Media: swap the hero <video> src and the image placeholders for supplier footage/photos.
 
-  PRICE IS ENFORCED SERVER-SIDE: the button only sends productKey; the API sets the amount from
-  catalog.json. The price shown here is display-only marketing — keep it in sync with the catalog.
+  Language standard for all copy: no hyphens, no em dashes. Use commas, periods, or a rewrite.
+  PRICE IS ENFORCED SERVER SIDE: the button only sends productKey; the API sets the amount from
+  catalog.json. The price shown here is display only marketing, keep it in sync with the catalog.
   ============================================================
 -->
 
@@ -214,122 +215,122 @@
 // ===== LANGUAGE (the only line that changes per folder) =====
 const LANG = "en";
 
-// ===== CONFIG (edit before go-live) =====
+// ===== CONFIG (edit before go live) =====
 const CONFIG = {
   apiBase: "REPLACE_WITH_API_BASE",   // e.g. https://rootboost.up.railway.app
   productKey: "rack",
   currency: "USD"
 };
 
-// ===== COPY (all languages; markup written once) =====
+// ===== COPY (all languages; markup written once). Standard: no hyphens, no em dashes. =====
 const I18N = {
   en: {
-    docTitle: "SpinRack — The Spice Rack That Ends Cabinet Chaos in One Spin",
+    docTitle: "SpinRack, the spice rack that ends cabinet chaos in one spin",
     kicker: "Kitchen organization, solved",
     h1: "The spice rack that ends cabinet chaos in one spin",
-    lede: "A 360° rotating organizer that puts every jar at your fingertips — fits any cabinet, needs no tools, and holds 20+ spices with jars and labels included.",
+    lede: "A 360° rotating organizer that puts every jar at your fingertips. It fits any cabinet, needs no tools, and holds 20+ spices with jars and labels included.",
     price: "$34.99", was: "$59.99", save: "Save 40% today",
-    ctaHero: "Get mine now", reassure: "30-day money-back guarantee · Fast tracked shipping",
-    mediaPh: "▶ Your spin-demo clip goes here (supplier footage)",
-    beforeAfterPh: "Before / after photo — messy cabinet vs. tidy rack",
+    ctaHero: "Get mine now", reassure: "30 day money back guarantee · Fast tracked shipping",
+    mediaPh: "▶ Your spin demo clip goes here (supplier footage)",
+    beforeAfterPh: "Before and after photo. Messy cabinet vs tidy rack",
     problemH2: "Stop losing 10 minutes to a messy cabinet",
-    problemP: "Digging behind jars, knocking things over, buying paprika you already own three times. One spin brings every label to the front — so you cook faster and your counter finally looks the way you want it to.",
+    problemP: "Digging behind jars, knocking things over, buying paprika you already own three times. One spin brings every label to the front, so you cook faster and your counter finally looks the way you want it to.",
     benefitsH2: "What makes it work",
-    b1t: "One spin, every label faces you.", b1d: "No more digging or guessing what's in the back.",
+    b1t: "One spin, every label faces you.", b1d: "No more digging or guessing what is in the back.",
     b2t: "Fits standard cabinets and countertops.", b2d: "No drilling, no mounting, no tools.",
     b3t: "Holds 20+ jars.", b3d: "Comes with the jars and printable labels, ready to fill.",
-    b4t: "Turns clutter into calm.", b4d: "A tidy, satisfying shelf you'll actually want to keep that way.",
+    b4t: "Turns clutter into calm.", b4d: "A tidy, satisfying shelf you will actually want to keep that way.",
     howH2: "How it works",
-    s1t: "Order in 30 seconds", s1d: "Secure checkout with PayPal — no account needed to pay by card.",
+    s1t: "Order in 30 seconds", s1d: "Secure checkout with PayPal. No account needed to pay by card.",
     s2t: "It ships to your door", s2d: "Tracked delivery, typically within about a week.",
-    s3t: "Fill it and spin", s3d: "Load your spices, give it a turn, and enjoy the tidiest cabinet you've had.",
+    s3t: "Fill it and spin", s3d: "Load your spices, give it a turn, and enjoy the tidiest cabinet you have had.",
     reviewsH2: "People are a little obsessed",
-    r1: "\"Genuinely didn't expect to care this much about a spice rack. My cabinet has never been this usable.\"", r1n: "— Danielle R.",
-    r2: "\"Set it up in two minutes, no tools. The spin is stupidly satisfying and everything is finally visible.\"", r2n: "— Marcus T.",
-    r3: "\"Bought one, then bought a second for my mom. It just makes the kitchen feel handled.\"", r3n: "— Priya N.",
-    guaranteeH2: "Try it risk-free for 30 days",
-    guaranteeP: "If it doesn't make your cabinet easier to live with, send it back for a full refund. No fuss.",
-    buyH2: "Get your SpinRack", buyReassure: "Secure checkout · 30-day guarantee",
-    thanks: "Order received — thank you! You'll get tracking by email shortly.",
+    r1: "\"Genuinely did not expect to care this much about a spice rack. My cabinet has never been this usable.\"", r1n: "Danielle R.",
+    r2: "\"Set it up in two minutes, no tools. The spin is stupidly satisfying and everything is finally visible.\"", r2n: "Marcus T.",
+    r3: "\"Bought one, then bought a second for my mom. It just makes the kitchen feel handled.\"", r3n: "Priya N.",
+    guaranteeH2: "Try it risk free for 30 days",
+    guaranteeP: "If it does not make your cabinet easier to live with, send it back for a full refund. No fuss.",
+    buyH2: "Get your SpinRack", buyReassure: "Secure checkout · 30 day guarantee",
+    thanks: "Order received, thank you! You will get tracking by email shortly.",
     err: "Something went wrong with checkout. Please try again.",
     faqH2: "Questions",
-    q1: "Will it fit my cabinet?", a1: "It's built for standard cabinet shelves and countertops. Base diameter and height are on the product photos — check them against your shelf if space is tight.",
-    q2: "Do the jars come with it?", a2: "Yes — jars and labels are included, so you can fill and go.",
-    q3: "How long is shipping?", a3: "Tracked shipping, typically around a week. You'll get a tracking link by email.",
-    q4: "What if I don't like it?", a4: "Return it within 30 days for a full refund.",
+    q1: "Will it fit my cabinet?", a1: "It is built for standard cabinet shelves and countertops. Base diameter and height are on the product photos, so check them against your shelf if space is tight.",
+    q2: "Do the jars come with it?", a2: "Yes, jars and labels are included, so you can fill and go.",
+    q3: "How long is shipping?", a3: "Tracked shipping, typically around a week. You will get a tracking link by email.",
+    q4: "What if I do not like it?", a4: "Return it within 30 days for a full refund.",
     ctaSticky: "Get mine",
-    footer: "SpinRack · 30-day money-back guarantee"
+    footer: "SpinRack · 30 day money back guarantee"
   },
   es: {
-    docTitle: "SpinRack — El especiero que acaba con el caos del mueble en un giro",
+    docTitle: "SpinRack, el especiero que acaba con el caos del mueble en un giro",
     kicker: "Organización de cocina, resuelta",
     h1: "El especiero que acaba con el caos del mueble en un solo giro",
-    lede: "Un organizador giratorio 360° que pone cada frasco a tu alcance — cabe en cualquier mueble, sin herramientas, y guarda más de 20 especias con frascos y etiquetas incluidos.",
+    lede: "Un organizador giratorio 360° que pone cada frasco a tu alcance. Cabe en cualquier mueble, sin herramientas, y guarda más de 20 especias con frascos y etiquetas incluidos.",
     price: "$34.99", was: "$59.99", save: "Ahorra 40% hoy",
     ctaHero: "Quiero el mío", reassure: "Garantía de 30 días · Envío rápido con seguimiento",
     mediaPh: "▶ Aquí va tu clip del giro (material del proveedor)",
-    beforeAfterPh: "Foto antes / después — mueble desordenado vs. ordenado",
+    beforeAfterPh: "Foto antes y después. Mueble desordenado vs ordenado",
     problemH2: "Deja de perder 10 minutos con un mueble desordenado",
-    problemP: "Buscando entre los frascos, tirando cosas, comprando pimentón que ya tienes tres veces. Un giro trae cada etiqueta al frente — cocinas más rápido y tu encimera por fin se ve como quieres.",
+    problemP: "Buscando entre los frascos, tirando cosas, comprando pimentón que ya tienes tres veces. Un giro trae cada etiqueta al frente, así cocinas más rápido y tu encimera por fin se ve como quieres.",
     benefitsH2: "Por qué funciona",
     b1t: "Un giro y cada etiqueta te mira de frente.", b1d: "Se acabó rebuscar o adivinar qué hay atrás.",
     b2t: "Cabe en muebles y encimeras estándar.", b2d: "Sin taladro, sin montaje, sin herramientas.",
     b3t: "Guarda más de 20 frascos.", b3d: "Viene con los frascos y etiquetas imprimibles, listos para llenar.",
     b4t: "Convierte el desorden en calma.", b4d: "Un estante ordenado y satisfactorio que querrás mantener así.",
     howH2: "Cómo funciona",
-    s1t: "Compra en 30 segundos", s1d: "Pago seguro con PayPal — no necesitas cuenta para pagar con tarjeta.",
+    s1t: "Compra en 30 segundos", s1d: "Pago seguro con PayPal. No necesitas cuenta para pagar con tarjeta.",
     s2t: "Llega a tu puerta", s2d: "Envío con seguimiento, normalmente en una semana aprox.",
     s3t: "Llénalo y gíralo", s3d: "Carga tus especias, dale un giro y disfruta del mueble más ordenado que has tenido.",
     reviewsH2: "La gente está un poco obsesionada",
-    r1: "\"No esperaba que me importara tanto un especiero. Mi mueble nunca fue tan práctico.\"", r1n: "— Danielle R.",
-    r2: "\"Lo armé en dos minutos, sin herramientas. El giro es súper satisfactorio y todo por fin se ve.\"", r2n: "— Marcus T.",
-    r3: "\"Compré uno y luego otro para mi mamá. Hace que la cocina se sienta resuelta.\"", r3n: "— Priya N.",
+    r1: "\"No esperaba que me importara tanto un especiero. Mi mueble nunca fue tan práctico.\"", r1n: "Danielle R.",
+    r2: "\"Lo armé en dos minutos, sin herramientas. El giro es súper satisfactorio y todo por fin se ve.\"", r2n: "Marcus T.",
+    r3: "\"Compré uno y luego otro para mi mamá. Hace que la cocina se sienta resuelta.\"", r3n: "Priya N.",
     guaranteeH2: "Pruébalo sin riesgo 30 días",
     guaranteeP: "Si no te hace la vida más fácil en la cocina, devuélvelo y te reembolsamos todo. Sin líos.",
     buyH2: "Consigue tu SpinRack", buyReassure: "Pago seguro · Garantía de 30 días",
     thanks: "¡Pedido recibido, gracias! Recibirás el seguimiento por correo en breve.",
     err: "Algo salió mal con el pago. Inténtalo de nuevo.",
     faqH2: "Preguntas",
-    q1: "¿Cabe en mi mueble?", a1: "Está pensado para estantes y encimeras estándar. El diámetro y la altura están en las fotos — compáralos con tu espacio si está justo.",
-    q2: "¿Vienen los frascos?", a2: "Sí — frascos y etiquetas incluidos, para llenar y listo.",
+    q1: "¿Cabe en mi mueble?", a1: "Está pensado para estantes y encimeras estándar. El diámetro y la altura están en las fotos, compáralos con tu espacio si está justo.",
+    q2: "¿Vienen los frascos?", a2: "Sí, frascos y etiquetas incluidos, para llenar y listo.",
     q3: "¿Cuánto tarda el envío?", a3: "Envío con seguimiento, normalmente alrededor de una semana. Recibirás el enlace por correo.",
     q4: "¿Y si no me gusta?", a4: "Devuélvelo en 30 días y te reembolsamos todo.",
     ctaSticky: "Lo quiero",
     footer: "SpinRack · Garantía de devolución de 30 días"
   },
   pt: {
-    docTitle: "SpinRack — O porta-temperos que acaba com a bagunça do armário num giro",
+    docTitle: "SpinRack, o porta temperos que acaba com a bagunça do armário num giro",
     kicker: "Organização de cozinha, resolvida",
-    h1: "O porta-temperos que acaba com a bagunça do armário num giro",
-    lede: "Um organizador giratório 360° que deixa cada pote na ponta dos dedos — cabe em qualquer armário, sem ferramentas, e guarda mais de 20 temperos com potes e etiquetas inclusos.",
+    h1: "O porta temperos que acaba com a bagunça do armário num giro",
+    lede: "Um organizador giratório 360° que deixa cada pote na ponta dos dedos. Cabe em qualquer armário, sem ferramentas, e guarda mais de 20 temperos com potes e etiquetas inclusos.",
     price: "$34.99", was: "$59.99", save: "40% de desconto hoje",
     ctaHero: "Quero o meu", reassure: "Garantia de 30 dias · Envio rápido com rastreio",
     mediaPh: "▶ Seu clipe do giro entra aqui (material do fornecedor)",
-    beforeAfterPh: "Foto antes / depois — armário bagunçado vs. organizado",
+    beforeAfterPh: "Foto antes e depois. Armário bagunçado vs organizado",
     problemH2: "Pare de perder 10 minutos com um armário bagunçado",
-    problemP: "Garimpando atrás dos potes, derrubando coisas, comprando páprica que você já tem três vezes. Um giro traz cada etiqueta pra frente — você cozinha mais rápido e a bancada finalmente fica do jeito que você quer.",
+    problemP: "Garimpando atrás dos potes, derrubando coisas, comprando páprica que você já tem três vezes. Um giro traz cada etiqueta pra frente, então você cozinha mais rápido e a bancada finalmente fica do jeito que você quer.",
     benefitsH2: "Por que funciona",
     b1t: "Um giro e cada etiqueta fica de frente pra você.", b1d: "Chega de garimpar ou adivinhar o que tem atrás.",
     b2t: "Cabe em armários e bancadas comuns.", b2d: "Sem furar, sem montar, sem ferramentas.",
     b3t: "Guarda mais de 20 potes.", b3d: "Vem com os potes e etiquetas pra imprimir, prontos pra encher.",
     b4t: "Transforma bagunça em calma.", b4d: "Uma prateleira organizada e satisfatória que você vai querer manter assim.",
     howH2: "Como funciona",
-    s1t: "Compre em 30 segundos", s1d: "Checkout seguro com PayPal — não precisa de conta pra pagar no cartão.",
+    s1t: "Compre em 30 segundos", s1d: "Checkout seguro com PayPal. Não precisa de conta pra pagar no cartão.",
     s2t: "Chega na sua porta", s2d: "Entrega com rastreio, normalmente em cerca de uma semana.",
     s3t: "Encha e gire", s3d: "Coloque seus temperos, dê um giro e aproveite o armário mais organizado que você já teve.",
     reviewsH2: "O pessoal está meio obcecado",
-    r1: "\"Sinceramente não esperava me importar tanto com um porta-temperos. Meu armário nunca foi tão prático.\"", r1n: "— Danielle R.",
-    r2: "\"Montei em dois minutos, sem ferramentas. O giro é absurdamente satisfatório e tudo finalmente aparece.\"", r2n: "— Marcus T.",
-    r3: "\"Comprei um e depois outro pra minha mãe. Faz a cozinha parecer resolvida.\"", r3n: "— Priya N.",
+    r1: "\"Sinceramente não esperava me importar tanto com um porta temperos. Meu armário nunca foi tão prático.\"", r1n: "Danielle R.",
+    r2: "\"Montei em dois minutos, sem ferramentas. O giro é absurdamente satisfatório e tudo finalmente aparece.\"", r2n: "Marcus T.",
+    r3: "\"Comprei um e depois outro pra minha mãe. Faz a cozinha parecer resolvida.\"", r3n: "Priya N.",
     guaranteeH2: "Experimente sem risco por 30 dias",
     guaranteeP: "Se não deixar seu armário mais fácil de viver, é só devolver que reembolsamos tudo. Sem burocracia.",
     buyH2: "Garanta seu SpinRack", buyReassure: "Checkout seguro · Garantia de 30 dias",
-    thanks: "Pedido recebido — obrigado! Você recebe o rastreio por e-mail em breve.",
+    thanks: "Pedido recebido, obrigado! Você recebe o rastreio por email em breve.",
     err: "Algo deu errado no checkout. Tente de novo, por favor.",
     faqH2: "Dúvidas",
-    q1: "Vai caber no meu armário?", a1: "É feito pra prateleiras e bancadas comuns. Diâmetro da base e altura estão nas fotos — confira no seu espaço se estiver justo.",
-    q2: "Os potes vêm junto?", a2: "Sim — potes e etiquetas inclusos, é só encher e usar.",
-    q3: "Quanto tempo leva o envio?", a3: "Envio com rastreio, normalmente cerca de uma semana. Você recebe o link por e-mail.",
+    q1: "Vai caber no meu armário?", a1: "É feito pra prateleiras e bancadas comuns. Diâmetro da base e altura estão nas fotos, confira no seu espaço se estiver justo.",
+    q2: "Os potes vêm junto?", a2: "Sim, potes e etiquetas inclusos, é só encher e usar.",
+    q3: "Quanto tempo leva o envio?", a3: "Envio com rastreio, normalmente cerca de uma semana. Você recebe o link por email.",
     q4: "E se eu não gostar?", a4: "Devolva em 30 dias e reembolsamos tudo.",
     ctaSticky: "Quero o meu",
     footer: "SpinRack · Garantia de reembolso de 30 dias"
@@ -342,7 +343,7 @@ document.documentElement.lang = LANG;
 document.title = t("docTitle");
 document.querySelectorAll("[data-i18n]").forEach(el => { el.textContent = t(el.dataset.i18n); });
 
-// ===== PayPal server-side checkout (price enforced by the API) =====
+// ===== PayPal server side checkout (price enforced by the API) =====
 function initPayPal(){
   if (!window.paypal) {
     document.getElementById("paypal-button-container").innerHTML =
