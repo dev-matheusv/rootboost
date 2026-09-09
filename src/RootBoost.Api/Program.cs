@@ -32,6 +32,16 @@ var app = builder.Build();
 
 app.UseCors();
 
+// Dev convenience: when LANDING_DIR is set, serve that folder's static landing at the API root,
+// so a local end-to-end test runs from a single origin (no CORS). Not used in production.
+var landingDir = Environment.GetEnvironmentVariable("LANDING_DIR");
+if (!string.IsNullOrWhiteSpace(landingDir) && Directory.Exists(landingDir))
+{
+    var provider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(landingDir);
+    app.UseDefaultFiles(new DefaultFilesOptions { FileProvider = provider });
+    app.UseStaticFiles(new StaticFileOptions { FileProvider = provider });
+}
+
 // Create the SQLite schema on startup. Fine for SQLite MVP; swap to migrations before real scale.
 using (var scope = app.Services.CreateScope())
     scope.ServiceProvider.GetRequiredService<RootBoostDbContext>().Database.EnsureCreated();

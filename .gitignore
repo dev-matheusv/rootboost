@@ -17,3 +17,6 @@ secrets.json
 # OS / editor
 .DS_Store
 Thumbs.db
+
+# local-only sandbox test (never commit)
+landing/rack/_local/
