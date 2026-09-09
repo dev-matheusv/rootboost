@@ -2,6 +2,14 @@
 
 Contexto mestre do projeto para o Claude Code. Leia isto primeiro em toda sessão.
 
+> **Contexto da org** (padrões compartilhados entre RootFlow/RootBoost/MeclyCare) vive na memória
+> global `~/.claude/CLAUDE.md` — carregada automaticamente. Aqui ficam só os detalhes do RootBoost.
+> Alinhamento com o RootFlow (padrão da casa): mesmos .NET 9 / Clean Architecture / xUnit / Resend /
+> Railway. **Decisões de convergência**: (a) migrar SQLite → **PostgreSQL** quando entrar a camada
+> de dados/IA (RootFlow já usa Postgres+pgvector); (b) já adicionados `global.json`, `.editorconfig`,
+> `.gitattributes` e `RootBoost.Api.http` pra bater com o RootFlow; (c) próximo alvo de teste: projeto
+> `RootBoost.Api.IntegrationTests` (pipeline real + mocks), no estilo do RootFlow.
+
 ---
 
 ## 1. O que é o RootBoost

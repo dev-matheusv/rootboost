@@ -1,0 +1,37 @@
+@host = http://localhost:5080
+
+### Health
+GET {{host}}/health
+
+### Test payment (Development: Payments:Verifier=Test) — cria pedido e chama o fornecedor mock
+POST {{host}}/webhook/payment
+Content-Type: application/json
+
+{
+  "paymentId": "PAY-DEV-1",
+  "productKey": "rack",
+  "quantity": 1,
+  "email": "jane@example.com",
+  "name": "Jane Buyer",
+  "line1": "123 Main St",
+  "city": "Austin",
+  "state": "TX",
+  "zip": "78701",
+  "countryCode": "US",
+  "phone": "+15551234567",
+  "amount": 34.99,
+  "currency": "USD"
+}
+
+### CJ tracking webhook — anexa rastreio (usar o supplierOrderId retornado em /orders)
+POST {{host}}/webhook/cj
+Content-Type: application/json
+
+{
+  "orderId": "MOCK-PAY-DEV-1",
+  "trackNumber": "LP123456789CN"
+}
+
+### Orders dashboard (setar X-Api-Key se Orders:ApiKey estiver configurado)
+GET {{host}}/orders
+X-Api-Key: dev-key
