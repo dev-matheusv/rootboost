@@ -10,6 +10,11 @@ using RootBoost.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Railway/Render/Fly inject the port via $PORT. Bind to it when present (local dev uses the default).
+var port = Environment.GetEnvironmentVariable("PORT");
+if (!string.IsNullOrWhiteSpace(port))
+    builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+
 // All adapters wired here; behavior is config-driven (see Infrastructure.DependencyInjection).
 builder.Services.AddInfrastructure(builder.Configuration, AppContext.BaseDirectory);
 
