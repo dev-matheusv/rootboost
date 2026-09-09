@@ -1,0 +1,11 @@
+{
+  "products": {
+    "rack": {
+      "displayName": "SpinRack 360 Rotating Spice Rack",
+      "price": "34.99",
+      "currency": "USD",
+      "supplierVariantId": "TEST-VID-RACK",
+      "langs": ["en", "es", "pt"]
+    }
+  }
+}
