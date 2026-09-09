@@ -104,9 +104,13 @@ Dockerfile                  [A CRIAR]
       `PayPalCheckoutGateway` (Infra) que define o **preço a partir do catálogo no servidor**;
       `PayPalClient.CreateOrderAsync`/`CaptureOrderAsync`; endpoints `POST /paypal/create-order`
       e `POST /paypal/capture-order` (captura → `PlaceOrderOnPayment`); CORS pras landings.
-      **Landings** `landing/rack/{en,es,pt}/index.html`: template único com dicionário i18n
-      (markup escrito 1x; só `const LANG` muda por pasta), checkout chamando os endpoints
-      server-side (preço nunca vem do browser). Placeholders: `CONFIG.apiBase`, `PAYPAL_CLIENT_ID`, mídia.
+      **Landings** `landing/rack/{en,es,pt}/index.html` são **geradas** por `landing/rack/build.mjs`
+      a partir de `_template.html` + `strings.json` (fonte da copy). SEO-friendly: texto **embutido no
+      HTML** (não via JS), `<head>` com title/description/canonical/hreflang/Open Graph/Twitter +
+      JSON-LD Product/Offer. Editar copy = editar `strings.json` e rodar `node landing/rack/build.mjs`.
+      Checkout chama os endpoints server-side (preço nunca vem do browser).
+      Placeholders p/ publicar: `BASE_URL`/`OG_IMAGE` (no build.mjs), `PAYPAL_CLIENT_ID`, `CONFIG.apiBase`, mídia.
+      Obs: `landing/rack/_local/` é teste local (gitignored); `rack-landing-en.html` na raiz é legado.
 - [x] **Testes de integração** — `RootBoost.Api.IntegrationTests` (pipeline HTTP real + Mock/Test/Logging):
       health, `/webhook/payment` → Fulfilled + `/orders`, idempotência, `/webhook/cj` → Shipped. 16 testes no total.
 - [x] **Padrão de linguagem** aplicado nas landings: copy sem hífen e sem travessão (regra no `~/.claude/CLAUDE.md`).
