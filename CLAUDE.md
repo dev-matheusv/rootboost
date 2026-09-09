@@ -100,14 +100,19 @@ Dockerfile                  [A CRIAR]
       Bugs achados e corrigidos no caminho: EF não mapeava auto-props `{ get; }` (agora `{ get; private set; }`);
       SQLite não ordena `DateTimeOffset` (agora via `DateTimeOffsetToBinaryConverter`).
 - [x] **Increment 5** — `Dockerfile` (multi-stage) + `.dockerignore` + `README.md` de deploy no Railway.
-- [ ] **Increment 4 (PRÓXIMO, crítico)** — Landings rack (en/es/pt) a partir de `rack-landing-en.html`
-      **+ endpoints de checkout server-side no PayPal** (`/paypal/create-order` define o preço no backend,
-      `/paypal/capture-order` captura). Sem isso o preço ainda vem do client (fraude fácil) — ver §7.
+- [x] **Increment 4** — **Checkout server-side no PayPal**: `ICheckoutGateway` (Application) +
+      `PayPalCheckoutGateway` (Infra) que define o **preço a partir do catálogo no servidor**;
+      `PayPalClient.CreateOrderAsync`/`CaptureOrderAsync`; endpoints `POST /paypal/create-order`
+      e `POST /paypal/capture-order` (captura → `PlaceOrderOnPayment`); CORS pras landings.
+      **Landings** `landing/rack/{en,es,pt}/index.html`: template único com dicionário i18n
+      (markup escrito 1x; só `const LANG` muda por pasta), checkout chamando os endpoints
+      server-side (preço nunca vem do browser). Placeholders: `CONFIG.apiBase`, `PAYPAL_CLIENT_ID`, mídia.
 - [ ] **Futuro (automação)** — Meta CAPI server-side, pipeline de criativos (ver §8), dashboard de análise.
 
-> ⚠️ **Gap em aberto**: o fulfillment por webhook está pronto e testado, mas o **checkout server-side
-> ainda não existe** — a landing atual (`rack-landing-en.html`) define o preço no JS do navegador.
-> NÃO publicar com preço só no client. É o primeiro item do Increment 4.
+> ✅ **Gap fechado**: o preço agora é **definido no servidor** (create-order lê o catálogo). O webhook
+> `/webhook/payment` segue como rede de segurança/idempotência. Falta o humano preencher
+> `PAYPAL_CLIENT_ID`, `CONFIG.apiBase` e a mídia antes de publicar. `rack-landing-en.html` (raiz) é
+> legado — a versão viva é `landing/rack/en/index.html`.
 
 > **Trabalho incremental, commit por etapa.** Comece pequeno; não faça tudo de uma vez.
 

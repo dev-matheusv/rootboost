@@ -60,8 +60,9 @@ public static class DependencyInjection
         else
             services.AddSingleton<INotifier, ResendNotifier>();
 
-        // --- Payment verification ---
+        // --- Payment verification + server-side checkout ---
         services.AddSingleton<PayPalClient>();
+        services.AddSingleton<ICheckoutGateway, PayPalCheckoutGateway>();
         services.AddSingleton<PayPalWebhookVerifier>();
         services.AddSingleton<TestPaymentVerifier>();
         if (string.Equals(config["Payments:Verifier"], "Test", StringComparison.OrdinalIgnoreCase))

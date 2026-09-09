@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
@@ -69,6 +70,56 @@ public sealed class PayPalClient
         using var vdoc = JsonDocument.Parse(json);
         var status = vdoc.RootElement.TryGetProperty("verification_status", out var s) ? s.GetString() : null;
         return string.Equals(status, "SUCCESS", StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// Create a v2 checkout order with the amount defined HERE (server-side). custom_id carries the
+    /// productKey so capture/webhook can resolve what to fulfill. Returns the PayPal order id, or null.
+    /// </summary>
+    public async Task<string?> CreateOrderAsync(
+        string productKey, string displayName, decimal amount, string currency, CancellationToken ct)
+    {
+        var http = await AuthorizedClientAsync(ct);
+        var body = new
+        {
+            intent = "CAPTURE",
+            purchase_units = new[]
+            {
+                new
+                {
+                    custom_id = productKey,
+                    description = displayName,
+                    amount = new { currency_code = currency, value = amount.ToString("0.00", CultureInfo.InvariantCulture) }
+                }
+            },
+            application_context = new { shipping_preference = "GET_FROM_FILE", user_action = "PAY_NOW" }
+        };
+
+        using var res = await http.PostAsJsonAsync("v2/checkout/orders", body, ct);
+        var json = await res.Content.ReadAsStringAsync(ct);
+        if (!res.IsSuccessStatusCode)
+        {
+            _log.LogError("PayPal create order HTTP {Status}: {Body}", (int)res.StatusCode, json);
+            return null;
+        }
+        using var doc = JsonDocument.Parse(json);
+        return doc.RootElement.TryGetProperty("id", out var id) ? id.GetString() : null;
+    }
+
+    /// <summary>Capture an approved v2 checkout order. Returns the full capture response, or null.</summary>
+    public async Task<JsonDocument?> CaptureOrderAsync(string orderId, CancellationToken ct)
+    {
+        var http = await AuthorizedClientAsync(ct);
+        // Capture takes an empty body; PayPal requires the header even so.
+        using var content = new StringContent("{}", Encoding.UTF8, "application/json");
+        using var res = await http.PostAsync($"v2/checkout/orders/{orderId}/capture", content, ct);
+        var json = await res.Content.ReadAsStringAsync(ct);
+        if (!res.IsSuccessStatusCode)
+        {
+            _log.LogError("PayPal capture order {OrderId} HTTP {Status}: {Body}", orderId, (int)res.StatusCode, json);
+            return null;
+        }
+        return JsonDocument.Parse(json);
     }
 
     /// <summary>Fetch a v2 checkout order (for shipping address / payer / items).</summary>

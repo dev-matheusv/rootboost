@@ -13,7 +13,19 @@ var builder = WebApplication.CreateBuilder(args);
 // All adapters wired here; behavior is config-driven (see Infrastructure.DependencyInjection).
 builder.Services.AddInfrastructure(builder.Configuration, AppContext.BaseDirectory);
 
+// CORS so the (separately hosted) landing pages can call the checkout endpoints.
+// Set Cors:AllowedOrigins (comma-separated) in prod; empty = allow any (dev convenience).
+builder.Services.AddCors(o => o.AddDefaultPolicy(p =>
+{
+    var origins = (builder.Configuration["Cors:AllowedOrigins"] ?? "")
+        .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+    if (origins.Length == 0) p.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
+    else p.WithOrigins(origins).AllowAnyHeader().AllowAnyMethod();
+}));
+
 var app = builder.Build();
+
+app.UseCors();
 
 // Create the SQLite schema on startup. Fine for SQLite MVP; swap to migrations before real scale.
 using (var scope = app.Services.CreateScope())
@@ -78,6 +90,36 @@ app.MapPost("/webhook/cj", async (HttpContext ctx, AttachTracking useCase, ILogg
     return Results.Ok();
 });
 
+// --- PayPal server-side checkout ----------------------------------------------
+// Price is resolved from the catalog HERE, not sent by the browser. The landing calls:
+//   createOrder  -> POST /paypal/create-order { productKey, quantity }  -> { id }
+//   onApprove    -> POST /paypal/capture-order { orderId }              -> fulfills
+app.MapPost("/paypal/create-order", async (CreateOrderRequest req, ICheckoutGateway gateway, CancellationToken ct) =>
+{
+    if (string.IsNullOrWhiteSpace(req.ProductKey))
+        return Results.BadRequest(new { error = "productKey required" });
+
+    var result = await gateway.CreateOrderAsync(req.ProductKey, req.Quantity <= 0 ? 1 : req.Quantity, ct);
+    return result.Success
+        ? Results.Ok(new { id = result.ProviderOrderId })
+        : Results.BadRequest(new { error = result.Error });
+});
+
+app.MapPost("/paypal/capture-order", async (CaptureOrderRequest req, ICheckoutGateway gateway, PlaceOrderOnPayment useCase, CancellationToken ct) =>
+{
+    if (string.IsNullOrWhiteSpace(req.OrderId))
+        return Results.BadRequest(new { error = "orderId required" });
+
+    var pay = await gateway.CaptureOrderAsync(req.OrderId, ct);
+    if (pay is null)
+        return Results.BadRequest(new { error = "capture did not complete" });
+
+    var result = await useCase.HandleAsync(pay, ct);
+    // The payment already succeeded; report the fulfillment outcome. The customer's money is
+    // captured regardless — a NeedsHuman outcome means we alerted an operator to finish it.
+    return Results.Ok(new { outcome = result.Outcome.ToString(), paymentId = pay.PaymentId });
+});
+
 app.Run();
 
 // --- helpers ------------------------------------------------------------------
@@ -115,6 +157,9 @@ record OrderDto(string PaymentId, string ProductKey, int Quantity, string Status
         o.SupplierOrderId, o.TrackingNumber, o.AmountPaid, o.Currency,
         o.ShipTo.Name, o.ShipTo.CountryCode, o.CreatedAt, o.FailureReason);
 }
+
+record CreateOrderRequest(string ProductKey, int Quantity);
+record CaptureOrderRequest(string OrderId);
 
 // Exposed for integration tests (WebApplicationFactory needs a public entry point type).
 public partial class Program { }
