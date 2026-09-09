@@ -107,7 +107,23 @@ Dockerfile                  [A CRIAR]
       **Landings** `landing/rack/{en,es,pt}/index.html`: template único com dicionário i18n
       (markup escrito 1x; só `const LANG` muda por pasta), checkout chamando os endpoints
       server-side (preço nunca vem do browser). Placeholders: `CONFIG.apiBase`, `PAYPAL_CLIENT_ID`, mídia.
+- [x] **Testes de integração** — `RootBoost.Api.IntegrationTests` (pipeline HTTP real + Mock/Test/Logging):
+      health, `/webhook/payment` → Fulfilled + `/orders`, idempotência, `/webhook/cj` → Shipped. 16 testes no total.
+- [x] **Padrão de linguagem** aplicado nas landings: copy sem hífen e sem travessão (regra no `~/.claude/CLAUDE.md`).
 - [ ] **Futuro (automação)** — Meta CAPI server-side, pipeline de criativos (ver §8), dashboard de análise.
+
+### Handoff — pendências do humano (o que depende de você)
+1. **Reautenticar o GitHub MCP**: sessão interativa `claude` → `/mcp` (ou `claude mcp`) e reconectar `github`.
+2. **Credenciais** (env vars, ver §6): `Cj__Email`/`Cj__ApiKey` + **VID** de cada produto no `catalog.json`;
+   `PayPal__ClientId`/`ClientSecret`/`WebhookId`; `Resend__ApiKey` + domínio verificado.
+3. **Landing**: preencher `PAYPAL_CLIENT_ID` e `CONFIG.apiBase` em `landing/rack/*/index.html`; trocar a mídia (foto/vídeo do giro).
+4. **Links do Notion** (RootFlow/MedlyCare) na tabela do `~/.claude/CLAUDE.md`.
+
+### Próximos passos de dev (quando voltarmos)
+- Deploy no Railway em sandbox (com as credenciais) e teste do fluxo PayPal real ponta a ponta.
+- SEO das landings: "assar" o texto estático por idioma (hoje é injetado via JS).
+- 2º produto **SnackSpin**: entrada no `catalog.json` (já existe) + pasta de landing (reusa o template).
+- Camada de automação (Meta CAPI) só depois do produto validar.
 
 > ✅ **Gap fechado**: o preço agora é **definido no servidor** (create-order lê o catálogo). O webhook
 > `/webhook/payment` segue como rede de segurança/idempotência. Falta o humano preencher
