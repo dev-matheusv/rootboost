@@ -114,7 +114,10 @@ Dockerfile                  [A CRIAR]
 - [x] **Testes de integração** — `RootBoost.Api.IntegrationTests` (pipeline HTTP real + Mock/Test/Logging):
       health, `/webhook/payment` → Fulfilled + `/orders`, idempotência, `/webhook/cj` → Shipped. 16 testes no total.
 - [x] **Padrão de linguagem** aplicado nas landings: copy sem hífen e sem travessão (regra no `~/.claude/CLAUDE.md`).
-- [ ] **Futuro (automação)** — Meta CAPI server-side, pipeline de criativos (ver §8), dashboard de análise.
+- [x] **Automação de tráfego (groundwork)** — Meta CAPI (server + Pixel deduplicado) + cérebro de
+      otimização em dry-run (`CampaignOptimizer`/`CreativeSelector`/`TrafficAutopilot`, endpoint
+      `/admin/traffic/plan`). Ver §8 e `docs/VISAO-GERAL.md`. Ligar tráfego real ainda depende de você.
+- [ ] **Futuro** — Meta Ads real (insights+actuator), advisor de IA, pipeline de criativos, dashboard.
 
 ### Handoff — pendências do humano (o que depende de você)
 1. **Reautenticar o GitHub MCP**: sessão interativa `claude` → `/mcp` (ou `claude mcp`) e reconectar `github`.
@@ -198,15 +201,20 @@ Objetivo do dono: tráfego pago Meta Ads controlado por IA.
   + `Meta__PixelId`/`Meta__AccessToken`. **Pixel no navegador** (no template da landing) dispara
   `Purchase` com o **mesmo `eventID = PaymentId`** → Meta deduplica server + browser. Desligado até
   setar `metaPixelId` na landing e `Tracker=Meta` no backend.
-- [ ] **Enriquecer o match** (próximo): passar `fbp`/`fbc`/IP/user-agent do request pro CAPI
-  (hoje o Purchase server é só email+valor; o Pixel do browser já cobre o resto via `eventID`).
-- [ ] **Pipeline de criativos**: gerar imagens/vídeos de anúncio a partir da mídia do produto.
-  Skills disponíveis: `higgsfield-generate` (vídeo/UGC/ads, Marketing Studio, Virality Predictor)
-  e `higgsfield-product-photoshoot` (foto de produto).
-- [ ] **Análise/otimização**: ler performance de campanha, sugerir cortes/escala.
+- [x] **Cérebro de otimização (dry-run) feito.** Namespace `RootBoost.Application.Traffic`:
+  `CampaignOptimizer` (regras escalar/reduzir/pausar/manter por ROAS+política), `CreativeSelector`
+  (elege criativo vencedor por CPA/CTR e pausa perdedores), `TrafficAutopilot` (puxa métricas →
+  decide → aplica via actuator → relatório). Infra: `NotConfiguredInsightsSource` + `LoggingCampaignActuator`
+  (**DRY-RUN**, só recomenda). Endpoint `GET /admin/traffic/plan` (API key) mostra o plano.
+  Política ajustável na seção `Traffic` do config. 10 testes cobrindo as regras.
+- [ ] **Meta Ads real** (próximo p/ ligar de verdade): `ICampaignInsightsSource` e `ICampaignActuator`
+  reais (Marketing API: insights + set budget/pause), atrás de `Traffic:Live=true`.
+- [ ] **Advisor de IA** (`IOptimizationAdvisor`): plugar Claude pra refinar/priorizar decisões.
+- [ ] **Enriquecer o match do CAPI**: `fbp`/`fbc`/IP/user-agent do request.
+- [ ] **Pipeline de criativos**: gerar variações com `higgsfield-generate`/`higgsfield-product-photoshoot`.
 
-> ⚠️ **Não gastar em anúncio** antes do produto provar que vende (Shorts orgânico ou teste pequeno).
-> O CAPI está pronto e **desligado**; ligar só quando for realmente rodar tráfego.
+> ⚠️ **Não gastar em anúncio** antes do produto provar que vende. CAPI e otimizador estão prontos e
+> **em dry-run/desligados**; ligar só quando for realmente rodar tráfego. Panorama completo: `docs/VISAO-GERAL.md`.
 
 ---
 

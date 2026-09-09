@@ -135,6 +135,18 @@ app.MapPost("/paypal/capture-order", async (CaptureOrderRequest req, ICheckoutGa
     return Results.Ok(new { outcome = result.Outcome.ToString(), paymentId = pay.PaymentId });
 });
 
+// --- Traffic autopilot (dry-run): mostra as decisões que a automação tomaria ------
+app.MapGet("/admin/traffic/plan", async (HttpContext ctx, RootBoost.Application.Traffic.TrafficAutopilot autopilot, IConfiguration cfg, CancellationToken ct) =>
+{
+    var required = cfg["Orders:ApiKey"];
+    if (!string.IsNullOrWhiteSpace(required) &&
+        (!ctx.Request.Headers.TryGetValue("X-Api-Key", out var got) || got != required))
+        return Results.Unauthorized();
+
+    var report = await autopilot.RunAsync(ct);
+    return Results.Ok(report);
+});
+
 app.Run();
 
 // --- helpers ------------------------------------------------------------------

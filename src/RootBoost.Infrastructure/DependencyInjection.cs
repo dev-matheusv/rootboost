@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using RootBoost.Application.Abstractions;
+using RootBoost.Application.Traffic;
 using RootBoost.Application.UseCases;
 using RootBoost.Infrastructure.Catalog;
 using RootBoost.Infrastructure.Notifications;
@@ -73,6 +74,18 @@ public static class DependencyInjection
             services.AddSingleton<IConversionTracker, MetaConversionTracker>();
         else
             services.AddSingleton<IConversionTracker, NullConversionTracker>();
+
+        // --- Automação de tráfego (o "cérebro"): otimizador + seletor de criativos + piloto. ---
+        // Política ajustável via seção "Traffic". Fonte/actuator reais (Meta Ads) são TODO;
+        // por padrão roda em DRY-RUN (só recomenda), sem tocar em conta de anúncios.
+        var policy = new OptimizationPolicy();
+        config.GetSection(OptimizationPolicy.Section).Bind(policy);
+        services.AddSingleton(policy);
+        services.AddSingleton<CampaignOptimizer>();
+        services.AddSingleton<CreativeSelector>();
+        services.AddSingleton<ICampaignInsightsSource, NotConfiguredInsightsSource>();
+        services.AddSingleton<ICampaignActuator, LoggingCampaignActuator>();
+        services.AddScoped<TrafficAutopilot>();
         services.AddSingleton<PayPalWebhookVerifier>();
         services.AddSingleton<TestPaymentVerifier>();
         if (string.Equals(config["Payments:Verifier"], "Test", StringComparison.OrdinalIgnoreCase))
