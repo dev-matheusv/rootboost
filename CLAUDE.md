@@ -119,18 +119,26 @@ Dockerfile                  [A CRIAR]
       `/admin/traffic/plan`). Ver §8 e `docs/VISAO-GERAL.md`. Ligar tráfego real ainda depende de você.
 - [ ] **Futuro** — Meta Ads real (insights+actuator), advisor de IA, pipeline de criativos, dashboard.
 
-### Handoff — pendências do humano (o que depende de você)
-1. **Reautenticar o GitHub MCP**: sessão interativa `claude` → `/mcp` (ou `claude mcp`) e reconectar `github`.
-2. **Credenciais** (env vars, ver §6): `Cj__Email`/`Cj__ApiKey` + **VID** de cada produto no `catalog.json`;
-   `PayPal__ClientId`/`ClientSecret`/`WebhookId`; `Resend__ApiKey` + domínio verificado.
-3. **Landing**: preencher `PAYPAL_CLIENT_ID` e `CONFIG.apiBase` em `landing/rack/*/index.html`; trocar a mídia (foto/vídeo do giro).
-4. **Links do Notion** (RootFlow/MedlyCare) na tabela do `~/.claude/CLAUDE.md`.
+### CHECKPOINT (2026-09-10) — onde paramos
 
-### Próximos passos de dev (quando voltarmos)
-- Deploy no Railway em sandbox (com as credenciais) e teste do fluxo PayPal real ponta a ponta.
-- SEO das landings: "assar" o texto estático por idioma (hoje é injetado via JS).
-- 2º produto **SnackSpin**: entrada no `catalog.json` (já existe) + pasta de landing (reusa o template).
-- Camada de automação (Meta CAPI) só depois do produto validar.
+**Pagamento PROVADO ponta a ponta no PayPal Sandbox** (create → capture → pedido `PlacedAtSupplier`
+em `/orders`). Bug do `custom_id` na captura corrigido. Container Docker builda OK (validado local).
+Alvo combinado: **soft-launch hoje** = loja no ar em modo seguro (PayPal **sandbox** + `Supplier=Mock`),
+virando pra LIVE quando PayPal/CJ/mídia estiverem prontos.
+
+**Em andamento (usuário, ele volta e continua):**
+- **CJ**: conta criada (ID `CJ5814493`, email `devmatheusoxs@gmail.com`). Falta gerar a **API Key** em
+  `Authorization → API → API Key → Add API/Generate → Copy`. Ele vai mandar a chave ao voltar (não colar no chat; vira env `Cj__ApiKey`).
+- **PayPal**: conta PF antiga travada por inatividade → **recuperando no suporte** (caminho pra receber no CPF).
+- **Sem CNPJ é OK**: CPF basta pra PayPal (receber) e CJ (comprar). CNPJ é otimização futura.
+- Tem **Railway** e **Vercel** (do RootFlow) prontos.
+
+**Assim que ele voltar com a API Key da CJ — dar sequência:**
+1. Pegar o **VID** da variante do rack (comando usando `Cj__ApiKey`) e preencher `catalog.json`.
+2. Mídia do produto (listagem CJ "rotating spice rack organizer 20 jars", armazém US/EU) → landing.
+3. **Deploy soft-launch**: `git push` (GitHub) → Railway (backend, vars sandbox) → Vercel (landing). Ver `docs/DEPLOY.md`.
+
+**Pendências gerais do humano:** `docs/VISAO-GERAL.md §6`. GitHub MCP a reautenticar; links Notion a colar.
 
 > ✅ **Gap fechado**: o preço agora é **definido no servidor** (create-order lê o catálogo). O webhook
 > `/webhook/payment` segue como rede de segurança/idempotência. Falta o humano preencher
