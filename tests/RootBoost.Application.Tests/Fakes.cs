@@ -68,8 +68,9 @@ public sealed class FakeConversionTracker : IConversionTracker
 {
     public int Purchases;
     public Order? LastOrder;
-    public Task TrackPurchaseAsync(Order order, CancellationToken ct = default)
-    { Purchases++; LastOrder = order; return Task.CompletedTask; }
+    public ConversionContext? LastContext;
+    public Task TrackPurchaseAsync(Order order, ConversionContext? context = null, CancellationToken ct = default)
+    { Purchases++; LastOrder = order; LastContext = context; return Task.CompletedTask; }
 }
 
 public static class TestData

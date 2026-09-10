@@ -4,6 +4,7 @@ using System.Text;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using RootBoost.Application.Abstractions;
+using RootBoost.Application.Models;
 using RootBoost.Domain;
 
 namespace RootBoost.Infrastructure.Tracking;
@@ -27,7 +28,7 @@ public sealed class MetaConversionTracker : IConversionTracker
         _log = log;
     }
 
-    public async Task TrackPurchaseAsync(Order order, CancellationToken ct = default)
+    public async Task TrackPurchaseAsync(Order order, ConversionContext? context = null, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(_opts.PixelId) || string.IsNullOrWhiteSpace(_opts.AccessToken))
         {
@@ -35,16 +36,20 @@ public sealed class MetaConversionTracker : IConversionTracker
             return;
         }
 
+        // user_data: quanto mais sinais (email + fbp/fbc/ip/ua), melhor o match no Meta.
+        var userData = new Dictionary<string, object?> { ["em"] = new[] { Sha256(order.CustomerEmail) } };
+        if (!string.IsNullOrWhiteSpace(context?.Fbp)) userData["fbp"] = context!.Fbp;
+        if (!string.IsNullOrWhiteSpace(context?.Fbc)) userData["fbc"] = context!.Fbc;
+        if (!string.IsNullOrWhiteSpace(context?.ClientIp)) userData["client_ip_address"] = context!.ClientIp;
+        if (!string.IsNullOrWhiteSpace(context?.UserAgent)) userData["client_user_agent"] = context!.UserAgent;
+
         var evt = new Dictionary<string, object?>
         {
             ["event_name"] = "Purchase",
             ["event_time"] = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
             ["event_id"] = order.PaymentId,                 // dedup com o Pixel do navegador
             ["action_source"] = "website",
-            ["user_data"] = new Dictionary<string, object?>
-            {
-                ["em"] = new[] { Sha256(order.CustomerEmail) }
-            },
+            ["user_data"] = userData,
             ["custom_data"] = new Dictionary<string, object?>
             {
                 ["currency"] = order.Currency,
@@ -53,6 +58,7 @@ public sealed class MetaConversionTracker : IConversionTracker
                 ["content_type"] = "product"
             }
         };
+        if (!string.IsNullOrWhiteSpace(context?.EventSourceUrl)) evt["event_source_url"] = context!.EventSourceUrl;
 
         var body = new Dictionary<string, object?> { ["data"] = new[] { evt } };
         if (!string.IsNullOrWhiteSpace(_opts.TestEventCode))

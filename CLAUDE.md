@@ -218,7 +218,8 @@ Objetivo do dono: tráfego pago Meta Ads controlado por IA.
 - [ ] **Meta Ads real** (próximo p/ ligar de verdade): `ICampaignInsightsSource` e `ICampaignActuator`
   reais (Marketing API: insights + set budget/pause), atrás de `Traffic:Live=true`.
 - [ ] **Advisor de IA** (`IOptimizationAdvisor`): plugar Claude pra refinar/priorizar decisões.
-- [ ] **Enriquecer o match do CAPI**: `fbp`/`fbc`/IP/user-agent do request.
+- [x] **Match do CAPI enriquecido**: landing envia `fbp`/`fbc`/`sourceUrl` na captura; API deriva IP
+  (X-Forwarded-For) e user-agent → `ConversionContext` → Meta CAPI (deduplicado com o Pixel).
 - [ ] **Pipeline de criativos**: gerar variações com `higgsfield-generate`/`higgsfield-product-photoshoot`.
 
 > ⚠️ **Não gastar em anúncio** antes do produto provar que vende. CAPI e otimizador estão prontos e

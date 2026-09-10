@@ -232,6 +232,12 @@
     fbq('track', 'PageView');
   })();
 
+  // Lê cookie (ex.: _fbp/_fbc do Pixel) pra enviar ao servidor e melhorar o match no CAPI.
+  function getCookie(name){
+    const m = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
+    return m ? decodeURIComponent(m[1]) : null;
+  }
+
   // Purchase no navegador, deduplicado com o server (CAPI) pelo mesmo eventID = PaymentId.
   function firePurchase(paymentId){
     if (window.fbq && CONFIG.metaPixelId && CONFIG.metaPixelId.indexOf("YOUR_") !== 0) {
@@ -255,7 +261,7 @@
       }).then(r => r.json()).then(d => { if (!d.id) throw new Error(d.error || "no order id"); return d.id; }),
       onApprove: (data) => fetch(CONFIG.apiBase + "/paypal/capture-order", {
         method:"POST", headers:{ "Content-Type":"application/json" },
-        body: JSON.stringify({ orderId: data.orderID })
+        body: JSON.stringify({ orderId: data.orderID, fbp: getCookie('_fbp'), fbc: getCookie('_fbc'), sourceUrl: location.href })
       }).then(r => r.json().catch(() => ({}))).then((d) => {
         if (d && d.outcome) {
           firePurchase((d && d.paymentId) ? d.paymentId : data.orderID);

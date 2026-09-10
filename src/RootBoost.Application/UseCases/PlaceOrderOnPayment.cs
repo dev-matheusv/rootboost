@@ -48,7 +48,7 @@ public sealed class PlaceOrderOnPayment
         _log = log;
     }
 
-    public async Task<PlaceOrderResult> HandleAsync(PaymentEvent pay, CancellationToken ct = default)
+    public async Task<PlaceOrderResult> HandleAsync(PaymentEvent pay, ConversionContext? conversionContext = null, CancellationToken ct = default)
     {
         if (!pay.IsPaid)
             return new PlaceOrderResult(PlaceOrderOutcome.AlreadyProcessed, null, "event is not a completed payment");
@@ -117,7 +117,7 @@ public sealed class PlaceOrderOnPayment
         _log.LogInformation("Order {PaymentId} placed at supplier as {SupplierOrderId}.", pay.PaymentId, result.SupplierOrderId);
 
         // Fire the server-side Purchase conversion (best-effort; deduped with the Pixel by PaymentId).
-        await SafeNotifyAsync(() => _tracker.TrackPurchaseAsync(order, ct), pay.PaymentId, "conversion-purchase");
+        await SafeNotifyAsync(() => _tracker.TrackPurchaseAsync(order, conversionContext, ct), pay.PaymentId, "conversion-purchase");
 
         return new PlaceOrderResult(PlaceOrderOutcome.Fulfilled, order);
     }

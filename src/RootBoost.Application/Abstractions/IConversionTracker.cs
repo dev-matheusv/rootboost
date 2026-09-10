@@ -1,3 +1,4 @@
+using RootBoost.Application.Models;
 using RootBoost.Domain;
 
 namespace RootBoost.Application.Abstractions;
@@ -10,6 +11,7 @@ namespace RootBoost.Application.Abstractions;
 /// </summary>
 public interface IConversionTracker
 {
-    /// <summary>Report a completed purchase (fires only for successfully fulfilled orders).</summary>
-    Task TrackPurchaseAsync(Order order, CancellationToken ct = default);
+    /// <summary>Report a completed purchase (fires only for successfully fulfilled orders).
+    /// <paramref name="context"/> carries optional browser signals (fbp/fbc/ip/ua) for better match.</summary>
+    Task TrackPurchaseAsync(Order order, ConversionContext? context = null, CancellationToken ct = default);
 }

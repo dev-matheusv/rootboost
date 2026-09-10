@@ -73,7 +73,7 @@ app.MapPost("/webhook/payment", async (HttpContext ctx, IPaymentVerifier verifie
 
     if (pay is null) return Results.Ok(); // unverified or irrelevant event -> ack and ignore
 
-    var result = await useCase.HandleAsync(pay, ct);
+    var result = await useCase.HandleAsync(pay, ct: ct);
     // Always 200 so the processor stops retrying; the outcome is our record to act on.
     return Results.Ok(new { outcome = result.Outcome.ToString(), paymentId = pay.PaymentId, error = result.Error });
 });
@@ -120,7 +120,7 @@ app.MapPost("/paypal/create-order", async (CreateOrderRequest req, ICheckoutGate
         : Results.BadRequest(new { error = result.Error });
 });
 
-app.MapPost("/paypal/capture-order", async (CaptureOrderRequest req, ICheckoutGateway gateway, PlaceOrderOnPayment useCase, CancellationToken ct) =>
+app.MapPost("/paypal/capture-order", async (HttpContext http, CaptureOrderRequest req, ICheckoutGateway gateway, PlaceOrderOnPayment useCase, CancellationToken ct) =>
 {
     if (string.IsNullOrWhiteSpace(req.OrderId))
         return Results.BadRequest(new { error = "orderId required" });
@@ -129,7 +129,14 @@ app.MapPost("/paypal/capture-order", async (CaptureOrderRequest req, ICheckoutGa
     if (pay is null)
         return Results.BadRequest(new { error = "capture did not complete" });
 
-    var result = await useCase.HandleAsync(pay, ct);
+    // Sinais pro Meta CAPI: fbp/fbc/sourceUrl vêm do navegador (corpo); IP/UA do request (X-Forwarded-For atrás de proxy).
+    var clientIp = http.Request.Headers["X-Forwarded-For"].FirstOrDefault()?.Split(',')[0].Trim();
+    if (string.IsNullOrWhiteSpace(clientIp)) clientIp = http.Connection.RemoteIpAddress?.ToString();
+    var conv = new ConversionContext(
+        Fbp: req.Fbp, Fbc: req.Fbc, ClientIp: clientIp,
+        UserAgent: http.Request.Headers.UserAgent.ToString(), EventSourceUrl: req.SourceUrl);
+
+    var result = await useCase.HandleAsync(pay, conv, ct);
     // The payment already succeeded; report the fulfillment outcome. The customer's money is
     // captured regardless — a NeedsHuman outcome means we alerted an operator to finish it.
     return Results.Ok(new { outcome = result.Outcome.ToString(), paymentId = pay.PaymentId });
@@ -186,7 +193,7 @@ record OrderDto(string PaymentId, string ProductKey, int Quantity, string Status
 }
 
 record CreateOrderRequest(string ProductKey, int Quantity);
-record CaptureOrderRequest(string OrderId);
+record CaptureOrderRequest(string OrderId, string? Fbp = null, string? Fbc = null, string? SourceUrl = null);
 
 // Exposed for integration tests (WebApplicationFactory needs a public entry point type).
 public partial class Program { }

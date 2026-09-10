@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging.Abstractions;
+using RootBoost.Application.Models;
 using RootBoost.Application.UseCases;
 using RootBoost.Domain;
 
@@ -126,6 +127,21 @@ public class PlaceOrderOnPaymentTests
 
         Assert.Equal(1, tracker.Purchases);
         Assert.Equal("PAY-CONV", tracker.LastOrder!.PaymentId);
+    }
+
+    [Fact]
+    public async Task Passes_conversion_context_to_tracker_on_fulfillment()
+    {
+        var repo = new FakeOrderRepository();
+        var tracker = new FakeConversionTracker();
+        var sut = Build(repo, new FakeCatalog(TestData.RackProduct()), new FakeSupplier(), new FakeNotifier(), tracker);
+
+        var ctx = new ConversionContext(Fbp: "fb.1.2.3", Fbc: "fb.1.4.5", ClientIp: "1.2.3.4", UserAgent: "UA", EventSourceUrl: "https://x/y");
+        await sut.HandleAsync(TestData.PaidRack("PAY-CTX"), ctx);
+
+        Assert.Equal(1, tracker.Purchases);
+        Assert.Equal("fb.1.2.3", tracker.LastContext!.Fbp);
+        Assert.Equal("1.2.3.4", tracker.LastContext!.ClientIp);
     }
 
     [Fact]
