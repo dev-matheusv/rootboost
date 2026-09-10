@@ -61,6 +61,13 @@ public sealed class PlaceOrderOnPayment
             return new PlaceOrderResult(PlaceOrderOutcome.AlreadyProcessed, existing);
         }
 
+        // Sem productKey não dá nem pra montar o pedido (invariante do domínio). Escala em vez de estourar.
+        if (string.IsNullOrWhiteSpace(pay.ProductKey))
+        {
+            _log.LogError("Pagamento {PaymentId} chegou sem productKey; não dá pra identificar o produto. Escalando.", pay.PaymentId);
+            return new PlaceOrderResult(PlaceOrderOutcome.NeedsHuman, null, "productKey ausente no pagamento");
+        }
+
         var order = new Order(
             pay.PaymentId, pay.ProductKey, pay.Quantity, pay.Email, pay.ShipTo, pay.Amount, pay.Currency);
 

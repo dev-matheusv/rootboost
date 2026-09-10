@@ -259,11 +259,15 @@
       onApprove: (data) => fetch(CONFIG.apiBase + "/paypal/capture-order", {
         method:"POST", headers:{ "Content-Type":"application/json" },
         body: JSON.stringify({ orderId: data.orderID })
-      }).then(r => r.json()).then((d) => {
-        firePurchase((d && d.paymentId) ? d.paymentId : data.orderID);
-        document.getElementById("thanks").style.display = "block";
-        document.getElementById("paypal-button-container").style.display = "none";
-      }),
+      }).then(r => r.json().catch(() => ({}))).then((d) => {
+        if (d && d.outcome) {
+          firePurchase((d && d.paymentId) ? d.paymentId : data.orderID);
+          document.getElementById("thanks").style.display = "block";
+          document.getElementById("paypal-button-container").style.display = "none";
+        } else {
+          document.getElementById("err").style.display = "block";
+        }
+      }).catch(() => { document.getElementById("err").style.display = "block"; }),
       onError: () => { document.getElementById("err").style.display = "block"; }
     }).render("#paypal-button-container");
   }

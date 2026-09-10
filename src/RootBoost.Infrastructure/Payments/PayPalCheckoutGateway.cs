@@ -62,6 +62,7 @@ public sealed class PayPalCheckoutGateway : ICheckoutGateway
             return null;
         var pu = pus[0];
 
+        // custom_id (nosso productKey) pode vir no purchase_unit OU no objeto da captura.
         var productKey = Str(pu, "custom_id") ?? "";
 
         // capture id is the payment id / idempotency key
@@ -74,6 +75,8 @@ public sealed class PayPalCheckoutGateway : ICheckoutGateway
         {
             var cap = caps[0];
             paymentId = Str(cap, "id") ?? providerOrderId;
+            if (string.IsNullOrWhiteSpace(productKey))
+                productKey = Str(cap, "custom_id") ?? "";
             if (cap.TryGetProperty("amount", out var amt))
             {
                 decimal.TryParse(Str(amt, "value"), NumberStyles.Any, CultureInfo.InvariantCulture, out amount);
