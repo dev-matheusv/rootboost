@@ -119,26 +119,29 @@ Dockerfile                  [A CRIAR]
       `/admin/traffic/plan`). Ver §8 e `docs/VISAO-GERAL.md`. Ligar tráfego real ainda depende de você.
 - [ ] **Futuro** — Meta Ads real (insights+actuator), advisor de IA, pipeline de criativos, dashboard.
 
-### CHECKPOINT (2026-09-10) — onde paramos
+### CHECKPOINT (2026-09-12) — SOFT-LAUNCH NO AR ✅
 
-**Pagamento PROVADO ponta a ponta no PayPal Sandbox** (create → capture → pedido `PlacedAtSupplier`
-em `/orders`). Bug do `custom_id` na captura corrigido. Container Docker builda OK (validado local).
-Alvo combinado: **soft-launch hoje** = loja no ar em modo seguro (PayPal **sandbox** + `Supplier=Mock`),
-virando pra LIVE quando PayPal/CJ/mídia estiverem prontos.
+**A loja está no ar, ponta a ponta, em produção (modo seguro):**
+- **Backend (Railway):** `https://rootboost-production.up.railway.app` — `Supplier=Mock`, `Payments__Verifier=Test`,
+  PayPal **sandbox** (ClientId público + Secret em env), volume em `/data`, porta 8080. `/health` ok.
+- **Landing (Vercel):** `https://rootboost.vercel.app` (`/rack/{en,es,pt}/`; raiz redireciona por idioma).
+  Gerada por `landing/rack/build.mjs` (API_BASE + PAYPAL_CLIENT_ID sandbox embutidos; BASE_URL = domínio Vercel).
+- **Provado em produção:** compra sandbox na Vercel → captura no Railway → pedido em `/orders`.
+  Caiu como `Failed` "no supplier variant configured" = **rede de segurança correta** (catalog com VID `TODO`);
+  vira `PlacedAtSupplier` quando o VID real entrar.
 
-**Em andamento (usuário, ele volta e continua):**
-- **CJ**: conta criada (ID `CJ5814493`, email `devmatheusoxs@gmail.com`). Falta gerar a **API Key** em
-  `Authorization → API → API Key → Add API/Generate → Copy`. Ele vai mandar a chave ao voltar (não colar no chat; vira env `Cj__ApiKey`).
-- **PayPal**: conta PF antiga travada por inatividade → **recuperando no suporte** (caminho pra receber no CPF).
-- **Sem CNPJ é OK**: CPF basta pra PayPal (receber) e CJ (comprar). CNPJ é otimização futura.
-- Tem **Railway** e **Vercel** (do RootFlow) prontos.
+**Repo:** `github.com/dev-matheusv/rootboost` (Railway e Vercel puxam de `main`; push = redeploy).
 
-**Assim que ele voltar com a API Key da CJ — dar sequência:**
-1. Pegar o **VID** da variante do rack (comando usando `Cj__ApiKey`) e preencher `catalog.json`.
-2. Mídia do produto (listagem CJ "rotating spice rack organizer 20 jars", armazém US/EU) → landing.
-3. **Deploy soft-launch**: `git push` (GitHub) → Railway (backend, vars sandbox) → Vercel (landing). Ver `docs/DEPLOY.md`.
+**Cutover pra LIVE (vender de verdade) — pendências do usuário:**
+- **PayPal**: conta que receba no CPF (recuperando a PF antiga no suporte — inatividade). Trocar sandbox → LIVE
+  (`PayPal__BaseUrl=https://api-m.paypal.com` + ClientId/Secret LIVE; ClientId LIVE também na landing via build.mjs).
+- **CJ**: API Key criada (email `devmatheusoxs@gmail.com`, ID `CJ5814493`). Falta **escolher o produto** e pegar o **VID**
+  → `catalog.json`. ⚠️ **Só ligar `Supplier=Cj` quando o PayPal for LIVE** — senão um pagamento sandbox (fake)
+  dispararia um pedido REAL/pago na CJ. Em soft-launch, manter `Supplier=Mock`.
+- **Mídia** do produto (vídeo do giro + fotos da CJ) → substituir placeholders na landing + `og-image.jpg`.
+- **Sem CNPJ é OK** pra começar (CPF basta em PayPal e CJ).
 
-**Pendências gerais do humano:** `docs/VISAO-GERAL.md §6`. GitHub MCP a reautenticar; links Notion a colar.
+**Pendências gerais:** `docs/VISAO-GERAL.md §6`. GitHub MCP a reautenticar; links Notion a colar.
 
 > ✅ **Gap fechado**: o preço agora é **definido no servidor** (create-order lê o catálogo). O webhook
 > `/webhook/payment` segue como rede de segurança/idempotência. Falta o humano preencher
