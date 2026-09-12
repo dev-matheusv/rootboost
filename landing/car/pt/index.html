@@ -66,6 +66,8 @@
   .split{display:grid; grid-template-columns:1fr 1fr; gap:36px; align-items:center}
   .imgbox{border-radius:16px; overflow:hidden; background:var(--sand); aspect-ratio:1/1; position:relative}
   .imgbox img{width:100%; height:100%; object-fit:cover; display:block}
+  .gallery{display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-top:12px}
+  .gallery img{width:100%; aspect-ratio:4/3; object-fit:cover; border-radius:14px; border:1px solid var(--line); display:block}
   .imgbox .ph{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:var(--muted); font-size:.85rem; padding:16px; text-align:center}
   .benefits{list-style:none; display:grid; gap:18px; margin-top:8px}
   .benefits li{display:flex; gap:14px; align-items:flex-start}
@@ -102,6 +104,7 @@
     .hero-grid,.split{grid-template-columns:1fr}
     .media{order:-1; aspect-ratio:4/3}
     .steps,.reviews{grid-template-columns:1fr}
+    .gallery{grid-template-columns:1fr 1fr}
     .sticky{display:flex}
   }
   @media (prefers-reduced-motion:reduce){*{transition:none!important; scroll-behavior:auto}}
@@ -158,6 +161,17 @@
       <div class="step"><h3>Compre em 30 segundos</h3><p>Checkout seguro com PayPal. Não precisa de conta pra pagar no cartão.</p></div>
       <div class="step"><h3>Chega na sua porta</h3><p>Entrega com rastreio, normalmente em cerca de uma semana.</p></div>
       <div class="step"><h3>Prenda e pronto</h3><p>Prenda no banco em um minuto e caia na estrada com o carro arrumado.</p></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>TidyRide no carro</h2>
+    <div class="gallery">
+      <img src="/car/media/g6.png" alt="Bolsos pra tudo.">
+      <img src="/car/media/g3.jpg" alt="Bandeja impermeável dobrável.">
+      <img src="/car/media/g2.png" alt="Suporte de tablet embutido.">
     </div>
   </div>
 </section>
