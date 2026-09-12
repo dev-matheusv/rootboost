@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SpinRack</title>
+<script>
+  // Redireciona pro idioma do visitante (pt/es/en), default en.
+  var l = (navigator.language || "en").toLowerCase();
+  var lang = l.startsWith("pt") ? "pt" : l.startsWith("es") ? "es" : "en";
+  location.replace("/rack/" + lang + "/");
+</script>
+</head>
+<body>
+  <noscript><a href="/rack/en/">Continue to SpinRack</a></noscript>
+</body>
+</html>

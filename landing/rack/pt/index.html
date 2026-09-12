@@ -220,7 +220,7 @@
 <script>
   // CONFIG (edit before go live). Price is enforced server side by the API.
   const CONFIG = {
-    apiBase: "REPLACE_WITH_API_BASE",   // e.g. https://rootboost.up.railway.app ("" = mesma origem)
+    apiBase: "https://rootboost-production.up.railway.app",   // origem da API (Railway). "" = mesma origem
     productKey: "rack",
     currency: "USD",
     value: "34.99",
@@ -278,7 +278,7 @@
     }).render("#paypal-button-container");
   }
 </script>
-<!-- PayPal SDK: replace YOUR_PAYPAL_CLIENT_ID (currency must match CONFIG.currency) -->
-<script src="https://www.paypal.com/sdk/js?client-id=YOUR_PAYPAL_CLIENT_ID&currency=USD" onload="initPayPal()"></script>
+<!-- PayPal SDK: client-id e currency vêm do build.mjs -->
+<script src="https://www.paypal.com/sdk/js?client-id=BAAPIdIdPmgfASjk5sCCT_if30LytHS8XN4GzZcIO9p2D_rkgiBrRoZCS_c73MgnUL6tGiNjeaJ1mK3pKs&currency=USD" onload="initPayPal()"></script>
 </body>
 </html>
