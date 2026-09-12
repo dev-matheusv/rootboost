@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 const dir = path.dirname(fileURLToPath(import.meta.url));
 
 // EDITAR antes de publicar:
-const BASE_URL = "https://REPLACE_WITH_DOMAIN"; // domínio da landing (Vercel) — ajustar após deploy
+const BASE_URL = "https://rootboost.vercel.app"; // domínio da landing (Vercel)
 const PRODUCT_PATH = "rack";                    // vira {BASE}/rack/<lang>/
 const OG_IMAGE = `${BASE_URL}/${PRODUCT_PATH}/og-image.jpg`;
 const PRICE_NUMBER = "34.99";                   // numérico pro JSON-LD (bater com catalog.json)
