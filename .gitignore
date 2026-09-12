@@ -20,3 +20,6 @@ Thumbs.db
 
 # local-only sandbox test (never commit)
 landing/rack/_local/
+
+# video pesado da landing (comprimir antes de commitar)
+landing/car/media/*.mp4

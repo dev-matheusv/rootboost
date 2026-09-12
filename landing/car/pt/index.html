@@ -65,6 +65,7 @@
   section{padding:52px 0; border-top:1px solid var(--line)}
   .split{display:grid; grid-template-columns:1fr 1fr; gap:36px; align-items:center}
   .imgbox{border-radius:16px; overflow:hidden; background:var(--sand); aspect-ratio:1/1; position:relative}
+  .imgbox img{width:100%; height:100%; object-fit:cover; display:block}
   .imgbox .ph{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:var(--muted); font-size:.85rem; padding:16px; text-align:center}
   .benefits{list-style:none; display:grid; gap:18px; margin-top:8px}
   .benefits li{display:flex; gap:14px; align-items:flex-start}
@@ -123,17 +124,14 @@
       <p class="reassure">Garantia de 30 dias · Envio rápido com rastreio</p>
     </div>
     <div class="media">
-      <video autoplay muted loop playsinline poster="">
-        <source src="REPLACE_WITH_SPIN_DEMO.mp4" type="video/mp4">
-      </video>
-      <div class="ph">▶ Seu clipe do carro entra aqui (material do fornecedor)</div>
+      <img src="/car/media/hero.jpg" alt="O organizador de banco que deixa seu carro arrumado e as crianças felizes">
     </div>
   </div>
 </header>
 
 <section>
   <div class="wrap split">
-    <div class="imgbox"><div class="ph">Foto antes e depois. Banco bagunçado vs organizado com TidyRide</div></div>
+    <div class="imgbox"><img src="/car/media/lifestyle.jpg" alt="Foto antes e depois. Banco bagunçado vs organizado com TidyRide"></div>
     <div>
       <h2>Pare de conviver com o banco de trás bagunçado</h2>
       <p>Embalagem no chão, bebida sem lugar, criança pedindo o tablet a cada cinco minutos. O TidyRide prende no encosto e deixa tudo à mão, então as viagens ficam mais tranquilas e o carro finalmente se cuida sozinho.</p>
