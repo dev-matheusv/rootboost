@@ -83,6 +83,7 @@ public static class DependencyInjection
         services.AddSingleton(policy);
         services.AddSingleton<CampaignOptimizer>();
         services.AddSingleton<CreativeSelector>();
+        services.AddSingleton<GrowthPlanner>();
         services.AddSingleton<ICampaignInsightsSource, NotConfiguredInsightsSource>();
         services.AddSingleton<ICampaignActuator, LoggingCampaignActuator>();
         services.AddScoped<TrafficAutopilot>();

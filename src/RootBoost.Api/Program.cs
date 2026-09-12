@@ -154,6 +154,26 @@ app.MapGet("/admin/traffic/plan", async (HttpContext ctx, RootBoost.Application.
     return Results.Ok(report);
 });
 
+// --- Growth planner (dry-run): projeta orgânico vs pago pro orçamento que o usuário mantém ------
+app.MapGet("/admin/growth/plan", (HttpContext ctx, IProductCatalog catalog, RootBoost.Application.Traffic.GrowthPlanner planner, IConfiguration cfg) =>
+{
+    var required = cfg["Orders:ApiKey"];
+    if (!string.IsNullOrWhiteSpace(required) &&
+        (!ctx.Request.Headers.TryGetValue("X-Api-Key", out var got) || got != required))
+        return Results.Unauthorized();
+
+    var q = ctx.Request.Query;
+    var productKey = q["productKey"].FirstOrDefault() ?? "carorganizer";
+    var price = catalog.Find(productKey)?.Price ?? 29.99m;
+    decimal cost = decimal.TryParse(q["unitCost"].FirstOrDefault(), System.Globalization.CultureInfo.InvariantCulture, out var c) ? c : 12m;
+    decimal budget = decimal.TryParse(q["budget"].FirstOrDefault(), System.Globalization.CultureInfo.InvariantCulture, out var b) ? b : 0m;
+    double cvr = double.TryParse(q["cvr"].FirstOrDefault(), System.Globalization.CultureInfo.InvariantCulture, out var v) ? v : 0.02;
+
+    var plan = planner.Plan(new RootBoost.Application.Traffic.GrowthInputs(
+        UnitPrice: price, UnitCost: cost, MonthlyAdBudget: budget, StoreConversionRate: cvr));
+    return Results.Ok(plan);
+});
+
 app.Run();
 
 // --- helpers ------------------------------------------------------------------

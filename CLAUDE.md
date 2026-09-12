@@ -227,8 +227,13 @@ Objetivo do dono: tráfego pago Meta Ads controlado por IA.
   decide → aplica via actuator → relatório). Infra: `NotConfiguredInsightsSource` + `LoggingCampaignActuator`
   (**DRY-RUN**, só recomenda). Endpoint `GET /admin/traffic/plan` (API key) mostra o plano.
   Política ajustável na seção `Traffic` do config. 10 testes cobrindo as regras.
+- [x] **GrowthPlanner (planejamento por orçamento) feito.** Dado o investimento que o usuário mantém
+  (inclusive $0), projeta **orgânico (YouTube Shorts)** vs **pago (Meta)**: pedidos/receita/lucro,
+  CAC de equilíbrio, ROAS, recomendação + sugestões. Endpoint `GET /admin/growth/plan` (API key).
+  5 testes. **Estratégia de GTM: orgânico-first** (Shorts, CAC~$0) e pago só pra escalar o que validar.
 - [ ] **Meta Ads real** (próximo p/ ligar de verdade): `ICampaignInsightsSource` e `ICampaignActuator`
   reais (Marketing API: insights + set budget/pause), atrás de `Traffic:Live=true`.
+- [ ] **Automação de conteúdo orgânico** (futuro): pipeline de geração/agendamento de Shorts (o canal principal).
 - [ ] **Advisor de IA** (`IOptimizationAdvisor`): plugar Claude pra refinar/priorizar decisões.
 - [x] **Match do CAPI enriquecido**: landing envia `fbp`/`fbc`/`sourceUrl` na captura; API deriva IP
   (X-Forwarded-For) e user-agent → `ConversionContext` → Meta CAPI (deduplicado com o Pixel).
