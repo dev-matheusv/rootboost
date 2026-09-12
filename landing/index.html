@@ -8,10 +8,10 @@
   // Redireciona pro idioma do visitante (pt/es/en), default en.
   var l = (navigator.language || "en").toLowerCase();
   var lang = l.startsWith("pt") ? "pt" : l.startsWith("es") ? "es" : "en";
-  location.replace("/rack/" + lang + "/");
+  location.replace("/car/" + lang + "/");
 </script>
 </head>
 <body>
-  <noscript><a href="/rack/en/">Continue to SpinRack</a></noscript>
+  <noscript><a href="/car/en/">Continue to TidyRide</a></noscript>
 </body>
 </html>
