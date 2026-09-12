@@ -45,8 +45,8 @@ tráfego. Por isso o backend é próprio: **somos donos do servidor**, o que per
 | Fornecedor | **CJ Dropshipping** (armazém US/EU, entrega ~1 semana) | Nunca AliExpress cru (20–40 dias = reembolso + conta congelada). |
 | Persistência | **EF Core + SQLite** em volume persistente | Zero custo, sobrevive a restart. |
 | Runtime | **.NET 9** (`net9.0`) | Só o SDK 9.0.308 está instalado. O brief citava .NET 8; migração é trivial se necessário. |
-| Produto #1 | Rack de tempero giratório 360° (`rack`) | Devolução baixa (sem eletrônica), apelo #CleanTok, demo visual satisfatória. |
-| Produto #2 | **SnackSpin** — bandeja giratória de aperitivos (`snackspin`) | Reaproveita 100% do playbook do rack: mesmo "girar=satisfatório", público e fábrica. |
+| Produto #1 (ATUAL) | **TidyRide** — organizador de banco de carro (`carorganizer`) | Rack não tinha armazém US/EU na CJ. Car organizer: armazém US, Listas 8323, no-disputes, custo ~US$5-17, demo forte pra vídeo. Ver CHECKPOINT. |
+| Produtos legados (inativos) | `rack` (SpinRack), `snackspin` | Sem sourcing US/EU viável na CJ. Landings antigas em `/rack/*` ficam órfãs. |
 | E-mail (INotifier) | **Resend** (API HTTP) | Tier grátis, boa entregabilidade, config simples via API key. |
 | Deploy | **Railway** (Docker + volume persistente) | Deploy simples, volume pro SQLite, boa DX. |
 
@@ -121,24 +121,33 @@ Dockerfile                  [A CRIAR]
 
 ### CHECKPOINT (2026-09-12) — SOFT-LAUNCH NO AR ✅
 
+**PRODUTO PIVOTADO → TidyRide (organizador de banco de carro, `carorganizer`).** O rack de tempero
+não tinha sourcing US/EU na CJ (só China, 20-40 dias). Escolhido produto validado com **armazém US**:
+"PU Leather Car Seat-Back Organizer" (SKU `CJMT109776403CX`, pid `1386170811295076352`, Listas **8323**,
+selo no-disputes, custo ~US$5-17). Marca de loja **TidyRide**, preço **US$29,99**. `rack`/`snackspin` viram
+legado inativo (landings antigas em `/rack/*` ficam órfãs, sem link).
+
 **A loja está no ar, ponta a ponta, em produção (modo seguro):**
 - **Backend (Railway):** `https://rootboost-production.up.railway.app` — `Supplier=Mock`, `Payments__Verifier=Test`,
   PayPal **sandbox** (ClientId público + Secret em env), volume em `/data`, porta 8080. `/health` ok.
-- **Landing (Vercel):** `https://rootboost.vercel.app` (`/rack/{en,es,pt}/`; raiz redireciona por idioma).
-  Gerada por `landing/rack/build.mjs` (API_BASE + PAYPAL_CLIENT_ID sandbox embutidos; BASE_URL = domínio Vercel).
-- **Provado em produção:** compra sandbox na Vercel → captura no Railway → pedido em `/orders`.
-  Caiu como `Failed` "no supplier variant configured" = **rede de segurança correta** (catalog com VID `TODO`);
-  vira `PlacedAtSupplier` quando o VID real entrar.
+  `create-order` do `carorganizer` retorna id ($29,99). ✅
+- **Landing (Vercel):** `https://rootboost.vercel.app` → raiz redireciona por idioma pra `/car/{en,es,pt}/`.
+  Gerada por `landing/car/build.mjs` (+ `strings.json` trilíngue + `_template.html` parametrizado por produto:
+  {{productKey}}/{{brand}}). API_BASE Railway + PAYPAL_CLIENT_ID sandbox embutidos.
+- **Provado antes (rack):** compra sandbox → captura → pedido em `/orders` (caiu `Failed` "no supplier variant"
+  = rede de segurança, pois VID é `TODO`). Mesmo comportamento vale pro `carorganizer` até o VID real entrar.
 
 **Repo:** `github.com/dev-matheusv/rootboost` (Railway e Vercel puxam de `main`; push = redeploy).
 
 **Cutover pra LIVE (vender de verdade) — pendências do usuário:**
 - **PayPal**: conta que receba no CPF (recuperando a PF antiga no suporte — inatividade). Trocar sandbox → LIVE
   (`PayPal__BaseUrl=https://api-m.paypal.com` + ClientId/Secret LIVE; ClientId LIVE também na landing via build.mjs).
-- **CJ**: API Key criada (email `devmatheusoxs@gmail.com`, ID `CJ5814493`). Falta **escolher o produto** e pegar o **VID**
-  → `catalog.json`. ⚠️ **Só ligar `Supplier=Cj` quando o PayPal for LIVE** — senão um pagamento sandbox (fake)
-  dispararia um pedido REAL/pago na CJ. Em soft-launch, manter `Supplier=Mock`.
-- **Mídia** do produto (vídeo do giro + fotos da CJ) → substituir placeholders na landing + `og-image.jpg`.
+- **CJ**: API Key criada (email `devmatheusoxs@gmail.com`, ID `CJ5814493`). Produto escolhido (car organizer,
+  SKU `CJMT109776403CX`). Falta pegar o **VID da variante US com estoque** → `catalog.json` (`carorganizer.supplierVariantId`).
+  ⚠️ Variante padrão (Bege) estava com estoque US = 0; escolher cor com estoque no cutover.
+  ⚠️ **Só ligar `Supplier=Cj` quando o PayPal for LIVE** — senão um pagamento sandbox (fake) dispararia pedido REAL/pago na CJ.
+- **Mídia** do produto (a página CJ tem 7 vídeos + 28 fotos + botão Download) → colocar em `landing/car/media/`
+  e referenciar no `_template.html` + `og-image.jpg`. Hoje são placeholders.
 - **Sem CNPJ é OK** pra começar (CPF basta em PayPal e CJ).
 
 **Pendências gerais:** `docs/VISAO-GERAL.md §6`. GitHub MCP a reautenticar; links Notion a colar.
