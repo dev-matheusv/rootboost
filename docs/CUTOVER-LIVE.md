@@ -41,15 +41,15 @@ Cors__AllowedOrigins=https://rootboost.vercel.app
 (Volume `/data` já configurado.) Salvar → Railway redeploya. Testar `GET /health` = ok.
 
 ## 4. Landing (Vercel) — Client ID LIVE
-- Em `landing/car/build.mjs`: `PAYPAL_CLIENT_ID = "<LIVE Client ID>"` (o Secret **não** vai na landing).
-- `node landing/car/build.mjs` → `git commit` + `git push` (Vercel republica).
+- Em `landing/build.mjs`: `PAYPAL_CLIENT_ID = "<LIVE Client ID>"` (o Secret **não** vai na landing).
+- `node landing/build.mjs` → `git commit` + `git push` (Vercel republica).
 
 ## 5. CJ webhook de rastreio
 - No painel CJ, apontar o webhook de status/rastreio para `https://rootboost-production.up.railway.app/webhook/cj`.
 
 ## 6. (Opcional) Ligar Meta Pixel + CAPI
 - Railway: `Tracker=Meta`, `Meta__PixelId=...`, `Meta__AccessToken=...`.
-- `landing/car/build.mjs`: `metaPixelId = "<Pixel ID>"` → rebuild + push.
+- `landing/build.mjs`: `META_PIXEL_ID = "<Pixel ID>"` → `node landing/build.mjs` + push.
 
 ## 7. Teste real (1 pedido de valor baixo)
 - Abrir `https://rootboost.vercel.app/car/pt/` → comprar de verdade (valor baixo, seu cartão).

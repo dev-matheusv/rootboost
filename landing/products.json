@@ -1,0 +1,11 @@
+{
+  "_comment": "Manifesto das landings. Subir um produto novo = 1 entrada aqui + pasta <path>/ com strings.json e media/. Preco e moeda vem do catalog.json (fonte unica). 'media' escolhe hero, lifestyle e as 3 fotos da galeria dentro de <path>/media. Rode: node landing/build.mjs",
+  "products": [
+    {
+      "path": "car",
+      "productKey": "carorganizer",
+      "brand": "TidyRide",
+      "media": { "hero": "hero.jpg", "lifestyle": "lifestyle.jpg", "gallery": ["g6.png", "g3.jpg", "g2.png"] }
+    }
+  ]
+}

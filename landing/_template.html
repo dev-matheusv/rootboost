@@ -19,9 +19,9 @@
 </script>
 
 <!--
-  GERADO por build.mjs a partir de _template.html + strings.json. NÃO editar este arquivo à mão;
-  edite a copy em strings.json e rode:  node landing/rack/build.mjs
-  Antes de publicar: defina BASE_URL/OG_IMAGE no build.mjs, e PAYPAL_CLIENT_ID + CONFIG.apiBase abaixo.
+  TEMPLATE COMPARTILHADO. GERADO por landing/build.mjs a partir deste _template.html + o
+  strings.json de cada produto + landing/products.json (manifesto). NÃO editar os index.html à mão;
+  edite a copy em <produto>/strings.json, o manifesto, e rode:  node landing/build.mjs
   Padrão de linguagem: copy sem hífen e sem travessão.
 -->
 
@@ -124,14 +124,14 @@
       <p class="reassure">{{reassure}}</p>
     </div>
     <div class="media">
-      <img src="/car/media/hero.jpg" alt="{{h1}}">
+      <img src="{{heroSrc}}" alt="{{h1}}">
     </div>
   </div>
 </header>
 
 <section>
   <div class="wrap split">
-    <div class="imgbox"><img src="/car/media/lifestyle.jpg" alt="{{beforeAfterPh}}"></div>
+    <div class="imgbox"><img src="{{lifestyleSrc}}" alt="{{beforeAfterPh}}"></div>
     <div>
       <h2>{{problemH2}}</h2>
       <p>{{problemP}}</p>
@@ -166,9 +166,9 @@
   <div class="wrap">
     <h2>{{galleryH2}}</h2>
     <div class="gallery">
-      <img src="/car/media/g6.png" alt="{{b3t}}">
-      <img src="/car/media/g3.jpg" alt="{{b2t}}">
-      <img src="/car/media/g2.png" alt="{{b1t}}">
+      <img src="{{g1src}}" alt="{{b3t}}">
+      <img src="{{g2src}}" alt="{{b2t}}">
+      <img src="{{g3src}}" alt="{{b1t}}">
     </div>
   </div>
 </section>
@@ -233,7 +233,7 @@
     productKey: "{{productKey}}",
     currency: "{{currencyCode}}",
     value: "{{priceNum}}",
-    metaPixelId: "YOUR_META_PIXEL_ID"   // deixe assim pra manter o Pixel desligado
+    metaPixelId: "{{metaPixelId}}"   // "YOUR_META_PIXEL_ID" = Pixel desligado (default no build.mjs)
   };
 
   // Beacon de visita (sem PII): conta esta landing pro relatório de conversão por produto

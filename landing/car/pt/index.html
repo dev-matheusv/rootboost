@@ -22,9 +22,9 @@
 </script>
 
 <!--
-  GERADO por build.mjs a partir de _template.html + strings.json. NÃO editar este arquivo à mão;
-  edite a copy em strings.json e rode:  node landing/rack/build.mjs
-  Antes de publicar: defina BASE_URL/OG_IMAGE no build.mjs, e PAYPAL_CLIENT_ID + CONFIG.apiBase abaixo.
+  TEMPLATE COMPARTILHADO. GERADO por landing/build.mjs a partir deste _template.html + o
+  strings.json de cada produto + landing/products.json (manifesto). NÃO editar os index.html à mão;
+  edite a copy em <produto>/strings.json, o manifesto, e rode:  node landing/build.mjs
   Padrão de linguagem: copy sem hífen e sem travessão.
 -->
 
@@ -236,7 +236,7 @@
     productKey: "carorganizer",
     currency: "USD",
     value: "29.99",
-    metaPixelId: "YOUR_META_PIXEL_ID"   // deixe assim pra manter o Pixel desligado
+    metaPixelId: "YOUR_META_PIXEL_ID"   // "YOUR_META_PIXEL_ID" = Pixel desligado (default no build.mjs)
   };
 
   // Beacon de visita (sem PII): conta esta landing pro relatório de conversão por produto

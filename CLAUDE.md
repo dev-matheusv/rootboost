@@ -132,8 +132,9 @@ legado inativo (landings antigas em `/rack/*` ficam órfãs, sem link).
   PayPal **sandbox** (ClientId público + Secret em env), volume em `/data`, porta 8080. `/health` ok.
   `create-order` do `carorganizer` retorna id ($29,99). ✅
 - **Landing (Vercel):** `https://rootboost.vercel.app` → raiz redireciona por idioma pra `/car/{en,es,pt}/`.
-  Gerada por `landing/car/build.mjs` (+ `strings.json` trilíngue + `_template.html` parametrizado por produto:
-  {{productKey}}/{{brand}}). API_BASE Railway + PAYPAL_CLIENT_ID sandbox embutidos.
+  Gerada pelo gerador compartilhado `landing/build.mjs` (lê `landing/products.json` + o `strings.json`
+  trilíngue de cada produto + `landing/_template.html` parametrizado). API_BASE Railway + PAYPAL_CLIENT_ID
+  sandbox embutidos. Subir produto novo = 1 entrada no manifesto + pasta `<path>/` (strings + media).
 - **Provado antes (rack):** compra sandbox → captura → pedido em `/orders` (caiu `Failed` "no supplier variant"
   = rede de segurança, pois VID é `TODO`). Mesmo comportamento vale pro `carorganizer` até o VID real entrar.
 
