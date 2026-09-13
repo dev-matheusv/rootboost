@@ -114,6 +114,13 @@ Dockerfile                  [A CRIAR]
 - [x] **Testes de integração** — `RootBoost.Api.IntegrationTests` (pipeline HTTP real + Mock/Test/Logging):
       health, `/webhook/payment` → Fulfilled + `/orders`, idempotência, `/webhook/cj` → Shipped. 16 testes no total.
 - [x] **Padrão de linguagem** aplicado nas landings: copy sem hífen e sem travessão (regra no `~/.claude/CLAUDE.md`).
+- [x] **Conversão por produto** — beacon `POST /track/view` (sem PII) na landing → contador diário
+      SQLite (`IVisitStore`/`EfVisitStore`); `ProductPerformanceReport` cruza visitas × pedidos ×
+      catálogo → `GET /admin/products/performance` (views, orders, conversão, receita/visitante,
+      fulfillable, enoughData, rankeado). É o "qual converte mais". 7 testes. Ver `docs/ADICIONAR-PRODUTO.md`.
+- [x] **Gerador multi-produto** — `landing/build.mjs` compartilhado lê `landing/products.json` +
+      `catalog.json` + `landing/_template.html`. Subir produto = 1 entrada no manifesto + pasta com
+      strings/media. `landing/_scaffold/strings.example.json` é o modelo de copy.
 - [x] **Automação de tráfego (groundwork)** — Meta CAPI (server + Pixel deduplicado) + cérebro de
       otimização em dry-run (`CampaignOptimizer`/`CreativeSelector`/`TrafficAutopilot`, endpoint
       `/admin/traffic/plan`). Ver §8 e `docs/VISAO-GERAL.md`. Ligar tráfego real ainda depende de você.
