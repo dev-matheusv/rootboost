@@ -10,8 +10,16 @@ public sealed class RootBoostDbContext : DbContext
 
     public DbSet<Order> Orders => Set<Order>();
 
+    /// <summary>Contadores diários de visita de landing (analytics de topo de funil, sem PII).</summary>
+    public DbSet<LandingViewDaily> LandingViews => Set<LandingViewDaily>();
+
     protected override void OnModelCreating(ModelBuilder b)
     {
+        var view = b.Entity<LandingViewDaily>();
+        view.HasKey(x => new { x.ProductKey, x.Lang, x.DateUtc });
+        view.Property(x => x.ProductKey).HasMaxLength(64);
+        view.Property(x => x.Lang).HasMaxLength(8);
+
         var order = b.Entity<Order>();
         order.HasKey(o => o.PaymentId);
         order.Property(o => o.PaymentId).HasMaxLength(128);

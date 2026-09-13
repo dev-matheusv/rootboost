@@ -224,6 +224,15 @@
     metaPixelId: "YOUR_META_PIXEL_ID"   // deixe assim pra manter o Pixel desligado
   };
 
+  // Beacon de visita (sem PII): conta esta landing pro relatório de conversão por produto
+  // (/admin/products/performance). Best effort: falha de rede nunca quebra a página.
+  try {
+    fetch(CONFIG.apiBase + "/track/view", {
+      method: "POST", headers: { "Content-Type": "application/json" }, keepalive: true,
+      body: JSON.stringify({ productKey: CONFIG.productKey, lang: document.documentElement.lang || "" })
+    }).catch(function(){});
+  } catch (e) {}
+
   // Meta Pixel (browser). Só inicializa quando metaPixelId estiver configurado.
   (function initPixel(){
     if (!CONFIG.metaPixelId || CONFIG.metaPixelId.indexOf("YOUR_") === 0) return;

@@ -44,9 +44,36 @@ if (!string.IsNullOrWhiteSpace(landingDir) && Directory.Exists(landingDir))
 
 // Create the SQLite schema on startup. Fine for SQLite MVP; swap to migrations before real scale.
 using (var scope = app.Services.CreateScope())
-    scope.ServiceProvider.GetRequiredService<RootBoostDbContext>().Database.EnsureCreated();
+{
+    var db = scope.ServiceProvider.GetRequiredService<RootBoostDbContext>();
+    db.Database.EnsureCreated();
+    // EnsureCreated só cria o schema num DB novo; num volume já existente (Railway) ele não adiciona
+    // tabelas novas. Este DDL idempotente garante a tabela de analytics no banco que já existe.
+    db.Database.ExecuteSqlRaw(
+        """
+        CREATE TABLE IF NOT EXISTS "LandingViews" (
+            "ProductKey" TEXT NOT NULL,
+            "Lang" TEXT NOT NULL,
+            "DateUtc" TEXT NOT NULL,
+            "Count" INTEGER NOT NULL,
+            CONSTRAINT "PK_LandingViews" PRIMARY KEY ("ProductKey", "Lang", "DateUtc")
+        );
+        """);
+}
 
 app.MapGet("/health", () => Results.Ok("ok"));
+
+// --- Landing view beacon (public): conta 1 visita por produto pra medir conversão. Sem PII. ---
+// A landing dispara isto no load. Só contamos productKeys que existem no catálogo (evita lixo de
+// bot com chave arbitrária). Analytics nunca derruba nada: erro vira log e segue.
+app.MapPost("/track/view", async (TrackViewRequest req, IVisitStore visits, IProductCatalog catalog, ILoggerFactory lf, CancellationToken ct) =>
+{
+    if (string.IsNullOrWhiteSpace(req.ProductKey) || catalog.Find(req.ProductKey) is null)
+        return Results.NoContent();
+    try { await visits.RecordViewAsync(req.ProductKey, req.Lang, ct); }
+    catch (Exception ex) { lf.CreateLogger("TrackView").LogWarning(ex, "view record failed"); }
+    return Results.NoContent();
+});
 
 // --- Orders dashboard (protected by an API key header) -----------------------
 app.MapGet("/orders", async (HttpContext ctx, IOrderRepository repo, IConfiguration cfg, CancellationToken ct) =>
@@ -174,6 +201,23 @@ app.MapGet("/admin/growth/plan", (HttpContext ctx, IProductCatalog catalog, Root
     return Results.Ok(plan);
 });
 
+// --- Product performance (API key): "qual converte mais" cruzando visitas x pedidos pagos. ---
+// ?days=N limita a janela (ex.: ?days=7 = últimos 7 dias). Sem days = tudo.
+app.MapGet("/admin/products/performance", async (HttpContext ctx, ProductPerformanceReport report, IConfiguration cfg, CancellationToken ct) =>
+{
+    var required = cfg["Orders:ApiKey"];
+    if (!string.IsNullOrWhiteSpace(required) &&
+        (!ctx.Request.Headers.TryGetValue("X-Api-Key", out var got) || got != required))
+        return Results.Unauthorized();
+
+    DateTimeOffset? since = null;
+    if (int.TryParse(ctx.Request.Query["days"].FirstOrDefault(), out var d) && d > 0)
+        since = DateTimeOffset.UtcNow.AddDays(-d);
+
+    var result = await report.BuildAsync(since, ct);
+    return Results.Ok(result);
+});
+
 app.Run();
 
 // --- helpers ------------------------------------------------------------------
@@ -214,6 +258,7 @@ record OrderDto(string PaymentId, string ProductKey, int Quantity, string Status
 
 record CreateOrderRequest(string ProductKey, int Quantity);
 record CaptureOrderRequest(string OrderId, string? Fbp = null, string? Fbc = null, string? SourceUrl = null);
+record TrackViewRequest(string ProductKey, string? Lang = null);
 
 // Exposed for integration tests (WebApplicationFactory needs a public entry point type).
 public partial class Program { }

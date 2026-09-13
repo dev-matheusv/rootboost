@@ -64,6 +64,22 @@ public sealed class FakeNotifier : INotifier
     public Task AlertFulfillmentFailedAsync(Order order, CancellationToken ct = default) { Alerts++; return Task.CompletedTask; }
 }
 
+public sealed class FakeVisitStore : IVisitStore
+{
+    public readonly Dictionary<string, long> Counts = new(StringComparer.OrdinalIgnoreCase);
+
+    public FakeVisitStore Seed(string productKey, long views) { Counts[productKey] = views; return this; }
+
+    public Task RecordViewAsync(string productKey, string? lang, CancellationToken ct = default)
+    {
+        Counts[productKey] = Counts.TryGetValue(productKey, out var c) ? c + 1 : 1;
+        return Task.CompletedTask;
+    }
+
+    public Task<IReadOnlyDictionary<string, long>> GetViewCountsAsync(DateTimeOffset? since = null, CancellationToken ct = default)
+        => Task.FromResult<IReadOnlyDictionary<string, long>>(new Dictionary<string, long>(Counts, StringComparer.OrdinalIgnoreCase));
+}
+
 public sealed class FakeConversionTracker : IConversionTracker
 {
     public int Purchases;

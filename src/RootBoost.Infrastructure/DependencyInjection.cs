@@ -30,6 +30,10 @@ public static class DependencyInjection
         services.AddDbContext<RootBoostDbContext>(o => o.UseSqlite(conn));
         services.AddScoped<IOrderRepository, OrderRepository>();
 
+        // Analytics de topo de funil: contador de visitas (denominador da conversão) + relatório.
+        services.AddScoped<IVisitStore, RootBoost.Infrastructure.Analytics.EfVisitStore>();
+        services.AddScoped<ProductPerformanceReport>();
+
         // --- Options ---
         services.Configure<CjOptions>(config.GetSection(CjOptions.Section));
         services.Configure<PayPalOptions>(config.GetSection(PayPalOptions.Section));
