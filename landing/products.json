@@ -6,6 +6,12 @@
       "productKey": "carorganizer",
       "brand": "TidyRide",
       "media": { "hero": "hero.jpg", "lifestyle": "lifestyle.jpg", "gallery": ["g6.png", "g3.jpg", "g2.png"] }
+    },
+    {
+      "path": "kitchen",
+      "productKey": "veggiechopper",
+      "brand": "PrepMate",
+      "media": { "hero": "hero.jpg", "lifestyle": "lifestyle.jpg", "gallery": ["g1.jpg", "g2.jpg", "g3.jpg"] }
     }
   ]
 }

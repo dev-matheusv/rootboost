@@ -9,6 +9,15 @@
       "langs": ["en", "es", "pt"],
       "logisticName": null
     },
+    "veggiechopper": {
+      "_source": "CJ pid 2097537811548315650, sku CJCJ3147523, armazem US (estoque ~460), custo ~US$21, listado por ~15 lojas",
+      "displayName": "PrepMate 15 in 1 Vegetable Chopper",
+      "price": "34.99",
+      "currency": "USD",
+      "supplierVariantId": "2097537811783196673",
+      "langs": ["en", "es", "pt"],
+      "logisticName": null
+    },
     "rack": {
       "displayName": "SpinRack 360 Rotating Spice Rack",
       "price": "34.99",
