@@ -14,6 +14,10 @@ obj/
 appsettings.*.local.json
 secrets.json
 
+# Credencial e token da CJ (ferramenta de descoberta local) — NEVER commit
+tools/cj/creds.json
+tools/cj/.token.json
+
 # OS / editor
 .DS_Store
 Thumbs.db
