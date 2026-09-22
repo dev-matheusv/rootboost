@@ -2,6 +2,7 @@
   "_comment": "Adicionar produto = 1 entrada aqui + 1 pasta de landing. Nada de codigo novo. O 'supplierVariantId' (VID da CJ) so o humano preenche — enquanto for 'TODO_*' o produto nao e faturavel e um pedido pago cai em Failed + alerta.",
   "products": {
     "carorganizer": {
+      "_warning": "CJ pid 1386170811295076352: TODAS as variantes sao SO China Warehouse (CN ~14k-40k, US/EU=0), confirmado via API 2026-09-22. Envio 20-40 dias = risco de disputa (ver CLAUDE.md 7). NAO faturar/escalar assim; achar organizador de banco com armazem US/EU na UI da CJ, ou trocar por outro vencedor local.",
       "displayName": "TidyRide Car Seat-Back Organizer",
       "price": "29.99",
       "currency": "USD",

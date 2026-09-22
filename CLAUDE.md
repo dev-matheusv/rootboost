@@ -150,9 +150,12 @@ legado inativo (landings antigas em `/rack/*` ficam órfãs, sem link).
 **Cutover pra LIVE (vender de verdade) — pendências do usuário:**
 - **PayPal**: conta que receba no CPF (recuperando a PF antiga no suporte — inatividade). Trocar sandbox → LIVE
   (`PayPal__BaseUrl=https://api-m.paypal.com` + ClientId/Secret LIVE; ClientId LIVE também na landing via build.mjs).
-- **CJ**: API Key criada (email `devmatheusoxs@gmail.com`, ID `CJ5814493`). Produto escolhido (car organizer,
-  SKU `CJMT109776403CX`). Falta pegar o **VID da variante US com estoque** → `catalog.json` (`carorganizer.supplierVariantId`).
-  ⚠️ Variante padrão (Bege) estava com estoque US = 0; escolher cor com estoque no cutover.
+- **CJ**: API Key criada (email `devmatheusoxs@gmail.com`, ID `CJ5814493`). Descoberta via API `tools/cj/explore.mjs`.
+  🚨 **CORREÇÃO (2026-09-22): o car organizer (pid 1386170811295076352) é SÓ China Warehouse em TODAS as variantes
+  (US/EU = 0). O "armazém US" do checkpoint antigo estava errado.** Envio 20-40 dias = risco de disputa (§7). Antes de
+  faturar/escalar o `carorganizer`: achar um organizador de banco com armazém US/EU na UI da CJ, ou trocar o slot por
+  outro vencedor local. **Produto #2 `veggiechopper` (cortador 15 em 1) TEM armazém US real (US:460), VID no catálogo,
+  já `fulfillable`** — é hoje o melhor candidato US pronto pra cutover.
   ⚠️ **Só ligar `Supplier=Cj` quando o PayPal for LIVE** — senão um pagamento sandbox (fake) dispararia pedido REAL/pago na CJ.
 - **Mídia** do produto (a página CJ tem 7 vídeos + 28 fotos + botão Download) → colocar em `landing/car/media/`
   e referenciar no `_template.html` + `og-image.jpg`. Hoje são placeholders.
