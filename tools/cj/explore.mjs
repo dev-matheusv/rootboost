@@ -59,6 +59,24 @@ async function cjGet(pathAndQuery) {
   return { status: res.status, json };
 }
 
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+// Codigos de armazem LOCAL (entrega ~1 semana). CN_xx = origem China, nao conta como local.
+const US_LOCAL = new Set(["US"]);
+const EU_LOCAL = new Set(["DE", "FR", "ES", "IT", "CZ", "PL", "NL", "BE", "GB", "UK", "EU"]);
+const regionSet = (r) => (r === "EU" ? EU_LOCAL : US_LOCAL);
+const hasRegion = (codes, set) => Array.isArray(codes) && codes.some(c => set.has(c));
+// menor preco de "a -- b" ou "a"
+const minPrice = (p) => { const n = String(p ?? "").split("--").map(s => parseFloat(s)).filter(x => !isNaN(x)); return n.length ? Math.min(...n) : NaN; };
+
+// Estoque real por armazem de um VID. Retorna [{countryCode, areaEn, qty}].
+async function stockByVid(vid) {
+  const { json } = await cjGet("product/stock/queryByVid?" + new URLSearchParams({ vid }));
+  const data = json?.data ?? [];
+  return Array.isArray(data)
+    ? data.map(d => ({ country: d.countryCode, area: d.areaEn, qty: d.storageNum ?? d.totalInventoryNum ?? 0 }))
+    : [];
+}
+
 function fmtMoney(v) { return v == null ? "?" : v; }
 
 async function search(keyword, country) {
@@ -110,8 +128,57 @@ async function product(idOrSku) {
   console.log(JSON.stringify(d, null, 2).slice(0, 1500));
 }
 
-const [cmd, a, b] = process.argv.slice(2);
+// Caca completa: busca -> filtra por regiao (shippingCountryCodes) -> rankeia por validacao
+// (listedNum) -> confirma estoque local do armazem via stock/queryByVid nos top N.
+async function hunt(keyword, region = "US", deepN = 6, priceCap = 25) {
+  const set = regionSet(region);
+  let list = [];
+  for (const page of ["1", "2"]) {
+    const q = new URLSearchParams({ pageNum: page, pageSize: "90", productNameEn: keyword });
+    const { json } = await cjGet("product/list?" + q.toString());
+    list = list.concat(json?.data?.list ?? json?.data?.content ?? []);
+    await sleep(400);
+  }
+  console.log(`\n[hunt] "${keyword}" regiao=${region} capPreco=$${priceCap} — ${list.length} resultados brutos`);
+
+  const cand = list
+    .filter(p => hasRegion(p.shippingCountryCodes, set))       // armazem local de verdade
+    .filter(p => { const m = minPrice(p.sellPrice); return isNaN(m) || m <= priceCap; })
+    .map(p => ({
+      name: p.productNameEn, pid: p.pid, sku: p.productSku,
+      price: p.sellPrice, listed: Number(p.listedNum || p.listingCount || 0),
+      video: !!p.isVideo, codes: p.shippingCountryCodes, img: p.productImage
+    }))
+    .sort((x, y) => y.listed - x.listed || (y.video - x.video));
+
+  console.log(`[hunt] ${cand.length} com armazem ${region} (por shippingCountryCodes). Top por validacao:\n`);
+  const top = cand.slice(0, deepN);
+  for (const c of top) {
+    // pega 1 variante e confere estoque local real
+    let localQty = "?";
+    try {
+      await sleep(400);
+      const { json: pj } = await cjGet("product/query?" + new URLSearchParams({ pid: c.pid }));
+      const v0 = (pj?.data?.variants ?? pj?.data?.variantList ?? [])[0];
+      if (v0?.vid) {
+        await sleep(400);
+        const wh = await stockByVid(v0.vid);
+        const local = wh.filter(w => set.has(w.country));
+        localQty = local.length ? local.map(w => `${w.country}:${w.qty}`).join(",") : "0(so " + (wh.map(w=>w.country).join("/")||"?") + ")";
+      }
+    } catch { localQty = "erro"; }
+    console.log(`  * ${c.name}`);
+    console.log(`      pid=${c.pid} sku=${c.sku} preco=${c.price} listados=${c.listed} video=${c.video ? "sim" : "nao"}`);
+    console.log(`      envia=${(c.codes||[]).join("/")}  estoque_local=${localQty}`);
+    console.log(`      img=${c.img}`);
+  }
+  console.log(`\n[hunt] estoque_local com numero real (ex US:1234) = armazem local de verdade -> entrega ~1 semana. "0(so CN)" = so China, descartar.`);
+}
+
+const [cmd, a, b, c, d] = process.argv.slice(2);
 if (cmd === "search") await search(a, b);
 else if (cmd === "product") await product(a);
+else if (cmd === "hunt") await hunt(a, (b || "US").toUpperCase(), Number(c) || 6, Number(d) || 25);
+else if (cmd === "stock") { console.log(JSON.stringify(await stockByVid(a), null, 2)); }
 else if (cmd === "raw") { const r = await cjGet(a + (b ? "?" + b : "")); console.log(JSON.stringify(r, null, 2).slice(0, 6000)); }
-else { console.error("uso: search \"palavra\" [US] | product <pid|sku> | raw <path> \"querystring\""); process.exit(1); }
+else { console.error("uso: hunt \"palavra\" [US|EU] [N] | search \"palavra\" [US] | product <pid|sku> | stock <vid> | raw <path> \"qs\""); process.exit(1); }
