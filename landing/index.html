@@ -3,15 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SpinRack</title>
+<title>PrepMate</title>
 <script>
   // Redireciona pro idioma do visitante (pt/es/en), default en.
+  // Aponta pro produto faturavel (kitchen/chopper, estoque US). O /car segue existindo pra
+  // teste organico, mas nao e o destino padrao enquanto for China-only.
   var l = (navigator.language || "en").toLowerCase();
   var lang = l.startsWith("pt") ? "pt" : l.startsWith("es") ? "es" : "en";
-  location.replace("/car/" + lang + "/");
+  location.replace("/kitchen/" + lang + "/");
 </script>
 </head>
 <body>
-  <noscript><a href="/car/en/">Continue to TidyRide</a></noscript>
+  <noscript><a href="/kitchen/en/">Continue to PrepMate</a></noscript>
 </body>
 </html>

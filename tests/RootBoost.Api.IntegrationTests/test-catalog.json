@@ -6,6 +6,13 @@
       "currency": "USD",
       "supplierVariantId": "TEST-VID-RACK",
       "langs": ["en", "es", "pt"]
+    },
+    "softlaunch": {
+      "displayName": "Soft Launch Product (no VID yet)",
+      "price": "24.99",
+      "currency": "USD",
+      "supplierVariantId": "TODO_CJ_VID_SOFTLAUNCH",
+      "langs": ["en"]
     }
   }
 }

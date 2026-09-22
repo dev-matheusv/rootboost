@@ -136,10 +136,18 @@ app.MapPost("/webhook/cj", async (HttpContext ctx, AttachTracking useCase, ILogg
 // Price is resolved from the catalog HERE, not sent by the browser. The landing calls:
 //   createOrder  -> POST /paypal/create-order { productKey, quantity }  -> { id }
 //   onApprove    -> POST /paypal/capture-order { orderId }              -> fulfills
-app.MapPost("/paypal/create-order", async (CreateOrderRequest req, ICheckoutGateway gateway, CancellationToken ct) =>
+app.MapPost("/paypal/create-order", async (CreateOrderRequest req, ICheckoutGateway gateway, IProductCatalog catalog, IConfiguration cfg, CancellationToken ct) =>
 {
     if (string.IsNullOrWhiteSpace(req.ProductKey))
         return Results.BadRequest(new { error = "productKey required" });
+
+    // Segurança de fulfillment: em modo LIVE (Payments:Verifier != Test = pagamento REAL) NÃO deixa
+    // iniciar checkout de produto não faturável (VID da CJ ainda TODO). Assim nunca capturamos dinheiro
+    // de algo que não dá pra enviar (evita disputa). Em modo Test (sandbox) segue liberado pra testar.
+    var isTestMode = string.Equals(cfg["Payments:Verifier"], "Test", StringComparison.OrdinalIgnoreCase);
+    var product = catalog.Find(req.ProductKey);
+    if (!isTestMode && product is { IsFulfillable: false })
+        return Results.BadRequest(new { error = "product not available for purchase yet" });
 
     var result = await gateway.CreateOrderAsync(req.ProductKey, req.Quantity <= 0 ? 1 : req.Quantity, ct);
     return result.Success
