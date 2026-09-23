@@ -12,6 +12,12 @@
       "productKey": "veggiechopper",
       "brand": "PrepMate",
       "media": { "hero": "hero.jpg", "lifestyle": "lifestyle.jpg", "gallery": ["g1.jpg", "g2.jpg", "g3.jpg"] }
+    },
+    {
+      "path": "posture",
+      "productKey": "posture",
+      "brand": "StandTall",
+      "media": { "hero": "hero.jpg", "lifestyle": "lifestyle.jpg", "gallery": ["g1.jpg", "g2.jpg", "g3.jpg"] }
     }
   ]
 }

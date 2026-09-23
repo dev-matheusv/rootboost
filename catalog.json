@@ -19,6 +19,15 @@
       "langs": ["en", "es", "pt"],
       "logisticName": null
     },
+    "posture": {
+      "_source": "CJ pid 2042518466303262722, armazem US real (2 variantes US:208/207), custo ~US$10.90, listado por ~80 lojas. VID abaixo = variante com US:208.",
+      "displayName": "StandTall Posture Support Brace",
+      "price": "29.99",
+      "currency": "USD",
+      "supplierVariantId": "2042518466613641218",
+      "langs": ["en", "es", "pt"],
+      "logisticName": null
+    },
     "rack": {
       "displayName": "SpinRack 360 Rotating Spice Rack",
       "price": "34.99",
