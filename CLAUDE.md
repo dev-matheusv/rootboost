@@ -156,6 +156,14 @@ legado inativo (landings antigas em `/rack/*` ficam órfãs, sem link).
   faturar/escalar o `carorganizer`: achar um organizador de banco com armazém US/EU na UI da CJ, ou trocar o slot por
   outro vencedor local. **Produto #2 `veggiechopper` (cortador 15 em 1) TEM armazém US real (US:460), VID no catálogo,
   já `fulfillable`** — é hoje o melhor candidato US pronto pra cutover.
+
+**PRATELEIRA ATUAL (2026-09-23):** 3 produtos, cada um em `/car`, `/kitchen`, `/posture`:
+- `carorganizer` (/car, TidyRide): **China-only, NÃO faturável** — trava de checkout ativa em LIVE, só views orgânicas.
+- `veggiechopper` (/kitchen, PrepMate, $34.99): US:460, **fulfillable** ✅ (lead atual; raiz redireciona pra cá).
+- `posture` (/posture, StandTall, $29.99): US:208/207 em 2 variantes, **fulfillable** ✅. Copy sem alegação médica.
+Reviews de kitchen/posture são PLACEHOLDER até o dono ter avaliações reais. PayPal Business (vinculada ao CNPJ do MEI)
+em análise de identidade (2-4 dias úteis) → cutover LIVE quando aprovar. Sourcing: nicho carro US/EU é escasso; cozinha é dominada por
+cortadores; postura e cortador são os vencedores US-em-estoque confirmados. Ferramenta: `tools/cj/explore.mjs`.
   ⚠️ **Só ligar `Supplier=Cj` quando o PayPal for LIVE** — senão um pagamento sandbox (fake) dispararia pedido REAL/pago na CJ.
 - **Mídia** do produto (a página CJ tem 7 vídeos + 28 fotos + botão Download) → colocar em `landing/car/media/`
   e referenciar no `_template.html` + `og-image.jpg`. Hoje são placeholders.
