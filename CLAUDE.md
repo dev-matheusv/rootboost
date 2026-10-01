@@ -165,7 +165,29 @@ Reviews de kitchen/posture são PLACEHOLDER até o dono ter avaliações reais. 
 em análise de identidade (2-4 dias úteis) → cutover LIVE quando aprovar. Sourcing: nicho carro US/EU é escasso; cozinha é dominada por
 cortadores; postura e cortador são os vencedores US-em-estoque confirmados. Ferramenta: `tools/cj/explore.mjs`.
 
-### 🟢 LIVE DESDE 2026-09-30 — a loja vende de verdade
+### 🔴 BLOQUEADOR DE PAGAMENTO (2026-10-01) — a loja NÃO consegue cobrar em USD
+
+**Leia isto antes de qualquer coisa sobre vendas.** O cutover técnico foi feito, mas descobrimos
+que **conta PayPal brasileira não recebe USD via PayPal Checkout**. Status real: **não vendemos ainda.**
+
+- Sintoma: ao confirmar o pagamento, o PayPal redireciona pra `checkoutweb/genericError` com
+  `code` que em base64 é **`UNSUPPORTED_PAYEE_CURRENCY`** (payee = nossa conta, não o comprador).
+- Causa (confirmada nos artigos oficiais HELP116 e HELP667): conta BR **não mantém outras moedas** e
+  só aceita moeda estrangeira **manualmente, depois que o dinheiro chega**. O Checkout autoriza e
+  captura de forma síncrona, então recusa antes.
+- Evidência na conta: "Currencies" só tem BRL sem opção de adicionar; o setting "Allow payments sent
+  to me in a currency I do not hold" mostra "Salvo!" mas **não persiste** ao recarregar (não se aplica a BR).
+- ❗NÃO é bug nosso. O backend cria o pedido LIVE corretamente e a tela de pagamento abre com o valor certo.
+
+**Opções (decidir com o dono):** (A) **US LLC + Stripe** — caminho correto pra USD, já previsto atrás de
+feature flag (§2/§7); (B) precificar em **BRL** — funciona tecnicamente mas mata a conversão com público
+US e invalida o armazém US da CJ; (C) insistir no suporte PayPal por 1-2 dias.
+
+⚠️ **Não investir tempo/dinheiro em tráfego enquanto isso não resolver** — não adianta visita numa loja
+que não consegue cobrar. Todo o resto (loja, catálogo, 2 produtos com estoque US, automação, analytics)
+está pronto e provado.
+
+### 🟡 Cutover técnico feito em 2026-09-30 (mas ver bloqueador acima)
 
 Cutover feito. **PayPal Business (CNPJ do MEI) aprovado e em LIVE** + `Supplier=Cj`. Verificado em produção:
 - `PayPal__BaseUrl=https://api-m.paypal.com`, ClientId/Secret/WebhookId **Live** no Railway; Client ID Live
