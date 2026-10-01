@@ -27,7 +27,7 @@ public sealed class PayPalCheckoutGateway : ICheckoutGateway
 
     public string Provider => "paypal";
 
-    public async Task<CreateCheckoutResult> CreateOrderAsync(string productKey, int quantity, CancellationToken ct = default)
+    public async Task<CreateCheckoutResult> CreateOrderAsync(string productKey, int quantity, string? lang = null, CancellationToken ct = default)
     {
         if (quantity <= 0) quantity = 1;
 

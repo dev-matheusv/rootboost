@@ -27,3 +27,6 @@ landing/rack/_local/
 
 # video pesado da landing (comprimir antes de commitar)
 landing/car/media/*.mp4
+
+# Chaves Stripe (local) — NEVER commit
+tools/stripe/.secret

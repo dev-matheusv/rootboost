@@ -12,7 +12,7 @@ public interface ICheckoutGateway
     string Provider { get; }
 
     /// <summary>Create a provider order priced from the catalog. Returns the provider order id.</summary>
-    Task<CreateCheckoutResult> CreateOrderAsync(string productKey, int quantity, CancellationToken ct = default);
+    Task<CreateCheckoutResult> CreateOrderAsync(string productKey, int quantity, string? lang = null, CancellationToken ct = default);
 
     /// <summary>
     /// Capture an approved provider order and normalize it to a PaymentEvent (paymentId, shipping,

@@ -105,11 +105,45 @@ app.MapPost("/webhook/payment", async (HttpContext ctx, IPaymentVerifier verifie
     return Results.Ok(new { outcome = result.Outcome.ToString(), paymentId = pay.PaymentId, error = result.Error });
 });
 
-// --- Stripe webhook (behind a feature flag until there's an LLC + Stripe) ------
-app.MapPost("/webhook/stripe", (IConfiguration cfg) =>
-    string.Equals(cfg["Features:Stripe"], "true", StringComparison.OrdinalIgnoreCase)
-        ? Results.Problem("Stripe handler not implemented yet.", statusCode: 501)
-        : Results.NotFound());
+// --- Stripe webhook: checkout.session.completed -> pedido no fornecedor ---------
+// Mesma rede de seguranca do /webhook/payment: assinatura verificada antes de confiar,
+// idempotencia por PaymentId no caso de uso, e sempre 200 pro Stripe parar de reenviar.
+app.MapPost("/webhook/stripe", async (HttpContext ctx, RootBoost.Infrastructure.Payments.StripeWebhookVerifier verifier,
+                                      PlaceOrderOnPayment useCase, ILoggerFactory lf, CancellationToken ct) =>
+{
+    var log = lf.CreateLogger("StripeWebhook");
+    var raw = await ReadBodyAsync(ctx);
+    var headers = HeaderMap(ctx);
+
+    PaymentEvent? pay;
+    try { pay = await verifier.VerifyAndParseAsync(raw, headers, ct); }
+    catch (Exception ex) { log.LogError(ex, "Stripe verifier threw."); return Results.Ok(); }
+
+    if (pay is null) return Results.Ok(); // assinatura invalida ou evento irrelevante
+
+    var result = await useCase.HandleAsync(pay, ct: ct);
+    return Results.Ok(new { outcome = result.Outcome.ToString(), paymentId = pay.PaymentId, error = result.Error });
+});
+
+// --- Checkout hospedado (Stripe): cria a sessao e devolve a URL pra redirecionar ----
+// O preco vem do catalogo no servidor (invariante 3). A mesma trava de fulfillment do
+// PayPal vale aqui: em LIVE nao deixamos cobrar produto sem VID.
+app.MapPost("/checkout/session", async (CreateOrderRequest req, ICheckoutGateway gateway,
+                                        IProductCatalog catalog, IConfiguration cfg, CancellationToken ct) =>
+{
+    if (string.IsNullOrWhiteSpace(req.ProductKey))
+        return Results.BadRequest(new { error = "productKey required" });
+
+    var isTestMode = string.Equals(cfg["Payments:Verifier"], "Test", StringComparison.OrdinalIgnoreCase);
+    var product = catalog.Find(req.ProductKey);
+    if (!isTestMode && product is { IsFulfillable: false })
+        return Results.BadRequest(new { error = "product not available for purchase yet" });
+
+    var result = await gateway.CreateOrderAsync(req.ProductKey, req.Quantity <= 0 ? 1 : req.Quantity, req.Lang, ct);
+    if (!result.Success) return Results.BadRequest(new { error = result.Error });
+
+    return Results.Ok(new { id = result.ProviderOrderId, url = result.RedirectUrl });
+});
 
 // --- CJ tracking webhook ------------------------------------------------------
 // TODO: confirm the exact CJ webhook payload (field names for order id + tracking number) in the
@@ -149,7 +183,7 @@ app.MapPost("/paypal/create-order", async (CreateOrderRequest req, ICheckoutGate
     if (!isTestMode && product is { IsFulfillable: false })
         return Results.BadRequest(new { error = "product not available for purchase yet" });
 
-    var result = await gateway.CreateOrderAsync(req.ProductKey, req.Quantity <= 0 ? 1 : req.Quantity, ct);
+    var result = await gateway.CreateOrderAsync(req.ProductKey, req.Quantity <= 0 ? 1 : req.Quantity, req.Lang, ct);
     return result.Success
         ? Results.Ok(new { id = result.ProviderOrderId })
         : Results.BadRequest(new { error = result.Error });
@@ -264,7 +298,7 @@ record OrderDto(string PaymentId, string ProductKey, int Quantity, string Status
         o.ShipTo.Name, o.ShipTo.CountryCode, o.CreatedAt, o.FailureReason);
 }
 
-record CreateOrderRequest(string ProductKey, int Quantity);
+record CreateOrderRequest(string ProductKey, int Quantity, string? Lang = null);
 record CaptureOrderRequest(string OrderId, string? Fbp = null, string? Fbc = null, string? SourceUrl = null);
 record TrackViewRequest(string ProductKey, string? Lang = null);
 

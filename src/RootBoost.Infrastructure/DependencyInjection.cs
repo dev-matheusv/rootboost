@@ -68,7 +68,25 @@ public static class DependencyInjection
 
         // --- Payment verification + server-side checkout ---
         services.AddSingleton<PayPalClient>();
-        services.AddSingleton<ICheckoutGateway, PayPalCheckoutGateway>();
+
+        // Stripe: conta BR consegue COBRAR em USD e liquidar em BRL (o PayPal BR nao consegue,
+        // recusa com UNSUPPORTED_PAYEE_CURRENCY). Por isso Stripe e o provedor alvo.
+        services.Configure<StripeOptions>(config.GetSection(StripeOptions.Section));
+        services.AddHttpClient("stripe", c =>
+        {
+            c.BaseAddress = new Uri("https://api.stripe.com/");
+            var key = config[$"{StripeOptions.Section}:SecretKey"];
+            if (!string.IsNullOrWhiteSpace(key))
+                c.DefaultRequestHeaders.Authorization =
+                    new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", key);
+        }).AddStandardResilienceHandler();
+
+        // Provedor de checkout: Stripe (hosted) ou PayPal. Default PayPal pra nao mudar
+        // comportamento de quem ja esta rodando sem setar nada.
+        if (string.Equals(config["Payments:Provider"], "Stripe", StringComparison.OrdinalIgnoreCase))
+            services.AddSingleton<ICheckoutGateway, StripeCheckoutGateway>();
+        else
+            services.AddSingleton<ICheckoutGateway, PayPalCheckoutGateway>();
 
         // --- Conversion tracking (Meta CAPI). Null por padrão; "Meta" liga quando configurado. ---
         services.Configure<MetaOptions>(config.GetSection(MetaOptions.Section));
@@ -92,9 +110,13 @@ public static class DependencyInjection
         services.AddSingleton<ICampaignActuator, LoggingCampaignActuator>();
         services.AddScoped<TrafficAutopilot>();
         services.AddSingleton<PayPalWebhookVerifier>();
+        services.AddSingleton<StripeWebhookVerifier>();
         services.AddSingleton<TestPaymentVerifier>();
-        if (string.Equals(config["Payments:Verifier"], "Test", StringComparison.OrdinalIgnoreCase))
+        var verifier = config["Payments:Verifier"];
+        if (string.Equals(verifier, "Test", StringComparison.OrdinalIgnoreCase))
             services.AddSingleton<IPaymentVerifier>(sp => sp.GetRequiredService<TestPaymentVerifier>());
+        else if (string.Equals(verifier, "Stripe", StringComparison.OrdinalIgnoreCase))
+            services.AddSingleton<IPaymentVerifier>(sp => sp.GetRequiredService<StripeWebhookVerifier>());
         else
             services.AddSingleton<IPaymentVerifier>(sp => sp.GetRequiredService<PayPalWebhookVerifier>());
 

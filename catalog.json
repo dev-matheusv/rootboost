@@ -7,8 +7,13 @@
       "price": "29.99",
       "currency": "USD",
       "supplierVariantId": "TODO_CJ_VID_CARORGANIZER",
-      "langs": ["en", "es", "pt"],
-      "logisticName": null
+      "langs": [
+        "en",
+        "es",
+        "pt"
+      ],
+      "logisticName": null,
+      "landingPath": "car"
     },
     "veggiechopper": {
       "_source": "CJ pid 2097537811548315650, sku CJCJ3147523, armazem US (estoque ~460), custo ~US$21, listado por ~15 lojas",
@@ -16,8 +21,13 @@
       "price": "34.99",
       "currency": "USD",
       "supplierVariantId": "2097537811783196673",
-      "langs": ["en", "es", "pt"],
-      "logisticName": null
+      "langs": [
+        "en",
+        "es",
+        "pt"
+      ],
+      "logisticName": null,
+      "landingPath": "kitchen"
     },
     "posture": {
       "_source": "CJ pid 2042518466303262722, armazem US real (2 variantes US:208/207), custo ~US$10.90, listado por ~80 lojas. VID abaixo = variante com US:208.",
@@ -25,24 +35,38 @@
       "price": "29.99",
       "currency": "USD",
       "supplierVariantId": "2042518466613641218",
-      "langs": ["en", "es", "pt"],
-      "logisticName": null
+      "langs": [
+        "en",
+        "es",
+        "pt"
+      ],
+      "logisticName": null,
+      "landingPath": "posture"
     },
     "rack": {
       "displayName": "SpinRack 360 Rotating Spice Rack",
       "price": "34.99",
       "currency": "USD",
       "supplierVariantId": "TODO_CJ_VID_RACK",
-      "langs": ["en", "es", "pt"],
-      "logisticName": null
+      "langs": [
+        "en",
+        "es",
+        "pt"
+      ],
+      "logisticName": null,
+      "landingPath": "rack"
     },
     "snackspin": {
       "displayName": "SnackSpin 360 Rotating Snack Tray",
       "price": "29.99",
       "currency": "USD",
       "supplierVariantId": "TODO_CJ_VID_SNACKSPIN",
-      "langs": ["en", "es"],
-      "logisticName": null
+      "langs": [
+        "en",
+        "es"
+      ],
+      "logisticName": null,
+      "landingPath": "snackspin"
     }
   }
 }
