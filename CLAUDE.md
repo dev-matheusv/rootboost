@@ -165,10 +165,25 @@ Reviews de kitchen/posture são PLACEHOLDER até o dono ter avaliações reais. 
 em análise de identidade (2-4 dias úteis) → cutover LIVE quando aprovar. Sourcing: nicho carro US/EU é escasso; cozinha é dominada por
 cortadores; postura e cortador são os vencedores US-em-estoque confirmados. Ferramenta: `tools/cj/explore.mjs`.
 
-### 🔴 BLOQUEADOR DE PAGAMENTO (2026-10-01) — a loja NÃO consegue cobrar em USD
+### ✅ TRILHO DE PAGAMENTO RESOLVIDO (2026-10-01) — Stripe no lugar do PayPal
 
-**Leia isto antes de qualquer coisa sobre vendas.** O cutover técnico foi feito, mas descobrimos
-que **conta PayPal brasileira não recebe USD via PayPal Checkout**. Status real: **não vendemos ainda.**
+**Provado ponta a ponta em modo teste:** landing → `POST /checkout/session` → Stripe Checkout
+hospedado → pagamento em **USD** → webhook assinado → `PlaceOrderOnPayment` → `PlacedAtSupplier`.
+Pedido real de validação: `pi_3ULpH3RGPJFZdpyC04LhivOg`, posture, USD 29.99, endereço US completo.
+
+- **Conta Stripe brasileira COBRA em USD e liquida em BRL** (`country=BR`, `default_currency=brl`,
+  PaymentIntent em usd aceito). É a diferença estrutural pro PayPal, que recusava de cara.
+- Provedor por config: `Payments__Provider=Stripe` + `Payments__Verifier=Stripe`. PayPal segue no
+  código como fallback, **desligado**.
+- ⚠️ **Pegadinha que nos custou um ciclo:** chave e webhook precisam ser da **mesma conta Stripe e
+  do mesmo modo**. Tínhamos a chave de uma sandbox antiga e o webhook na conta RootsTech, então o
+  evento nunca chegava (webhook com "0 entregas"). Usar SÓ a conta RootsTech (a do CNPJ).
+- Falta pra vender de verdade: ativar a conta live (`charges_enabled`), criar o webhook em modo
+  **live** (secret próprio), trocar pra `sk_live_`, e aí sim `Supplier=Cj`.
+
+#### Histórico: por que saímos do PayPal
+
+**Conta PayPal brasileira NÃO recebe USD via PayPal Checkout.**
 
 - Sintoma: ao confirmar o pagamento, o PayPal redireciona pra `checkoutweb/genericError` com
   `code` que em base64 é **`UNSUPPORTED_PAYEE_CURRENCY`** (payee = nossa conta, não o comprador).
