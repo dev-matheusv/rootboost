@@ -94,7 +94,6 @@
   details p{color:var(--muted); margin-top:10px}
   #buy{scroll-margin-top:20px}
   .buybox{max-width:460px; margin:0 auto; background:#fff; border:1px solid var(--line); border-radius:18px; padding:26px; text-align:center}
-  #paypal-button-container{margin-top:18px; min-height:50px}
   .thanks{display:none; background:var(--sand); border-radius:12px; padding:20px; margin-top:16px; color:var(--herb); font-weight:600}
   .err{display:none; color:#a3341f; margin-top:12px; font-size:.9rem}
   .sticky{position:fixed; left:0; right:0; bottom:0; background:#fff; border-top:1px solid var(--line); padding:12px 16px; display:none; align-items:center; justify-content:space-between; gap:12px; z-index:50}
@@ -204,7 +203,7 @@
         <span class="price">$29.99</span>
         <span class="was">$59.99</span>
       </div>
-      <div id="paypal-button-container"></div>
+      <button class="btn" id="buy-btn" style="width:100%; margin-top:18px">Quiero el mío</button>
       <div class="thanks" id="thanks">¡Pedido recibido, gracias! Recibirás el seguimiento por correo en breve.</div>
       <div class="err" id="err">Algo salió mal con el pago. Inténtalo de nuevo.</div>
       <p class="reassure">Pago seguro · Garantía de 30 días</p>
@@ -256,50 +255,44 @@
     fbq('track', 'PageView');
   })();
 
-  // Lê cookie (ex.: _fbp/_fbc do Pixel) pra enviar ao servidor e melhorar o match no CAPI.
-  function getCookie(name){
-    const m = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
-    return m ? decodeURIComponent(m[1]) : null;
-  }
+  // Checkout hospedado no Stripe. O SERVIDOR cria a sessão com o preço vindo do catálogo e
+  // devolve a URL; aqui a gente só redireciona. Nenhuma chave do Stripe e nenhum dado de
+  // cartão passam por esta página, por isso não existe SDK de pagamento aqui.
+  // TODO (match do CAPI): passar _fbp/_fbc na criação da sessão pra guardar em metadata e
+  // enriquecer o Purchase server side quando o Pixel for ligado.
+  function startCheckout(){
+    var btn = document.getElementById("buy-btn");
+    var err = document.getElementById("err");
+    var label = btn.textContent;
+    err.style.display = "none";
+    btn.disabled = true;
 
-  // Purchase no navegador, deduplicado com o server (CAPI) pelo mesmo eventID = PaymentId.
-  function firePurchase(paymentId){
-    if (window.fbq && CONFIG.metaPixelId && CONFIG.metaPixelId.indexOf("YOUR_") !== 0) {
-      fbq('track', 'Purchase',
-        { value: Number(CONFIG.value), currency: CONFIG.currency, content_ids: [CONFIG.productKey], content_type: 'product' },
-        { eventID: paymentId });
-    }
+    fetch(CONFIG.apiBase + "/checkout/session", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        productKey: CONFIG.productKey,
+        quantity: 1,
+        lang: document.documentElement.lang || ""
+      })
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if (d && d.url) { location.href = d.url; return; }
+      throw new Error((d && d.error) || "no checkout url");
+    })
+    .catch(function(){
+      err.style.display = "block";
+      btn.disabled = false;
+      btn.textContent = label;
+    });
   }
+  document.getElementById("buy-btn").addEventListener("click", startCheckout);
 
-  function initPayPal(){
-    if (!window.paypal) {
-      document.getElementById("paypal-button-container").innerHTML =
-        "<p style='color:var(--muted)'>Add your PayPal client ID to enable checkout.</p>";
-      return;
-    }
-    paypal.Buttons({
-      style:{ layout:"vertical", color:"gold", shape:"rect", label:"pay" },
-      createOrder: () => fetch(CONFIG.apiBase + "/paypal/create-order", {
-        method:"POST", headers:{ "Content-Type":"application/json" },
-        body: JSON.stringify({ productKey: CONFIG.productKey, quantity: 1 })
-      }).then(r => r.json()).then(d => { if (!d.id) throw new Error(d.error || "no order id"); return d.id; }),
-      onApprove: (data) => fetch(CONFIG.apiBase + "/paypal/capture-order", {
-        method:"POST", headers:{ "Content-Type":"application/json" },
-        body: JSON.stringify({ orderId: data.orderID, fbp: getCookie('_fbp'), fbc: getCookie('_fbc'), sourceUrl: location.href })
-      }).then(r => r.json().catch(() => ({}))).then((d) => {
-        if (d && d.outcome) {
-          firePurchase((d && d.paymentId) ? d.paymentId : data.orderID);
-          document.getElementById("thanks").style.display = "block";
-          document.getElementById("paypal-button-container").style.display = "none";
-        } else {
-          document.getElementById("err").style.display = "block";
-        }
-      }).catch(() => { document.getElementById("err").style.display = "block"; }),
-      onError: () => { document.getElementById("err").style.display = "block"; }
-    }).render("#paypal-button-container");
+  // Volta do Stripe depois de pagar: o success_url traz ?paid=1.
+  if (location.search.indexOf("paid=1") !== -1) {
+    document.getElementById("thanks").style.display = "block";
+    document.getElementById("buy-btn").style.display = "none";
   }
 </script>
-<!-- PayPal SDK: client-id e currency vêm do build.mjs -->
-<script src="https://www.paypal.com/sdk/js?client-id=BAASvbW7GjTro5BAGKyd7czGqugmOHBKuYcYFLgsYNzMUu1YJvfO7jEALImt-HcjSjHkh1x7pvzfX38ldk&currency=USD" onload="initPayPal()"></script>
 </body>
 </html>

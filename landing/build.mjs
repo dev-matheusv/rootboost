@@ -14,9 +14,6 @@ const root = path.join(dir, "..");
 // --- Config de publicacao (compartilhada por todas as landings) ---
 const BASE_URL = "https://rootboost.vercel.app";
 const API_BASE = "https://rootboost-production.up.railway.app";
-// Client ID PayPal (publico). LIVE desde o cutover de 2026-09-30 (conta Business do CNPJ).
-// O Secret e o WebhookId NAO vem aqui: so em env var no Railway.
-const PAYPAL_CLIENT_ID = "BAASvbW7GjTro5BAGKyd7czGqugmOHBKuYcYFLgsYNzMUu1YJvfO7jEALImt-HcjSjHkh1x7pvzfX38ldk";
 // Pixel do Meta (browser). Deixe assim = desligado. No cutover, troque pelo Pixel ID real.
 const META_PIXEL_ID = "YOUR_META_PIXEL_ID";
 
@@ -56,7 +53,7 @@ for (const entry of entries) {
     const vars = {
       ...s, lang, canonical: canonical(lang), alternates: alternates(), ogImage,
       priceNum: String(cat.price), currencyCode: cat.currency,
-      apiBase: API_BASE, paypalClientId: PAYPAL_CLIENT_ID, metaPixelId: META_PIXEL_ID,
+      apiBase: API_BASE, metaPixelId: META_PIXEL_ID,
       productKey, brand,
       heroSrc, lifestyleSrc,
       g1src: `${mediaBase}/${gallery[0]}`, g2src: `${mediaBase}/${gallery[1]}`, g3src: `${mediaBase}/${gallery[2]}`
