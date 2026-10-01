@@ -164,6 +164,21 @@ legado inativo (landings antigas em `/rack/*` ficam órfãs, sem link).
 Reviews de kitchen/posture são PLACEHOLDER até o dono ter avaliações reais. PayPal Business (vinculada ao CNPJ do MEI)
 em análise de identidade (2-4 dias úteis) → cutover LIVE quando aprovar. Sourcing: nicho carro US/EU é escasso; cozinha é dominada por
 cortadores; postura e cortador são os vencedores US-em-estoque confirmados. Ferramenta: `tools/cj/explore.mjs`.
+
+### 🟢 LIVE DESDE 2026-09-30 — a loja vende de verdade
+
+Cutover feito. **PayPal Business (CNPJ do MEI) aprovado e em LIVE** + `Supplier=Cj`. Verificado em produção:
+- `PayPal__BaseUrl=https://api-m.paypal.com`, ClientId/Secret/WebhookId **Live** no Railway; Client ID Live
+  embutido nas 9 landings via `landing/build.mjs`. Webhook Live → `/webhook/payment` (`PAYMENT.CAPTURE.COMPLETED`).
+- `create-order` do `veggiechopper` retorna **id real do PayPal Live** ✅.
+- **Trava de fulfillment ativa**: `create-order` de produto com VID `TODO` (ex.: `carorganizer`, `rack`) é recusado
+  com "product not available for purchase yet" — nunca capturamos dinheiro do que não dá pra enviar.
+- **`Orders__ApiKey` setada**: `/orders` e todos os `/admin/*` dão **401** sem a chave (protege PII do cliente).
+  `/health` e `/track/view` seguem públicos de propósito.
+
+⚠️ **A partir daqui toda compra é dinheiro real e dispara pedido REAL/pago na CJ.** Manter a carteira da CJ com
+saldo. Rollback de emergência (volta pro modo seguro na hora): `Supplier=Mock`, `Payments__Verifier=Test`,
+`PayPal__BaseUrl=https://api-m.sandbox.paypal.com`.
   ⚠️ **Só ligar `Supplier=Cj` quando o PayPal for LIVE** — senão um pagamento sandbox (fake) dispararia pedido REAL/pago na CJ.
 - **Mídia** do produto (a página CJ tem 7 vídeos + 28 fotos + botão Download) → colocar em `landing/car/media/`
   e referenciar no `_template.html` + `og-image.jpg`. Hoje são placeholders.
