@@ -145,6 +145,18 @@
       "Toddler approved"
     ],
     "end_caption": "My First Big Coloring Book",
-    "cta": "LINK IN BIO"
+    "cta": "LINK IN BIO",
+    "showcase": [
+      1,
+      3,
+      8,
+      11,
+      19,
+      12,
+      20,
+      24,
+      31,
+      38
+    ]
   }
 }

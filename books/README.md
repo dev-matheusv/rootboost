@@ -24,6 +24,17 @@ python books/pipeline/bookgen.py generate christmas --only 7,12 # refaz páginas
 Dependências: `pip install pillow numpy reportlab pymupdf` e o CLI `higgsfield` logado.
 `generate` é idempotente (pula o que já existe), então pode rodar de novo sem gastar à toa.
 
+Outros scripts (todos em `books/pipeline/`):
+
+| Script | O que faz | Crédito IA |
+|---|---|---|
+| `mazes.py <slug>` | 80 labirintos fácil→difícil + solucionário | zero |
+| `tracing.py <slug>` | caligrafia: aquecimento, A a Z, 0 a 10 (pontilhado no eixo da letra) | zero |
+| `marketing.py all <slug>` | A+ Content, pins, Shorts (página sendo colorida / labirinto resolvido), agenda de posts | ~0,25 por página de vitrine |
+| `site.py` | `landing/coloring/`: 3 páginas grátis por livro + botão Amazon | zero |
+
+Passo a passo de publicação e divulgação: [PUBLICAR.md](PUBLICAR.md).
+
 ## Catálogo inicial (por que esses)
 
 | slug | Livro | Por quê |
@@ -32,6 +43,8 @@ Dependências: `pip install pillow numpy reportlab pymupdf` e o CLI `higgsfield`
 | `axolotl` | Axolotl Coloring Book, 4 a 8 | Tema em alta entre crianças; concorrência menor que dinossauro. |
 | `dinosaur` | Dinosaur Coloring Book, 4 a 8 | Perene, demanda muito alta (e concorrência alta). |
 | `toddler` | My First Big Coloring Book, 1 a 3 | Faixa de 1 a 3 anos é pouco atendida; páginas super simples. |
+| `mazes` | Mazes for Kids, 4 a 8 | Atividade com concorrência menor que colorir; 100% código. |
+| `tracing` | Letter Tracing for Preschoolers, 3 a 5 | Pais e professores compram o ano todo; 100% código. |
 
 Padrão de todos: 8.5 x 11 in, 40 desenhos, página única (verso em branco, marcador não vaza),
 selo de idade na capa (aumenta conversão), preço US$ 8,99. Sem personagens licenciados
