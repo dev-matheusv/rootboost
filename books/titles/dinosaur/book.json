@@ -1,0 +1,131 @@
+{
+  "slug": "dinosaur",
+  "title": "Dinosaur Coloring Book for Kids Ages 4 to 8",
+  "subtitle": "40 Big and Easy Dino Pages with T Rex, Triceratops, Stegosaurus and More. A Fun Gift for Boys and Girls",
+  "author": "Crayon Cove Press",
+  "generation": {
+    "pages": {
+      "model": "gpt_image_2_5",
+      "params": {
+        "aspect_ratio": "3:4",
+        "resolution": "2k",
+        "quality": "medium"
+      }
+    },
+    "cover": {
+      "model": "gpt_image_2_5",
+      "params": {
+        "aspect_ratio": "3:4",
+        "resolution": "2k",
+        "quality": "high"
+      }
+    }
+  },
+  "style": {
+    "prefix": "Coloring book page for children ages 4 to 8. Subject:",
+    "suffix": "Black and white line art only. Thick clean bold black outlines with uniform line weight, pure white background, no shading, no gray tones, no hatching, no solid black fills except small eyes, large simple closed shapes that are easy to color inside, cute friendly cartoon style with happy faces, correct simple anatomy, one clear scene centered on the page with some empty space around it, no text, no letters, no border, no frame.",
+    "threshold": 150
+  },
+  "layout": {
+    "trim": [
+      8.5,
+      11
+    ],
+    "margin": 0.5,
+    "single_sided": true
+  },
+  "interior": {
+    "belongs_to": "This Book Belongs To",
+    "color_test": "Test Your Colors",
+    "copyright": [
+      "Copyright © 2026 Crayon Cove Press. All rights reserved.",
+      "No part of this book may be reproduced without written permission from the publisher.",
+      "Illustrations created with the help of AI tools and reviewed by hand."
+    ]
+  },
+  "cover": {
+    "art_prompt": "Children's coloring book front cover illustration, full vibrant color. A friendly smiling green T rex, a cute orange triceratops and a baby blue stegosaurus together in a sunny prehistoric jungle with a volcano and palm trees. Bold clean outlines, bright saturated colors, cute friendly cartoon style for kids. Keep the top third simple with no important details because a title will be placed there. No text, no letters, no logo.",
+    "front_title": [
+      "DINOSAUR",
+      "COLORING BOOK"
+    ],
+    "front_tagline": "40 big and easy dino pages",
+    "age_badge": [
+      "AGES",
+      "4 TO 8"
+    ],
+    "spine": "Dinosaur Coloring Book",
+    "bg": "#2E7D32",
+    "accent": "#EF6C00",
+    "back_headline": "Roar into a world of colorful dinosaurs!",
+    "back_bullets": [
+      "40 original dinosaur designs: T rex, triceratops, stegosaurus, pterodactyl and more",
+      "Big, bold, simple lines that little hands can color",
+      "Single sided pages so markers never ruin the next picture",
+      "Large 8.5 x 11 inch pages, a perfect birthday gift"
+    ]
+  },
+  "listing": {
+    "language": "English",
+    "age_min": 4,
+    "age_max": 8,
+    "price_usd": "8.99",
+    "keywords": [
+      "dinosaur coloring book for kids ages 4 to 8",
+      "dinosaur gifts for boys",
+      "t rex coloring book",
+      "dinosaur activity book for kids",
+      "jurassic coloring pages for kids",
+      "coloring books for boys ages 4 to 8",
+      "easy dinosaur coloring book"
+    ],
+    "categories": [
+      "Children's Books > Activities, Crafts & Games > Activity Books > Coloring",
+      "Children's Books > Animals > Dinosaurs",
+      "Children's Books > Arts, Music & Photography > Art > Drawing"
+    ],
+    "description_html": "<p><b>40 friendly dinosaurs are ready for your colors!</b></p><p>Kids ages 4 to 8 can color a mighty T rex, a happy triceratops, a long neck brachiosaurus, flying pterodactyls, baby dinos hatching from eggs and lots of prehistoric adventures. Every page has big, bold lines and simple shapes that are easy to color.</p><ul><li><b>40 unique dinosaur illustrations</b></li><li><b>Single sided pages</b> so markers never bleed onto the next picture</li><li><b>Large 8.5 x 11 inch format</b></li><li><b>Perfect gift</b> for birthdays, holidays, road trips and quiet time</li></ul><p>Screen free fun that builds creativity and fine motor skills. Add it to your cart today!</p>"
+  },
+  "pages": [
+    "a friendly T rex roaring with a big smile",
+    "a baby dinosaur hatching from an egg",
+    "a triceratops eating leaves",
+    "a stegosaurus walking in the jungle",
+    "a long neck brachiosaurus eating from a tall tree",
+    "a pterodactyl flying over the mountains",
+    "a dinosaur next to an erupting volcano",
+    "a mommy dinosaur with her baby",
+    "an ankylosaurus with its club tail",
+    "a T rex playing soccer",
+    "a dinosaur skeleton in a museum",
+    "a dinosaur with a birthday cake",
+    "a spinosaurus swimming in a river",
+    "a velociraptor running fast",
+    "a parasaurolophus near a lake",
+    "a dinosaur eating a giant watermelon",
+    "a dinosaur nest with three eggs",
+    "two dinosaurs giving a high five",
+    "a dinosaur wearing sunglasses at the beach",
+    "a little dinosaur with a school backpack",
+    "a dinosaur astronaut on the moon",
+    "a plesiosaurus in the ocean",
+    "a T rex driving a toy car",
+    "a dinosaur sleeping under the stars",
+    "a triceratops and a stegosaurus playing tag",
+    "a dinosaur flying a kite",
+    "a pachycephalosaurus with a round head",
+    "a dinosaur reading a book under a tree",
+    "a dinosaur painting with a brush",
+    "a dinosaur family walking together",
+    "a dinosaur splashing in a puddle",
+    "a baby T rex hugging a teddy bear",
+    "a diplodocus with a rainbow",
+    "a dinosaur eating ice cream",
+    "a dinosaur playing the drums",
+    "a dinosaur in a meadow with flowers",
+    "a footprint trail with a small dinosaur",
+    "a dinosaur camping with a tent and campfire",
+    "a smiling dinosaur waving goodbye",
+    "a dinosaur jungle with ferns, palm trees and a waterfall"
+  ]
+}

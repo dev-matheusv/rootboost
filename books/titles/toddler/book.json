@@ -1,0 +1,131 @@
+{
+  "slug": "toddler",
+  "title": "My First Big Coloring Book for Toddlers Ages 1 to 3",
+  "subtitle": "40 Simple and Bold Pages of Animals, Fruits, Vehicles and Everyday Things. Easy Coloring Fun for Boys and Girls",
+  "author": "Crayon Cove Press",
+  "generation": {
+    "pages": {
+      "model": "gpt_image_2_5",
+      "params": {
+        "aspect_ratio": "3:4",
+        "resolution": "2k",
+        "quality": "medium"
+      }
+    },
+    "cover": {
+      "model": "gpt_image_2_5",
+      "params": {
+        "aspect_ratio": "3:4",
+        "resolution": "2k",
+        "quality": "high"
+      }
+    }
+  },
+  "style": {
+    "prefix": "Very simple coloring book page for toddlers ages 1 to 3. One single object only, very large and centered:",
+    "suffix": "Black and white line art only. Extra thick bold black outlines, very few lines, big simple rounded shapes, no small details, no background, no scenery, pure white background, no shading, no gray tones, no hatching, no solid black fills except tiny eyes, cute friendly cartoon style, no text, no letters, no border, no frame.",
+    "threshold": 150
+  },
+  "layout": {
+    "trim": [
+      8.5,
+      11
+    ],
+    "margin": 0.5,
+    "single_sided": true
+  },
+  "interior": {
+    "belongs_to": "This Book Belongs To",
+    "color_test": "Test Your Colors",
+    "copyright": [
+      "Copyright © 2026 Crayon Cove Press. All rights reserved.",
+      "No part of this book may be reproduced without written permission from the publisher.",
+      "Illustrations created with the help of AI tools and reviewed by hand."
+    ]
+  },
+  "cover": {
+    "art_prompt": "Toddler coloring book front cover illustration, full vibrant color. A cute smiling cartoon puppy, a red apple, a yellow school bus and a happy sun arranged playfully on a soft background. Very simple big rounded shapes, extra thick outlines. Bold clean outlines, bright saturated colors, cute friendly cartoon style for kids. Keep the top third simple with no important details because a title will be placed there. No text, no letters, no logo.",
+    "front_title": [
+      "MY FIRST BIG",
+      "COLORING BOOK"
+    ],
+    "front_tagline": "40 simple and bold pages for little hands",
+    "age_badge": [
+      "AGES",
+      "1 TO 3"
+    ],
+    "spine": "My First Big Coloring Book",
+    "bg": "#1E88E5",
+    "accent": "#FB8C00",
+    "back_headline": "The perfect first coloring book!",
+    "back_bullets": [
+      "40 big, simple pictures: animals, fruits, vehicles and everyday things",
+      "Extra thick lines that are easy for toddlers to follow",
+      "Single sided pages so markers never ruin the next picture",
+      "Large 8.5 x 11 inch pages with lots of room for scribbles"
+    ]
+  },
+  "listing": {
+    "language": "English",
+    "age_min": 1,
+    "age_max": 3,
+    "price_usd": "8.99",
+    "keywords": [
+      "toddler coloring book ages 1 to 3",
+      "my first coloring book",
+      "coloring book for 2 year olds",
+      "simple coloring book for toddlers",
+      "preschool learning activity book",
+      "baby coloring book big pictures",
+      "easy coloring book for toddlers ages 2 to 4"
+    ],
+    "categories": [
+      "Children's Books > Activities, Crafts & Games > Activity Books > Coloring",
+      "Children's Books > Early Learning > Basic Concepts",
+      "Children's Books > Arts, Music & Photography > Art > Drawing"
+    ],
+    "description_html": "<p><b>The perfect first coloring book for your little one!</b></p><p>Made for toddlers ages 1 to 3, every page shows one big, simple picture with extra thick lines: a puppy, an apple, a car, a ball, a sun and many more friendly things your child already knows. It is a great way to practice colors, first words and early scribbles.</p><ul><li><b>40 simple illustrations</b> with one object per page</li><li><b>Extra thick lines</b> made for chunky crayons</li><li><b>Single sided pages</b> so markers never bleed onto the next picture</li><li><b>Large 8.5 x 11 inch format</b></li></ul><p>Screen free fun that builds early learning and fine motor skills. Add it to your cart today!</p>"
+  },
+  "pages": [
+    "a happy puppy sitting",
+    "a smiling cat",
+    "a round apple with a leaf",
+    "a big banana",
+    "a ball",
+    "a smiling sun",
+    "a small car",
+    "a school bus",
+    "a duck",
+    "a fish",
+    "a teddy bear",
+    "a cupcake",
+    "a house with a door and a window",
+    "a tree",
+    "a flower",
+    "a butterfly",
+    "a cow",
+    "a pig",
+    "an elephant",
+    "a lion with a big mane",
+    "a strawberry",
+    "a pear",
+    "a train engine",
+    "an airplane",
+    "a boat",
+    "a balloon",
+    "a star with a smiling face",
+    "a moon with a smiling face",
+    "a rainbow and a cloud",
+    "an ice cream cone",
+    "a turtle",
+    "a bunny",
+    "a chick hatching from an egg",
+    "a cup",
+    "a shoe",
+    "a hat",
+    "a fire truck",
+    "a frog",
+    "a bird",
+    "a heart with a smiling face"
+  ]
+}

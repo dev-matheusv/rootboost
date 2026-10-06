@@ -1,0 +1,131 @@
+{
+  "slug": "axolotl",
+  "title": "Axolotl Coloring Book for Kids Ages 4 to 8",
+  "subtitle": "40 Cute Kawaii Axolotls to Color. Fun Ocean, Food and Adventure Pages. A Great Gift for Girls and Boys",
+  "author": "Crayon Cove Press",
+  "generation": {
+    "pages": {
+      "model": "gpt_image_2_5",
+      "params": {
+        "aspect_ratio": "3:4",
+        "resolution": "2k",
+        "quality": "medium"
+      }
+    },
+    "cover": {
+      "model": "gpt_image_2_5",
+      "params": {
+        "aspect_ratio": "3:4",
+        "resolution": "2k",
+        "quality": "high"
+      }
+    }
+  },
+  "style": {
+    "prefix": "Coloring book page for children ages 4 to 8. Subject:",
+    "suffix": "Black and white line art only. Thick clean bold black outlines with uniform line weight, pure white background, no shading, no gray tones, no hatching, no solid black fills except small eyes, large simple closed shapes that are easy to color inside, cute friendly cartoon style with happy faces, correct simple anatomy, one clear scene centered on the page with some empty space around it, no text, no letters, no border, no frame.",
+    "threshold": 150
+  },
+  "layout": {
+    "trim": [
+      8.5,
+      11
+    ],
+    "margin": 0.5,
+    "single_sided": true
+  },
+  "interior": {
+    "belongs_to": "This Book Belongs To",
+    "color_test": "Test Your Colors",
+    "copyright": [
+      "Copyright © 2026 Crayon Cove Press. All rights reserved.",
+      "No part of this book may be reproduced without written permission from the publisher.",
+      "Illustrations created with the help of AI tools and reviewed by hand."
+    ]
+  },
+  "cover": {
+    "art_prompt": "Children's coloring book front cover illustration, full vibrant color. Three adorable kawaii pink and lavender axolotls smiling and playing in a bright underwater scene with bubbles, seaweed and colorful pebbles. Bold clean outlines, bright saturated colors, cute friendly cartoon style for kids. Keep the top third simple with no important details because a title will be placed there. No text, no letters, no logo.",
+    "front_title": [
+      "AXOLOTL",
+      "COLORING BOOK"
+    ],
+    "front_tagline": "40 super cute kawaii pages",
+    "age_badge": [
+      "AGES",
+      "4 TO 8"
+    ],
+    "spine": "Axolotl Coloring Book",
+    "bg": "#7E57C2",
+    "accent": "#E91E63",
+    "back_headline": "Meet the cutest little water friends!",
+    "back_bullets": [
+      "40 original axolotl designs: ocean adventures, snacks, sports, parties and more",
+      "Big, bold, simple lines that little hands can color",
+      "Single sided pages so markers never ruin the next picture",
+      "Large 8.5 x 11 inch pages, a perfect birthday gift"
+    ]
+  },
+  "listing": {
+    "language": "English",
+    "age_min": 4,
+    "age_max": 8,
+    "price_usd": "8.99",
+    "keywords": [
+      "axolotl coloring book for kids ages 4 to 8",
+      "cute axolotl gifts for girls",
+      "kawaii coloring book for kids",
+      "axolotl activity book",
+      "ocean animal coloring book for kids",
+      "axolotl birthday gift",
+      "easy coloring pages for kids"
+    ],
+    "categories": [
+      "Children's Books > Activities, Crafts & Games > Activity Books > Coloring",
+      "Children's Books > Animals > Marine Life",
+      "Children's Books > Arts, Music & Photography > Art > Drawing"
+    ],
+    "description_html": "<p><b>40 adorable axolotls are waiting for your colors!</b></p><p>Axolotls are the cutest animals in the water, and kids ages 4 to 8 love them. Inside you will find happy axolotls swimming, eating snacks, playing sports, having birthday parties and exploring the ocean. Every page has big, bold lines and simple shapes that are easy to color.</p><ul><li><b>40 unique kawaii illustrations</b></li><li><b>Single sided pages</b> so markers never bleed onto the next picture</li><li><b>Large 8.5 x 11 inch format</b></li><li><b>Perfect gift</b> for birthdays, holidays, road trips and quiet time</li></ul><p>Screen free fun that builds creativity and fine motor skills. Add it to your cart today!</p>"
+  },
+  "pages": [
+    "a cute axolotl waving hello with a big smile",
+    "an axolotl swimming among bubbles and seaweed",
+    "an axolotl eating a big slice of pizza",
+    "an axolotl wearing a crown like a little princess",
+    "an axolotl hugging a heart",
+    "two axolotl best friends holding hands",
+    "an axolotl eating an ice cream cone",
+    "an axolotl sleeping on a fluffy cloud",
+    "an axolotl with a birthday cake and candles",
+    "an axolotl playing soccer with a ball",
+    "an axolotl wearing headphones listening to music",
+    "an axolotl reading a book",
+    "an axolotl sitting inside a teacup",
+    "an axolotl astronaut floating in space with stars",
+    "an axolotl riding a skateboard",
+    "an axolotl next to a treasure chest underwater",
+    "an axolotl with a sea turtle friend",
+    "an axolotl holding a bunch of balloons",
+    "an axolotl painting a picture on an easel",
+    "an axolotl drinking bubble tea",
+    "an axolotl wearing a pirate hat on a tiny boat",
+    "a mommy axolotl and a baby axolotl",
+    "an axolotl with a rainbow behind it",
+    "an axolotl building a sandcastle",
+    "an axolotl with a little crab and a starfish",
+    "an axolotl eating sushi",
+    "an axolotl in a superhero cape",
+    "an axolotl dancing ballet in a tutu",
+    "an axolotl chef cooking pancakes",
+    "an axolotl in a fishbowl with plants",
+    "an axolotl on a unicorn pool float",
+    "an axolotl wearing a bow and holding flowers",
+    "an axolotl playing a guitar",
+    "an axolotl blowing bubbles",
+    "an axolotl doing yoga",
+    "an axolotl on a swing hanging from coral",
+    "an axolotl holding a donut",
+    "three baby axolotls in a row",
+    "an axolotl mermaid with a shell crown",
+    "an axolotl saying goodnight under the moon"
+  ]
+}

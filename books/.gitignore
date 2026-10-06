@@ -1,0 +1,5 @@
+titles/*/raw/
+titles/*/clean/
+titles/*/out/
+titles/*/qa.json
+__pycache__/

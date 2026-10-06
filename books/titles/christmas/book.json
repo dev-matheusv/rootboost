@@ -1,0 +1,104 @@
+{
+  "slug": "christmas",
+  "title": "Christmas Coloring Book for Kids Ages 4 to 8",
+  "subtitle": "40 Cute and Easy Holiday Pages with Santa, Reindeer, Snowmen, Elves and More. A Fun Gift for Boys and Girls",
+  "author": "Crayon Cove Press",
+  "generation": {
+    "pages": { "model": "gpt_image_2_5", "params": { "aspect_ratio": "3:4", "resolution": "2k", "quality": "medium" } },
+    "cover": { "model": "gpt_image_2_5", "params": { "aspect_ratio": "3:4", "resolution": "2k", "quality": "high" } }
+  },
+  "style": {
+    "prefix": "Coloring book page for children ages 4 to 8. Subject:",
+    "suffix": "Black and white line art only. Thick clean bold black outlines with uniform line weight, pure white background, no shading, no gray tones, no hatching, no solid black fills except small eyes, large simple closed shapes that are easy to color inside, cute friendly cartoon style with happy faces, correct simple anatomy, one clear scene centered on the page with some empty space around it, no text, no letters, no border, no frame.",
+    "threshold": 150
+  },
+  "layout": { "trim": [8.5, 11], "margin": 0.5, "single_sided": true },
+  "interior": {
+    "belongs_to": "This Book Belongs To",
+    "color_test": "Test Your Colors",
+    "copyright": [
+      "Copyright © 2026 Crayon Cove Press. All rights reserved.",
+      "No part of this book may be reproduced without written permission from the publisher.",
+      "Illustrations created with the help of AI tools and reviewed by hand."
+    ]
+  },
+  "cover": {
+    "art_prompt": "Children's coloring book front cover illustration, full vibrant color. A cheerful cartoon Santa Claus, a cute baby reindeer and a smiling snowman together in front of a glowing decorated Christmas tree with presents, falling snow, cozy warm night sky. Bold clean outlines, bright saturated primary colors, cute friendly kawaii style for kids. Keep the top third of the image as simple sky with no important details because a title will be placed there. No text, no letters, no logo.",
+    "front_title": ["CHRISTMAS", "COLORING BOOK"],
+    "front_tagline": "40 cute and easy holiday pages",
+    "age_badge": ["AGES", "4 TO 8"],
+    "spine": "Christmas Coloring Book",
+    "bg": "#C62828",
+    "accent": "#1B7F3B",
+    "back_headline": "Get ready for a merry, colorful Christmas!",
+    "back_bullets": [
+      "40 original holiday designs: Santa, reindeer, snowmen, elves, gingerbread and more",
+      "Big, bold, simple lines that little hands can color",
+      "Single sided pages so markers never ruin the next picture",
+      "Large 8.5 x 11 inch pages, perfect for stockings and gifts"
+    ]
+  },
+  "listing": {
+    "language": "English",
+    "age_min": 4,
+    "age_max": 8,
+    "price_usd": "8.99",
+    "keywords": [
+      "christmas coloring book for kids ages 4 to 8",
+      "christmas activity book for kids",
+      "stocking stuffers for kids",
+      "santa reindeer snowman coloring pages",
+      "holiday gifts for toddlers and preschoolers",
+      "christmas coloring book for boys and girls",
+      "easy christmas coloring pages for children"
+    ],
+    "categories": [
+      "Children's Books > Holidays & Celebrations > Christmas",
+      "Children's Books > Activities, Crafts & Games > Activity Books > Coloring",
+      "Children's Books > Arts, Music & Photography > Art > Drawing"
+    ],
+    "description_html": "<p><b>Make this Christmas extra merry with 40 adorable holiday coloring pages!</b></p><p>Kids ages 4 to 8 will love coloring Santa, his reindeer, jolly snowmen, busy elves, gingerbread friends and cozy winter scenes. Every page is designed with big, bold lines and simple shapes so little artists can color with confidence.</p><ul><li><b>40 unique illustrations</b> full of holiday fun</li><li><b>Single sided pages</b> so markers and crayons never bleed onto the next picture</li><li><b>Large 8.5 x 11 inch format</b> with plenty of space to color</li><li><b>Perfect gift</b> for stockings, Advent calendars, class parties and long winter breaks</li></ul><p>Screen free fun that builds focus, creativity and fine motor skills. Scroll up and add it to your cart today!</p>"
+  },
+  "pages": [
+    "Santa Claus waving happily with his big sack of toys",
+    "a cute baby reindeer with a red nose standing in the snow",
+    "a smiling snowman with a carrot nose, scarf and top hat",
+    "a decorated Christmas tree with a star on top and round ornaments",
+    "a gingerbread man with icing buttons, smiling",
+    "Santa's sleigh full of presents pulled by a reindeer",
+    "two happy elves wrapping a big present",
+    "a cozy fireplace with three Christmas stockings hanging",
+    "a cute penguin wearing a Santa hat holding a candy cane",
+    "a gingerbread house with candy decorations",
+    "a polar bear cub building a snowman",
+    "Mrs Claus baking cookies in the kitchen",
+    "a big pile of wrapped gift boxes with bows",
+    "a child sledding down a snowy hill",
+    "Santa coming down the chimney on a snowy rooftop",
+    "a cute owl on a snowy branch wearing earmuffs",
+    "a Christmas wreath with a big bow and pine cones",
+    "a happy teddy bear sitting next to a toy train",
+    "a reindeer and a snowman ice skating together",
+    "a jolly Santa reading a long list",
+    "a Christmas village with small houses and snow",
+    "a cute cat playing with a Christmas ornament",
+    "a mug of hot cocoa with marshmallows and a candy cane",
+    "a nutcracker toy soldier standing tall",
+    "an elf in Santa's workshop painting a wooden toy",
+    "a little bunny wearing a scarf in a snowy forest",
+    "Christmas bells with a ribbon and holly leaves",
+    "a puppy peeking out of a gift box with a bow",
+    "children singing Christmas carols with songbooks",
+    "a cookie plate and a glass of milk left for Santa",
+    "a smiling Christmas tree character with arms and a star hat",
+    "a snow globe with a tiny house and trees inside",
+    "a fox wearing a knitted hat and mittens in the snow",
+    "a family of snowmen big medium and small",
+    "an angel with wings holding a star",
+    "a cute mouse sleeping inside a Christmas stocking",
+    "Santa feeding a carrot to his reindeer",
+    "a candy cane, lollipops and wrapped candies arrangement",
+    "a hedgehog decorating a tiny Christmas tree",
+    "Santa and his reindeer flying over the moon"
+  ]
+}
