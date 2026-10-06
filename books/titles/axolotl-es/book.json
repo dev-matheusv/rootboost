@@ -1,0 +1,154 @@
+{
+  "slug": "axolotl-es",
+  "title": "Libro para Colorear de Ajolotes para Niños de 4 a 8 Años",
+  "subtitle": "40 Ajolotes Kawaii Adorables para Colorear. Dibujos Divertidos del Mar, Comida y Aventuras. Un Gran Regalo para Niñas y Niños",
+  "author": "Crayon Cove Press",
+  "generation": {
+    "pages": {
+      "model": "gpt_image_2_5",
+      "params": {
+        "aspect_ratio": "3:4",
+        "resolution": "2k",
+        "quality": "medium"
+      }
+    },
+    "cover": {
+      "model": "gpt_image_2_5",
+      "params": {
+        "aspect_ratio": "3:4",
+        "resolution": "2k",
+        "quality": "high"
+      }
+    }
+  },
+  "style": {
+    "prefix": "Coloring book page for children ages 4 to 8. Subject:",
+    "suffix": "Black and white line art only. Thick clean bold black outlines with uniform line weight, pure white background, no shading, no gray tones, no hatching, no solid black fills except small eyes, large simple closed shapes that are easy to color inside, cute friendly cartoon style with happy faces, correct simple anatomy, one clear scene centered on the page with some empty space around it, no text, no letters, no border, no frame.",
+    "threshold": 150
+  },
+  "layout": {
+    "trim": [
+      8.5,
+      11
+    ],
+    "margin": 0.5,
+    "single_sided": true
+  },
+  "interior": {
+    "belongs_to": "Este libro pertenece a",
+    "color_test": "Prueba tus colores",
+    "copyright": [
+      "Copyright © 2026 Crayon Cove Press. Todos los derechos reservados.",
+      "Ninguna parte de este libro puede reproducirse sin permiso escrito del editor.",
+      "Ilustraciones creadas con ayuda de herramientas de IA y revisadas a mano."
+    ],
+    "solutions": null
+  },
+  "cover": {
+    "art_prompt": "Children's coloring book front cover illustration, full vibrant color. Three adorable kawaii pink and lavender axolotls smiling and playing in a bright underwater scene with bubbles, seaweed and colorful pebbles. Bold clean outlines, bright saturated colors, cute friendly cartoon style for kids. Keep the top third simple with no important details because a title will be placed there. No text, no letters, no logo.",
+    "front_title": [
+      "AJOLOTES",
+      "PARA COLOREAR"
+    ],
+    "front_tagline": "40 dibujos kawaii súper tiernos",
+    "age_badge": [
+      "DE 4 A 8",
+      "AÑOS"
+    ],
+    "spine": "Ajolotes para Colorear",
+    "bg": "#7E57C2",
+    "accent": "#E91E63",
+    "back_headline": "¡Conoce a los amiguitos más tiernos del agua!",
+    "back_bullets": [
+      "40 dibujos originales de ajolotes: aventuras en el mar, comida, deportes, fiestas y más",
+      "Líneas grandes y claras, fáciles de colorear para manos pequeñas",
+      "Páginas impresas por una sola cara para que los rotuladores no traspasen",
+      "Formato grande de 21,6 x 27,9 cm, un regalo de cumpleaños perfecto"
+    ]
+  },
+  "listing": {
+    "language": "Spanish",
+    "age_min": 4,
+    "age_max": 8,
+    "price_usd": "8.99",
+    "keywords": [
+      "libro para colorear ajolote",
+      "ajolotes regalo niña",
+      "libro kawaii para colorear niños",
+      "dibujos para colorear animales del mar",
+      "axolotl para colorear",
+      "regalo cumpleaños niña 6 años",
+      "cuaderno para colorear infantil"
+    ],
+    "categories": [
+      "Children's Books > Activities, Crafts & Games > Activity Books > Coloring",
+      "Children's Books > Animals > Marine Life",
+      "Children's Books > Arts, Music & Photography > Art > Drawing"
+    ],
+    "description_html": "<p><b>¡40 ajolotes adorables esperan tus colores!</b></p><p>Los ajolotes son los animales más tiernos del agua y a los niños de 4 a 8 años les encantan. Dentro encontrarás ajolotes felices nadando, comiendo, jugando, celebrando cumpleaños y explorando el océano. Cada página tiene líneas grandes y claras y formas sencillas.</p><ul><li><b>40 ilustraciones kawaii únicas</b></li><li><b>Páginas por una sola cara</b> para que los rotuladores no traspasen</li><li><b>Formato grande</b> de 21,6 x 27,9 cm</li><li><b>Regalo perfecto</b> para cumpleaños, viajes y momentos tranquilos</li></ul><p>Diversión sin pantallas que desarrolla la creatividad y la concentración. ¡Añádelo a tu carrito hoy!</p>",
+    "marketplace": "Amazon.es (e Amazon.com pro publico hispano dos EUA)",
+    "price": "€ 8,99"
+  },
+  "pages": [
+    "a cute axolotl waving hello with a big smile",
+    "an axolotl swimming among bubbles and seaweed",
+    "an axolotl eating a big slice of pizza",
+    "an axolotl wearing a crown like a little princess",
+    "an axolotl hugging a heart",
+    "two axolotl best friends holding hands",
+    "an axolotl eating an ice cream cone",
+    "an axolotl sleeping on a fluffy cloud",
+    "an axolotl with a birthday cake and candles",
+    "an axolotl playing soccer with a ball",
+    "an axolotl wearing headphones listening to music",
+    "an axolotl reading a book",
+    "an axolotl sitting inside a teacup",
+    "an axolotl astronaut floating in space with stars",
+    "an axolotl riding a skateboard",
+    "an axolotl next to a treasure chest underwater",
+    "an axolotl with a sea turtle friend",
+    "an axolotl holding a bunch of balloons",
+    "an axolotl painting a picture on an easel",
+    "an axolotl drinking bubble tea",
+    "an axolotl wearing a pirate hat on a tiny boat",
+    "a mommy axolotl and a baby axolotl",
+    "an axolotl with a rainbow behind it",
+    "an axolotl building a sandcastle",
+    "an axolotl with a little crab and a starfish",
+    "an axolotl eating sushi",
+    "an axolotl in a superhero cape",
+    "an axolotl wearing a ballet tutu twirling happily, real axolotl body with short stubby legs and a long tail, filling the page",
+    "an axolotl chef cooking pancakes",
+    "an axolotl in a fishbowl with plants",
+    "an axolotl on a unicorn pool float",
+    "an axolotl wearing a bow and holding flowers",
+    "an axolotl playing a guitar",
+    "an axolotl blowing bubbles",
+    "an axolotl doing yoga",
+    "an axolotl on a swing hanging from coral",
+    "an axolotl holding a donut",
+    "three baby axolotls hugging together in a big happy group, large and filling most of the page",
+    "an axolotl mermaid with a shell crown",
+    "an axolotl saying goodnight under the moon"
+  ],
+  "marketing": {
+    "showcase": [
+      1,
+      3,
+      9,
+      14,
+      7,
+      13,
+      20,
+      21,
+      26,
+      39
+    ]
+  },
+  "source": "axolotl",
+  "lang": "es",
+  "copy_from_source": [
+    "clean",
+    "raw/cover.png"
+  ]
+}

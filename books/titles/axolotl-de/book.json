@@ -1,0 +1,154 @@
+{
+  "slug": "axolotl-de",
+  "title": "Axolotl Malbuch für Kinder ab 4 Jahren",
+  "subtitle": "40 süße Kawaii Axolotl zum Ausmalen. Lustige Motive aus Meer, Essen und Abenteuer. Ein tolles Geschenk für Mädchen und Jungen",
+  "author": "Crayon Cove Press",
+  "generation": {
+    "pages": {
+      "model": "gpt_image_2_5",
+      "params": {
+        "aspect_ratio": "3:4",
+        "resolution": "2k",
+        "quality": "medium"
+      }
+    },
+    "cover": {
+      "model": "gpt_image_2_5",
+      "params": {
+        "aspect_ratio": "3:4",
+        "resolution": "2k",
+        "quality": "high"
+      }
+    }
+  },
+  "style": {
+    "prefix": "Coloring book page for children ages 4 to 8. Subject:",
+    "suffix": "Black and white line art only. Thick clean bold black outlines with uniform line weight, pure white background, no shading, no gray tones, no hatching, no solid black fills except small eyes, large simple closed shapes that are easy to color inside, cute friendly cartoon style with happy faces, correct simple anatomy, one clear scene centered on the page with some empty space around it, no text, no letters, no border, no frame.",
+    "threshold": 150
+  },
+  "layout": {
+    "trim": [
+      8.5,
+      11
+    ],
+    "margin": 0.5,
+    "single_sided": true
+  },
+  "interior": {
+    "belongs_to": "Dieses Buch gehört",
+    "color_test": "Teste deine Farben",
+    "copyright": [
+      "Copyright © 2026 Crayon Cove Press. Alle Rechte vorbehalten.",
+      "Kein Teil dieses Buches darf ohne schriftliche Genehmigung des Verlags vervielfältigt werden.",
+      "Illustrationen mit Hilfe von KI Werkzeugen erstellt und von Hand geprüft."
+    ],
+    "solutions": null
+  },
+  "cover": {
+    "art_prompt": "Children's coloring book front cover illustration, full vibrant color. Three adorable kawaii pink and lavender axolotls smiling and playing in a bright underwater scene with bubbles, seaweed and colorful pebbles. Bold clean outlines, bright saturated colors, cute friendly cartoon style for kids. Keep the top third simple with no important details because a title will be placed there. No text, no letters, no logo.",
+    "front_title": [
+      "AXOLOTL",
+      "MALBUCH"
+    ],
+    "front_tagline": "40 super süße Kawaii Ausmalbilder",
+    "age_badge": [
+      "4 BIS 8",
+      "JAHRE"
+    ],
+    "spine": "Axolotl Malbuch",
+    "bg": "#7E57C2",
+    "accent": "#E91E63",
+    "back_headline": "Lerne die süßesten Wasserfreunde kennen!",
+    "back_bullets": [
+      "40 originelle Axolotl Motive: Abenteuer im Meer, Leckereien, Sport, Partys und mehr",
+      "Große, klare Linien, die kleine Hände leicht ausmalen können",
+      "Einseitig bedruckt, damit Filzstifte nicht auf das nächste Bild durchdrücken",
+      "Großes Format 21,6 x 27,9 cm, ein tolles Geburtstagsgeschenk"
+    ]
+  },
+  "listing": {
+    "language": "German",
+    "age_min": 4,
+    "age_max": 8,
+    "price_usd": "8.99",
+    "keywords": [
+      "axolotl malbuch",
+      "axolotl geschenk mädchen",
+      "kawaii malbuch kinder",
+      "malbuch meerestiere kinder",
+      "ausmalbilder axolotl",
+      "geburtstagsgeschenk mädchen 6 jahre",
+      "malbuch ab 4 jahre"
+    ],
+    "categories": [
+      "Children's Books > Activities, Crafts & Games > Activity Books > Coloring",
+      "Children's Books > Animals > Marine Life",
+      "Children's Books > Arts, Music & Photography > Art > Drawing"
+    ],
+    "description_html": "<p><b>40 zuckersüße Axolotl warten auf deine Farben!</b></p><p>Axolotl sind die süßesten Tiere im Wasser, und Kinder von 4 bis 8 Jahren lieben sie. Im Buch schwimmen, naschen, spielen und feiern fröhliche Axolotl und entdecken das Meer. Jede Seite hat große, klare Linien und einfache Formen, die leicht auszumalen sind.</p><ul><li><b>40 einzigartige Kawaii Motive</b></li><li><b>Einseitig bedruckt,</b> damit Filzstifte nicht durchdrücken</li><li><b>Großes Format</b> 21,6 x 27,9 cm</li><li><b>Perfektes Geschenk</b> zum Geburtstag, für Reisen und ruhige Momente</li></ul><p>Bildschirmfreier Spaß für Kreativität und Konzentration. Jetzt in den Warenkorb legen!</p>",
+    "marketplace": "Amazon.de (Europa toda recebe junto)",
+    "price": "€ 8,99"
+  },
+  "pages": [
+    "a cute axolotl waving hello with a big smile",
+    "an axolotl swimming among bubbles and seaweed",
+    "an axolotl eating a big slice of pizza",
+    "an axolotl wearing a crown like a little princess",
+    "an axolotl hugging a heart",
+    "two axolotl best friends holding hands",
+    "an axolotl eating an ice cream cone",
+    "an axolotl sleeping on a fluffy cloud",
+    "an axolotl with a birthday cake and candles",
+    "an axolotl playing soccer with a ball",
+    "an axolotl wearing headphones listening to music",
+    "an axolotl reading a book",
+    "an axolotl sitting inside a teacup",
+    "an axolotl astronaut floating in space with stars",
+    "an axolotl riding a skateboard",
+    "an axolotl next to a treasure chest underwater",
+    "an axolotl with a sea turtle friend",
+    "an axolotl holding a bunch of balloons",
+    "an axolotl painting a picture on an easel",
+    "an axolotl drinking bubble tea",
+    "an axolotl wearing a pirate hat on a tiny boat",
+    "a mommy axolotl and a baby axolotl",
+    "an axolotl with a rainbow behind it",
+    "an axolotl building a sandcastle",
+    "an axolotl with a little crab and a starfish",
+    "an axolotl eating sushi",
+    "an axolotl in a superhero cape",
+    "an axolotl wearing a ballet tutu twirling happily, real axolotl body with short stubby legs and a long tail, filling the page",
+    "an axolotl chef cooking pancakes",
+    "an axolotl in a fishbowl with plants",
+    "an axolotl on a unicorn pool float",
+    "an axolotl wearing a bow and holding flowers",
+    "an axolotl playing a guitar",
+    "an axolotl blowing bubbles",
+    "an axolotl doing yoga",
+    "an axolotl on a swing hanging from coral",
+    "an axolotl holding a donut",
+    "three baby axolotls hugging together in a big happy group, large and filling most of the page",
+    "an axolotl mermaid with a shell crown",
+    "an axolotl saying goodnight under the moon"
+  ],
+  "marketing": {
+    "showcase": [
+      1,
+      3,
+      9,
+      14,
+      7,
+      13,
+      20,
+      21,
+      26,
+      39
+    ]
+  },
+  "source": "axolotl",
+  "lang": "de",
+  "copy_from_source": [
+    "clean",
+    "raw/cover.png"
+  ]
+}

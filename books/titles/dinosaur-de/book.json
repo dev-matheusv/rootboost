@@ -1,0 +1,154 @@
+{
+  "slug": "dinosaur-de",
+  "title": "Dinosaurier Malbuch für Kinder ab 4 Jahren",
+  "subtitle": "40 große und einfache Dino Ausmalbilder mit T Rex, Triceratops, Stegosaurus und mehr. Ein tolles Geschenk für Jungen und Mädchen",
+  "author": "Crayon Cove Press",
+  "generation": {
+    "pages": {
+      "model": "gpt_image_2_5",
+      "params": {
+        "aspect_ratio": "3:4",
+        "resolution": "2k",
+        "quality": "medium"
+      }
+    },
+    "cover": {
+      "model": "gpt_image_2_5",
+      "params": {
+        "aspect_ratio": "3:4",
+        "resolution": "2k",
+        "quality": "high"
+      }
+    }
+  },
+  "style": {
+    "prefix": "Coloring book page for children ages 4 to 8. Subject:",
+    "suffix": "Black and white line art only. Thick clean bold black outlines with uniform line weight, pure white background, no shading, no gray tones, no hatching, no solid black fills except small eyes, large simple closed shapes that are easy to color inside, cute friendly cartoon style with happy faces, correct simple anatomy, one clear scene centered on the page with some empty space around it, no text, no letters, no border, no frame.",
+    "threshold": 150
+  },
+  "layout": {
+    "trim": [
+      8.5,
+      11
+    ],
+    "margin": 0.5,
+    "single_sided": true
+  },
+  "interior": {
+    "belongs_to": "Dieses Buch gehört",
+    "color_test": "Teste deine Farben",
+    "copyright": [
+      "Copyright © 2026 Crayon Cove Press. Alle Rechte vorbehalten.",
+      "Kein Teil dieses Buches darf ohne schriftliche Genehmigung des Verlags vervielfältigt werden.",
+      "Illustrationen mit Hilfe von KI Werkzeugen erstellt und von Hand geprüft."
+    ],
+    "solutions": null
+  },
+  "cover": {
+    "art_prompt": "Children's coloring book front cover illustration, full vibrant color. A friendly smiling green T rex, a cute orange triceratops and a baby blue stegosaurus together in a sunny prehistoric jungle with a volcano and palm trees. Bold clean outlines, bright saturated colors, cute friendly cartoon style for kids. Keep the top third simple with no important details because a title will be placed there. No text, no letters, no logo.",
+    "front_title": [
+      "DINOSAURIER",
+      "MALBUCH"
+    ],
+    "front_tagline": "40 große und einfache Dino Bilder",
+    "age_badge": [
+      "4 BIS 8",
+      "JAHRE"
+    ],
+    "spine": "Dinosaurier Malbuch",
+    "bg": "#2E7D32",
+    "accent": "#EF6C00",
+    "back_headline": "Brüll dich in eine bunte Dino Welt!",
+    "back_bullets": [
+      "40 originelle Dino Motive: T Rex, Triceratops, Stegosaurus, Flugsaurier und mehr",
+      "Große, klare Linien, die kleine Hände leicht ausmalen können",
+      "Einseitig bedruckt, damit Filzstifte nicht auf das nächste Bild durchdrücken",
+      "Großes Format 21,6 x 27,9 cm, ein tolles Geburtstagsgeschenk"
+    ]
+  },
+  "listing": {
+    "language": "German",
+    "age_min": 4,
+    "age_max": 8,
+    "price_usd": "8.99",
+    "keywords": [
+      "dinosaurier malbuch kinder",
+      "dino ausmalbilder",
+      "dino geschenk jungen",
+      "malbuch ab 4 jahre junge",
+      "t rex malbuch",
+      "beschäftigung kinder 5 6 jahre",
+      "dinosaurier geschenke für kinder"
+    ],
+    "categories": [
+      "Children's Books > Activities, Crafts & Games > Activity Books > Coloring",
+      "Children's Books > Animals > Dinosaurs",
+      "Children's Books > Arts, Music & Photography > Art > Drawing"
+    ],
+    "description_html": "<p><b>40 freundliche Dinosaurier warten auf deine Farben!</b></p><p>Kinder von 4 bis 8 Jahren malen einen mächtigen T Rex, einen fröhlichen Triceratops, einen langhalsigen Brachiosaurus, fliegende Flugsaurier, Dino Babys im Ei und viele Abenteuer aus der Urzeit. Jede Seite hat große, klare Linien und einfache Formen.</p><ul><li><b>40 einzigartige Dino Motive</b></li><li><b>Einseitig bedruckt,</b> damit Filzstifte nicht durchdrücken</li><li><b>Großes Format</b> 21,6 x 27,9 cm</li><li><b>Perfektes Geschenk</b> zum Geburtstag, für Reisen und ruhige Momente</li></ul><p>Bildschirmfreier Spaß für Kreativität und Feinmotorik. Jetzt in den Warenkorb legen!</p>",
+    "marketplace": "Amazon.de (Europa toda recebe junto)",
+    "price": "€ 8,99"
+  },
+  "pages": [
+    "a friendly T rex roaring with a big smile",
+    "a baby dinosaur hatching from an egg",
+    "a triceratops eating leaves",
+    "a stegosaurus walking in the jungle",
+    "a long neck brachiosaurus eating from a tall tree",
+    "a pterodactyl flying over the mountains",
+    "a dinosaur next to an erupting volcano",
+    "a mommy dinosaur with her baby",
+    "an ankylosaurus with its club tail",
+    "a T rex playing soccer",
+    "a dinosaur skeleton in a museum",
+    "a dinosaur with a birthday cake",
+    "a spinosaurus swimming in a river",
+    "a velociraptor running fast",
+    "a parasaurolophus near a lake",
+    "a dinosaur eating a giant watermelon",
+    "a dinosaur nest with three eggs",
+    "two dinosaurs giving a high five",
+    "a dinosaur wearing sunglasses at the beach",
+    "a little dinosaur with a school backpack",
+    "a dinosaur astronaut on the moon",
+    "a plesiosaurus in the ocean",
+    "a T rex driving a toy car",
+    "a dinosaur sleeping under the stars",
+    "a triceratops and a stegosaurus playing tag",
+    "a dinosaur flying a kite",
+    "a pachycephalosaurus with a round head",
+    "a dinosaur reading a book under a tree",
+    "a dinosaur painting with a brush",
+    "a dinosaur family walking together",
+    "a dinosaur splashing in a puddle",
+    "a baby T rex hugging a teddy bear",
+    "a diplodocus with a rainbow",
+    "a dinosaur eating ice cream",
+    "a dinosaur playing the drums",
+    "a dinosaur in a meadow with flowers",
+    "a footprint trail with a small dinosaur",
+    "a dinosaur camping with a tent and campfire",
+    "a smiling dinosaur waving goodbye",
+    "a dinosaur jungle with ferns, palm trees and a waterfall"
+  ],
+  "marketing": {
+    "showcase": [
+      1,
+      2,
+      3,
+      10,
+      12,
+      16,
+      21,
+      32,
+      35,
+      38
+    ]
+  },
+  "source": "dinosaur",
+  "lang": "de",
+  "copy_from_source": [
+    "clean",
+    "raw/cover.png"
+  ]
+}

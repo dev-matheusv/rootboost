@@ -1,0 +1,154 @@
+{
+  "slug": "toddler-de",
+  "title": "Mein erstes großes Malbuch für Kleinkinder ab 1 Jahr",
+  "subtitle": "40 einfache Ausmalbilder mit dicken Linien: Tiere, Obst, Fahrzeuge und mehr. Für Kinder von 1 bis 3 Jahren",
+  "author": "Crayon Cove Press",
+  "generation": {
+    "pages": {
+      "model": "gpt_image_2_5",
+      "params": {
+        "aspect_ratio": "3:4",
+        "resolution": "1k",
+        "quality": "medium"
+      }
+    },
+    "cover": {
+      "model": "gpt_image_2_5",
+      "params": {
+        "aspect_ratio": "3:4",
+        "resolution": "2k",
+        "quality": "high"
+      }
+    }
+  },
+  "style": {
+    "prefix": "Very simple coloring book page for toddlers ages 1 to 3. One single object only, very large and centered:",
+    "suffix": "Black and white line art only. Extra thick bold black outlines, very few lines, big simple rounded shapes, no small details, no background, no scenery, pure white background, no shading, no gray tones, no hatching, no solid black fills except tiny eyes, cute friendly cartoon style, no text, no letters, no border, no frame.",
+    "threshold": 150
+  },
+  "layout": {
+    "trim": [
+      8.5,
+      11
+    ],
+    "margin": 0.5,
+    "single_sided": true
+  },
+  "interior": {
+    "belongs_to": "Dieses Buch gehört",
+    "color_test": "Teste deine Farben",
+    "copyright": [
+      "Copyright © 2026 Crayon Cove Press. Alle Rechte vorbehalten.",
+      "Kein Teil dieses Buches darf ohne schriftliche Genehmigung des Verlags vervielfältigt werden.",
+      "Illustrationen mit Hilfe von KI Werkzeugen erstellt und von Hand geprüft."
+    ],
+    "solutions": null
+  },
+  "cover": {
+    "art_prompt": "Toddler coloring book front cover illustration, full vibrant color. A cute smiling cartoon puppy, a red apple, a yellow school bus and a happy sun arranged playfully on a soft background. Very simple big rounded shapes, extra thick outlines. Bold clean outlines, bright saturated colors, cute friendly cartoon style for kids. Keep the top third simple with no important details because a title will be placed there. No text, no letters, no logo.",
+    "front_title": [
+      "MEIN ERSTES",
+      "GROSSES MALBUCH"
+    ],
+    "front_tagline": "40 einfache Bilder für kleine Hände",
+    "age_badge": [
+      "1 BIS 3",
+      "JAHRE"
+    ],
+    "spine": "Mein erstes großes Malbuch",
+    "bg": "#1E88E5",
+    "accent": "#FB8C00",
+    "back_headline": "Das perfekte erste Malbuch!",
+    "back_bullets": [
+      "40 große, einfache Bilder: Tiere, Obst, Fahrzeuge und Dinge aus dem Alltag",
+      "Extra dicke Linien, die Kleinkinder leicht erkennen",
+      "Einseitig bedruckt, damit Filzstifte nicht auf das nächste Bild durchdrücken",
+      "Großes Format 21,6 x 27,9 cm mit viel Platz zum Kritzeln"
+    ]
+  },
+  "listing": {
+    "language": "German",
+    "age_min": 1,
+    "age_max": 3,
+    "price_usd": "8.99",
+    "keywords": [
+      "malbuch ab 1 jahr",
+      "malbuch ab 2 jahre",
+      "kleinkind malbuch",
+      "mein erstes malbuch",
+      "malen ab 2 jahren",
+      "beschäftigung kleinkind",
+      "ausmalbilder kleinkinder einfach"
+    ],
+    "categories": [
+      "Children's Books > Activities, Crafts & Games > Activity Books > Coloring",
+      "Children's Books > Early Learning > Basic Concepts",
+      "Children's Books > Arts, Music & Photography > Art > Drawing"
+    ],
+    "description_html": "<p><b>Das perfekte erste Malbuch für dein Kind!</b></p><p>Für Kleinkinder von 1 bis 3 Jahren: Jede Seite zeigt ein großes, einfaches Bild mit extra dicken Linien, zum Beispiel einen Hund, einen Apfel, ein Auto, einen Ball oder eine Sonne. Ideal, um Farben, erste Wörter und erste Kritzeleien zu üben.</p><ul><li><b>40 einfache Bilder</b> mit einem Motiv pro Seite</li><li><b>Extra dicke Linien</b> für dicke Wachsmalstifte</li><li><b>Einseitig bedruckt,</b> damit Filzstifte nicht durchdrücken</li><li><b>Großes Format</b> 21,6 x 27,9 cm</li></ul><p>Bildschirmfreier Spaß, der frühes Lernen und Feinmotorik fördert. Jetzt in den Warenkorb legen!</p>",
+    "marketplace": "Amazon.de (Europa toda recebe junto)",
+    "price": "€ 8,99"
+  },
+  "pages": [
+    "a happy puppy sitting",
+    "a smiling cat",
+    "a round apple with a leaf",
+    "a big banana",
+    "a ball",
+    "a smiling sun",
+    "a small car",
+    "a school bus",
+    "a duck",
+    "a fish",
+    "a teddy bear",
+    "a cupcake",
+    "a house with a door and a window",
+    "a tree",
+    "a flower",
+    "a butterfly",
+    "a cow",
+    "a pig",
+    "an elephant",
+    "a lion with a big mane",
+    "a strawberry",
+    "a pear",
+    "a train engine",
+    "an airplane",
+    "a boat",
+    "a balloon",
+    "a star with a smiling face",
+    "a moon with a smiling face",
+    "a rainbow and a cloud",
+    "an ice cream cone",
+    "a turtle",
+    "a bunny",
+    "a chick hatching from an egg",
+    "a cup",
+    "a shoe",
+    "a hat",
+    "a fire truck",
+    "a frog",
+    "a bird",
+    "a heart with a smiling face"
+  ],
+  "marketing": {
+    "showcase": [
+      1,
+      3,
+      8,
+      11,
+      19,
+      12,
+      20,
+      24,
+      31,
+      38
+    ]
+  },
+  "source": "toddler",
+  "lang": "de",
+  "copy_from_source": [
+    "clean",
+    "raw/cover.png"
+  ]
+}

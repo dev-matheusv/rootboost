@@ -30,7 +30,7 @@ def books() -> list[dict]:
     for f in sorted((ROOT / "titles").glob("*/book.json")):
         spec = json.loads(f.read_text(encoding="utf-8"))
         d = f.parent
-        if (d / "out" / "interior.pdf").exists():
+        if (d / "out" / "interior.pdf").exists() and not spec.get("source"):
             spec["_dir"] = d
             out.append(spec)
     return out

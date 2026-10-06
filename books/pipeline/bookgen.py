@@ -474,15 +474,33 @@ def build_listing(spec: dict, d: Path, page_count: int, cover: dict) -> None:
         "Texto: escrito/editado por humano com ajuda de IA. Esconder isso viola a politica do KDP.",
         "",
         "## 3. Preco",
-        f"- **Marketplace principal:** Amazon.com, **US$ {L['price_usd']}**",
+        f"- **Marketplace principal:** {L.get('marketplace', 'Amazon.com')}, **{L.get('price', 'US$ ' + L['price_usd'])}**",
         "- Conferir o royalty que o KDP calcula na tela (depende do custo de impressao das paginas).",
         "- Expanded Distribution: deixar desligado no inicio (royalty menor).",
     ]
     (d / "out" / "listing.md").write_text("\n".join(md) + "\n", encoding="utf-8")
 
 
+def prepare_variant(spec: dict, d: Path) -> None:
+    """Edicao em outro idioma: reaproveita os desenhos do livro de origem (mesmas paginas, zero credito)."""
+    src = spec.get("source")
+    if not src:
+        return
+    s = TITLES / src
+    for rel in spec.get("copy_from_source", ["clean", "raw/cover.png"]):
+        a, b = s / rel, d / rel
+        if a.is_dir():
+            if b.exists():
+                shutil.rmtree(b)
+            shutil.copytree(a, b)
+        elif a.exists():
+            b.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(a, b)
+
+
 def cmd_build(slug: str) -> None:
     spec, d = load_book(slug)
+    prepare_variant(spec, d)
     (d / "out").mkdir(exist_ok=True)
     n = build_interior(spec, d)
     cover = build_cover(spec, d, n)

@@ -16,6 +16,16 @@ O que fica com você: as contas (KDP, Pinterest, TikTok/YouTube) e os cliques de
 
 Publicar 1 ou 2 por dia (o KDP limita títulos novos por dia).
 
+## 0b. Edições em alemão e espanhol (12 livros extras)
+
+Pastas `titles/<livro>-de/` e `titles/<livro>-es/`: mesmos desenhos, tudo traduzido (título, capa, miolo, descrição,
+palavras chave locais). Cada uma é um **livro novo** no KDP (Create > Paperback), com **Language: German / Spanish**.
+
+- Publicar **depois** que a versão em inglês do mesmo livro for aprovada (evita o KDP achar que é duplicado).
+- Preço: o `listing.md` de cada edição traz o marketplace principal e o preço em euro (€ 8,99 colorir, € 7,99 atividade).
+  Na tela de Pricing, escolher **Amazon.de** (alemão) ou **Amazon.es** (espanhol) como marketplace principal.
+- Espanhol vende também na Amazon.com (público hispânico dos EUA): conferir que o preço em dólar ficou US$ 8,99 / 7,99.
+
 ## 1. Conta KDP (uma vez)
 
 1. kdp.amazon.com, entrar com a conta Amazon.

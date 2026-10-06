@@ -1,0 +1,154 @@
+{
+  "slug": "toddler-es",
+  "title": "Mi Primer Gran Libro para Colorear para Niños de 1 a 3 Años",
+  "subtitle": "40 Dibujos Sencillos con Líneas Gruesas: Animales, Frutas, Vehículos y Más. Para Bebés y Niños Pequeños",
+  "author": "Crayon Cove Press",
+  "generation": {
+    "pages": {
+      "model": "gpt_image_2_5",
+      "params": {
+        "aspect_ratio": "3:4",
+        "resolution": "1k",
+        "quality": "medium"
+      }
+    },
+    "cover": {
+      "model": "gpt_image_2_5",
+      "params": {
+        "aspect_ratio": "3:4",
+        "resolution": "2k",
+        "quality": "high"
+      }
+    }
+  },
+  "style": {
+    "prefix": "Very simple coloring book page for toddlers ages 1 to 3. One single object only, very large and centered:",
+    "suffix": "Black and white line art only. Extra thick bold black outlines, very few lines, big simple rounded shapes, no small details, no background, no scenery, pure white background, no shading, no gray tones, no hatching, no solid black fills except tiny eyes, cute friendly cartoon style, no text, no letters, no border, no frame.",
+    "threshold": 150
+  },
+  "layout": {
+    "trim": [
+      8.5,
+      11
+    ],
+    "margin": 0.5,
+    "single_sided": true
+  },
+  "interior": {
+    "belongs_to": "Este libro pertenece a",
+    "color_test": "Prueba tus colores",
+    "copyright": [
+      "Copyright © 2026 Crayon Cove Press. Todos los derechos reservados.",
+      "Ninguna parte de este libro puede reproducirse sin permiso escrito del editor.",
+      "Ilustraciones creadas con ayuda de herramientas de IA y revisadas a mano."
+    ],
+    "solutions": null
+  },
+  "cover": {
+    "art_prompt": "Toddler coloring book front cover illustration, full vibrant color. A cute smiling cartoon puppy, a red apple, a yellow school bus and a happy sun arranged playfully on a soft background. Very simple big rounded shapes, extra thick outlines. Bold clean outlines, bright saturated colors, cute friendly cartoon style for kids. Keep the top third simple with no important details because a title will be placed there. No text, no letters, no logo.",
+    "front_title": [
+      "MI PRIMER GRAN",
+      "LIBRO PARA COLOREAR"
+    ],
+    "front_tagline": "40 dibujos sencillos para manos pequeñas",
+    "age_badge": [
+      "DE 1 A 3",
+      "AÑOS"
+    ],
+    "spine": "Mi Primer Gran Libro para Colorear",
+    "bg": "#1E88E5",
+    "accent": "#FB8C00",
+    "back_headline": "¡El primer libro para colorear perfecto!",
+    "back_bullets": [
+      "40 dibujos grandes y sencillos: animales, frutas, vehículos y cosas de cada día",
+      "Líneas extra gruesas, fáciles de seguir para los más pequeños",
+      "Páginas impresas por una sola cara para que los rotuladores no traspasen",
+      "Formato grande de 21,6 x 27,9 cm con mucho espacio para garabatear"
+    ]
+  },
+  "listing": {
+    "language": "Spanish",
+    "age_min": 1,
+    "age_max": 3,
+    "price_usd": "8.99",
+    "keywords": [
+      "libro para colorear niños 2 años",
+      "libro para colorear bebés",
+      "mi primer libro para colorear",
+      "cuaderno para colorear niños pequeños",
+      "dibujos sencillos para colorear",
+      "actividades para niños de 1 a 3 años",
+      "libro de colorear infantil fácil"
+    ],
+    "categories": [
+      "Children's Books > Activities, Crafts & Games > Activity Books > Coloring",
+      "Children's Books > Early Learning > Basic Concepts",
+      "Children's Books > Arts, Music & Photography > Art > Drawing"
+    ],
+    "description_html": "<p><b>¡El primer libro para colorear perfecto para tu peque!</b></p><p>Pensado para niños de 1 a 3 años, cada página muestra un dibujo grande y sencillo con líneas extra gruesas: un perrito, una manzana, un coche, una pelota, un sol y muchas cosas que tu hijo ya conoce. Ideal para practicar colores, primeras palabras y primeros garabatos.</p><ul><li><b>40 dibujos sencillos</b> con un objeto por página</li><li><b>Líneas extra gruesas</b> para ceras gruesas</li><li><b>Páginas por una sola cara</b> para que los rotuladores no traspasen</li><li><b>Formato grande</b> de 21,6 x 27,9 cm</li></ul><p>Diversión sin pantallas que impulsa el aprendizaje temprano y la motricidad fina. ¡Añádelo a tu carrito hoy!</p>",
+    "marketplace": "Amazon.es (e Amazon.com pro publico hispano dos EUA)",
+    "price": "€ 8,99"
+  },
+  "pages": [
+    "a happy puppy sitting",
+    "a smiling cat",
+    "a round apple with a leaf",
+    "a big banana",
+    "a ball",
+    "a smiling sun",
+    "a small car",
+    "a school bus",
+    "a duck",
+    "a fish",
+    "a teddy bear",
+    "a cupcake",
+    "a house with a door and a window",
+    "a tree",
+    "a flower",
+    "a butterfly",
+    "a cow",
+    "a pig",
+    "an elephant",
+    "a lion with a big mane",
+    "a strawberry",
+    "a pear",
+    "a train engine",
+    "an airplane",
+    "a boat",
+    "a balloon",
+    "a star with a smiling face",
+    "a moon with a smiling face",
+    "a rainbow and a cloud",
+    "an ice cream cone",
+    "a turtle",
+    "a bunny",
+    "a chick hatching from an egg",
+    "a cup",
+    "a shoe",
+    "a hat",
+    "a fire truck",
+    "a frog",
+    "a bird",
+    "a heart with a smiling face"
+  ],
+  "marketing": {
+    "showcase": [
+      1,
+      3,
+      8,
+      11,
+      19,
+      12,
+      20,
+      24,
+      31,
+      38
+    ]
+  },
+  "source": "toddler",
+  "lang": "es",
+  "copy_from_source": [
+    "clean",
+    "raw/cover.png"
+  ]
+}

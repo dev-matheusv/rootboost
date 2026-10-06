@@ -1,0 +1,154 @@
+{
+  "slug": "christmas-es",
+  "title": "Libro para Colorear de Navidad para Niños de 4 a 8 Años",
+  "subtitle": "40 Dibujos Bonitos y Fáciles con Papá Noel, Renos, Muñecos de Nieve, Duendes y Más. Un Regalo Divertido para Niños y Niñas",
+  "author": "Crayon Cove Press",
+  "generation": {
+    "pages": {
+      "model": "gpt_image_2_5",
+      "params": {
+        "aspect_ratio": "3:4",
+        "resolution": "2k",
+        "quality": "medium"
+      }
+    },
+    "cover": {
+      "model": "gpt_image_2_5",
+      "params": {
+        "aspect_ratio": "3:4",
+        "resolution": "2k",
+        "quality": "high"
+      }
+    }
+  },
+  "style": {
+    "prefix": "Coloring book page for children ages 4 to 8. Subject:",
+    "suffix": "Black and white line art only. Thick clean bold black outlines with uniform line weight, pure white background, no shading, no gray tones, no hatching, no solid black fills except small eyes, large simple closed shapes that are easy to color inside, cute friendly cartoon style with happy faces, correct simple anatomy, one clear scene centered on the page with some empty space around it, no text, no letters, no border, no frame.",
+    "threshold": 150
+  },
+  "layout": {
+    "trim": [
+      8.5,
+      11
+    ],
+    "margin": 0.5,
+    "single_sided": true
+  },
+  "interior": {
+    "belongs_to": "Este libro pertenece a",
+    "color_test": "Prueba tus colores",
+    "copyright": [
+      "Copyright © 2026 Crayon Cove Press. Todos los derechos reservados.",
+      "Ninguna parte de este libro puede reproducirse sin permiso escrito del editor.",
+      "Ilustraciones creadas con ayuda de herramientas de IA y revisadas a mano."
+    ],
+    "solutions": null
+  },
+  "cover": {
+    "art_prompt": "Children's coloring book front cover illustration, full vibrant color. A cheerful cartoon Santa Claus, a cute baby reindeer and a smiling snowman together in front of a glowing decorated Christmas tree with presents, falling snow, cozy warm night sky. Bold clean outlines, bright saturated primary colors, cute friendly kawaii style for kids. Keep the top third of the image as simple sky with no important details because a title will be placed there. No text, no letters, no logo.",
+    "front_title": [
+      "NAVIDAD",
+      "PARA COLOREAR"
+    ],
+    "front_tagline": "40 dibujos bonitos y fáciles",
+    "age_badge": [
+      "DE 4 A 8",
+      "AÑOS"
+    ],
+    "spine": "Navidad para Colorear",
+    "bg": "#C62828",
+    "accent": "#1B7F3B",
+    "back_headline": "¡Prepárate para una Navidad llena de color!",
+    "back_bullets": [
+      "40 dibujos originales: Papá Noel, renos, muñecos de nieve, duendes, galletas de jengibre y más",
+      "Líneas grandes y claras, fáciles de colorear para manos pequeñas",
+      "Páginas impresas por una sola cara para que los rotuladores no traspasen",
+      "Formato grande de 21,6 x 27,9 cm, perfecto como regalo de Navidad y Reyes"
+    ]
+  },
+  "listing": {
+    "language": "Spanish",
+    "age_min": 4,
+    "age_max": 8,
+    "price_usd": "8.99",
+    "keywords": [
+      "libro para colorear navidad niños",
+      "dibujos de navidad para colorear",
+      "regalo de reyes para niños",
+      "actividades navideñas para niños",
+      "regalo navidad niña niño 5 6 7 años",
+      "cuaderno para colorear infantil",
+      "libro de actividades invierno niños"
+    ],
+    "categories": [
+      "Children's Books > Holidays & Celebrations > Christmas",
+      "Children's Books > Activities, Crafts & Games > Activity Books > Coloring",
+      "Children's Books > Arts, Music & Photography > Art > Drawing"
+    ],
+    "description_html": "<p><b>¡Haz que esta Navidad sea aún más mágica con 40 dibujos adorables para colorear!</b></p><p>Los niños de 4 a 8 años disfrutarán coloreando a Papá Noel, sus renos, alegres muñecos de nieve, duendes trabajadores, galletas de jengibre y acogedoras escenas de invierno. Cada página tiene líneas grandes y claras y formas sencillas para que los pequeños artistas coloreen con confianza.</p><ul><li><b>40 ilustraciones únicas</b> llenas de espíritu navideño</li><li><b>Páginas por una sola cara</b> para que los rotuladores no traspasen</li><li><b>Formato grande</b> de 21,6 x 27,9 cm con mucho espacio para colorear</li><li><b>Regalo perfecto</b> para Navidad, Reyes, calendarios de Adviento y vacaciones de invierno</li></ul><p>Diversión sin pantallas que desarrolla la concentración, la creatividad y la motricidad fina. ¡Añádelo a tu carrito hoy!</p>",
+    "marketplace": "Amazon.es (e Amazon.com pro publico hispano dos EUA)",
+    "price": "€ 8,99"
+  },
+  "pages": [
+    "Santa Claus waving happily with his big sack of toys",
+    "a cute baby reindeer with a red nose standing in the snow",
+    "a smiling snowman with a carrot nose, scarf and top hat",
+    "a decorated Christmas tree with a star on top and round ornaments",
+    "a gingerbread man with icing buttons, smiling",
+    "Santa's sleigh full of presents pulled by a reindeer",
+    "two happy elves wrapping a big present",
+    "a cozy fireplace with three Christmas stockings hanging",
+    "a cute penguin wearing a Santa hat holding a candy cane",
+    "a gingerbread house with candy decorations",
+    "a polar bear cub building a snowman",
+    "Mrs Claus baking cookies in the kitchen",
+    "a big pile of wrapped gift boxes with bows",
+    "a child sledding down a snowy hill",
+    "Santa coming down the chimney on a snowy rooftop",
+    "a cute owl on a snowy branch wearing earmuffs",
+    "a Christmas wreath with a big bow and pine cones",
+    "a happy teddy bear sitting next to a toy train",
+    "a reindeer and a snowman ice skating together",
+    "a jolly Santa reading a long list",
+    "a Christmas village with small houses and snow",
+    "a cute cat playing with a Christmas ornament",
+    "a mug of hot cocoa with marshmallows and a candy cane",
+    "a nutcracker toy soldier standing tall",
+    "an elf in Santa's workshop painting a wooden toy",
+    "a little bunny wearing a scarf in a snowy forest",
+    "Christmas bells with a ribbon and holly leaves",
+    "a puppy peeking out of a gift box with a bow",
+    "children singing Christmas carols with songbooks",
+    "a cookie plate and a glass of milk left for Santa",
+    "a smiling Christmas tree character with arms and a star hat",
+    "a snow globe with a tiny house and trees inside",
+    "a fox wearing a knitted hat and mittens in the snow",
+    "a family of snowmen big medium and small",
+    "an angel with wings holding a star",
+    "a cute mouse sleeping inside a Christmas stocking",
+    "Santa feeding a carrot to his reindeer",
+    "a candy cane, lollipops and wrapped candies arrangement",
+    "a hedgehog decorating a tiny Christmas tree",
+    "Santa and his reindeer flying over the moon"
+  ],
+  "marketing": {
+    "showcase": [
+      2,
+      9,
+      13,
+      1,
+      7,
+      10,
+      28,
+      23,
+      33,
+      35
+    ]
+  },
+  "source": "christmas",
+  "lang": "es",
+  "copy_from_source": [
+    "clean",
+    "raw/cover.png"
+  ]
+}

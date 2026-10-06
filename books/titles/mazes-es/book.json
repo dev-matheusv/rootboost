@@ -1,0 +1,125 @@
+{
+  "slug": "mazes-es",
+  "title": "Laberintos para Niños de 4 a 8 Años",
+  "subtitle": "80 Laberintos Divertidos de Fácil a Difícil con Soluciones. Libro de Actividades para Ejercitar la Mente de Niños y Niñas",
+  "author": "Crayon Cove Press",
+  "generation": {
+    "pages": {
+      "model": "gpt_image_2_5",
+      "params": {
+        "aspect_ratio": "3:4",
+        "resolution": "2k",
+        "quality": "medium"
+      }
+    },
+    "cover": {
+      "model": "gpt_image_2_5",
+      "params": {
+        "aspect_ratio": "3:4",
+        "resolution": "2k",
+        "quality": "high"
+      }
+    }
+  },
+  "style": {
+    "prefix": "Coloring book page for children ages 4 to 8. Subject:",
+    "suffix": "Black and white line art only. Thick clean bold black outlines with uniform line weight, pure white background, no shading, no gray tones, no hatching, no solid black fills except small eyes, large simple closed shapes that are easy to color inside, cute friendly cartoon style with happy faces, correct simple anatomy, one clear scene centered on the page with some empty space around it, no text, no letters, no border, no frame.",
+    "threshold": 150
+  },
+  "layout": {
+    "trim": [
+      8.5,
+      11
+    ],
+    "margin": 0.5,
+    "single_sided": false
+  },
+  "interior": {
+    "belongs_to": "Este libro pertenece a",
+    "color_test": null,
+    "copyright": [
+      "Copyright © 2026 Crayon Cove Press. Todos los derechos reservados.",
+      "Ninguna parte de este libro puede reproducirse sin permiso escrito del editor.",
+      "Ilustraciones creadas con ayuda de herramientas de IA y revisadas a mano."
+    ],
+    "solutions": "Soluciones"
+  },
+  "cover": {
+    "art_prompt": "Children's activity book front cover illustration, full vibrant color. A cheerful cartoon boy and girl explorers with a magnifying glass and a map walking through a colorful green hedge maze seen from a playful high angle, a cute puppy following them, sunny sky. Bold clean outlines, bright saturated colors, cute friendly style for kids. Keep the top third simple sky with no important details because a title will be placed there. No text, no letters, no logo.",
+    "front_title": [
+      "LABERINTOS",
+      "PARA NIÑOS"
+    ],
+    "front_tagline": "80 laberintos de fácil a difícil",
+    "age_badge": [
+      "DE 4 A 8",
+      "AÑOS"
+    ],
+    "spine": "Laberintos para Niños",
+    "bg": "#00897B",
+    "accent": "#F4511E",
+    "back_headline": "¿Puedes encontrar la salida?",
+    "back_bullets": [
+      "80 laberintos que se vuelven más difíciles página a página, para que los niños se sientan capaces desde el primero",
+      "Caminos gruesos y claros, fáciles de seguir con lápiz o cera",
+      "Todas las soluciones al final para padres y maestros",
+      "Desarrolla la concentración, la paciencia y la lógica, sin pantallas"
+    ]
+  },
+  "listing": {
+    "language": "Spanish",
+    "age_min": 4,
+    "age_max": 8,
+    "price_usd": "7.99",
+    "keywords": [
+      "laberintos para niños",
+      "libro de laberintos",
+      "libro de actividades niños 4 años",
+      "pasatiempos para niños",
+      "juegos de lógica para niños",
+      "actividades para viajes niños",
+      "cuaderno preescolar"
+    ],
+    "categories": [
+      "Children's Books > Activities, Crafts & Games > Activity Books > Mazes",
+      "Children's Books > Activities, Crafts & Games > Games",
+      "Children's Books > Education & Reference > Study Aids"
+    ],
+    "description_html": "<p><b>¡80 laberintos divertidos que convierten el tiempo de pantalla en tiempo de pensar!</b></p><p>Este libro empieza muy fácil para que los niños de 4 a 8 años ganen confianza y se vuelve un poco más difícil en cada página. Los caminos gruesos y claros son fáciles de seguir con lápiz o cera, y cada laberinto tiene un gran INICIO y una META.</p><ul><li><b>80 laberintos</b> de fácil a difícil</li><li><b>Con soluciones</b> al final del libro</li><li><b>Formato grande</b> de 21,6 x 27,9 cm</li><li><b>Desarrolla</b> la concentración, la paciencia y la resolución de problemas</li><li><b>Perfecto para</b> viajes en coche, restaurantes, momentos tranquilos y el aula</li></ul><p>Un regalo inteligente que mantiene a los niños entretenidos durante horas. ¡Añádelo a tu carrito hoy!</p>",
+    "marketplace": "Amazon.es (e Amazon.com pro publico hispano dos EUA)",
+    "price": "€ 7,99"
+  },
+  "pages": [],
+  "maze": {
+    "count": 80,
+    "cols": [
+      5,
+      16
+    ],
+    "seed": 2026,
+    "title_prefix": "Laberinto",
+    "labels": [
+      "INICIO",
+      "META"
+    ]
+  },
+  "marketing": {
+    "showcase": [
+      30,
+      8,
+      55,
+      20,
+      45,
+      70,
+      12,
+      62,
+      38,
+      78
+    ]
+  },
+  "source": "mazes",
+  "lang": "es",
+  "copy_from_source": [
+    "raw/cover.png"
+  ]
+}

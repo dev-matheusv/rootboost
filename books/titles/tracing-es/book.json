@@ -1,0 +1,162 @@
+{
+  "slug": "tracing-es",
+  "title": "Aprendo a Escribir: Cuaderno de Caligrafía para Niños de 3 a 5 Años",
+  "subtitle": "Repasa Líneas, Letras de la A a la Z y Números del 0 al 10. Cuaderno de Actividades para Preescolar e Infantil",
+  "author": "Crayon Cove Press",
+  "generation": {
+    "pages": {
+      "model": "gpt_image_2_5",
+      "params": {
+        "aspect_ratio": "3:4",
+        "resolution": "2k",
+        "quality": "medium"
+      }
+    },
+    "cover": {
+      "model": "gpt_image_2_5",
+      "params": {
+        "aspect_ratio": "3:4",
+        "resolution": "2k",
+        "quality": "high"
+      }
+    }
+  },
+  "style": {
+    "prefix": "Coloring book page for children ages 4 to 8. Subject:",
+    "suffix": "Black and white line art only. Thick clean bold black outlines with uniform line weight, pure white background, no shading, no gray tones, no hatching, no solid black fills except small eyes, large simple closed shapes that are easy to color inside, cute friendly cartoon style with happy faces, correct simple anatomy, one clear scene centered on the page with some empty space around it, no text, no letters, no border, no frame.",
+    "threshold": 150
+  },
+  "layout": {
+    "trim": [
+      8.5,
+      11
+    ],
+    "margin": 0.5,
+    "single_sided": false
+  },
+  "interior": {
+    "belongs_to": "Este libro pertenece a",
+    "color_test": null,
+    "copyright": [
+      "Copyright © 2026 Crayon Cove Press. Todos los derechos reservados.",
+      "Ninguna parte de este libro puede reproducirse sin permiso escrito del editor.",
+      "Ilustraciones creadas con ayuda de herramientas de IA y revisadas a mano."
+    ],
+    "solutions": null
+  },
+  "cover": {
+    "art_prompt": "Preschool workbook front cover illustration, full vibrant color. A cheerful cartoon boy and girl holding big chunky pencils, surrounded by colorful playful alphabet blocks, a happy apple, a crayon box and stars. Bold clean outlines, bright saturated primary colors, cute friendly style for preschoolers. Keep the top third simple with no important details because a title will be placed there. No text, no letters, no numbers, no logo.",
+    "front_title": [
+      "APRENDO A",
+      "ESCRIBIR"
+    ],
+    "front_tagline": "Líneas, letras de la A a la Z y números del 0 al 10",
+    "age_badge": [
+      "DE 3 A 5",
+      "AÑOS"
+    ],
+    "spine": "Aprendo a Escribir",
+    "bg": "#FFB300",
+    "accent": "#1565C0",
+    "back_headline": "¡Listos para el colegio!",
+    "back_bullets": [
+      "Páginas de calentamiento con líneas, zigzag, olas y bucles para controlar el lápiz",
+      "Todas las letras de la A a la Z, con la Ñ, en mayúscula y minúscula para repasar",
+      "Números del 0 al 10 con mucha práctica",
+      "Letras grandes para colorear y una línea libre en cada página para escribir solos"
+    ]
+  },
+  "listing": {
+    "language": "Spanish",
+    "age_min": 3,
+    "age_max": 5,
+    "price_usd": "7.99",
+    "keywords": [
+      "cuaderno de caligrafía niños",
+      "aprender a escribir preescolar",
+      "libro para aprender las letras",
+      "cuaderno de grafomotricidad",
+      "actividades educación infantil 3 4 5 años",
+      "aprender los números niños",
+      "cuaderno para repasar letras"
+    ],
+    "categories": [
+      "Children's Books > Education & Reference > Writing",
+      "Children's Books > Early Learning > Basic Concepts > Alphabet",
+      "Children's Books > Activities, Crafts & Games > Activity Books"
+    ],
+    "description_html": "<p><b>¡La forma divertida de aprender a escribir letras y números!</b></p><p>Este cuaderno acompaña a los niños de preescolar desde sus primeros trazos hasta escribir todas las letras y números. Empiezan con páginas de calentamiento fáciles, luego repasan cada letra de la A a la Z, incluida la Ñ, en mayúscula y minúscula, y terminan con los números del 0 al 10.</p><ul><li><b>Grafomotricidad</b> para controlar el lápiz: líneas, zigzag, olas y bucles</li><li><b>De la A a la Z con la Ñ</b> en mayúscula y minúscula</li><li><b>Números del 0 al 10</b></li><li><b>Letras grandes para colorear</b> en cada página</li><li><b>Formato grande</b> de 21,6 x 27,9 cm con pautas claras</li></ul><p>Perfecto para educación infantil, preescolar y para practicar en casa. ¡Añádelo a tu carrito hoy!</p>",
+    "marketplace": "Amazon.es (e Amazon.com pro publico hispano dos EUA)",
+    "price": "€ 7,99"
+  },
+  "pages": [],
+  "marketing": {
+    "showcase": [
+      7,
+      13,
+      3,
+      25,
+      33,
+      40
+    ]
+  },
+  "source": "tracing",
+  "lang": "es",
+  "copy_from_source": [
+    "raw/cover.png"
+  ],
+  "tracing": {
+    "pattern": "{L} de {W}",
+    "letters": "ABCDEFGHIJKLMNÑOPQRSTUVWXYZ",
+    "warmups": {
+      "straight": "Repasa las líneas",
+      "vertical": "Arriba y abajo",
+      "zigzag": "Zigzag",
+      "wave": "Olas",
+      "mountains": "Colinas",
+      "loops": "Bucles"
+    },
+    "words": {
+      "A": "Abeja",
+      "B": "Ballena",
+      "C": "Casa",
+      "D": "Dinosaurio",
+      "E": "Elefante",
+      "F": "Flor",
+      "G": "Gato",
+      "H": "Helado",
+      "I": "Iglú",
+      "J": "Jirafa",
+      "K": "Koala",
+      "L": "León",
+      "M": "Mariposa",
+      "N": "Nube",
+      "Ñ": "Ñandú",
+      "O": "Oso",
+      "P": "Pato",
+      "Q": "Queso",
+      "R": "Ratón",
+      "S": "Sol",
+      "T": "Tortuga",
+      "U": "Uvas",
+      "V": "Vaca",
+      "W": "Wombat",
+      "X": "Xilófono",
+      "Y": "Yoyó",
+      "Z": "Zapato"
+    },
+    "numbers": [
+      "cero",
+      "uno",
+      "dos",
+      "tres",
+      "cuatro",
+      "cinco",
+      "seis",
+      "siete",
+      "ocho",
+      "nueve",
+      "diez"
+    ]
+  }
+}

@@ -191,18 +191,28 @@ WORDS = {
 NUMS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"]
 
 
+WARMUPS = {"straight": "Trace the Lines", "vertical": "Up and Down", "zigzag": "Zig Zag",
+           "wave": "Wavy Lines", "mountains": "Hills", "loops": "Loop de Loop"}
+
+
 def main(slug: str) -> None:
     d = ROOT / "titles" / slug
+    spec = json.loads((d / "book.json").read_text(encoding="utf-8"))
+    t = spec.get("tracing", {})  # edicoes em outro idioma sobrescrevem textos e palavras
+    warm = {**WARMUPS, **t.get("warmups", {})}
+    words = t.get("words", WORDS)
+    letters = t.get("letters", "ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+    nums = t.get("numbers", NUMS)
+    pattern = t.get("pattern", "{L} is for {W}")
     out = d / "clean"
     out.mkdir(parents=True, exist_ok=True)
     pages: list[Image.Image] = []
-    for kind, t in [("straight", "Trace the Lines"), ("vertical", "Up and Down"), ("zigzag", "Zig Zag"),
-                    ("wave", "Wavy Lines"), ("mountains", "Hills"), ("loops", "Loop de Loop")]:
-        pages.append(warmup_page(kind, t))
-    for up in "ABCDEFGHIJKLMNOPQRSTUVWXYZ":
-        pages.append(letter_page(up, up.lower(), f"{up} is for {WORDS[up]}"))
+    for kind in ("straight", "vertical", "zigzag", "wave", "mountains", "loops"):
+        pages.append(warmup_page(kind, warm[kind]))
+    for up in letters:
+        pages.append(letter_page(up, up.lower(), pattern.format(L=up, W=words[up])))
     for n in range(0, 11):
-        pages.append(letter_page(str(n), None, NUMS[n].capitalize()))
+        pages.append(letter_page(str(n), None, nums[n].capitalize()))
     for i, p in enumerate(pages, 1):
         p.save(out / f"{i:02d}.png", dpi=(300, 300), optimize=True)
     print(f"{len(pages)} paginas em {out}")

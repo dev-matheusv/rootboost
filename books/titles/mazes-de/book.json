@@ -1,0 +1,125 @@
+{
+  "slug": "mazes-de",
+  "title": "Labyrinthe für Kinder ab 4 Jahren",
+  "subtitle": "80 lustige Labyrinthe von leicht bis schwer mit Lösungen. Rätselbuch zum Knobeln für Jungen und Mädchen",
+  "author": "Crayon Cove Press",
+  "generation": {
+    "pages": {
+      "model": "gpt_image_2_5",
+      "params": {
+        "aspect_ratio": "3:4",
+        "resolution": "2k",
+        "quality": "medium"
+      }
+    },
+    "cover": {
+      "model": "gpt_image_2_5",
+      "params": {
+        "aspect_ratio": "3:4",
+        "resolution": "2k",
+        "quality": "high"
+      }
+    }
+  },
+  "style": {
+    "prefix": "Coloring book page for children ages 4 to 8. Subject:",
+    "suffix": "Black and white line art only. Thick clean bold black outlines with uniform line weight, pure white background, no shading, no gray tones, no hatching, no solid black fills except small eyes, large simple closed shapes that are easy to color inside, cute friendly cartoon style with happy faces, correct simple anatomy, one clear scene centered on the page with some empty space around it, no text, no letters, no border, no frame.",
+    "threshold": 150
+  },
+  "layout": {
+    "trim": [
+      8.5,
+      11
+    ],
+    "margin": 0.5,
+    "single_sided": false
+  },
+  "interior": {
+    "belongs_to": "Dieses Buch gehört",
+    "color_test": null,
+    "copyright": [
+      "Copyright © 2026 Crayon Cove Press. Alle Rechte vorbehalten.",
+      "Kein Teil dieses Buches darf ohne schriftliche Genehmigung des Verlags vervielfältigt werden.",
+      "Illustrationen mit Hilfe von KI Werkzeugen erstellt und von Hand geprüft."
+    ],
+    "solutions": "Lösungen"
+  },
+  "cover": {
+    "art_prompt": "Children's activity book front cover illustration, full vibrant color. A cheerful cartoon boy and girl explorers with a magnifying glass and a map walking through a colorful green hedge maze seen from a playful high angle, a cute puppy following them, sunny sky. Bold clean outlines, bright saturated colors, cute friendly style for kids. Keep the top third simple sky with no important details because a title will be placed there. No text, no letters, no logo.",
+    "front_title": [
+      "LABYRINTHE",
+      "FÜR KINDER"
+    ],
+    "front_tagline": "80 Labyrinthe von leicht bis schwer",
+    "age_badge": [
+      "4 BIS 8",
+      "JAHRE"
+    ],
+    "spine": "Labyrinthe für Kinder",
+    "bg": "#00897B",
+    "accent": "#F4511E",
+    "back_headline": "Findest du den Weg hinaus?",
+    "back_bullets": [
+      "80 Labyrinthe, die Seite für Seite schwerer werden, damit Kinder von Anfang an Erfolg haben",
+      "Dicke, klare Wege, die man leicht mit Stift nachfahren kann",
+      "Alle Lösungen hinten im Buch für Eltern und Lehrer",
+      "Fördert Konzentration, Geduld und logisches Denken, ganz ohne Bildschirm"
+    ]
+  },
+  "listing": {
+    "language": "German",
+    "age_min": 4,
+    "age_max": 8,
+    "price_usd": "7.99",
+    "keywords": [
+      "labyrinth buch kinder",
+      "rätselbuch kinder ab 4",
+      "labyrinthe für kinder",
+      "beschäftigungsbuch kinder",
+      "knobelbuch kinder 5 6 jahre",
+      "rätsel für kinder reise",
+      "vorschule übungsheft"
+    ],
+    "categories": [
+      "Children's Books > Activities, Crafts & Games > Activity Books > Mazes",
+      "Children's Books > Activities, Crafts & Games > Games",
+      "Children's Books > Education & Reference > Study Aids"
+    ],
+    "description_html": "<p><b>80 lustige Labyrinthe, die Bildschirmzeit in Denkzeit verwandeln!</b></p><p>Das Buch beginnt ganz leicht, damit Kinder von 4 bis 8 Jahren gleich Erfolg haben, und wird dann Seite für Seite etwas schwerer. Dicke, klare Wege lassen sich leicht mit Bleistift oder Wachsmalstift nachfahren, und jedes Labyrinth hat einen großen START und ein ZIEL.</p><ul><li><b>80 Labyrinthe</b> von leicht bis schwer</li><li><b>Mit Lösungen</b> hinten im Buch</li><li><b>Großes Format</b> 21,6 x 27,9 cm</li><li><b>Fördert</b> Konzentration, Geduld und Problemlösen</li><li><b>Perfekt für</b> Autofahrten, Restaurants, ruhige Momente und den Kindergarten</li></ul><p>Ein cleveres Geschenk, das Kinder stundenlang beschäftigt. Jetzt in den Warenkorb legen!</p>",
+    "marketplace": "Amazon.de (Europa toda recebe junto)",
+    "price": "€ 7,99"
+  },
+  "pages": [],
+  "maze": {
+    "count": 80,
+    "cols": [
+      5,
+      16
+    ],
+    "seed": 2026,
+    "title_prefix": "Labyrinth",
+    "labels": [
+      "START",
+      "ZIEL"
+    ]
+  },
+  "marketing": {
+    "showcase": [
+      30,
+      8,
+      55,
+      20,
+      45,
+      70,
+      12,
+      62,
+      38,
+      78
+    ]
+  },
+  "source": "mazes",
+  "lang": "de",
+  "copy_from_source": [
+    "raw/cover.png"
+  ]
+}
