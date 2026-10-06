@@ -127,5 +127,38 @@
     "a dinosaur camping with a tent and campfire",
     "a smiling dinosaur waving goodbye",
     "a dinosaur jungle with ferns, palm trees and a waterfall"
-  ]
+  ],
+  "marketing": {
+    "palette": [
+      "#66BB6A",
+      "#43A047",
+      "#9CCC65",
+      "#FFA726",
+      "#FF7043",
+      "#42A5F5",
+      "#FFEE58",
+      "#8D6E63",
+      "#A1887F",
+      "#FFFFFF"
+    ],
+    "hooks": [
+      "Roar! Watch him come to life",
+      "What color is your T rex?",
+      "Dino lovers need this book"
+    ],
+    "end_caption": "40 dinosaur pages for kids",
+    "cta": "LINK IN BIO",
+    "showcase": [
+      1,
+      2,
+      3,
+      10,
+      12,
+      16,
+      21,
+      32,
+      35,
+      38
+    ]
+  }
 }

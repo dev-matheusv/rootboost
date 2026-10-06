@@ -1,5 +1,8 @@
 titles/*/raw/
 titles/*/clean/
+titles/*/clean_solutions/
 titles/*/out/
+titles/*/marketing/
 titles/*/qa.json
+titles/*/*.log
 __pycache__/

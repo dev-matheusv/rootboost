@@ -114,7 +114,7 @@
     "an axolotl with a little crab and a starfish",
     "an axolotl eating sushi",
     "an axolotl in a superhero cape",
-    "an axolotl dancing ballet in a tutu",
+    "an axolotl wearing a ballet tutu twirling happily, real axolotl body with short stubby legs and a long tail, filling the page",
     "an axolotl chef cooking pancakes",
     "an axolotl in a fishbowl with plants",
     "an axolotl on a unicorn pool float",
@@ -124,8 +124,41 @@
     "an axolotl doing yoga",
     "an axolotl on a swing hanging from coral",
     "an axolotl holding a donut",
-    "three baby axolotls in a row",
+    "three baby axolotls hugging together in a big happy group, large and filling most of the page",
     "an axolotl mermaid with a shell crown",
     "an axolotl saying goodnight under the moon"
-  ]
+  ],
+  "marketing": {
+    "palette": [
+      "#F8BBD0",
+      "#F48FB1",
+      "#CE93D8",
+      "#B39DDB",
+      "#81D4FA",
+      "#80DEEA",
+      "#A5D6A7",
+      "#FFF59D",
+      "#FFCC80",
+      "#FFFFFF"
+    ],
+    "hooks": [
+      "The cutest axolotl ever",
+      "Pink or purple? Tell me below",
+      "My kid colors this every day"
+    ],
+    "end_caption": "40 kawaii axolotl pages",
+    "cta": "LINK IN BIO",
+    "showcase": [
+      1,
+      3,
+      9,
+      14,
+      7,
+      13,
+      20,
+      21,
+      26,
+      39
+    ]
+  }
 }

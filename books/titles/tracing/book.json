@@ -1,0 +1,112 @@
+{
+  "slug": "tracing",
+  "title": "Letter Tracing Book for Preschoolers Ages 3 to 5",
+  "subtitle": "Trace Lines, Letters A to Z and Numbers 0 to 10. Handwriting Practice Workbook for Pre K and Kindergarten",
+  "author": "Crayon Cove Press",
+  "generation": {
+    "pages": {
+      "model": "gpt_image_2_5",
+      "params": {
+        "aspect_ratio": "3:4",
+        "resolution": "2k",
+        "quality": "medium"
+      }
+    },
+    "cover": {
+      "model": "gpt_image_2_5",
+      "params": {
+        "aspect_ratio": "3:4",
+        "resolution": "2k",
+        "quality": "high"
+      }
+    }
+  },
+  "style": {
+    "prefix": "Coloring book page for children ages 4 to 8. Subject:",
+    "suffix": "Black and white line art only. Thick clean bold black outlines with uniform line weight, pure white background, no shading, no gray tones, no hatching, no solid black fills except small eyes, large simple closed shapes that are easy to color inside, cute friendly cartoon style with happy faces, correct simple anatomy, one clear scene centered on the page with some empty space around it, no text, no letters, no border, no frame.",
+    "threshold": 150
+  },
+  "layout": {
+    "trim": [
+      8.5,
+      11
+    ],
+    "margin": 0.5,
+    "single_sided": false
+  },
+  "interior": {
+    "belongs_to": "This Book Belongs To",
+    "color_test": null,
+    "copyright": [
+      "Copyright © 2026 Crayon Cove Press. All rights reserved.",
+      "No part of this book may be reproduced without written permission from the publisher.",
+      "Illustrations created with the help of AI tools and reviewed by hand."
+    ],
+    "solutions": null
+  },
+  "cover": {
+    "art_prompt": "Preschool workbook front cover illustration, full vibrant color. A cheerful cartoon boy and girl holding big chunky pencils, surrounded by colorful playful alphabet blocks, a happy apple, a crayon box and stars. Bold clean outlines, bright saturated primary colors, cute friendly style for preschoolers. Keep the top third simple with no important details because a title will be placed there. No text, no letters, no numbers, no logo.",
+    "front_title": [
+      "LETTER TRACING",
+      "FOR PRESCHOOLERS"
+    ],
+    "front_tagline": "Lines, letters A to Z and numbers 0 to 10",
+    "age_badge": [
+      "AGES",
+      "3 TO 5"
+    ],
+    "spine": "Letter Tracing Book",
+    "bg": "#FFB300",
+    "accent": "#1565C0",
+    "back_headline": "Get ready for kindergarten!",
+    "back_bullets": [
+      "Warm up pages with lines, zig zags, waves and loops to build pencil control",
+      "Every letter A to Z in uppercase and lowercase, with dotted letters to trace",
+      "Numbers 0 to 10 with plenty of practice",
+      "Big letters to color and an empty line on every page to write alone"
+    ]
+  },
+  "listing": {
+    "language": "English",
+    "age_min": 3,
+    "age_max": 5,
+    "price_usd": "7.99",
+    "keywords": [
+      "letter tracing book for preschoolers",
+      "handwriting practice for kids",
+      "abc tracing workbook",
+      "pre k workbooks ages 3 to 5",
+      "kindergarten workbook",
+      "alphabet writing practice",
+      "learn to write letters and numbers"
+    ],
+    "categories": [
+      "Children's Books > Education & Reference > Writing",
+      "Children's Books > Early Learning > Basic Concepts > Alphabet",
+      "Children's Books > Activities, Crafts & Games > Activity Books"
+    ],
+    "description_html": "<p><b>The fun way to learn to write letters and numbers!</b></p><p>This tracing workbook takes preschoolers from first pencil lines to writing every letter and number. Kids start with easy warm up pages, then trace each letter A to Z in uppercase and lowercase, and finish with numbers 0 to 10.</p><ul><li><b>Warm up pages</b> for pencil control: lines, zig zags, waves and loops</li><li><b>A to Z</b> in uppercase and lowercase with dotted letters to trace</li><li><b>Numbers 0 to 10</b></li><li><b>Big letters to color</b> on every page</li><li><b>Large 8.5 x 11 inch pages</b> with clear handwriting lines</li></ul><p>Perfect for Pre K, kindergarten and homeschool. Add it to your cart today!</p>"
+  },
+  "pages": [],
+  "marketing": {
+    "palette": [
+      "#FFFFFF"
+    ],
+    "ai_color": false,
+    "hooks": [
+      "From scribbles to ABC",
+      "Can your kid trace this?",
+      "Kindergarten prep made fun"
+    ],
+    "end_caption": "Letter Tracing Book",
+    "cta": "LINK IN BIO",
+    "showcase": [
+      7,
+      13,
+      3,
+      25,
+      33,
+      40
+    ]
+  }
+}

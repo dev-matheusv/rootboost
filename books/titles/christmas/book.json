@@ -4,15 +4,36 @@
   "subtitle": "40 Cute and Easy Holiday Pages with Santa, Reindeer, Snowmen, Elves and More. A Fun Gift for Boys and Girls",
   "author": "Crayon Cove Press",
   "generation": {
-    "pages": { "model": "gpt_image_2_5", "params": { "aspect_ratio": "3:4", "resolution": "2k", "quality": "medium" } },
-    "cover": { "model": "gpt_image_2_5", "params": { "aspect_ratio": "3:4", "resolution": "2k", "quality": "high" } }
+    "pages": {
+      "model": "gpt_image_2_5",
+      "params": {
+        "aspect_ratio": "3:4",
+        "resolution": "2k",
+        "quality": "medium"
+      }
+    },
+    "cover": {
+      "model": "gpt_image_2_5",
+      "params": {
+        "aspect_ratio": "3:4",
+        "resolution": "2k",
+        "quality": "high"
+      }
+    }
   },
   "style": {
     "prefix": "Coloring book page for children ages 4 to 8. Subject:",
     "suffix": "Black and white line art only. Thick clean bold black outlines with uniform line weight, pure white background, no shading, no gray tones, no hatching, no solid black fills except small eyes, large simple closed shapes that are easy to color inside, cute friendly cartoon style with happy faces, correct simple anatomy, one clear scene centered on the page with some empty space around it, no text, no letters, no border, no frame.",
     "threshold": 150
   },
-  "layout": { "trim": [8.5, 11], "margin": 0.5, "single_sided": true },
+  "layout": {
+    "trim": [
+      8.5,
+      11
+    ],
+    "margin": 0.5,
+    "single_sided": true
+  },
   "interior": {
     "belongs_to": "This Book Belongs To",
     "color_test": "Test Your Colors",
@@ -24,9 +45,15 @@
   },
   "cover": {
     "art_prompt": "Children's coloring book front cover illustration, full vibrant color. A cheerful cartoon Santa Claus, a cute baby reindeer and a smiling snowman together in front of a glowing decorated Christmas tree with presents, falling snow, cozy warm night sky. Bold clean outlines, bright saturated primary colors, cute friendly kawaii style for kids. Keep the top third of the image as simple sky with no important details because a title will be placed there. No text, no letters, no logo.",
-    "front_title": ["CHRISTMAS", "COLORING BOOK"],
+    "front_title": [
+      "CHRISTMAS",
+      "COLORING BOOK"
+    ],
     "front_tagline": "40 cute and easy holiday pages",
-    "age_badge": ["AGES", "4 TO 8"],
+    "age_badge": [
+      "AGES",
+      "4 TO 8"
+    ],
     "spine": "Christmas Coloring Book",
     "bg": "#C62828",
     "accent": "#1B7F3B",
@@ -100,5 +127,38 @@
     "a candy cane, lollipops and wrapped candies arrangement",
     "a hedgehog decorating a tiny Christmas tree",
     "Santa and his reindeer flying over the moon"
-  ]
+  ],
+  "marketing": {
+    "palette": [
+      "#E53935",
+      "#C62828",
+      "#43A047",
+      "#2E7D32",
+      "#FDD835",
+      "#FFF3E0",
+      "#FFCCBC",
+      "#8D6E63",
+      "#90CAF9",
+      "#FFFFFF"
+    ],
+    "hooks": [
+      "Santa is waiting for your colors",
+      "Pick his colors in the comments",
+      "Stocking stuffer idea for kids"
+    ],
+    "end_caption": "40 Christmas pages for kids",
+    "cta": "LINK IN BIO",
+    "showcase": [
+      2,
+      9,
+      13,
+      1,
+      7,
+      10,
+      28,
+      23,
+      33,
+      35
+    ]
+  }
 }

@@ -8,7 +8,7 @@
       "model": "gpt_image_2_5",
       "params": {
         "aspect_ratio": "3:4",
-        "resolution": "2k",
+        "resolution": "1k",
         "quality": "medium"
       }
     },
@@ -127,5 +127,24 @@
     "a frog",
     "a bird",
     "a heart with a smiling face"
-  ]
+  ],
+  "marketing": {
+    "palette": [
+      "#EF5350",
+      "#FFCA28",
+      "#66BB6A",
+      "#42A5F5",
+      "#FFA726",
+      "#AB47BC",
+      "#EC407A",
+      "#26C6DA"
+    ],
+    "hooks": [
+      "Perfect first coloring book",
+      "Big lines for little hands",
+      "Toddler approved"
+    ],
+    "end_caption": "My First Big Coloring Book",
+    "cta": "LINK IN BIO"
+  }
 }

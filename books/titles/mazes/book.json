@@ -1,0 +1,129 @@
+{
+  "slug": "mazes",
+  "title": "Mazes for Kids Ages 4 to 8",
+  "subtitle": "80 Fun Mazes from Easy to Hard with Solutions. A Brain Boosting Activity Book for Boys and Girls",
+  "author": "Crayon Cove Press",
+  "generation": {
+    "pages": {
+      "model": "gpt_image_2_5",
+      "params": {
+        "aspect_ratio": "3:4",
+        "resolution": "2k",
+        "quality": "medium"
+      }
+    },
+    "cover": {
+      "model": "gpt_image_2_5",
+      "params": {
+        "aspect_ratio": "3:4",
+        "resolution": "2k",
+        "quality": "high"
+      }
+    }
+  },
+  "style": {
+    "prefix": "Coloring book page for children ages 4 to 8. Subject:",
+    "suffix": "Black and white line art only. Thick clean bold black outlines with uniform line weight, pure white background, no shading, no gray tones, no hatching, no solid black fills except small eyes, large simple closed shapes that are easy to color inside, cute friendly cartoon style with happy faces, correct simple anatomy, one clear scene centered on the page with some empty space around it, no text, no letters, no border, no frame.",
+    "threshold": 150
+  },
+  "layout": {
+    "trim": [
+      8.5,
+      11
+    ],
+    "margin": 0.5,
+    "single_sided": false
+  },
+  "interior": {
+    "belongs_to": "This Book Belongs To",
+    "color_test": null,
+    "copyright": [
+      "Copyright © 2026 Crayon Cove Press. All rights reserved.",
+      "No part of this book may be reproduced without written permission from the publisher.",
+      "Illustrations created with the help of AI tools and reviewed by hand."
+    ],
+    "solutions": "Solutions"
+  },
+  "cover": {
+    "art_prompt": "Children's activity book front cover illustration, full vibrant color. A cheerful cartoon boy and girl explorers with a magnifying glass and a map walking through a colorful green hedge maze seen from a playful high angle, a cute puppy following them, sunny sky. Bold clean outlines, bright saturated colors, cute friendly style for kids. Keep the top third simple sky with no important details because a title will be placed there. No text, no letters, no logo.",
+    "front_title": [
+      "MAZES",
+      "FOR KIDS"
+    ],
+    "front_tagline": "80 fun mazes from easy to hard",
+    "age_badge": [
+      "AGES",
+      "4 TO 8"
+    ],
+    "spine": "Mazes for Kids",
+    "bg": "#00897B",
+    "accent": "#F4511E",
+    "back_headline": "Can you find the way out?",
+    "back_bullets": [
+      "80 mazes that get harder page by page, so kids feel smart from the very first one",
+      "Thick, clear paths that are easy to follow with a pencil or crayon",
+      "Full solutions at the back for parents and teachers",
+      "Builds focus, patience and problem solving, with zero screens"
+    ]
+  },
+  "listing": {
+    "language": "English",
+    "age_min": 4,
+    "age_max": 8,
+    "price_usd": "7.99",
+    "keywords": [
+      "maze book for kids ages 4 to 8",
+      "mazes for kids",
+      "kids activity book",
+      "puzzle book for kids",
+      "brain games for kids",
+      "travel activity book for kids",
+      "preschool workbook"
+    ],
+    "categories": [
+      "Children's Books > Activities, Crafts & Games > Activity Books > Mazes",
+      "Children's Books > Activities, Crafts & Games > Games",
+      "Children's Books > Education & Reference > Study Aids"
+    ],
+    "description_html": "<p><b>80 fun mazes that turn screen time into brain time!</b></p><p>This maze book starts super easy so kids ages 4 to 8 feel confident, then gets a little harder on every page. Thick, clear paths make it easy to trace with a pencil or crayon, and every maze has a big START and FINISH.</p><ul><li><b>80 mazes</b> from easy to hard</li><li><b>Solutions included</b> at the back</li><li><b>Large 8.5 x 11 inch pages</b></li><li><b>Builds focus, patience and problem solving</b></li><li><b>Perfect for</b> road trips, restaurants, quiet time and classrooms</li></ul><p>A smart gift that keeps kids busy for hours. Add it to your cart today!</p>"
+  },
+  "pages": [],
+  "maze": {
+    "count": 80,
+    "cols": [
+      5,
+      16
+    ],
+    "seed": 2026,
+    "title_prefix": "Maze",
+    "labels": [
+      "START",
+      "FINISH"
+    ]
+  },
+  "marketing": {
+    "palette": [
+      "#FFFFFF"
+    ],
+    "hooks": [
+      "Can your kid solve this?",
+      "Easy to hard in 80 mazes",
+      "Screen free brain game"
+    ],
+    "end_caption": "80 mazes for kids",
+    "cta": "LINK IN BIO",
+    "ai_color": false,
+    "showcase": [
+      30,
+      8,
+      55,
+      20,
+      45,
+      70,
+      12,
+      62,
+      38,
+      78
+    ]
+  }
+}

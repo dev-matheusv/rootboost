@@ -23,7 +23,10 @@ import json
 import shutil
 import subprocess
 import sys
+import threading
+import time
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import numpy as np
@@ -127,7 +130,7 @@ def run_job(args: list[str], prompt: str, dest: Path) -> None:
     dest.with_suffix(".json").write_text(json.dumps(meta, indent=2), encoding="utf-8")
 
 
-def cmd_generate(slug: str, limit: int | None, only: list[int] | None) -> None:
+def cmd_generate(slug: str, limit: int | None, only: list[int] | None, workers: int = 4) -> None:
     spec, d = load_book(slug)
     raw = d / "raw"
     todo = []
@@ -141,16 +144,37 @@ def cmd_generate(slug: str, limit: int | None, only: list[int] | None) -> None:
             todo.append((f"{i:02d}", page_prompt(spec, subject), gen_args(spec, "pages"), dest))
     if limit:
         todo = todo[:limit]
-    print(f"{len(todo)} imagens pra gerar")
-    for n, (label, prompt, args, dest) in enumerate(todo, 1):
-        print(f"[{n}/{len(todo)}] {label} ...", flush=True)
-        try:
-            run_job(args, prompt, dest)
-        except RuntimeError as e:
-            # sem credito / plano: para tudo (nao adianta tentar o resto)
-            print(f"  FALHOU: {e}")
-            if "credit" in str(e).lower() or "plan" in str(e).lower():
-                sys.exit("Parando: creditos ou plano insuficientes no Higgsfield.")
+    print(f"{len(todo)} imagens pra gerar ({workers} em paralelo)", flush=True)
+    stop = threading.Event()
+
+    def work(item):
+        label, prompt, args, dest = item
+        if stop.is_set():
+            return
+        attempt = 0
+        while attempt < 2:
+            try:
+                run_job(args, prompt, dest)
+                print(f"  ok {label}", flush=True)
+                return
+            except RuntimeError as e:
+                msg = str(e).lower()
+                if "rate_limit" in msg:
+                    # limite de jobs simultaneos do plano: espera e tenta de novo (nao conta tentativa)
+                    time.sleep(20)
+                    continue
+                attempt += 1
+                if "credit" in msg or "plan" in msg:
+                    # sem credito / plano: para tudo (nao adianta tentar o resto)
+                    stop.set()
+                    print(f"  PARANDO em {label}: {e}", flush=True)
+                    return
+                print(f"  falhou {label} (tentativa {attempt}): {e}", flush=True)
+
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        list(pool.map(work, todo))
+    if stop.is_set():
+        sys.exit("Creditos ou plano insuficientes no Higgsfield.")
 
 
 # ---------------------------------------------------------------- clean
@@ -262,16 +286,32 @@ def build_interior(spec: dict, d: Path) -> int:
         blank()
         if lay.get("single_sided", True):
             blank()
+    # 3b. solucionario (livros de atividade): 4 por pagina
+    sols = sorted((d / "clean_solutions").glob("[0-9][0-9].png"))
+    if sols:
+        if n % 2:
+            blank()  # solucoes comecam em pagina impar (direita)
+        c.setFont("Title", 60)
+        c.drawCentredString(W / 2, H / 2, spec["interior"].get("solutions", "Solutions"))
+        blank()
+        cw, ch = (W - 2 * m - 24) / 2, (H - 2 * m - 24) / 2
+        for k in range(0, len(sols), 4):
+            for j, p in enumerate(sols[k:k + 4]):
+                x = m + (j % 2) * (cw + 24)
+                y = H - m - (j // 2 + 1) * ch - (j // 2) * 24
+                c.drawImage(ImageReader(str(p)), x, y, cw, ch, preserveAspectRatio=True, anchor="c")
+            blank()
     # 4. pagina de teste de cores
-    c.setFont("Title", 30)
-    c.drawCentredString(W / 2, H - m - 40, spec["interior"]["color_test"])
-    c.setLineWidth(2)
-    cols, rows, s = 4, 6, 1.2 * PT
-    gx = (W - cols * s - (cols - 1) * 18) / 2
-    for r in range(rows):
-        for k in range(cols):
-            c.roundRect(gx + k * (s + 18), H - m - 110 - (r + 1) * (s + 14), s, s, 10)
-    blank()
+    if spec["interior"].get("color_test"):
+        c.setFont("Title", 30)
+        c.drawCentredString(W / 2, H - m - 40, spec["interior"]["color_test"])
+        c.setLineWidth(2)
+        cols, rows, s = 4, 6, 1.2 * PT
+        gx = (W - cols * s - (cols - 1) * 18) / 2
+        for r in range(rows):
+            for k in range(cols):
+                c.roundRect(gx + k * (s + 18), H - m - 110 - (r + 1) * (s + 14), s, s, 10)
+        blank()
     if n % 2:
         blank()  # KDP pede numero par de paginas
     c.save()
@@ -345,27 +385,40 @@ def build_cover(spec: dict, d: Path, page_count: int) -> dict:
     # contracapa: chamada + 4 amostras + area do codigo de barras livre
     bx0, bx1 = BLEED * PT + safe, (BLEED + tw) * PT - safe
     c.setFillColor(white)
-    c.setFont("Title", 30)
-    y = H - BLEED * PT - safe - 30
-    for line in wrap(cv["back_headline"], "Title", 30, bx1 - bx0):
+    c.setFont("Title", 40)
+    y = H - BLEED * PT - safe - 40
+    for line in wrap(cv["back_headline"], "Title", 40, bx1 - bx0):
         c.drawCentredString((bx0 + bx1) / 2, y, line)
-        y -= 34
-    c.setFont("Body", 15)
-    y -= 6
+        y -= 46
+    c.setFont("Body", 20)
+    y -= 10
     for bullet in cv["back_bullets"]:
-        for i, line in enumerate(wrap(bullet, "Body", 15, bx1 - bx0 - 20)):
-            c.drawString(bx0 + (0 if i == 0 else 14), y, ("• " if i == 0 else "") + line)
-            y -= 20
+        for i, line in enumerate(wrap(bullet, "Body", 20, bx1 - bx0 - 24)):
+            c.drawString(bx0 + (0 if i == 0 else 18), y, ("• " if i == 0 else "") + line)
+            y -= 26
+        y -= 6
+    # 3 amostras grandes; se o kit de marketing ja pintou alguma, a do meio sai colorida
     samples = sorted((d / "clean").glob("[0-9][0-9].png"))
-    pick = [samples[int(i * (len(samples) - 1) / 3)] for i in range(4)] if len(samples) >= 4 else samples
-    sw = (bx1 - bx0 - 3 * 12) / 4
+    show = spec.get("marketing", {}).get("showcase")
+    if show:
+        pick = [d / "clean" / f"{i:02d}.png" for i in show[:3]]
+    else:
+        pick = [samples[int(i * (len(samples) - 1) / 2)] for i in range(3)] if len(samples) >= 3 else samples
+    gap = 16
+    sw = (bx1 - bx0 - 2 * gap) / 3
     sh = sw * 1.3
-    sy = y - 20 - sh
+    floor = BLEED * PT + 0.25 * PT + BARCODE_H * PT + 20  # acima do codigo de barras
+    sy = max(floor, y - 24 - sh)
     for i, p in enumerate(pick):
-        x = bx0 + i * (sw + 12)
+        x = bx0 + i * (sw + gap)
+        colored = d / "marketing" / "colored" / p.name
+        src = colored if (i == 1 and colored.exists()) else p
         c.setFillColor(white)
-        c.roundRect(x, sy, sw, sh, 8, stroke=0, fill=1)
-        c.drawImage(ImageReader(str(p)), x + 4, sy + 4, sw - 8, sh - 8, preserveAspectRatio=True, anchor="c")
+        c.roundRect(x, sy, sw, sh, 12, stroke=0, fill=1)
+        c.drawImage(ImageReader(str(src)), x + 6, sy + 6, sw - 12, sh - 12, preserveAspectRatio=True, anchor="c")
+    c.setFillColor(white)
+    c.setFont("Title", 22)
+    c.drawString(bx0, BLEED * PT + 0.25 * PT + 20, spec["author"].upper())
     # area do codigo de barras: o KDP imprime ali, deixamos branco
     c.setFillColor(white)
     c.rect(bx1 - BARCODE_W * PT, BLEED * PT + 0.25 * PT, BARCODE_W * PT, BARCODE_H * PT, stroke=0, fill=1)
@@ -444,12 +497,13 @@ def main() -> None:
     ap.add_argument("cmd", choices=["plan", "generate", "clean", "build", "all"])
     ap.add_argument("slug", help="pasta em books/titles/")
     ap.add_argument("--limit", type=int, help="gerar no maximo N imagens (teste)")
+    ap.add_argument("--workers", type=int, default=4, help="geracoes em paralelo")
     ap.add_argument("--only", type=lambda s: [int(x) for x in s.split(",")], help="regerar paginas, ex: 3,7,12")
     a = ap.parse_args()
     if a.cmd == "plan":
         cmd_plan(a.slug)
     if a.cmd in ("generate", "all"):
-        cmd_generate(a.slug, a.limit, a.only)
+        cmd_generate(a.slug, a.limit, a.only, a.workers)
     if a.cmd in ("clean", "all"):
         cmd_clean(a.slug)
     if a.cmd in ("build", "all"):
