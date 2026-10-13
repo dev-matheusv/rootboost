@@ -1,7 +1,7 @@
 {
   "slug": "dinosaur",
-  "title": "Dinosaur Coloring Book for Kids Ages 4 to 8",
-  "subtitle": "40 Big and Easy Dino Pages with T Rex, Triceratops, Stegosaurus and More. A Fun Gift for Boys and Girls",
+  "title": "Dinosaur Coloring Book for Kids Ages 4 to 8 with Fun Facts",
+  "subtitle": "40 Big and Easy Dino Pages to Color and Learn, with Names Kids Can Say and Amazing Facts on Every Page. A Fun Gift for Boys and Girls",
   "author": "Crayon Cove Press",
   "generation": {
     "pages": {
@@ -41,15 +41,20 @@
       "Copyright © 2026 Crayon Cove Press. All rights reserved.",
       "No part of this book may be reproduced without written permission from the publisher.",
       "Illustrations created with the help of AI tools and reviewed by hand."
-    ]
+    ],
+    "bonus": {
+      "title": "FREE BONUS PAGES!",
+      "text": "Ask a grown up to scan this code to print more free dinosaur pages.",
+      "url": "https://rootboost.vercel.app/coloring/dinosaur/"
+    }
   },
   "cover": {
     "art_prompt": "Children's coloring book front cover illustration, full vibrant color. A friendly smiling green T rex, a cute orange triceratops and a baby blue stegosaurus together in a sunny prehistoric jungle with a volcano and palm trees. Bold clean outlines, bright saturated colors, cute friendly cartoon style for kids. Keep the top third simple with no important details because a title will be placed there. No text, no letters, no logo.",
     "front_title": [
       "DINOSAUR",
-      "COLORING BOOK"
+      "COLOR & LEARN"
     ],
-    "front_tagline": "40 big and easy dino pages",
+    "front_tagline": "40 big pages with fun facts on every page",
     "age_badge": [
       "AGES",
       "4 TO 8"
@@ -57,34 +62,34 @@
     "spine": "Dinosaur Coloring Book",
     "bg": "#2E7D32",
     "accent": "#EF6C00",
-    "back_headline": "Roar into a world of colorful dinosaurs!",
+    "back_headline": "Color a dino. Learn a fact. Roar with pride!",
     "back_bullets": [
-      "40 original dinosaur designs: T rex, triceratops, stegosaurus, pterodactyl and more",
+      "40 original dinosaur pages, each with a fun fact and the dino name with an easy say it guide",
       "Big, bold, simple lines that little hands can color",
       "Single sided pages so markers never ruin the next picture",
-      "Large 8.5 x 11 inch pages, a perfect birthday gift"
+      "Bonus pages online: scan the code inside to print more for free"
     ]
   },
   "listing": {
     "language": "English",
     "age_min": 4,
     "age_max": 8,
-    "price_usd": "8.99",
+    "price_usd": "9.99",
     "keywords": [
-      "dinosaur coloring book for kids ages 4 to 8",
-      "dinosaur gifts for boys",
-      "t rex coloring book",
-      "dinosaur activity book for kids",
-      "jurassic coloring pages for kids",
-      "coloring books for boys ages 4 to 8",
-      "easy dinosaur coloring book"
+      "dinosaur gifts for boys 5 6 7",
+      "dinosaur facts book for kids",
+      "t rex triceratops activity book",
+      "dino coloring pages with names",
+      "learning books for kindergarten",
+      "paleontology for kids",
+      "screen free activities for children"
     ],
     "categories": [
       "Children's Books > Activities, Crafts & Games > Activity Books > Coloring",
       "Children's Books > Animals > Dinosaurs",
       "Children's Books > Arts, Music & Photography > Art > Drawing"
     ],
-    "description_html": "<p><b>40 friendly dinosaurs are ready for your colors!</b></p><p>Kids ages 4 to 8 can color a mighty T rex, a happy triceratops, a long neck brachiosaurus, flying pterodactyls, baby dinos hatching from eggs and lots of prehistoric adventures. Every page has big, bold lines and simple shapes that are easy to color.</p><ul><li><b>40 unique dinosaur illustrations</b></li><li><b>Single sided pages</b> so markers never bleed onto the next picture</li><li><b>Large 8.5 x 11 inch format</b></li><li><b>Perfect gift</b> for birthdays, holidays, road trips and quiet time</li></ul><p>Screen free fun that builds creativity and fine motor skills. Add it to your cart today!</p>"
+    "description_html": "<p><b>Every page is a dino adventure AND a fun fact!</b></p><p>Most dinosaur coloring books just give kids pictures. This one teaches them too. Each of the 40 pages has a big, friendly dinosaur to color, the dinosaur's name with an easy say it guide (try SER uh tops!), and an amazing fact kids love to repeat at the dinner table.</p><ul><li><b>40 original illustrations</b>, each one different: T. rex, Triceratops, Spinosaurus, baby dinos, fossils and more</li><li><b>A fun fact on every page</b>, written for curious kids ages 4 to 8</li><li><b>Say it guides</b> for tricky dino names, so kids can show off what they learned</li><li><b>Big, bold lines</b> and single sided pages, so markers never ruin the next picture</li><li><b>Free bonus pages</b>: scan the code inside to print more at home</li></ul><p>Perfect for birthdays, road trips and screen free afternoons. Add it to your cart today!</p>"
   },
   "pages": [
     "a friendly T rex roaring with a big smile",
@@ -160,5 +165,207 @@
       35,
       38
     ]
+  },
+  "page_text": {
+    "01": {
+      "label": "T. rex",
+      "say": "tie RAN oh SORE us rex",
+      "fact": "T. rex had teeth as big as bananas, and it could chomp harder than any land animal alive today."
+    },
+    "02": {
+      "label": "Dino Eggs",
+      "say": "",
+      "fact": "All dinosaurs hatched from eggs, just like birds and turtles do today."
+    },
+    "03": {
+      "label": "Triceratops",
+      "say": "try SER uh tops",
+      "fact": "Its name means three horned face. It munched on plants all day long."
+    },
+    "04": {
+      "label": "Stegosaurus",
+      "say": "STEG oh SORE us",
+      "fact": "Stegosaurus was as long as a bus, but its brain was only about the size of a lime!"
+    },
+    "05": {
+      "label": "Brachiosaurus",
+      "say": "BRAK ee oh SORE us",
+      "fact": "It was as tall as a four story building and ate leaves from the very tops of trees."
+    },
+    "06": {
+      "label": "Pterodactyl",
+      "say": "TER oh DAK til",
+      "fact": "Pterodactyls could fly, but they were flying reptiles, not dinosaurs!"
+    },
+    "07": {
+      "label": "Dino World",
+      "say": "",
+      "fact": "Dinosaurs lived on Earth for about 165 million years. That is a really long time!"
+    },
+    "08": {
+      "label": "Dino Families",
+      "say": "",
+      "fact": "Some dinosaurs, like Maiasaura, built nests and took care of their babies."
+    },
+    "09": {
+      "label": "Ankylosaurus",
+      "say": "an KY lo SORE us",
+      "fact": "It had a heavy bony club at the end of its tail to keep it safe."
+    },
+    "10": {
+      "label": "T. rex",
+      "say": "tie RAN oh SORE us rex",
+      "fact": "T. rex had very short arms with only two fingers on each hand."
+    },
+    "11": {
+      "label": "Fossils",
+      "say": "FOSS ulz",
+      "fact": "Scientists learn about dinosaurs from fossils: bones that slowly turned into stone."
+    },
+    "12": {
+      "label": "Long Ago",
+      "say": "",
+      "fact": "The last dinosaurs lived more than 66 million years ago."
+    },
+    "13": {
+      "label": "Spinosaurus",
+      "say": "SPY no SORE us",
+      "fact": "Spinosaurus had a big sail on its back and loved to catch fish."
+    },
+    "14": {
+      "label": "Velociraptor",
+      "say": "veh LOSS ih RAP tor",
+      "fact": "Velociraptor was only about as big as a turkey, and it had feathers!"
+    },
+    "15": {
+      "label": "Parasaurolophus",
+      "say": "PAR ah sore OL oh fus",
+      "fact": "Its long head crest may have worked like a trumpet to make loud sounds."
+    },
+    "16": {
+      "label": "Herbivores",
+      "say": "HER bih vorz",
+      "fact": "Dinosaurs that ate only plants are called herbivores."
+    },
+    "17": {
+      "label": "Dino Eggs",
+      "say": "",
+      "fact": "Some dinosaur eggs were as big as a football!"
+    },
+    "18": {
+      "label": "Dino Cousins",
+      "say": "",
+      "fact": "Birds are related to dinosaurs. A chicken is a distant cousin of T. rex!"
+    },
+    "19": {
+      "label": "Paleontologist",
+      "say": "PAY lee on TOL oh jist",
+      "fact": "A scientist who digs up and studies dinosaur fossils is called a paleontologist."
+    },
+    "20": {
+      "label": "Carnivores",
+      "say": "CAR nih vorz",
+      "fact": "Dinosaurs that ate meat are called carnivores."
+    },
+    "21": {
+      "label": "Dinosaur",
+      "say": "DY no sore",
+      "fact": "The word dinosaur means terrible lizard."
+    },
+    "22": {
+      "label": "Plesiosaurus",
+      "say": "PLEE see oh SORE us",
+      "fact": "It swam in the ocean with four big flippers. It was a sea reptile, not a dinosaur."
+    },
+    "23": {
+      "label": "T. rex",
+      "say": "tie RAN oh SORE us rex",
+      "fact": "T. rex was about as long as a school bus!"
+    },
+    "24": {
+      "label": "Sleepy Dinos",
+      "say": "",
+      "fact": "Some small dinosaurs slept curled up with their heads tucked in, just like birds."
+    },
+    "25": {
+      "label": "Never Met",
+      "say": "",
+      "fact": "Stegosaurus lived millions of years before Triceratops, so they never met!"
+    },
+    "26": {
+      "label": "Quetzalcoatlus",
+      "say": "KET sal koh AT lus",
+      "fact": "This flying reptile had wings as wide as a small airplane!"
+    },
+    "27": {
+      "label": "Pachycephalosaurus",
+      "say": "PAK ee SEF ah lo SORE us",
+      "fact": "It had a thick, bony dome on its head, like a built in helmet."
+    },
+    "28": {
+      "label": "So Many Dinos",
+      "say": "",
+      "fact": "Scientists have named more than 1,000 different kinds of dinosaurs."
+    },
+    "29": {
+      "label": "Your Colors",
+      "say": "",
+      "fact": "Nobody knows the true colors of most dinosaurs, so you get to choose!"
+    },
+    "30": {
+      "label": "Dino Herds",
+      "say": "",
+      "fact": "Many plant eating dinosaurs lived together in big groups called herds."
+    },
+    "31": {
+      "label": "Footprints",
+      "say": "",
+      "fact": "Dinosaur footprints left in mud turned into stone. You can still see some today!"
+    },
+    "32": {
+      "label": "Baby T. rex",
+      "say": "",
+      "fact": "A baby T. rex was small and may have been covered in soft, fluffy feathers."
+    },
+    "33": {
+      "label": "Diplodocus",
+      "say": "dih PLOD oh kus",
+      "fact": "Diplodocus had a super long tail, and it may have swished it like a whip."
+    },
+    "34": {
+      "label": "Tummy Stones",
+      "say": "",
+      "fact": "Some dinosaurs swallowed small stones to help mash up the food in their tummies."
+    },
+    "35": {
+      "label": "Everywhere",
+      "say": "",
+      "fact": "Dinosaurs lived on every continent, even icy Antarctica!"
+    },
+    "36": {
+      "label": "No Flowers Yet",
+      "say": "",
+      "fact": "When the first dinosaurs lived, there were no flowers. Flowers came much later!"
+    },
+    "37": {
+      "label": "Big Feet",
+      "say": "",
+      "fact": "Some dinosaur footprints are bigger than a car tire!"
+    },
+    "38": {
+      "label": "No People",
+      "say": "",
+      "fact": "Dinosaurs never met people. They lived millions of years before the first humans."
+    },
+    "39": {
+      "label": "Still Here",
+      "say": "",
+      "fact": "Birds are the dinosaurs that are still alive today!"
+    },
+    "40": {
+      "label": "Biggest Dinos",
+      "say": "ar jen TEE no SORE us",
+      "fact": "Argentinosaurus was one of the biggest dinosaurs ever, almost as long as three school buses!"
+    }
   }
 }

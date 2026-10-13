@@ -26,6 +26,9 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 from scipy import ndimage
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from bookgen import numbered  # noqa: E402
+
 ROOT = Path(__file__).resolve().parent.parent
 FONTS = Path(__file__).resolve().parent / "fonts"
 
@@ -152,7 +155,7 @@ class Book:
         self.mk = self.spec.get("marketing", {})
         self.out = self.dir / "marketing"
         self.out.mkdir(exist_ok=True)
-        self.pages = sorted((self.dir / "clean").glob("[0-9][0-9].png"))
+        self.pages = numbered(self.dir / "clean")
         if not self.pages:
             sys.exit("Sem paginas limpas. Rode `bookgen.py clean` antes.")
         self.palette = self.mk.get("palette", PALETTES["default"])

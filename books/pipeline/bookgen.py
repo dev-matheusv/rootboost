@@ -53,6 +53,11 @@ pdfmetrics.registerFont(TTFont("Title", str(FONTS / "LuckiestGuy.ttf")))
 pdfmetrics.registerFont(TTFont("Body", str(FONTS / "Fredoka.ttf")))
 
 
+def numbered(folder: Path) -> list[Path]:
+    """Paginas numeradas (01.png, 99.png, 100.png...) em ordem numerica."""
+    return sorted((p for p in folder.glob("*.png") if p.stem.isdigit()), key=lambda p: int(p.stem))
+
+
 # ---------------------------------------------------------------- spec
 
 def load_book(slug: str) -> tuple[dict, Path]:
@@ -218,7 +223,7 @@ def cmd_clean(slug: str) -> None:
     lay = spec["layout"]
     box = (lay["trim"][0] - 2 * lay["margin"], lay["trim"][1] - 2 * lay["margin"])
     report = []
-    for src in sorted(raw.glob("[0-9][0-9].png")):
+    for src in numbered(raw):
         report.append(clean_page(src, out / src.name, box, spec["style"].get("threshold", 150)))
     (d / "qa.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
     flagged = [r["page"] for r in report if r["flag"]]
@@ -249,12 +254,47 @@ def wrap(text: str, font: str, size: float, max_w: float) -> list[str]:
     return lines
 
 
+def caption_height(cap: dict | None) -> float:
+    if not cap:
+        return 0
+    return (1.45 if cap.get("fact") else 1.15) * PT
+
+
+def draw_caption(c: canvas.Canvas, cap: dict, x: float, y: float, w: float, h: float, spec: dict) -> None:
+    """Faixa educativa sob o desenho: palavra pra colorir (toddler) ou nome + pronuncia + fato (dinos)."""
+    if cap.get("word"):
+        # palavra vazada (so contorno): a crianca colore as letras tambem
+        size = fit_text(c, cap["word"], "Title", w - 40, 64)
+        t = c.beginText()
+        t.setTextRenderMode(1)
+        t.setFont("Title", size)
+        c.setLineWidth(2.2)
+        t.setTextOrigin(x + (w - pdfmetrics.stringWidth(cap["word"], "Title", size)) / 2, y + (h - size * 0.72) / 2)
+        t.textOut(cap["word"])
+        c.drawText(t)
+        return
+    c.setLineWidth(2)
+    c.roundRect(x, y, w, h, 14)
+    pad = 14
+    c.setFont("Title", 22)
+    c.drawString(x + pad, y + h - pad - 18, cap.get("label", "").upper())
+    if cap.get("say"):
+        lw = pdfmetrics.stringWidth(cap.get("label", "").upper(), "Title", 22)
+        c.setFont("Body", 14)
+        c.drawString(x + pad + lw + 12, y + h - pad - 17, f"say it: {cap['say']}")
+    c.setFont("Body", 15)
+    ty = y + h - pad - 42
+    for line in wrap(cap["fact"], "Body", 15, w - 2 * pad)[:3]:
+        c.drawString(x + pad, ty, line)
+        ty -= 19
+
+
 def build_interior(spec: dict, d: Path) -> int:
     lay = spec["layout"]
     tw, th = lay["trim"]
     W, H = tw * PT, th * PT
     m = lay["margin"] * PT
-    pages = sorted((d / "clean").glob("[0-9][0-9].png"))
+    pages = numbered(d / "clean")
     if not pages:
         sys.exit("Sem paginas limpas. Rode `clean` antes.")
     c = canvas.Canvas(str(d / "out" / "interior.pdf"), pagesize=(W, H))
@@ -281,13 +321,18 @@ def build_interior(spec: dict, d: Path) -> int:
         y -= 14
     blank()
     # 3. paginas de colorir, cada uma com verso em branco (marcador nao vaza)
+    texts = spec.get("page_text", {})
     for p in pages:
-        c.drawImage(ImageReader(str(p)), m, m, W - 2 * m, H - 2 * m, preserveAspectRatio=True, anchor="c")
+        cap = texts.get(p.stem)
+        cap_h = caption_height(cap)
+        c.drawImage(ImageReader(str(p)), m, m + cap_h, W - 2 * m, H - 2 * m - cap_h, preserveAspectRatio=True, anchor="c")
+        if cap:
+            draw_caption(c, cap, m, m, W - 2 * m, cap_h - 10, spec)
         blank()
         if lay.get("single_sided", True):
             blank()
     # 3b. solucionario (livros de atividade): 4 por pagina
-    sols = sorted((d / "clean_solutions").glob("[0-9][0-9].png"))
+    sols = numbered(d / "clean_solutions")
     if sols:
         if n % 2:
             blank()  # solucoes comecam em pagina impar (direita)
@@ -301,6 +346,24 @@ def build_interior(spec: dict, d: Path) -> int:
                 y = H - m - (j // 2 + 1) * ch - (j // 2) * 24
                 c.drawImage(ImageReader(str(p)), x, y, cw, ch, preserveAspectRatio=True, anchor="c")
             blank()
+    # 3c. pagina bonus: QR pro site com paginas gratis (e futura lista de e mail)
+    bonus = spec["interior"].get("bonus")
+    if bonus:
+        import qrcode
+        url = bonus["url"]
+        img = qrcode.make(url, box_size=20, border=2).convert("L")
+        c.setFont("Title", 44)
+        c.drawCentredString(W / 2, H - m - 70, bonus["title"])
+        c.setFont("Body", 20)
+        y = H - m - 120
+        for line in wrap(bonus["text"], "Body", 20, W - 2 * m - 40):
+            c.drawCentredString(W / 2, y, line)
+            y -= 28
+        q = 3.2 * PT
+        c.drawImage(ImageReader(img), (W - q) / 2, H / 2 - q / 2 - 30, q, q)
+        c.setFont("Body", 14)
+        c.drawCentredString(W / 2, H / 2 - q / 2 - 60, url.replace("https://", ""))
+        blank()
     # 4. pagina de teste de cores
     if spec["interior"].get("color_test"):
         c.setFont("Title", 30)
@@ -398,7 +461,7 @@ def build_cover(spec: dict, d: Path, page_count: int) -> dict:
             y -= 26
         y -= 6
     # 3 amostras grandes; se o kit de marketing ja pintou alguma, a do meio sai colorida
-    samples = sorted((d / "clean").glob("[0-9][0-9].png"))
+    samples = numbered(d / "clean")
     show = spec.get("marketing", {}).get("showcase")
     if show:
         pick = [d / "clean" / f"{i:02d}.png" for i in show[:3]]
@@ -438,7 +501,7 @@ def build_cover(spec: dict, d: Path, page_count: int) -> dict:
 
 def build_listing(spec: dict, d: Path, page_count: int, cover: dict) -> None:
     L = spec["listing"]
-    designs = len(list((d / "clean").glob("[0-9][0-9].png")))
+    designs = len(numbered(d / "clean"))
     md = [
         f"# Ficha KDP: {spec['title']}",
         "",

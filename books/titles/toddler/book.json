@@ -1,7 +1,7 @@
 {
   "slug": "toddler",
-  "title": "My First Big Coloring Book for Toddlers Ages 1 to 3",
-  "subtitle": "40 Simple and Bold Pages of Animals, Fruits, Vehicles and Everyday Things. Easy Coloring Fun for Boys and Girls",
+  "title": "My First Big Coloring Book for Toddlers Ages 1 to 3: Color and Learn",
+  "subtitle": "66 Simple Pages of First Words, Colors, Shapes and Numbers 1 to 10. Big Bold Pictures for Little Hands",
   "author": "Crayon Cove Press",
   "generation": {
     "pages": {
@@ -41,15 +41,20 @@
       "Copyright © 2026 Crayon Cove Press. All rights reserved.",
       "No part of this book may be reproduced without written permission from the publisher.",
       "Illustrations created with the help of AI tools and reviewed by hand."
-    ]
+    ],
+    "bonus": {
+      "title": "FREE BONUS PAGES!",
+      "text": "Grown ups: scan this code to print more free pages for your little one.",
+      "url": "https://rootboost.vercel.app/coloring/toddler/"
+    }
   },
   "cover": {
     "art_prompt": "Toddler coloring book front cover illustration, full vibrant color. A cute smiling cartoon puppy, a red apple, a yellow school bus and a happy sun arranged playfully on a soft background. Very simple big rounded shapes, extra thick outlines. Bold clean outlines, bright saturated colors, cute friendly cartoon style for kids. Keep the top third simple with no important details because a title will be placed there. No text, no letters, no logo.",
     "front_title": [
       "MY FIRST BIG",
-      "COLORING BOOK"
+      "COLOR & LEARN"
     ],
-    "front_tagline": "40 simple and bold pages for little hands",
+    "front_tagline": "First words, colors, shapes and numbers 1 to 10",
     "age_badge": [
       "AGES",
       "1 TO 3"
@@ -57,34 +62,34 @@
     "spine": "My First Big Coloring Book",
     "bg": "#1E88E5",
     "accent": "#FB8C00",
-    "back_headline": "The perfect first coloring book!",
+    "back_headline": "Coloring time is learning time!",
     "back_bullets": [
-      "40 big, simple pictures: animals, fruits, vehicles and everyday things",
-      "Extra thick lines that are easy for toddlers to follow",
-      "Single sided pages so markers never ruin the next picture",
-      "Large 8.5 x 11 inch pages with lots of room for scribbles"
+      "40 big pictures, each with its first word in giant letters to color too",
+      "8 colors, 8 shapes and counting from 1 to 10",
+      "Extra thick lines and single sided pages, made for chunky crayons",
+      "Bonus pages online: scan the code inside to print more for free"
     ]
   },
   "listing": {
     "language": "English",
     "age_min": 1,
     "age_max": 3,
-    "price_usd": "8.99",
+    "price_usd": "9.99",
     "keywords": [
-      "toddler coloring book ages 1 to 3",
-      "my first coloring book",
+      "toddler learning activities 2 year old",
+      "first words book for toddlers",
+      "learn colors shapes numbers toddler",
       "coloring book for 2 year olds",
-      "simple coloring book for toddlers",
-      "preschool learning activity book",
-      "baby coloring book big pictures",
-      "easy coloring book for toddlers ages 2 to 4"
+      "preschool learning workbook ages 2 to 4",
+      "baby first coloring book big pictures",
+      "educational gifts for 1 2 3 year old"
     ],
     "categories": [
       "Children's Books > Activities, Crafts & Games > Activity Books > Coloring",
       "Children's Books > Early Learning > Basic Concepts",
       "Children's Books > Arts, Music & Photography > Art > Drawing"
     ],
-    "description_html": "<p><b>The perfect first coloring book for your little one!</b></p><p>Made for toddlers ages 1 to 3, every page shows one big, simple picture with extra thick lines: a puppy, an apple, a car, a ball, a sun and many more friendly things your child already knows. It is a great way to practice colors, first words and early scribbles.</p><ul><li><b>40 simple illustrations</b> with one object per page</li><li><b>Extra thick lines</b> made for chunky crayons</li><li><b>Single sided pages</b> so markers never bleed onto the next picture</li><li><b>Large 8.5 x 11 inch format</b></li></ul><p>Screen free fun that builds early learning and fine motor skills. Add it to your cart today!</p>"
+    "description_html": "<p><b>Coloring time is learning time!</b></p><p>Made for little hands ages 1 to 3, this is more than a coloring book. Every page shows one big, friendly picture and its first word in giant letters your toddler can color too. Then kids explore colors, shapes and counting from 1 to 10, all while they scribble and have fun.</p><ul><li><b>40 first word pictures</b>: animals, fruits, vehicles and everyday things</li><li><b>8 color pages and 8 shape pages</b> to learn the basics</li><li><b>Count and color from 1 to 10</b> with pictures from the book</li><li><b>Extra thick lines</b> and single sided pages, made for chunky crayons</li><li><b>Free bonus pages</b>: scan the code inside to print more at home</li></ul><p>A perfect first gift for toddlers, daycare and preschool. Add it to your cart today!</p>"
   },
   "pages": [
     "a happy puppy sitting",
@@ -157,6 +162,280 @@
       24,
       31,
       38
+    ]
+  },
+  "page_text": {
+    "01": {
+      "word": "PUPPY"
+    },
+    "02": {
+      "word": "CAT"
+    },
+    "03": {
+      "word": "APPLE"
+    },
+    "04": {
+      "word": "BANANA"
+    },
+    "05": {
+      "word": "BALL"
+    },
+    "06": {
+      "word": "SUN"
+    },
+    "07": {
+      "word": "CAR"
+    },
+    "08": {
+      "word": "BUS"
+    },
+    "09": {
+      "word": "DUCK"
+    },
+    "10": {
+      "word": "FISH"
+    },
+    "11": {
+      "word": "TEDDY BEAR"
+    },
+    "12": {
+      "word": "CUPCAKE"
+    },
+    "13": {
+      "word": "HOUSE"
+    },
+    "14": {
+      "word": "TREE"
+    },
+    "15": {
+      "word": "FLOWER"
+    },
+    "16": {
+      "word": "BUTTERFLY"
+    },
+    "17": {
+      "word": "COW"
+    },
+    "18": {
+      "word": "PIG"
+    },
+    "19": {
+      "word": "ELEPHANT"
+    },
+    "20": {
+      "word": "LION"
+    },
+    "21": {
+      "word": "STRAWBERRY"
+    },
+    "22": {
+      "word": "PEAR"
+    },
+    "23": {
+      "word": "TRAIN"
+    },
+    "24": {
+      "word": "AIRPLANE"
+    },
+    "25": {
+      "word": "BOAT"
+    },
+    "26": {
+      "word": "BALLOON"
+    },
+    "27": {
+      "word": "STAR"
+    },
+    "28": {
+      "word": "MOON"
+    },
+    "29": {
+      "word": "RAINBOW"
+    },
+    "30": {
+      "word": "ICE CREAM"
+    },
+    "31": {
+      "word": "TURTLE"
+    },
+    "32": {
+      "word": "BUNNY"
+    },
+    "33": {
+      "word": "CHICK"
+    },
+    "34": {
+      "word": "CUP"
+    },
+    "35": {
+      "word": "SHOE"
+    },
+    "36": {
+      "word": "HAT"
+    },
+    "37": {
+      "word": "FIRE TRUCK"
+    },
+    "38": {
+      "word": "FROG"
+    },
+    "39": {
+      "word": "BIRD"
+    },
+    "40": {
+      "word": "HEART"
+    },
+    "41": {
+      "word": "RED"
+    },
+    "42": {
+      "word": "BLUE"
+    },
+    "43": {
+      "word": "YELLOW"
+    },
+    "44": {
+      "word": "GREEN"
+    },
+    "45": {
+      "word": "ORANGE"
+    },
+    "46": {
+      "word": "PURPLE"
+    },
+    "47": {
+      "word": "PINK"
+    },
+    "48": {
+      "word": "BROWN"
+    },
+    "49": {
+      "word": "CIRCLE"
+    },
+    "50": {
+      "word": "SQUARE"
+    },
+    "51": {
+      "word": "TRIANGLE"
+    },
+    "52": {
+      "word": "RECTANGLE"
+    },
+    "53": {
+      "word": "OVAL"
+    },
+    "54": {
+      "word": "DIAMOND"
+    },
+    "55": {
+      "word": "STAR"
+    },
+    "56": {
+      "word": "HEART"
+    },
+    "57": {
+      "word": "1 MOON"
+    },
+    "58": {
+      "word": "2 APPLES"
+    },
+    "59": {
+      "word": "3 DUCKS"
+    },
+    "60": {
+      "word": "4 STARS"
+    },
+    "61": {
+      "word": "5 FISH"
+    },
+    "62": {
+      "word": "6 HEARTS"
+    },
+    "63": {
+      "word": "7 BALLOONS"
+    },
+    "64": {
+      "word": "8 STRAWBERRIES"
+    },
+    "65": {
+      "word": "9 BUTTERFLIES"
+    },
+    "66": {
+      "word": "10 BALLS"
+    }
+  },
+  "learn": {
+    "colors": [
+      "red",
+      "blue",
+      "yellow",
+      "green",
+      "orange",
+      "purple",
+      "pink",
+      "brown"
+    ],
+    "shapes": [
+      "circle",
+      "square",
+      "triangle",
+      "rectangle",
+      "oval",
+      "diamond",
+      "star",
+      "heart"
+    ],
+    "counting": [
+      [
+        1,
+        "28",
+        "moon"
+      ],
+      [
+        2,
+        "3",
+        "apples"
+      ],
+      [
+        3,
+        "9",
+        "ducks"
+      ],
+      [
+        4,
+        "27",
+        "stars"
+      ],
+      [
+        5,
+        "10",
+        "fish"
+      ],
+      [
+        6,
+        "40",
+        "hearts"
+      ],
+      [
+        7,
+        "26",
+        "balloons"
+      ],
+      [
+        8,
+        "21",
+        "strawberries"
+      ],
+      [
+        9,
+        "16",
+        "butterflies"
+      ],
+      [
+        10,
+        "5",
+        "balls"
+      ]
     ]
   }
 }

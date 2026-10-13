@@ -191,6 +191,77 @@ WORDS = {
 NUMS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"]
 
 
+SHAPES = ["circle", "square", "triangle", "rectangle", "star", "heart"]
+
+
+def shape_points(shape: str, cx: float, cy: float, r: float) -> list[tuple[float, float]]:
+    if shape == "circle":
+        return [(cx + r * math.cos(t), cy + r * math.sin(t)) for t in np.linspace(-math.pi / 2, 1.5 * math.pi, 120)]
+    if shape == "square":
+        return [(cx - r, cy - r), (cx + r, cy - r), (cx + r, cy + r), (cx - r, cy + r), (cx - r, cy - r)]
+    if shape == "triangle":
+        return [(cx, cy - r), (cx + r, cy + r * 0.8), (cx - r, cy + r * 0.8), (cx, cy - r)]
+    if shape == "rectangle":
+        return [(cx - r * 1.3, cy - r * 0.7), (cx + r * 1.3, cy - r * 0.7), (cx + r * 1.3, cy + r * 0.7), (cx - r * 1.3, cy + r * 0.7), (cx - r * 1.3, cy - r * 0.7)]
+    if shape == "star":
+        pts = [(cx + (r if k % 2 == 0 else r * 0.45) * math.cos(math.radians(-90 + k * 36)),
+                cy + (r if k % 2 == 0 else r * 0.45) * math.sin(math.radians(-90 + k * 36))) for k in range(10)]
+        return pts + [pts[0]]
+    return [(cx + r * 16 * math.sin(t) ** 3 / 16, cy - r * (13 * math.cos(t) - 5 * math.cos(2 * t) - 2 * math.cos(3 * t) - math.cos(4 * t)) / 16)
+            for t in np.linspace(0, 2 * math.pi, 160)]
+
+
+def shape_trace_page(shape: str, title: str) -> Image.Image:
+    img = Image.new("L", (W, H), 255)
+    dr = ImageDraw.Draw(img)
+    dr.text((W / 2, 40), title, font=title_font(150), fill=0, anchor="mt")
+    dotted_path(dr, shape_points(shape, W / 2, 900, 520), spacing=30, r=11)
+    for k in range(6):
+        cx, cy = 420 + (k % 3) * 705, 1900 + (k // 3) * 700
+        dotted_path(dr, shape_points(shape, cx, cy, 230), spacing=24, r=8)
+    return img
+
+
+def picture_word_page(art: Path, word: str) -> Image.Image:
+    """Desenho pra colorir em cima + palavra pra tracar embaixo."""
+    img = Image.new("L", (W, H), 255)
+    dr = ImageDraw.Draw(img)
+    pic = Image.open(art).convert("L")
+    pic = pic.crop(pic.point(lambda v: 255 - v).getbbox())
+    pic.thumbnail((1500, 1400), Image.LANCZOS)
+    img.paste(pic.point(lambda v: 0 if v < 128 else 255), ((W - pic.width) // 2, 60 + (1400 - pic.height) // 2))
+    f = fredoka(int(260 / 0.70))
+    for i in range(3):
+        top = 1580 + i * 460
+        base = top + 260
+        guide_lines(dr, top, base)
+        if i == 0:
+            dr.text((M + 30, base), word, font=f, fill=0, anchor="ls")
+        elif i == 1:
+            draw_dotted_text(img, (M + 30, base), word, f, dot_r=9, spacing=23)
+    return img
+
+
+def sight_words_page(words: list[str], title: str) -> Image.Image:
+    img = Image.new("L", (W, H), 255)
+    dr = ImageDraw.Draw(img)
+    dr.text((W / 2, 40), title, font=title_font(150), fill=0, anchor="mt")
+    f = fredoka(int(250 / 0.70))
+    for j, w in enumerate(words):
+        for i in range(3):
+            top = 330 + j * 1330 + i * 420
+            base = top + 250
+            guide_lines(dr, top, base)
+            x = M + 30
+            if i == 0:
+                dr.text((x, base), w, font=f, fill=0, anchor="ls")
+                x += f.getlength(w) + 90
+            while i < 2 and x + f.getlength(w) < W - M:
+                draw_dotted_text(img, (x, base), w, f, dot_r=9, spacing=23)
+                x += f.getlength(w) + 90
+    return img
+
+
 WARMUPS = {"straight": "Trace the Lines", "vertical": "Up and Down", "zigzag": "Zig Zag",
            "wave": "Wavy Lines", "mountains": "Hills", "loops": "Loop de Loop"}
 
@@ -213,6 +284,15 @@ def main(slug: str) -> None:
         pages.append(letter_page(up, up.lower(), pattern.format(L=up, W=words[up])))
     for n in range(0, 11):
         pages.append(letter_page(str(n), None, nums[n].capitalize()))
+    extra = t.get("extra", spec.get("tracing_extra", {}))
+    for shape in extra.get("shapes", []):
+        pages.append(shape_trace_page(shape, extra.get("shape_title", "Trace the {S}").format(S=shape.title())))
+    art_dir = ROOT / "titles" / extra.get("art_from", "toddler") / "clean"
+    for page_no, word in extra.get("picture_words", []):
+        pages.append(picture_word_page(art_dir / f"{int(page_no):02d}.png", word))
+    sw = extra.get("sight_words", [])
+    for k in range(0, len(sw), 2):
+        pages.append(sight_words_page(sw[k:k + 2], extra.get("sight_title", "Words I Can Read")))
     for i, p in enumerate(pages, 1):
         p.save(out / f"{i:02d}.png", dpi=(300, 300), optimize=True)
     print(f"{len(pages)} paginas em {out}")

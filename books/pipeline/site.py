@@ -20,6 +20,10 @@ from PIL import Image
 from reportlab.lib.utils import ImageReader
 from reportlab.pdfgen import canvas
 
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from bookgen import numbered  # noqa: E402
+
 ROOT = Path(__file__).resolve().parent.parent
 SITE = ROOT.parent / "landing" / "coloring"
 BRAND = "Crayon Cove"
@@ -113,7 +117,7 @@ def book_page(spec: dict) -> None:
 </div>
 <h2 style="margin-top:40px">Your free pages</h2>
 <div class="grid">{thumbs}</div>
-<h2 style="margin-top:40px">Want all {len(list((spec['_dir'] / 'clean').glob('[0-9][0-9].png')))} pages?</h2>
+<h2 style="margin-top:40px">Want all {len(numbered(spec['_dir'] / 'clean'))} pages?</h2>
 <ul style="font-size:18px;line-height:1.6">{bullets}</ul>
 {buy}
 <footer>&copy; 2026 {BRAND}. Free pages are for personal and classroom use.</footer>
