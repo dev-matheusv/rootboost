@@ -1,7 +1,7 @@
 {
   "slug": "toddler-de",
-  "title": "Mein erstes großes Malbuch für Kleinkinder ab 1 Jahr",
-  "subtitle": "40 einfache Ausmalbilder mit dicken Linien: Tiere, Obst, Fahrzeuge und mehr. Für Kinder von 1 bis 3 Jahren",
+  "title": "Mein erstes großes Malbuch ab 1 Jahr: Malen und Lernen",
+  "subtitle": "66 einfache Seiten mit ersten Wörtern, Farben, Formen und Zahlen von 1 bis 10. Große Bilder für kleine Hände",
   "author": "Crayon Cove Press",
   "generation": {
     "pages": {
@@ -42,15 +42,20 @@
       "Kein Teil dieses Buches darf ohne schriftliche Genehmigung des Verlags vervielfältigt werden.",
       "Illustrationen mit Hilfe von KI Werkzeugen erstellt und von Hand geprüft."
     ],
-    "solutions": null
+    "solutions": null,
+    "bonus": {
+      "title": "GRATIS BONUSSEITEN!",
+      "text": "Liebe Eltern: Scannt diesen Code und druckt gratis weitere Seiten aus.",
+      "url": "https://rootboost.vercel.app/coloring/toddler/"
+    }
   },
   "cover": {
     "art_prompt": "Toddler coloring book front cover illustration, full vibrant color. A cute smiling cartoon puppy, a red apple, a yellow school bus and a happy sun arranged playfully on a soft background. Very simple big rounded shapes, extra thick outlines. Bold clean outlines, bright saturated colors, cute friendly cartoon style for kids. Keep the top third simple with no important details because a title will be placed there. No text, no letters, no logo.",
     "front_title": [
       "MEIN ERSTES",
-      "GROSSES MALBUCH"
+      "MALEN & LERNEN"
     ],
-    "front_tagline": "40 einfache Bilder für kleine Hände",
+    "front_tagline": "Erste Wörter, Farben, Formen und Zahlen 1 bis 10",
     "age_badge": [
       "1 BIS 3",
       "JAHRE"
@@ -58,12 +63,12 @@
     "spine": "Mein erstes großes Malbuch",
     "bg": "#1E88E5",
     "accent": "#FB8C00",
-    "back_headline": "Das perfekte erste Malbuch!",
+    "back_headline": "Malzeit ist Lernzeit!",
     "back_bullets": [
-      "40 große, einfache Bilder: Tiere, Obst, Fahrzeuge und Dinge aus dem Alltag",
-      "Extra dicke Linien, die Kleinkinder leicht erkennen",
-      "Einseitig bedruckt, damit Filzstifte nicht auf das nächste Bild durchdrücken",
-      "Großes Format 21,6 x 27,9 cm mit viel Platz zum Kritzeln"
+      "40 große Bilder, jedes mit seinem ersten Wort in Riesenbuchstaben zum Ausmalen",
+      "8 Farben, 8 Formen und Zählen von 1 bis 10",
+      "Extra dicke Linien und einseitig bedruckt, gemacht für dicke Wachsmalstifte",
+      "Bonusseiten online: Code im Buch scannen und gratis mehr drucken"
     ]
   },
   "listing": {
@@ -73,21 +78,21 @@
     "price_usd": "8.99",
     "keywords": [
       "malbuch ab 1 jahr",
+      "erste wörter kleinkind",
+      "farben formen zahlen lernen",
       "malbuch ab 2 jahre",
-      "kleinkind malbuch",
-      "mein erstes malbuch",
-      "malen ab 2 jahren",
-      "beschäftigung kleinkind",
-      "ausmalbilder kleinkinder einfach"
+      "lernspiele kleinkind 2 jahre",
+      "beschäftigung kleinkind ohne bildschirm",
+      "geschenk 1 2 3 jahre"
     ],
     "categories": [
       "Children's Books > Activities, Crafts & Games > Activity Books > Coloring",
       "Children's Books > Early Learning > Basic Concepts",
       "Children's Books > Arts, Music & Photography > Art > Drawing"
     ],
-    "description_html": "<p><b>Das perfekte erste Malbuch für dein Kind!</b></p><p>Für Kleinkinder von 1 bis 3 Jahren: Jede Seite zeigt ein großes, einfaches Bild mit extra dicken Linien, zum Beispiel einen Hund, einen Apfel, ein Auto, einen Ball oder eine Sonne. Ideal, um Farben, erste Wörter und erste Kritzeleien zu üben.</p><ul><li><b>40 einfache Bilder</b> mit einem Motiv pro Seite</li><li><b>Extra dicke Linien</b> für dicke Wachsmalstifte</li><li><b>Einseitig bedruckt,</b> damit Filzstifte nicht durchdrücken</li><li><b>Großes Format</b> 21,6 x 27,9 cm</li></ul><p>Bildschirmfreier Spaß, der frühes Lernen und Feinmotorik fördert. Jetzt in den Warenkorb legen!</p>",
+    "description_html": "<p><b>Malzeit ist Lernzeit!</b></p><p>Für kleine Hände von 1 bis 3 Jahren gemacht und mehr als ein Malbuch: Jede Seite zeigt ein großes, freundliches Bild und sein erstes Wort in Riesenbuchstaben, die dein Kind auch ausmalen kann. Danach entdecken Kinder Farben, Formen und Zählen von 1 bis 10.</p><ul><li><b>40 Bilder mit ersten Wörtern:</b> Tiere, Obst, Fahrzeuge und Dinge aus dem Alltag</li><li><b>8 Farbseiten und 8 Formenseiten</b> für die Grundlagen</li><li><b>Zählen und malen von 1 bis 10</b> mit Bildern aus dem Buch</li><li><b>Extra dicke Linien</b> und einseitig bedruckt, gemacht für dicke Wachsmalstifte</li><li><b>Gratis Bonusseiten:</b> Code im Buch scannen und mehr zu Hause drucken</li></ul><p>Ein perfektes erstes Geschenk für Kleinkinder, Krippe und Kita. Jetzt in den Warenkorb legen!</p>",
     "marketplace": "Amazon.de (Europa toda recebe junto)",
-    "price": "€ 8,99"
+    "price": "€ 9,99"
   },
   "pages": [
     "a happy puppy sitting",
@@ -150,5 +155,205 @@
   "copy_from_source": [
     "clean",
     "raw/cover.png"
-  ]
+  ],
+  "page_text": {
+    "01": {
+      "word": "HUND"
+    },
+    "02": {
+      "word": "KATZE"
+    },
+    "03": {
+      "word": "APFEL"
+    },
+    "04": {
+      "word": "BANANE"
+    },
+    "05": {
+      "word": "BALL"
+    },
+    "06": {
+      "word": "SONNE"
+    },
+    "07": {
+      "word": "AUTO"
+    },
+    "08": {
+      "word": "BUS"
+    },
+    "09": {
+      "word": "ENTE"
+    },
+    "10": {
+      "word": "FISCH"
+    },
+    "11": {
+      "word": "TEDDY"
+    },
+    "12": {
+      "word": "MUFFIN"
+    },
+    "13": {
+      "word": "HAUS"
+    },
+    "14": {
+      "word": "BAUM"
+    },
+    "15": {
+      "word": "BLUME"
+    },
+    "16": {
+      "word": "SCHMETTERLING"
+    },
+    "17": {
+      "word": "KUH"
+    },
+    "18": {
+      "word": "SCHWEIN"
+    },
+    "19": {
+      "word": "ELEFANT"
+    },
+    "20": {
+      "word": "LÖWE"
+    },
+    "21": {
+      "word": "ERDBEERE"
+    },
+    "22": {
+      "word": "BIRNE"
+    },
+    "23": {
+      "word": "ZUG"
+    },
+    "24": {
+      "word": "FLUGZEUG"
+    },
+    "25": {
+      "word": "BOOT"
+    },
+    "26": {
+      "word": "BALLON"
+    },
+    "27": {
+      "word": "STERN"
+    },
+    "28": {
+      "word": "MOND"
+    },
+    "29": {
+      "word": "REGENBOGEN"
+    },
+    "30": {
+      "word": "EIS"
+    },
+    "31": {
+      "word": "SCHILDKRÖTE"
+    },
+    "32": {
+      "word": "HASE"
+    },
+    "33": {
+      "word": "KÜKEN"
+    },
+    "34": {
+      "word": "TASSE"
+    },
+    "35": {
+      "word": "SCHUH"
+    },
+    "36": {
+      "word": "HUT"
+    },
+    "37": {
+      "word": "FEUERWEHR"
+    },
+    "38": {
+      "word": "FROSCH"
+    },
+    "39": {
+      "word": "VOGEL"
+    },
+    "40": {
+      "word": "HERZ"
+    },
+    "41": {
+      "word": "ROT"
+    },
+    "42": {
+      "word": "BLAU"
+    },
+    "43": {
+      "word": "GELB"
+    },
+    "44": {
+      "word": "GRÜN"
+    },
+    "45": {
+      "word": "ORANGE"
+    },
+    "46": {
+      "word": "LILA"
+    },
+    "47": {
+      "word": "ROSA"
+    },
+    "48": {
+      "word": "BRAUN"
+    },
+    "49": {
+      "word": "KREIS"
+    },
+    "50": {
+      "word": "QUADRAT"
+    },
+    "51": {
+      "word": "DREIECK"
+    },
+    "52": {
+      "word": "RECHTECK"
+    },
+    "53": {
+      "word": "OVAL"
+    },
+    "54": {
+      "word": "RAUTE"
+    },
+    "55": {
+      "word": "STERN"
+    },
+    "56": {
+      "word": "HERZ"
+    },
+    "57": {
+      "word": "1 MOND"
+    },
+    "58": {
+      "word": "2 ÄPFEL"
+    },
+    "59": {
+      "word": "3 ENTEN"
+    },
+    "60": {
+      "word": "4 STERNE"
+    },
+    "61": {
+      "word": "5 FISCHE"
+    },
+    "62": {
+      "word": "6 HERZEN"
+    },
+    "63": {
+      "word": "7 BALLONS"
+    },
+    "64": {
+      "word": "8 ERDBEEREN"
+    },
+    "65": {
+      "word": "9 SCHMETTERLINGE"
+    },
+    "66": {
+      "word": "10 BÄLLE"
+    }
+  }
 }

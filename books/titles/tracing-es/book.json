@@ -1,7 +1,7 @@
 {
   "slug": "tracing-es",
   "title": "Aprendo a Escribir: Cuaderno de Caligrafía para Niños de 3 a 5 Años",
-  "subtitle": "Repasa Líneas, Letras de la A a la Z y Números del 0 al 10. Cuaderno de Actividades para Preescolar e Infantil",
+  "subtitle": "Repasa Líneas, Formas, Letras de la A a la Z, Números del 0 al 10, Primeras Palabras y Palabras Frecuentes. Cuaderno para Preescolar e Infantil",
   "author": "Crayon Cove Press",
   "generation": {
     "pages": {
@@ -42,7 +42,12 @@
       "Ninguna parte de este libro puede reproducirse sin permiso escrito del editor.",
       "Ilustraciones creadas con ayuda de herramientas de IA y revisadas a mano."
     ],
-    "solutions": null
+    "solutions": null,
+    "bonus": {
+      "title": "¡PÁGINAS EXTRA GRATIS!",
+      "text": "Para los mayores: escanea este código para imprimir más páginas gratis.",
+      "url": "https://rootboost.vercel.app/coloring/tracing/"
+    }
   },
   "cover": {
     "art_prompt": "Preschool workbook front cover illustration, full vibrant color. A cheerful cartoon boy and girl holding big chunky pencils, surrounded by colorful playful alphabet blocks, a happy apple, a crayon box and stars. Bold clean outlines, bright saturated primary colors, cute friendly style for preschoolers. Keep the top third simple with no important details because a title will be placed there. No text, no letters, no numbers, no logo.",
@@ -50,7 +55,7 @@
       "APRENDO A",
       "ESCRIBIR"
     ],
-    "front_tagline": "Líneas, letras de la A a la Z y números del 0 al 10",
+    "front_tagline": "Líneas, formas, letras, números y primeras palabras",
     "age_badge": [
       "DE 3 A 5",
       "AÑOS"
@@ -60,10 +65,10 @@
     "accent": "#1565C0",
     "back_headline": "¡Listos para el colegio!",
     "back_bullets": [
-      "Páginas de calentamiento con líneas, zigzag, olas y bucles para controlar el lápiz",
-      "Todas las letras de la A a la Z, con la Ñ, en mayúscula y minúscula para repasar",
-      "Números del 0 al 10 con mucha práctica",
-      "Letras grandes para colorear y una línea libre en cada página para escribir solos"
+      "Páginas de calentamiento y formas para controlar el lápiz",
+      "Todas las letras de la A a la Z con la Ñ, y números del 0 al 10",
+      "20 palabras con dibujo para repasar y colorear, y 20 palabras frecuentes",
+      "Páginas extra en línea: escanea el código del libro e imprime más gratis"
     ]
   },
   "listing": {
@@ -85,9 +90,9 @@
       "Children's Books > Early Learning > Basic Concepts > Alphabet",
       "Children's Books > Activities, Crafts & Games > Activity Books"
     ],
-    "description_html": "<p><b>¡La forma divertida de aprender a escribir letras y números!</b></p><p>Este cuaderno acompaña a los niños de preescolar desde sus primeros trazos hasta escribir todas las letras y números. Empiezan con páginas de calentamiento fáciles, luego repasan cada letra de la A a la Z, incluida la Ñ, en mayúscula y minúscula, y terminan con los números del 0 al 10.</p><ul><li><b>Grafomotricidad</b> para controlar el lápiz: líneas, zigzag, olas y bucles</li><li><b>De la A a la Z con la Ñ</b> en mayúscula y minúscula</li><li><b>Números del 0 al 10</b></li><li><b>Letras grandes para colorear</b> en cada página</li><li><b>Formato grande</b> de 21,6 x 27,9 cm con pautas claras</li></ul><p>Perfecto para educación infantil, preescolar y para practicar en casa. ¡Añádelo a tu carrito hoy!</p>",
+    "description_html": "<p><b>De los primeros garabatos a las primeras palabras, paso a paso.</b></p><p>Este cuaderno sigue el orden que usan los maestros: primero trazos y formas, después cada letra de la A a la Z con la Ñ y los números del 0 al 10, y al final palabras de verdad. Cada página de letra tiene una letra grande para colorear, y cada palabra tiene un dibujo para colorear.</p><ul><li><b>Grafomotricidad y formas</b> para controlar el lápiz</li><li><b>De la A a la Z con la Ñ</b> en mayúscula y minúscula, y números del 0 al 10</li><li><b>20 palabras con dibujo</b> para repasar y colorear</li><li><b>20 palabras frecuentes</b> para empezar a leer</li><li><b>Páginas extra gratis:</b> escanea el código del libro e imprime más en casa</li></ul><p>Perfecto para educación infantil, preescolar y para practicar en casa. ¡Añádelo a tu carrito hoy!</p>",
     "marketplace": "Amazon.es (e Amazon.com pro publico hispano dos EUA)",
-    "price": "€ 7,99"
+    "price": "€ 8,99"
   },
   "pages": [],
   "marketing": {
@@ -158,5 +163,129 @@
       "nueve",
       "diez"
     ]
+  },
+  "tracing_extra": {
+    "shapes": [
+      "circle",
+      "square",
+      "triangle",
+      "rectangle",
+      "star",
+      "heart"
+    ],
+    "shape_title": "Repasa {S}",
+    "shape_names": {
+      "circle": "el círculo",
+      "square": "el cuadrado",
+      "triangle": "el triángulo",
+      "rectangle": "el rectángulo",
+      "star": "la estrella",
+      "heart": "el corazón"
+    },
+    "picture_words": [
+      [
+        3,
+        "manzana"
+      ],
+      [
+        2,
+        "gato"
+      ],
+      [
+        9,
+        "pato"
+      ],
+      [
+        10,
+        "pez"
+      ],
+      [
+        13,
+        "casa"
+      ],
+      [
+        14,
+        "árbol"
+      ],
+      [
+        18,
+        "cerdo"
+      ],
+      [
+        20,
+        "león"
+      ],
+      [
+        6,
+        "sol"
+      ],
+      [
+        8,
+        "autobús"
+      ],
+      [
+        27,
+        "estrella"
+      ],
+      [
+        28,
+        "luna"
+      ],
+      [
+        38,
+        "rana"
+      ],
+      [
+        36,
+        "sombrero"
+      ],
+      [
+        34,
+        "taza"
+      ],
+      [
+        35,
+        "zapato"
+      ],
+      [
+        25,
+        "barco"
+      ],
+      [
+        23,
+        "tren"
+      ],
+      [
+        39,
+        "pájaro"
+      ],
+      [
+        1,
+        "perrito"
+      ]
+    ],
+    "sight_words": [
+      "el",
+      "la",
+      "y",
+      "yo",
+      "un",
+      "una",
+      "mi",
+      "es",
+      "en",
+      "tú",
+      "me",
+      "de",
+      "que",
+      "con",
+      "no",
+      "sí",
+      "mamá",
+      "papá",
+      "veo",
+      "voy"
+    ],
+    "sight_title": "Palabras que sé leer"
   }
 }

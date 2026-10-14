@@ -1,7 +1,7 @@
 {
   "slug": "dinosaur-de",
-  "title": "Dinosaurier Malbuch für Kinder ab 4 Jahren",
-  "subtitle": "40 große und einfache Dino Ausmalbilder mit T Rex, Triceratops, Stegosaurus und mehr. Ein tolles Geschenk für Jungen und Mädchen",
+  "title": "Dinosaurier Malbuch für Kinder ab 4 Jahren mit spannenden Fakten",
+  "subtitle": "40 große Dino Ausmalbilder zum Malen und Lernen, mit einem verblüffenden Fakt auf jeder Seite. Ein tolles Geschenk für Jungen und Mädchen",
   "author": "Crayon Cove Press",
   "generation": {
     "pages": {
@@ -42,15 +42,20 @@
       "Kein Teil dieses Buches darf ohne schriftliche Genehmigung des Verlags vervielfältigt werden.",
       "Illustrationen mit Hilfe von KI Werkzeugen erstellt und von Hand geprüft."
     ],
-    "solutions": null
+    "solutions": null,
+    "bonus": {
+      "title": "GRATIS BONUSSEITEN!",
+      "text": "Liebe Eltern: Scannt diesen Code und druckt gratis weitere Seiten aus.",
+      "url": "https://rootboost.vercel.app/coloring/dinosaur/"
+    }
   },
   "cover": {
     "art_prompt": "Children's coloring book front cover illustration, full vibrant color. A friendly smiling green T rex, a cute orange triceratops and a baby blue stegosaurus together in a sunny prehistoric jungle with a volcano and palm trees. Bold clean outlines, bright saturated colors, cute friendly cartoon style for kids. Keep the top third simple with no important details because a title will be placed there. No text, no letters, no logo.",
     "front_title": [
       "DINOSAURIER",
-      "MALBUCH"
+      "MALEN & LERNEN"
     ],
-    "front_tagline": "40 große und einfache Dino Bilder",
+    "front_tagline": "40 große Bilder mit Fakten auf jeder Seite",
     "age_badge": [
       "4 BIS 8",
       "JAHRE"
@@ -58,12 +63,12 @@
     "spine": "Dinosaurier Malbuch",
     "bg": "#2E7D32",
     "accent": "#EF6C00",
-    "back_headline": "Brüll dich in eine bunte Dino Welt!",
+    "back_headline": "Dino malen. Fakt lernen. Stolz brüllen!",
     "back_bullets": [
-      "40 originelle Dino Motive: T Rex, Triceratops, Stegosaurus, Flugsaurier und mehr",
+      "40 originelle Dino Seiten, jede mit Namen und einem spannenden Fakt",
       "Große, klare Linien, die kleine Hände leicht ausmalen können",
       "Einseitig bedruckt, damit Filzstifte nicht auf das nächste Bild durchdrücken",
-      "Großes Format 21,6 x 27,9 cm, ein tolles Geburtstagsgeschenk"
+      "Bonusseiten online: Code im Buch scannen und gratis mehr drucken"
     ]
   },
   "listing": {
@@ -72,22 +77,22 @@
     "age_max": 8,
     "price_usd": "8.99",
     "keywords": [
-      "dinosaurier malbuch kinder",
-      "dino ausmalbilder",
-      "dino geschenk jungen",
-      "malbuch ab 4 jahre junge",
-      "t rex malbuch",
-      "beschäftigung kinder 5 6 jahre",
-      "dinosaurier geschenke für kinder"
+      "dinosaurier buch kinder",
+      "dino fakten für kinder",
+      "dinosaurier geschenk junge 5 6 7",
+      "malbuch dinosaurier mit wissen",
+      "lernbuch vorschule",
+      "dinosaurier wissen kinder",
+      "beschäftigung ohne bildschirm"
     ],
     "categories": [
       "Children's Books > Activities, Crafts & Games > Activity Books > Coloring",
       "Children's Books > Animals > Dinosaurs",
       "Children's Books > Arts, Music & Photography > Art > Drawing"
     ],
-    "description_html": "<p><b>40 freundliche Dinosaurier warten auf deine Farben!</b></p><p>Kinder von 4 bis 8 Jahren malen einen mächtigen T Rex, einen fröhlichen Triceratops, einen langhalsigen Brachiosaurus, fliegende Flugsaurier, Dino Babys im Ei und viele Abenteuer aus der Urzeit. Jede Seite hat große, klare Linien und einfache Formen.</p><ul><li><b>40 einzigartige Dino Motive</b></li><li><b>Einseitig bedruckt,</b> damit Filzstifte nicht durchdrücken</li><li><b>Großes Format</b> 21,6 x 27,9 cm</li><li><b>Perfektes Geschenk</b> zum Geburtstag, für Reisen und ruhige Momente</li></ul><p>Bildschirmfreier Spaß für Kreativität und Feinmotorik. Jetzt in den Warenkorb legen!</p>",
+    "description_html": "<p><b>Jede Seite ist ein Dino Abenteuer UND ein spannender Fakt!</b></p><p>Die meisten Dino Malbücher zeigen nur Bilder. Dieses bringt Kindern auch etwas bei: Auf jeder der 40 Seiten gibt es einen großen, freundlichen Dinosaurier zum Ausmalen, seinen Namen und einen verblüffenden Fakt, den Kinder gern beim Abendessen erzählen.</p><ul><li><b>40 originelle Motive,</b> jedes anders: T. rex, Triceratops, Spinosaurus, Dino Babys, Fossilien und mehr</li><li><b>Ein Fakt auf jeder Seite,</b> kindgerecht für 4 bis 8 Jahre</li><li><b>Große, klare Linien</b> und einseitig bedruckt, damit Filzstifte nicht durchdrücken</li><li><b>Gratis Bonusseiten:</b> Code im Buch scannen und mehr zu Hause drucken</li></ul><p>Perfekt zum Geburtstag, für Reisen und bildschirmfreie Nachmittage. Jetzt in den Warenkorb legen!</p>",
     "marketplace": "Amazon.de (Europa toda recebe junto)",
-    "price": "€ 8,99"
+    "price": "€ 9,99"
   },
   "pages": [
     "a friendly T rex roaring with a big smile",
@@ -150,5 +155,167 @@
   "copy_from_source": [
     "clean",
     "raw/cover.png"
-  ]
+  ],
+  "page_text": {
+    "01": {
+      "label": "T. rex",
+      "fact": "Der T. rex hatte Zähne so groß wie Bananen und konnte stärker zubeißen als jedes Landtier von heute."
+    },
+    "02": {
+      "label": "Dinoeier",
+      "fact": "Alle Dinosaurier schlüpften aus Eiern, genau wie Vögel und Schildkröten heute."
+    },
+    "03": {
+      "label": "Triceratops",
+      "fact": "Sein Name bedeutet Dreihorngesicht. Er knabberte den ganzen Tag Pflanzen."
+    },
+    "04": {
+      "label": "Stegosaurus",
+      "fact": "Der Stegosaurus war so lang wie ein Bus, aber sein Gehirn war nur so groß wie eine Limette!"
+    },
+    "05": {
+      "label": "Brachiosaurus",
+      "fact": "Er war so hoch wie ein Haus mit vier Stockwerken und fraß Blätter ganz oben aus den Bäumen."
+    },
+    "06": {
+      "label": "Flugsaurier",
+      "fact": "Flugsaurier konnten fliegen, aber sie waren fliegende Reptilien und keine Dinosaurier!"
+    },
+    "07": {
+      "label": "Dinowelt",
+      "fact": "Dinosaurier lebten etwa 165 Millionen Jahre lang auf der Erde. Das ist wirklich lange!"
+    },
+    "08": {
+      "label": "Dinofamilien",
+      "fact": "Manche Dinosaurier, wie die Maiasaura, bauten Nester und kümmerten sich um ihre Babys."
+    },
+    "09": {
+      "label": "Ankylosaurus",
+      "fact": "Er hatte am Ende seines Schwanzes eine schwere Keule aus Knochen, um sich zu schützen."
+    },
+    "10": {
+      "label": "T. rex",
+      "fact": "Der T. rex hatte sehr kurze Arme mit nur zwei Fingern an jeder Hand."
+    },
+    "11": {
+      "label": "Fossilien",
+      "fact": "Forscher lernen viel über Dinosaurier durch Fossilien: Knochen, die langsam zu Stein wurden."
+    },
+    "12": {
+      "label": "Lange her",
+      "fact": "Die letzten Dinosaurier lebten vor mehr als 66 Millionen Jahren."
+    },
+    "13": {
+      "label": "Spinosaurus",
+      "fact": "Der Spinosaurus hatte ein großes Segel auf dem Rücken und fing gern Fische."
+    },
+    "14": {
+      "label": "Velociraptor",
+      "fact": "Der Velociraptor war nur etwa so groß wie ein Truthahn und hatte Federn!"
+    },
+    "15": {
+      "label": "Parasaurolophus",
+      "fact": "Sein langer Kopfkamm funktionierte vielleicht wie eine Trompete für laute Rufe."
+    },
+    "16": {
+      "label": "Pflanzenfresser",
+      "fact": "Dinosaurier, die nur Pflanzen fraßen, nennt man Pflanzenfresser."
+    },
+    "17": {
+      "label": "Dinoeier",
+      "fact": "Manche Dinosauriereier waren so groß wie ein Fußball!"
+    },
+    "18": {
+      "label": "Dinoverwandte",
+      "fact": "Vögel sind mit Dinosauriern verwandt. Ein Huhn ist ein entfernter Cousin des T. rex!"
+    },
+    "19": {
+      "label": "Paläontologe",
+      "fact": "Forscher, die Dinosaurierfossilien ausgraben und untersuchen, heißen Paläontologen."
+    },
+    "20": {
+      "label": "Fleischfresser",
+      "fact": "Dinosaurier, die Fleisch fraßen, nennt man Fleischfresser."
+    },
+    "21": {
+      "label": "Dinosaurier",
+      "fact": "Das Wort Dinosaurier bedeutet schreckliche Echse."
+    },
+    "22": {
+      "label": "Plesiosaurus",
+      "fact": "Er schwamm mit vier großen Flossen im Meer. Er war ein Meeresreptil und kein Dinosaurier."
+    },
+    "23": {
+      "label": "T. rex",
+      "fact": "Der T. rex war ungefähr so lang wie ein Schulbus!"
+    },
+    "24": {
+      "label": "Schlafende Dinos",
+      "fact": "Manche kleinen Dinosaurier schliefen zusammengerollt mit eingezogenem Kopf, genau wie Vögel."
+    },
+    "25": {
+      "label": "Nie getroffen",
+      "fact": "Der Stegosaurus lebte Millionen Jahre vor dem Triceratops. Die beiden haben sich nie getroffen!"
+    },
+    "26": {
+      "label": "Quetzalcoatlus",
+      "fact": "Dieses fliegende Reptil hatte Flügel so breit wie ein kleines Flugzeug!"
+    },
+    "27": {
+      "label": "Pachycephalosaurus",
+      "fact": "Er hatte eine dicke Knochenkuppel auf dem Kopf, wie einen eingebauten Helm."
+    },
+    "28": {
+      "label": "So viele Dinos",
+      "fact": "Forscher haben schon mehr als 1.000 verschiedene Dinosaurierarten benannt."
+    },
+    "29": {
+      "label": "Deine Farben",
+      "fact": "Niemand kennt die echten Farben der meisten Dinosaurier. Du darfst sie aussuchen!"
+    },
+    "30": {
+      "label": "Dinoherden",
+      "fact": "Viele Pflanzenfresser lebten zusammen in großen Gruppen, den Herden."
+    },
+    "31": {
+      "label": "Fußspuren",
+      "fact": "Dinosaurierspuren im Schlamm wurden zu Stein. Manche kann man heute noch sehen!"
+    },
+    "32": {
+      "label": "Baby T. rex",
+      "fact": "Ein Baby T. rex war klein und hatte vielleicht weiche, flauschige Federn."
+    },
+    "33": {
+      "label": "Diplodocus",
+      "fact": "Der Diplodocus hatte einen superlangen Schwanz, den er vielleicht wie eine Peitsche schwang."
+    },
+    "34": {
+      "label": "Bauchsteine",
+      "fact": "Manche Dinosaurier schluckten kleine Steine, die das Futter im Bauch zerkleinerten."
+    },
+    "35": {
+      "label": "Überall",
+      "fact": "Dinosaurier lebten auf allen Kontinenten, sogar in der eisigen Antarktis!"
+    },
+    "36": {
+      "label": "Noch keine Blumen",
+      "fact": "Als die ersten Dinosaurier lebten, gab es noch keine Blumen. Die kamen viel später!"
+    },
+    "37": {
+      "label": "Große Füße",
+      "fact": "Manche Dinosaurierspuren sind größer als ein Autoreifen!"
+    },
+    "38": {
+      "label": "Keine Menschen",
+      "fact": "Dinosaurier haben nie Menschen getroffen. Sie lebten Millionen Jahre vor den ersten Menschen."
+    },
+    "39": {
+      "label": "Noch da",
+      "fact": "Vögel sind die Dinosaurier, die heute noch leben!"
+    },
+    "40": {
+      "label": "Riesendinos",
+      "fact": "Der Argentinosaurus war einer der größten Dinosaurier, fast so lang wie drei Schulbusse!"
+    }
+  }
 }

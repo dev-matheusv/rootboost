@@ -286,7 +286,8 @@ def main(slug: str) -> None:
         pages.append(letter_page(str(n), None, nums[n].capitalize()))
     extra = t.get("extra", spec.get("tracing_extra", {}))
     for shape in extra.get("shapes", []):
-        pages.append(shape_trace_page(shape, extra.get("shape_title", "Trace the {S}").format(S=shape.title())))
+        name = extra.get("shape_names", {}).get(shape, shape.title())
+        pages.append(shape_trace_page(shape, extra.get("shape_title", "Trace the {S}").format(S=name)))
     art_dir = ROOT / "titles" / extra.get("art_from", "toddler") / "clean"
     for page_no, word in extra.get("picture_words", []):
         pages.append(picture_word_page(art_dir / f"{int(page_no):02d}.png", word))

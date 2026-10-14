@@ -1,7 +1,7 @@
 {
   "slug": "toddler-es",
-  "title": "Mi Primer Gran Libro para Colorear para Niños de 1 a 3 Años",
-  "subtitle": "40 Dibujos Sencillos con Líneas Gruesas: Animales, Frutas, Vehículos y Más. Para Bebés y Niños Pequeños",
+  "title": "Mi Primer Gran Libro para Colorear de 1 a 3 Años: Colorea y Aprende",
+  "subtitle": "66 Páginas Sencillas con Primeras Palabras, Colores, Formas y Números del 1 al 10. Dibujos Grandes para Manos Pequeñas",
   "author": "Crayon Cove Press",
   "generation": {
     "pages": {
@@ -42,15 +42,20 @@
       "Ninguna parte de este libro puede reproducirse sin permiso escrito del editor.",
       "Ilustraciones creadas con ayuda de herramientas de IA y revisadas a mano."
     ],
-    "solutions": null
+    "solutions": null,
+    "bonus": {
+      "title": "¡PÁGINAS EXTRA GRATIS!",
+      "text": "Para los mayores: escanea este código para imprimir más páginas gratis.",
+      "url": "https://rootboost.vercel.app/coloring/toddler/"
+    }
   },
   "cover": {
     "art_prompt": "Toddler coloring book front cover illustration, full vibrant color. A cute smiling cartoon puppy, a red apple, a yellow school bus and a happy sun arranged playfully on a soft background. Very simple big rounded shapes, extra thick outlines. Bold clean outlines, bright saturated colors, cute friendly cartoon style for kids. Keep the top third simple with no important details because a title will be placed there. No text, no letters, no logo.",
     "front_title": [
-      "MI PRIMER GRAN",
-      "LIBRO PARA COLOREAR"
+      "MI PRIMER GRAN LIBRO",
+      "COLOREA Y APRENDE"
     ],
-    "front_tagline": "40 dibujos sencillos para manos pequeñas",
+    "front_tagline": "Primeras palabras, colores, formas y números del 1 al 10",
     "age_badge": [
       "DE 1 A 3",
       "AÑOS"
@@ -58,12 +63,12 @@
     "spine": "Mi Primer Gran Libro para Colorear",
     "bg": "#1E88E5",
     "accent": "#FB8C00",
-    "back_headline": "¡El primer libro para colorear perfecto!",
+    "back_headline": "¡Colorear también es aprender!",
     "back_bullets": [
-      "40 dibujos grandes y sencillos: animales, frutas, vehículos y cosas de cada día",
-      "Líneas extra gruesas, fáciles de seguir para los más pequeños",
-      "Páginas impresas por una sola cara para que los rotuladores no traspasen",
-      "Formato grande de 21,6 x 27,9 cm con mucho espacio para garabatear"
+      "40 dibujos grandes, cada uno con su primera palabra en letras gigantes para colorear",
+      "8 colores, 8 formas y contar del 1 al 10",
+      "Líneas extra gruesas y páginas por una sola cara, pensadas para ceras gruesas",
+      "Páginas extra en línea: escanea el código del libro e imprime más gratis"
     ]
   },
   "listing": {
@@ -73,21 +78,21 @@
     "price_usd": "8.99",
     "keywords": [
       "libro para colorear niños 2 años",
-      "libro para colorear bebés",
-      "mi primer libro para colorear",
-      "cuaderno para colorear niños pequeños",
-      "dibujos sencillos para colorear",
-      "actividades para niños de 1 a 3 años",
-      "libro de colorear infantil fácil"
+      "primeras palabras bebé",
+      "aprender colores formas números",
+      "libro educativo 1 2 3 años",
+      "actividades para niños pequeños",
+      "cuaderno para colorear bebés",
+      "regalo niño 2 años"
     ],
     "categories": [
       "Children's Books > Activities, Crafts & Games > Activity Books > Coloring",
       "Children's Books > Early Learning > Basic Concepts",
       "Children's Books > Arts, Music & Photography > Art > Drawing"
     ],
-    "description_html": "<p><b>¡El primer libro para colorear perfecto para tu peque!</b></p><p>Pensado para niños de 1 a 3 años, cada página muestra un dibujo grande y sencillo con líneas extra gruesas: un perrito, una manzana, un coche, una pelota, un sol y muchas cosas que tu hijo ya conoce. Ideal para practicar colores, primeras palabras y primeros garabatos.</p><ul><li><b>40 dibujos sencillos</b> con un objeto por página</li><li><b>Líneas extra gruesas</b> para ceras gruesas</li><li><b>Páginas por una sola cara</b> para que los rotuladores no traspasen</li><li><b>Formato grande</b> de 21,6 x 27,9 cm</li></ul><p>Diversión sin pantallas que impulsa el aprendizaje temprano y la motricidad fina. ¡Añádelo a tu carrito hoy!</p>",
+    "description_html": "<p><b>¡Colorear también es aprender!</b></p><p>Pensado para manos pequeñas de 1 a 3 años, es más que un libro para colorear: cada página muestra un dibujo grande y simpático y su primera palabra en letras gigantes que tu peque también puede colorear. Después descubre colores, formas y a contar del 1 al 10.</p><ul><li><b>40 dibujos con primeras palabras:</b> animales, frutas, vehículos y cosas de cada día</li><li><b>8 páginas de colores y 8 de formas</b> para aprender lo básico</li><li><b>Cuenta y colorea del 1 al 10</b> con dibujos del propio libro</li><li><b>Líneas extra gruesas</b> y páginas por una sola cara, pensadas para ceras gruesas</li><li><b>Páginas extra gratis:</b> escanea el código del libro e imprime más en casa</li></ul><p>Un primer regalo perfecto para peques, guardería y preescolar. ¡Añádelo a tu carrito hoy!</p>",
     "marketplace": "Amazon.es (e Amazon.com pro publico hispano dos EUA)",
-    "price": "€ 8,99"
+    "price": "€ 9,99"
   },
   "pages": [
     "a happy puppy sitting",
@@ -150,5 +155,205 @@
   "copy_from_source": [
     "clean",
     "raw/cover.png"
-  ]
+  ],
+  "page_text": {
+    "01": {
+      "word": "PERRITO"
+    },
+    "02": {
+      "word": "GATO"
+    },
+    "03": {
+      "word": "MANZANA"
+    },
+    "04": {
+      "word": "PLÁTANO"
+    },
+    "05": {
+      "word": "PELOTA"
+    },
+    "06": {
+      "word": "SOL"
+    },
+    "07": {
+      "word": "COCHE"
+    },
+    "08": {
+      "word": "AUTOBÚS"
+    },
+    "09": {
+      "word": "PATO"
+    },
+    "10": {
+      "word": "PEZ"
+    },
+    "11": {
+      "word": "OSITO"
+    },
+    "12": {
+      "word": "MAGDALENA"
+    },
+    "13": {
+      "word": "CASA"
+    },
+    "14": {
+      "word": "ÁRBOL"
+    },
+    "15": {
+      "word": "FLOR"
+    },
+    "16": {
+      "word": "MARIPOSA"
+    },
+    "17": {
+      "word": "VACA"
+    },
+    "18": {
+      "word": "CERDO"
+    },
+    "19": {
+      "word": "ELEFANTE"
+    },
+    "20": {
+      "word": "LEÓN"
+    },
+    "21": {
+      "word": "FRESA"
+    },
+    "22": {
+      "word": "PERA"
+    },
+    "23": {
+      "word": "TREN"
+    },
+    "24": {
+      "word": "AVIÓN"
+    },
+    "25": {
+      "word": "BARCO"
+    },
+    "26": {
+      "word": "GLOBO"
+    },
+    "27": {
+      "word": "ESTRELLA"
+    },
+    "28": {
+      "word": "LUNA"
+    },
+    "29": {
+      "word": "ARCOÍRIS"
+    },
+    "30": {
+      "word": "HELADO"
+    },
+    "31": {
+      "word": "TORTUGA"
+    },
+    "32": {
+      "word": "CONEJITO"
+    },
+    "33": {
+      "word": "POLLITO"
+    },
+    "34": {
+      "word": "TAZA"
+    },
+    "35": {
+      "word": "ZAPATO"
+    },
+    "36": {
+      "word": "SOMBRERO"
+    },
+    "37": {
+      "word": "BOMBEROS"
+    },
+    "38": {
+      "word": "RANA"
+    },
+    "39": {
+      "word": "PÁJARO"
+    },
+    "40": {
+      "word": "CORAZÓN"
+    },
+    "41": {
+      "word": "ROJO"
+    },
+    "42": {
+      "word": "AZUL"
+    },
+    "43": {
+      "word": "AMARILLO"
+    },
+    "44": {
+      "word": "VERDE"
+    },
+    "45": {
+      "word": "NARANJA"
+    },
+    "46": {
+      "word": "MORADO"
+    },
+    "47": {
+      "word": "ROSA"
+    },
+    "48": {
+      "word": "MARRÓN"
+    },
+    "49": {
+      "word": "CÍRCULO"
+    },
+    "50": {
+      "word": "CUADRADO"
+    },
+    "51": {
+      "word": "TRIÁNGULO"
+    },
+    "52": {
+      "word": "RECTÁNGULO"
+    },
+    "53": {
+      "word": "ÓVALO"
+    },
+    "54": {
+      "word": "ROMBO"
+    },
+    "55": {
+      "word": "ESTRELLA"
+    },
+    "56": {
+      "word": "CORAZÓN"
+    },
+    "57": {
+      "word": "1 LUNA"
+    },
+    "58": {
+      "word": "2 MANZANAS"
+    },
+    "59": {
+      "word": "3 PATOS"
+    },
+    "60": {
+      "word": "4 ESTRELLAS"
+    },
+    "61": {
+      "word": "5 PECES"
+    },
+    "62": {
+      "word": "6 CORAZONES"
+    },
+    "63": {
+      "word": "7 GLOBOS"
+    },
+    "64": {
+      "word": "8 FRESAS"
+    },
+    "65": {
+      "word": "9 MARIPOSAS"
+    },
+    "66": {
+      "word": "10 PELOTAS"
+    }
+  }
 }

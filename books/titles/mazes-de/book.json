@@ -1,7 +1,7 @@
 {
   "slug": "mazes-de",
   "title": "Labyrinthe für Kinder ab 4 Jahren",
-  "subtitle": "80 lustige Labyrinthe von leicht bis schwer mit Lösungen. Rätselbuch zum Knobeln für Jungen und Mädchen",
+  "subtitle": "120 lustige Labyrinthe von leicht bis schwer mit Lösungen. Rätselbuch zum Knobeln für Jungen und Mädchen",
   "author": "Crayon Cove Press",
   "generation": {
     "pages": {
@@ -42,7 +42,12 @@
       "Kein Teil dieses Buches darf ohne schriftliche Genehmigung des Verlags vervielfältigt werden.",
       "Illustrationen mit Hilfe von KI Werkzeugen erstellt und von Hand geprüft."
     ],
-    "solutions": "Lösungen"
+    "solutions": "Lösungen",
+    "bonus": {
+      "title": "GRATIS BONUS LABYRINTHE!",
+      "text": "Liebe Eltern: Scannt diesen Code und druckt gratis weitere Labyrinthe aus.",
+      "url": "https://rootboost.vercel.app/coloring/mazes/"
+    }
   },
   "cover": {
     "art_prompt": "Children's activity book front cover illustration, full vibrant color. A cheerful cartoon boy and girl explorers with a magnifying glass and a map walking through a colorful green hedge maze seen from a playful high angle, a cute puppy following them, sunny sky. Bold clean outlines, bright saturated colors, cute friendly style for kids. Keep the top third simple sky with no important details because a title will be placed there. No text, no letters, no logo.",
@@ -50,7 +55,7 @@
       "LABYRINTHE",
       "FÜR KINDER"
     ],
-    "front_tagline": "80 Labyrinthe von leicht bis schwer",
+    "front_tagline": "120 Labyrinthe von leicht bis schwer",
     "age_badge": [
       "4 BIS 8",
       "JAHRE"
@@ -60,7 +65,7 @@
     "accent": "#F4511E",
     "back_headline": "Findest du den Weg hinaus?",
     "back_bullets": [
-      "80 Labyrinthe, die Seite für Seite schwerer werden, damit Kinder von Anfang an Erfolg haben",
+      "120 Labyrinthe, die Seite für Seite schwerer werden, damit Kinder von Anfang an Erfolg haben",
       "Dicke, klare Wege, die man leicht mit Stift nachfahren kann",
       "Alle Lösungen hinten im Buch für Eltern und Lehrer",
       "Fördert Konzentration, Geduld und logisches Denken, ganz ohne Bildschirm"
@@ -85,16 +90,16 @@
       "Children's Books > Activities, Crafts & Games > Games",
       "Children's Books > Education & Reference > Study Aids"
     ],
-    "description_html": "<p><b>80 lustige Labyrinthe, die Bildschirmzeit in Denkzeit verwandeln!</b></p><p>Das Buch beginnt ganz leicht, damit Kinder von 4 bis 8 Jahren gleich Erfolg haben, und wird dann Seite für Seite etwas schwerer. Dicke, klare Wege lassen sich leicht mit Bleistift oder Wachsmalstift nachfahren, und jedes Labyrinth hat einen großen START und ein ZIEL.</p><ul><li><b>80 Labyrinthe</b> von leicht bis schwer</li><li><b>Mit Lösungen</b> hinten im Buch</li><li><b>Großes Format</b> 21,6 x 27,9 cm</li><li><b>Fördert</b> Konzentration, Geduld und Problemlösen</li><li><b>Perfekt für</b> Autofahrten, Restaurants, ruhige Momente und den Kindergarten</li></ul><p>Ein cleveres Geschenk, das Kinder stundenlang beschäftigt. Jetzt in den Warenkorb legen!</p>",
+    "description_html": "<p><b>120 lustige Labyrinthe, die Bildschirmzeit in Denkzeit verwandeln!</b></p><p>Das Buch beginnt ganz leicht, damit Kinder von 4 bis 8 Jahren gleich Erfolg haben, und wird dann Seite für Seite etwas schwerer. Dicke, klare Wege lassen sich leicht mit Bleistift oder Wachsmalstift nachfahren, und jedes Labyrinth hat einen großen START und ein ZIEL.</p><ul><li><b>120 Labyrinthe</b> von leicht bis schwer</li><li><b>Mit Lösungen</b> hinten im Buch</li><li><b>Großes Format</b> 21,6 x 27,9 cm</li><li><b>Fördert</b> Konzentration, Geduld und Problemlösen</li><li><b>Perfekt für</b> Autofahrten, Restaurants, ruhige Momente und den Kindergarten</li></ul><p>Ein cleveres Geschenk, das Kinder stundenlang beschäftigt. Jetzt in den Warenkorb legen!</p>",
     "marketplace": "Amazon.de (Europa toda recebe junto)",
-    "price": "€ 7,99"
+    "price": "€ 8,99"
   },
   "pages": [],
   "maze": {
-    "count": 80,
+    "count": 120,
     "cols": [
       5,
-      16
+      18
     ],
     "seed": 2026,
     "title_prefix": "Labyrinth",

@@ -1,7 +1,7 @@
 {
   "slug": "dinosaur-es",
-  "title": "Libro para Colorear de Dinosaurios para Niños de 4 a 8 Años",
-  "subtitle": "40 Dibujos Grandes y Fáciles con T Rex, Triceratops, Estegosaurio y Más. Un Regalo Divertido para Niños y Niñas",
+  "title": "Libro para Colorear de Dinosaurios con Datos Curiosos para Niños de 4 a 8 Años",
+  "subtitle": "40 Dibujos Grandes para Colorear y Aprender, con un Dato Asombroso en Cada Página. Un Regalo Divertido para Niños y Niñas",
   "author": "Crayon Cove Press",
   "generation": {
     "pages": {
@@ -42,15 +42,20 @@
       "Ninguna parte de este libro puede reproducirse sin permiso escrito del editor.",
       "Ilustraciones creadas con ayuda de herramientas de IA y revisadas a mano."
     ],
-    "solutions": null
+    "solutions": null,
+    "bonus": {
+      "title": "¡PÁGINAS EXTRA GRATIS!",
+      "text": "Para los mayores: escanea este código para imprimir más páginas gratis.",
+      "url": "https://rootboost.vercel.app/coloring/dinosaur/"
+    }
   },
   "cover": {
     "art_prompt": "Children's coloring book front cover illustration, full vibrant color. A friendly smiling green T rex, a cute orange triceratops and a baby blue stegosaurus together in a sunny prehistoric jungle with a volcano and palm trees. Bold clean outlines, bright saturated colors, cute friendly cartoon style for kids. Keep the top third simple with no important details because a title will be placed there. No text, no letters, no logo.",
     "front_title": [
       "DINOSAURIOS",
-      "PARA COLOREAR"
+      "COLOREA Y APRENDE"
     ],
-    "front_tagline": "40 dibujos grandes y fáciles",
+    "front_tagline": "40 dibujos con datos curiosos en cada página",
     "age_badge": [
       "DE 4 A 8",
       "AÑOS"
@@ -58,12 +63,12 @@
     "spine": "Dinosaurios para Colorear",
     "bg": "#2E7D32",
     "accent": "#EF6C00",
-    "back_headline": "¡Ruge en un mundo de dinosaurios llenos de color!",
+    "back_headline": "Colorea un dino. Aprende un dato. ¡Ruge de orgullo!",
     "back_bullets": [
-      "40 dibujos originales: T rex, triceratops, estegosaurio, pterodáctilo y más",
+      "40 páginas originales, cada una con el nombre del dino y un dato curioso",
       "Líneas grandes y claras, fáciles de colorear para manos pequeñas",
-      "Páginas impresas por una sola cara para que los rotuladores no traspasen",
-      "Formato grande de 21,6 x 27,9 cm, un regalo de cumpleaños perfecto"
+      "Páginas por una sola cara para que los rotuladores no traspasen",
+      "Páginas extra en línea: escanea el código del libro e imprime más gratis"
     ]
   },
   "listing": {
@@ -72,22 +77,22 @@
     "age_max": 8,
     "price_usd": "8.99",
     "keywords": [
-      "libro para colorear dinosaurios",
-      "dinosaurios para niños",
-      "regalo niño dinosaurios",
-      "dibujos de dinosaurios para colorear",
-      "t rex para colorear",
-      "cuaderno de actividades niños 5 6 años",
-      "libro para colorear niños 4 años"
+      "libro de dinosaurios para niños",
+      "datos curiosos de dinosaurios",
+      "regalo niño dinosaurios 5 6 7 años",
+      "dinosaurios para colorear y aprender",
+      "libro educativo infantil",
+      "paleontología para niños",
+      "actividades sin pantallas"
     ],
     "categories": [
       "Children's Books > Activities, Crafts & Games > Activity Books > Coloring",
       "Children's Books > Animals > Dinosaurs",
       "Children's Books > Arts, Music & Photography > Art > Drawing"
     ],
-    "description_html": "<p><b>¡40 dinosaurios simpáticos están listos para tus colores!</b></p><p>Los niños de 4 a 8 años pueden colorear un poderoso T rex, un alegre triceratops, un braquiosaurio de cuello largo, pterodáctilos voladores, bebés dinosaurio saliendo del huevo y muchas aventuras prehistóricas. Cada página tiene líneas grandes y claras.</p><ul><li><b>40 ilustraciones únicas de dinosaurios</b></li><li><b>Páginas por una sola cara</b> para que los rotuladores no traspasen</li><li><b>Formato grande</b> de 21,6 x 27,9 cm</li><li><b>Regalo perfecto</b> para cumpleaños, viajes y momentos tranquilos</li></ul><p>Diversión sin pantallas que desarrolla la creatividad y la motricidad fina. ¡Añádelo a tu carrito hoy!</p>",
+    "description_html": "<p><b>¡Cada página es una aventura dino Y un dato curioso!</b></p><p>La mayoría de los libros de dinosaurios solo traen dibujos. Este también enseña: cada una de las 40 páginas tiene un dinosaurio grande y simpático para colorear, su nombre y un dato asombroso que los niños querrán contar en la cena.</p><ul><li><b>40 ilustraciones originales,</b> todas distintas: T. rex, triceratops, espinosaurio, bebés dino, fósiles y más</li><li><b>Un dato curioso en cada página,</b> pensado para niños de 4 a 8 años</li><li><b>Líneas grandes y claras</b> y páginas por una sola cara, para que los rotuladores no traspasen</li><li><b>Páginas extra gratis:</b> escanea el código del libro e imprime más en casa</li></ul><p>Perfecto para cumpleaños, viajes y tardes sin pantallas. ¡Añádelo a tu carrito hoy!</p>",
     "marketplace": "Amazon.es (e Amazon.com pro publico hispano dos EUA)",
-    "price": "€ 8,99"
+    "price": "€ 9,99"
   },
   "pages": [
     "a friendly T rex roaring with a big smile",
@@ -150,5 +155,167 @@
   "copy_from_source": [
     "clean",
     "raw/cover.png"
-  ]
+  ],
+  "page_text": {
+    "01": {
+      "label": "T. rex",
+      "fact": "El T. rex tenía dientes tan grandes como plátanos y mordía más fuerte que cualquier animal terrestre de hoy."
+    },
+    "02": {
+      "label": "Huevos de dino",
+      "fact": "Todos los dinosaurios nacían de huevos, igual que las aves y las tortugas de hoy."
+    },
+    "03": {
+      "label": "Triceratops",
+      "fact": "Su nombre significa cara con tres cuernos. Comía plantas todo el día."
+    },
+    "04": {
+      "label": "Estegosaurio",
+      "fact": "El estegosaurio era tan largo como un autobús, ¡pero su cerebro era del tamaño de una lima!"
+    },
+    "05": {
+      "label": "Braquiosaurio",
+      "fact": "Era tan alto como un edificio de cuatro pisos y comía hojas de la copa de los árboles."
+    },
+    "06": {
+      "label": "Pterodáctilo",
+      "fact": "Los pterodáctilos podían volar, ¡pero eran reptiles voladores, no dinosaurios!"
+    },
+    "07": {
+      "label": "Mundo dino",
+      "fact": "Los dinosaurios vivieron en la Tierra unos 165 millones de años. ¡Muchísimo tiempo!"
+    },
+    "08": {
+      "label": "Familias dino",
+      "fact": "Algunos dinosaurios, como la Maiasaura, construían nidos y cuidaban de sus crías."
+    },
+    "09": {
+      "label": "Anquilosaurio",
+      "fact": "Tenía una pesada maza de hueso al final de la cola para protegerse."
+    },
+    "10": {
+      "label": "T. rex",
+      "fact": "El T. rex tenía brazos muy cortos, con solo dos dedos en cada mano."
+    },
+    "11": {
+      "label": "Fósiles",
+      "fact": "Los científicos aprenden sobre los dinosaurios gracias a los fósiles: huesos que se convirtieron en piedra."
+    },
+    "12": {
+      "label": "Hace mucho",
+      "fact": "Los últimos dinosaurios vivieron hace más de 66 millones de años."
+    },
+    "13": {
+      "label": "Espinosaurio",
+      "fact": "El espinosaurio tenía una gran vela en la espalda y le encantaba pescar."
+    },
+    "14": {
+      "label": "Velociraptor",
+      "fact": "El velociraptor era más o menos del tamaño de un pavo, ¡y tenía plumas!"
+    },
+    "15": {
+      "label": "Parasaurolophus",
+      "fact": "Su larga cresta quizá funcionaba como una trompeta para hacer sonidos fuertes."
+    },
+    "16": {
+      "label": "Herbívoros",
+      "fact": "Los dinosaurios que solo comían plantas se llaman herbívoros."
+    },
+    "17": {
+      "label": "Huevos de dino",
+      "fact": "¡Algunos huevos de dinosaurio eran tan grandes como un balón de fútbol!"
+    },
+    "18": {
+      "label": "Primos dino",
+      "fact": "Las aves son parientes de los dinosaurios. ¡Una gallina es prima lejana del T. rex!"
+    },
+    "19": {
+      "label": "Paleontólogo",
+      "fact": "Los científicos que desentierran y estudian fósiles de dinosaurios se llaman paleontólogos."
+    },
+    "20": {
+      "label": "Carnívoros",
+      "fact": "Los dinosaurios que comían carne se llaman carnívoros."
+    },
+    "21": {
+      "label": "Dinosaurio",
+      "fact": "La palabra dinosaurio significa lagarto terrible."
+    },
+    "22": {
+      "label": "Plesiosaurio",
+      "fact": "Nadaba en el océano con cuatro grandes aletas. Era un reptil marino, no un dinosaurio."
+    },
+    "23": {
+      "label": "T. rex",
+      "fact": "¡El T. rex era casi tan largo como un autobús escolar!"
+    },
+    "24": {
+      "label": "Dinos dormilones",
+      "fact": "Algunos dinosaurios pequeños dormían acurrucados con la cabeza escondida, como las aves."
+    },
+    "25": {
+      "label": "Nunca se vieron",
+      "fact": "El estegosaurio vivió millones de años antes que el triceratops, ¡así que nunca se conocieron!"
+    },
+    "26": {
+      "label": "Quetzalcoatlus",
+      "fact": "¡Este reptil volador tenía alas tan anchas como una avioneta!"
+    },
+    "27": {
+      "label": "Paquicefalosaurio",
+      "fact": "Tenía una gruesa cúpula de hueso en la cabeza, como un casco incorporado."
+    },
+    "28": {
+      "label": "Tantos dinos",
+      "fact": "Los científicos han nombrado más de 1.000 tipos distintos de dinosaurios."
+    },
+    "29": {
+      "label": "Tus colores",
+      "fact": "Nadie conoce los colores reales de la mayoría de los dinosaurios, ¡así que tú eliges!"
+    },
+    "30": {
+      "label": "Manadas",
+      "fact": "Muchos dinosaurios herbívoros vivían juntos en grandes grupos llamados manadas."
+    },
+    "31": {
+      "label": "Huellas",
+      "fact": "Las huellas de dinosaurio en el barro se convirtieron en piedra. ¡Algunas todavía se ven hoy!"
+    },
+    "32": {
+      "label": "Bebé T. rex",
+      "fact": "Un bebé T. rex era pequeño y quizá estaba cubierto de plumitas suaves."
+    },
+    "33": {
+      "label": "Diplodocus",
+      "fact": "El diplodocus tenía una cola larguísima que quizá movía como un látigo."
+    },
+    "34": {
+      "label": "Piedras en la panza",
+      "fact": "Algunos dinosaurios tragaban piedritas para triturar la comida en su panza."
+    },
+    "35": {
+      "label": "En todas partes",
+      "fact": "¡Los dinosaurios vivieron en todos los continentes, incluso en la helada Antártida!"
+    },
+    "36": {
+      "label": "Sin flores",
+      "fact": "Cuando vivieron los primeros dinosaurios no había flores. ¡Las flores llegaron mucho después!"
+    },
+    "37": {
+      "label": "Pies gigantes",
+      "fact": "¡Algunas huellas de dinosaurio son más grandes que la rueda de un coche!"
+    },
+    "38": {
+      "label": "Sin personas",
+      "fact": "Los dinosaurios nunca vieron personas. Vivieron millones de años antes que los primeros humanos."
+    },
+    "39": {
+      "label": "Siguen aquí",
+      "fact": "¡Las aves son los dinosaurios que siguen vivos hoy!"
+    },
+    "40": {
+      "label": "Los más grandes",
+      "fact": "El argentinosaurio fue uno de los dinosaurios más grandes, ¡casi tan largo como tres autobuses escolares!"
+    }
+  }
 }
