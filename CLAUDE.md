@@ -16,6 +16,9 @@ Contexto mestre do projeto para o Claude Code. Leia isto primeiro em toda sessã
 
 | Data | Decisão | Por quê |
 |---|---|---|
+| 2026-10-23 | **Público e módulos:** foco em empresas e agências que querem marketing com IA; loja e Amazon (livros) seguem como testes reais de venda. Plataforma modular (tráfego, criativo e vídeo, publicação, loja e marketplace), cada módulo utilizável sozinho. | Pedido do Matheus: atender quem só quer anúncio e quem só quer criativo e vídeo com o DMaker. |
+| 2026-10-23 | **Copy fundamentada, nunca robotizada:** documentos e inventário dizem o que é verdade; o conhecimento de copy diz como dizer. A IA nunca copia trecho de documento pro anúncio. | Pedido do Matheus: copy excelente e humana, com base no que o cliente oferece e precisa. |
+| 2026-10-23 | **Pacote comum de IA da família Root (`Root.IA`)** mapeado pra depois (RB-17), em vez de três cópias do motor (RootFlow, MedlyCare, RootBoost). | Manutenção num lugar só; melhoria chega aos três produtos. |
 | 2026-10-23 | **Postgres do Railway**, não Supabase nem Neon. | Mesma rede privada da API (latência mínima, sem egress, sem endpoint público), nunca pausa, ~US$ 1 a 3/mês por uso, backups e recuperação por ponto no tempo. Supabase grátis pausa após 7 dias quieto (inaceitável com webhook de pagamento) e sem pausa custa US$ 25/mês. Neon fica fora da rede e dorme no grátis. |
 | 2026-10-23 | **Base de conhecimento de marketing que aprende** (`docs/BASE-DE-CONHECIMENTO.md`): conhecimento geral versionado em `knowledge/`, voz e inventário de prova por marca, ciclo de aprendizado entre marcas só com etiqueta e métrica agregadas. MedlyCare é o cliente zero. | Pedido do Matheus. Faz cada teste melhorar a plataforma pra todos e impede a IA de inventar prova. |
 | 2026-10-23 | **MedlyCare é a primeira marca e o primeiro anunciante**, em português. | Produto real, conteúdo já sendo produzido, valida o ciclo inteiro com venda de verdade. |

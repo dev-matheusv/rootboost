@@ -38,6 +38,21 @@ Fake pra rodar sem credencial e modo Desligado por padrão em produção.
 de voz, FFmpeg) e hoje roda no PC. O worker **puxa** o trabalho da API, então não precisa abrir porta
 nenhuma na rede de casa, e trocar o PC por uma máquina na nuvem depois é só mudar onde o worker roda.
 
+## Público e módulos
+
+**Foco principal:** empresas e agências de marketing que querem fazer marketing com IA. **Também:** a loja
+de dropshipping e a venda de livros na Amazon, que são nossos testes reais de venda.
+
+A plataforma é **modular**: cada cliente usa só o que precisa, e cada módulo funciona sozinho.
+- **Tráfego:** subir anúncio, analisar campanha, otimizar (Meta, Google).
+- **Criativo e vídeo:** só criar peças e editar vídeo com o DMaker, sem tocar em anúncio.
+- **Publicação:** agenda nas redes.
+- **Loja e marketplace:** canais de venda próprios (loja, Amazon).
+Isso vira plano e permissão por módulo na Fase 6 (contas), mas o código já nasce separado por módulo.
+
+**Ferramentas de criativo:** DMaker (vídeo e voz), Higgsfield (imagem e vídeo por IA) e Canva (design por
+template), cada uma atrás de porta própria, escolhida pelo que entrega melhor em cada peça.
+
 ## Fases
 
 ### Fase 0 — Fundação (em andamento)
