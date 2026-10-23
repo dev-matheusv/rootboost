@@ -30,3 +30,6 @@ landing/car/media/*.mp4
 
 # Chaves Stripe (local) — NEVER commit
 tools/stripe/.secret
+
+# Dados locais de plugins do Claude Code (nunca versionar)
+.claude/
