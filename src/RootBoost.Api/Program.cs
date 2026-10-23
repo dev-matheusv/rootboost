@@ -163,6 +163,24 @@ brandProfile.MapPost("/proof", async (string key, ProofInput input, IBrandProfil
     return Results.Created($"/admin/brands/{item!.BrandKey}/profile", new { id = item.Id });
 });
 
+// Checklist automática (RB-18): roda antes de qualquer peça chegar ao humano. Não publica nada.
+brandProfile.MapPost("/copy/check", async (string key, CopyCheckRequest req, IBrandProfileStore store, IKnowledgeBase kb, CancellationToken ct) =>
+{
+    if (string.IsNullOrWhiteSpace(req.Text)) return Results.BadRequest(new { error = "texto vazio" });
+    var profile = await store.GetAsync(key.ToLowerInvariant(), ct);
+    if (profile is null) return Results.NotFound();
+    var result = RootBoost.Application.Copy.CopyChecklist.Check(
+        new RootBoost.Application.Copy.CopyPiece(req.Text, req.Channel, req.Field), kb, profile);
+    return Results.Ok(new
+    {
+        blocked = result.Blocked,
+        findings = result.Findings.Select(f => new
+        {
+            id = f.Id, group = f.Group, status = f.Status.ToString(), blocking = f.Blocking, message = f.Message, fix = f.Fix
+        })
+    });
+});
+
 brandProfile.MapPost("/proof/{id:guid}/retire", async (string key, Guid id, IBrandProfileStore store, CancellationToken ct) =>
     await store.RetireProofAsync(key.ToLowerInvariant(), id, ct) ? Results.NoContent() : Results.NotFound());
 
@@ -430,6 +448,7 @@ record OrderDto(string PaymentId, string ProductKey, int Quantity, string Status
         o.ShipTo.Name, o.ShipTo.CountryCode, o.CreatedAt, o.FailureReason, o.BrandKey);
 }
 
+record CopyCheckRequest(string Text, string? Channel = null, string? Field = null);
 record ProofInput(string Kind, string Statement, string Source, DateOnly VerifiedAt, DateOnly? ReviewBy = null);
 record PhraseInput(string Text, string Source, DateOnly CollectedAt);
 record ProfileImport(BrandVoice? Voice, List<ProofInput>? Proof, List<PhraseInput>? Phrases);
