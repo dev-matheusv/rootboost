@@ -100,7 +100,7 @@ em vez do Postiz (US$ 29/mês). Desenho em `docs/PUBLICACAO.md`. Até existir, p
 Suite e pela página do LinkedIn, com a planilha que o marketing do MedlyCare prepara.
 - [ ] App na Meta (tipo Empresa) + usuário do sistema + permissões, e pedido do Community Management API no
       LinkedIn (demora dias: pedir cedo). O mesmo app da Meta serve pra Fase 2 (`ads_read`).
-- [ ] Modelo `Publication`, porta `ISocialPublisher`, `FakePublisher`, aprovação auditável e job de publicação.
+- [x] Modelo `Publication`, porta `ISocialPublisher`, `FakePublisher`, aprovação auditável e job de publicação (RB-21).
 - [ ] Instagram (Reels) e Página do Facebook atrás de `Social:Live`.
 - [ ] Calendário editorial no Console. **Nada publica sem aprovação post a post.**
 - [ ] LinkedIn (página da empresa) quando o acesso for aprovado.

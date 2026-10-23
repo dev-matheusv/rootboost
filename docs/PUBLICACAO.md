@@ -62,3 +62,15 @@ Conferir a documentação oficial na hora de implementar (versões mudam). Nada 
 ## Primeiro uso real
 Os 9 reels do MedlyCare (`Videos\MedlyCare Reels\finais\`, com a legenda por canal no `.txt` de cada vídeo),
 3 por semana (segunda, quarta e sexta).
+
+## Estado (RB-21, feito)
+- **Base pronta e testada, em dry-run.** `Publication` (Domain), `ApprovePublication` e `PublishDuePublications`
+  (Application), `EfPublicationStore` + migração `Publicacoes`, `FakeSocialPublisher` por canal e
+  `PublicationScheduler` (a cada minuto; `Social:SchedulerEnabled=false` desliga).
+- **Endpoints (Admin):** `POST/GET /admin/brands/{key}/publications`, `PUT .../{id}/caption`,
+  `PUT .../{id}/schedule`, `POST .../{id}/approve` (roda a checklist; bloqueada devolve 422 com os achados;
+  quem aprovou vem do JWT) e `POST /admin/publications/run` (dispara o job na hora).
+- **Regras que os testes protegem:** legenda editada depois de aprovar volta pra rascunho (aprovação vale pra
+  uma versão); rascunho nunca publica; só o que está no horário publica; container preparado uma vez só;
+  retomada depois de queda não publica duas vezes; 3 tentativas e fica `Failed`; mídia só https.
+- **Falta:** publicadores reais (RB-22 Instagram/Facebook, RB-24 LinkedIn), calendário no Console (RB-23).
