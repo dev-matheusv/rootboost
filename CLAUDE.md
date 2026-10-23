@@ -16,6 +16,7 @@ Contexto mestre do projeto para o Claude Code. Leia isto primeiro em toda sessã
 
 | Data | Decisão | Por quê |
 |---|---|---|
+| 2026-10-23 | **Publicação e agendamento próprios, sem Postiz** (`docs/PUBLICACAO.md`): APIs oficiais de Instagram, Facebook e LinkedIn, atrás de `ISocialPublisher` (o Postiz pode virar só mais um adaptador). | Postiz cobra US$ 29/mês; as APIs oficiais são grátis pras nossas contas. App Review só quando publicar em conta de cliente (Fase 6). |
 | 2026-10-23 | **Público e módulos:** foco em empresas e agências que querem marketing com IA; loja e Amazon (livros) seguem como testes reais de venda. Plataforma modular (tráfego, criativo e vídeo, publicação, loja e marketplace), cada módulo utilizável sozinho. | Pedido do Matheus: atender quem só quer anúncio e quem só quer criativo e vídeo com o DMaker. |
 | 2026-10-23 | **Copy fundamentada, nunca robotizada:** documentos e inventário dizem o que é verdade; o conhecimento de copy diz como dizer. A IA nunca copia trecho de documento pro anúncio. | Pedido do Matheus: copy excelente e humana, com base no que o cliente oferece e precisa. |
 | 2026-10-23 | **Pacote comum de IA da família Root (`Root.IA`)** mapeado pra depois (RB-17), em vez de três cópias do motor (RootFlow, MedlyCare, RootBoost). | Manutenção num lugar só; melhoria chega aos três produtos. |
