@@ -1,0 +1,78 @@
+<template>
+  <!-- Molde do menu do MedlyCare: fixo no desktop, sobreposto e fechado no celular. -->
+  <q-drawer v-model="open" show-if-above side="left" bordered :mini="isMini" :width="248" :mini-width="64"
+    :class="$q.dark.isActive ? 'bg-dark' : 'bg-white'">
+    <div class="column full-height no-wrap">
+      <div class="row items-center no-wrap q-pa-md" style="height: 65px">
+        <q-btn flat round dense :icon="mdiMenu" @click="isMini = !isMini" />
+        <div v-if="!isMini" class="row items-center no-wrap q-ml-sm">
+          <img src="/favicon.svg" alt="" width="26" height="26" />
+          <div class="text-h6 sora-bold q-ml-sm">RootBoost</div>
+        </div>
+      </div>
+
+      <div class="q-px-sm">
+        <q-item rounded :class="$q.dark.isActive ? 'dark-focus' : 'light-focus'">
+          <q-item-section avatar><q-icon :name="mdiAccountCircleOutline" /></q-item-section>
+          <q-item-section v-if="!isMini">
+            <q-item-label class="montserrat-bold ellipsis">{{ auth.userName }}</q-item-label>
+            <q-item-label caption class="ellipsis">{{ auth.userEmail }}</q-item-label>
+          </q-item-section>
+        </q-item>
+      </div>
+
+      <q-list padding class="col q-px-sm q-gutter-y-xs" style="overflow-y: auto">
+        <q-item v-for="item in items" :key="item.name" clickable v-ripple rounded
+          :active="route.name === item.name" active-class="text-primary light-active" :to="{ name: item.name }">
+          <q-item-section avatar><q-icon :name="item.icon" /></q-item-section>
+          <q-item-section v-if="!isMini">{{ $t(item.label) }}</q-item-section>
+          <q-tooltip v-if="isMini" anchor="center right" self="center left">{{ $t(item.label) }}</q-tooltip>
+        </q-item>
+      </q-list>
+
+      <q-list padding class="q-px-sm">
+        <q-item clickable v-ripple rounded @click="$q.dark.toggle()">
+          <q-item-section avatar><q-icon :name="$q.dark.isActive ? mdiWeatherSunny : mdiWeatherNight" /></q-item-section>
+          <q-item-section v-if="!isMini">{{ $t('nav.darkMode') }}</q-item-section>
+        </q-item>
+        <q-item clickable v-ripple rounded @click="logout">
+          <q-item-section avatar><q-icon :name="mdiLogout" /></q-item-section>
+          <q-item-section v-if="!isMini">{{ $t('common.actions.logout') }}</q-item-section>
+        </q-item>
+      </q-list>
+    </div>
+  </q-drawer>
+</template>
+
+<script setup lang="ts">
+import { ref } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import {
+  mdiMenu, mdiAccountCircleOutline, mdiViewDashboardOutline, mdiPackageVariantClosed,
+  mdiWeatherNight, mdiWeatherSunny, mdiLogout,
+} from '@quasar/extras/mdi-v7';
+import { useAuthStore } from 'src/stores/authStore';
+
+defineOptions({ name: 'SidebarNavigation' });
+
+const open = defineModel<boolean>({ default: false });
+const isMini = ref(false);
+const auth = useAuthStore();
+const route = useRoute();
+const router = useRouter();
+
+// Cada fase do roadmap acrescenta itens aqui (Campanhas, Criativos, Agenda, IA).
+const items = [
+  { name: 'overview', label: 'nav.overview', icon: mdiViewDashboardOutline },
+  { name: 'orders', label: 'nav.orders', icon: mdiPackageVariantClosed },
+];
+
+async function logout() {
+  auth.logout();
+  await router.replace({ name: 'login' });
+}
+</script>
+
+<style lang="scss" scoped>
+.light-active { background: rgba(79, 70, 229, 0.1); }
+</style>
