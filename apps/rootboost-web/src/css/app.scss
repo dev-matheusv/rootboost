@@ -1,0 +1,29 @@
+// Estilos globais do Console. Fontes e utilitários vindos do front do MedlyCare.
+
+@font-face { font-display: swap; font-family: inter; font-style: normal; font-weight: 400; src: url('../assets/fonts/inter-regular.woff2') format('woff2'); }
+@font-face { font-display: swap; font-family: montserrat; font-style: normal; font-weight: 400; src: url('../assets/fonts/montserrat-regular.woff2') format('woff2'); }
+@font-face { font-display: swap; font-family: sora; font-style: normal; font-weight: 400; src: url('../assets/fonts/sora-regular.woff2') format('woff2'); }
+
+.inter { font-family: inter; }
+.montserrat { font-family: montserrat; }
+.montserrat-bold { font-family: montserrat; font-weight: bold; }
+.sora { font-family: sora; }
+.sora-bold { font-family: sora; font-weight: bold; }
+
+.fade-enter-active, .fade-leave-active { transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
+
+body.body--light { background-color: $light-page; }
+body.body--dark { background-color: $dark-page; }
+
+.light-focus { background-color: $light-focus; color: black; }
+.dark-focus { background-color: $dark-focus; color: white; }
+
+.card-rounded { border-radius: 20px; }
+.card-bordered-light { border: 1px solid rgba(0, 0, 0, 0.08); }
+.card-bordered-dark { border: 1px solid rgba(255, 255, 255, 0.08); }
+
+.q-btn { font-family: sora, sans-serif; }
+
+// Número grande dos cartões de indicador.
+.kpi-value { font-family: sora; font-weight: bold; font-size: 1.9rem; line-height: 1.1; }

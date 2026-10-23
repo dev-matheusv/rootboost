@@ -1,12 +1,15 @@
 using System.Text;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using RootBoost.Api.Auth;
 using RootBoost.Application.Abstractions;
 using RootBoost.Application.Models;
 using RootBoost.Application.UseCases;
 using RootBoost.Domain;
 using RootBoost.Infrastructure;
 using RootBoost.Infrastructure.Persistence;
+
+if (AuthSetup.TryRunHashPasswordCommand(args)) return;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -28,9 +31,17 @@ builder.Services.AddCors(o => o.AddDefaultPolicy(p =>
     else p.WithOrigins(origins).AllowAnyHeader().AllowAnyMethod();
 }));
 
+// Console (JWT) e scripts (API key) sob a política Admin.
+builder.Services.AddConsoleAuth(builder.Configuration);
+
 var app = builder.Build();
 
 app.UseCors();
+app.UseRateLimiter();
+app.UseAuthentication();
+app.UseAuthorization();
+AuthSetup.WarnIfAdminIsOpen(app);
+app.MapAuthEndpoints();
 
 // Dev convenience: when LANDING_DIR is set, serve that folder's static landing at the API root,
 // so a local end-to-end test runs from a single origin (no CORS). Not used in production.
@@ -78,14 +89,9 @@ app.MapPost("/track/view", async (TrackViewRequest req, IVisitStore visits, IPro
 // --- Orders dashboard (protected by an API key header) -----------------------
 app.MapGet("/orders", async (HttpContext ctx, IOrderRepository repo, IConfiguration cfg, CancellationToken ct) =>
 {
-    var required = cfg["Orders:ApiKey"];
-    if (!string.IsNullOrWhiteSpace(required) &&
-        (!ctx.Request.Headers.TryGetValue("X-Api-Key", out var got) || got != required))
-        return Results.Unauthorized();
-
     var orders = await repo.ListAsync(200, ct);
     return Results.Ok(orders.Select(OrderDto.From));
-});
+}).RequireAuthorization(AuthSetup.AdminPolicy);
 
 // --- Payment webhook (PayPal in prod, Test verifier in dev) -------------------
 app.MapPost("/webhook/payment", async (HttpContext ctx, IPaymentVerifier verifier, PlaceOrderOnPayment useCase, ILoggerFactory lf, CancellationToken ct) =>
@@ -214,23 +220,13 @@ app.MapPost("/paypal/capture-order", async (HttpContext http, CaptureOrderReques
 // --- Traffic autopilot (dry-run): mostra as decisões que a automação tomaria ------
 app.MapGet("/admin/traffic/plan", async (HttpContext ctx, RootBoost.Application.Traffic.TrafficAutopilot autopilot, IConfiguration cfg, CancellationToken ct) =>
 {
-    var required = cfg["Orders:ApiKey"];
-    if (!string.IsNullOrWhiteSpace(required) &&
-        (!ctx.Request.Headers.TryGetValue("X-Api-Key", out var got) || got != required))
-        return Results.Unauthorized();
-
     var report = await autopilot.RunAsync(ct);
     return Results.Ok(report);
-});
+}).RequireAuthorization(AuthSetup.AdminPolicy);
 
 // --- Growth planner (dry-run): projeta orgânico vs pago pro orçamento que o usuário mantém ------
 app.MapGet("/admin/growth/plan", (HttpContext ctx, IProductCatalog catalog, RootBoost.Application.Traffic.GrowthPlanner planner, IConfiguration cfg) =>
 {
-    var required = cfg["Orders:ApiKey"];
-    if (!string.IsNullOrWhiteSpace(required) &&
-        (!ctx.Request.Headers.TryGetValue("X-Api-Key", out var got) || got != required))
-        return Results.Unauthorized();
-
     var q = ctx.Request.Query;
     var productKey = q["productKey"].FirstOrDefault() ?? "carorganizer";
     var price = catalog.Find(productKey)?.Price ?? 29.99m;
@@ -241,24 +237,19 @@ app.MapGet("/admin/growth/plan", (HttpContext ctx, IProductCatalog catalog, Root
     var plan = planner.Plan(new RootBoost.Application.Traffic.GrowthInputs(
         UnitPrice: price, UnitCost: cost, MonthlyAdBudget: budget, StoreConversionRate: cvr));
     return Results.Ok(plan);
-});
+}).RequireAuthorization(AuthSetup.AdminPolicy);
 
 // --- Product performance (API key): "qual converte mais" cruzando visitas x pedidos pagos. ---
 // ?days=N limita a janela (ex.: ?days=7 = últimos 7 dias). Sem days = tudo.
 app.MapGet("/admin/products/performance", async (HttpContext ctx, ProductPerformanceReport report, IConfiguration cfg, CancellationToken ct) =>
 {
-    var required = cfg["Orders:ApiKey"];
-    if (!string.IsNullOrWhiteSpace(required) &&
-        (!ctx.Request.Headers.TryGetValue("X-Api-Key", out var got) || got != required))
-        return Results.Unauthorized();
-
     DateTimeOffset? since = null;
     if (int.TryParse(ctx.Request.Query["days"].FirstOrDefault(), out var d) && d > 0)
         since = DateTimeOffset.UtcNow.AddDays(-d);
 
     var result = await report.BuildAsync(since, ct);
     return Results.Ok(result);
-});
+}).RequireAuthorization(AuthSetup.AdminPolicy);
 
 app.Run();
 

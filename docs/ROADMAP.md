@@ -42,20 +42,21 @@ nenhuma na rede de casa, e trocar o PC por uma máquina na nuvem depois é só m
 
 ### Fase 0 — Fundação (em andamento)
 - [x] Roadmap e registro da decisão (este arquivo, `CLAUDE.md` §0).
-- [ ] Fluxo de trabalho igual ao MedlyCare: `main` (produção), `develop` (integração), `feat/rb-XX-...`,
+- [x] Fluxo de trabalho igual ao MedlyCare: `main` (produção), `develop` (integração), `feat/rb-XX-...`,
       PR com CI obrigatório, squash merge, conventional commits com o card no escopo.
-- [ ] CI no GitHub Actions: build e testes do backend, lint, tipos e build do front.
+- [x] CI no GitHub Actions: build e testes do backend, lint, tipos e build do front.
 - [ ] Documentação no Notion e projeto RB no Jira.
 
 ### Fase 1 — Console (painel com login)
 - [ ] **Postgres no lugar do SQLite** (padrão da casa; libera pgvector e analytics). Migração dos pedidos
       e visitas existentes, sem perder nada.
-- [ ] **Login com JWT** emitido pelo backend, no mesmo molde do RootFlow (`JwtTokenGenerator`, 8 h).
+- [x] **Login com JWT** emitido pelo backend, no mesmo molde do RootFlow (`JwtTokenGenerator`, 8 h).
       Usuário dono criado por configuração. A API key continua valendo pra scripts.
 - [ ] **Marca como conceito desde o início** (`Brand`): pedidos, produtos, campanhas e criativos
       pertencem a uma marca. Evita refazer o modelo quando entrar o marketing do MedlyCare.
-- [ ] **Front `apps/rootboost-web`** no molde do `rootflow-web`: Vite, React 19, React Router 7,
-      TanStack Query, Tailwind 4, zod, lucide. Deploy em projeto próprio na Vercel.
+- [x] **Front `apps/rootboost-web`** (esqueleto, login, Visão geral e Pedidos) no molde do front do MedlyCare (`C:/SFA_Sistema/apps/web`): Vue 3,
+      Quasar 2, Pinia, vue-i18n, axios, vitest, PWA. Paleta própria do RootBoost. Deploy em projeto
+      próprio na Vercel.
 - [ ] Telas: Visão geral (visitas, pedidos, receita, conversão por produto), Pedidos, Produtos,
       Crescimento (o `GrowthPlanner` que já existe) e Tráfego (o plano em dry-run que já existe).
 
@@ -79,7 +80,7 @@ nenhuma na rede de casa, e trocar o PC por uma máquina na nuvem depois é só m
 - [ ] Calendário editorial no Console. **Nada publica sem aprovação post a post.**
 
 ### Fase 5 — IA que otimiza
-- [ ] Módulo `Ia` portado do RootFlow, no molde do MedlyCare v14: `IModeloLinguagem` com tool use e
+- [ ] Módulo `Ia` portado do RootFlow, no molde do MedlyCare v14 (e o painel do assistente, em Vue, reaproveitado no Console): `IModeloLinguagem` com tool use e
       streaming, implementações Claude e Fake, `Ia__Modo=Desligado` por padrão, uso e custo gravados.
 - [ ] Advisor lê insights e propõe ações (escalar, pausar, trocar criativo, testar hook).
 - [ ] **Ação só grava com confirmação humana**: proposta assinada, uso único, válida por 15 min
