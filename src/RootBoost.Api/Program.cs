@@ -129,6 +129,10 @@ app.MapGet("/admin/knowledge/{**name}", (string name, IKnowledgeBase kb) =>
     return doc is null ? Results.NotFound() : Results.Json(doc.Raw);
 }).RequireAuthorization(AuthSetup.AdminPolicy);
 
+// Roda o job de publicação agora (o agendador já roda a cada minuto; isto é pra teste e operação).
+app.MapPost("/admin/publications/run", async (RootBoost.Application.Publishing.PublishDuePublications job, CancellationToken ct) =>
+    Results.Ok(await job.RunAsync(ct))).RequireAuthorization(AuthSetup.AdminPolicy);
+
 // --- Marcas (Admin): a loja, o MedlyCare e quem mais entrar. ---
 app.MapGet("/admin/brands", async (IBrandStore brands, CancellationToken ct) =>
     Results.Ok((await brands.ListAsync(ct)).Select(b => new { key = b.Key, name = b.Name, defaultLanguage = b.DefaultLanguage })))
@@ -179,6 +183,60 @@ brandProfile.MapPost("/copy/check", async (string key, CopyCheckRequest req, IBr
             id = f.Id, group = f.Group, status = f.Status.ToString(), blocking = f.Blocking, message = f.Message, fix = f.Fix
         })
     });
+});
+
+// --- Publicação própria (RB-21). Nada publica sem aprovação; Social:Live=false = publicador de mentira. ---
+brandProfile.MapPost("/publications", async (string key, PublicationInput input, IBrandStore brands,
+    RootBoost.Application.Publishing.IPublicationStore store, TimeProvider time, CancellationToken ct) =>
+{
+    var brandKey = key.ToLowerInvariant();
+    if (!(await brands.ListAsync(ct)).Any(b => b.Key == brandKey)) return Results.NotFound();
+    if (!Enum.TryParse<SocialChannel>(input.Channel, true, out var channel) || !Enum.IsDefined(channel))
+        return Results.BadRequest(new { error = $"canal inválido: '{input.Channel}'" });
+    try
+    {
+        var publication = new Publication(brandKey, channel, input.MediaUrl, input.Caption, input.ScheduledFor, time.GetUtcNow());
+        await store.AddAsync(publication, ct);
+        return Results.Created($"/admin/brands/{brandKey}/publications/{publication.Id}", PublicationDto.From(publication));
+    }
+    catch (ArgumentException ex) { return Results.BadRequest(new { error = ex.Message }); }
+});
+
+brandProfile.MapGet("/publications", async (string key, DateTimeOffset? from, DateTimeOffset? to,
+    RootBoost.Application.Publishing.IPublicationStore store, CancellationToken ct) =>
+    Results.Ok((await store.ListByBrandAsync(key.ToLowerInvariant(), from, to, ct)).Select(PublicationDto.From)));
+
+brandProfile.MapPut("/publications/{id:guid}/caption", async (string key, Guid id, CaptionInput input,
+    RootBoost.Application.Publishing.IPublicationStore store, TimeProvider time, CancellationToken ct) =>
+{
+    var publication = await store.GetAsync(id, ct);
+    if (publication is null || publication.BrandKey != key.ToLowerInvariant()) return Results.NotFound();
+    try { publication.EditCaption(input.Caption, time.GetUtcNow()); }
+    catch (Exception ex) when (ex is ArgumentException or InvalidOperationException) { return Results.BadRequest(new { error = ex.Message }); }
+    await store.SaveAsync(publication, ct);
+    return Results.Ok(PublicationDto.From(publication));
+});
+
+brandProfile.MapPut("/publications/{id:guid}/schedule", async (string key, Guid id, ScheduleInput input,
+    RootBoost.Application.Publishing.IPublicationStore store, TimeProvider time, CancellationToken ct) =>
+{
+    var publication = await store.GetAsync(id, ct);
+    if (publication is null || publication.BrandKey != key.ToLowerInvariant()) return Results.NotFound();
+    try { publication.Reschedule(input.ScheduledFor, time.GetUtcNow()); }
+    catch (InvalidOperationException ex) { return Results.BadRequest(new { error = ex.Message }); }
+    await store.SaveAsync(publication, ct);
+    return Results.Ok(PublicationDto.From(publication));
+});
+
+brandProfile.MapPost("/publications/{id:guid}/approve", async (string key, Guid id, System.Security.Claims.ClaimsPrincipal user,
+    RootBoost.Application.Publishing.ApprovePublication approve, RootBoost.Application.Publishing.IPublicationStore store, CancellationToken ct) =>
+{
+    var who = user.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value ?? user.Identity?.Name ?? "desconhecido";
+    var result = await approve.HandleAsync(key.ToLowerInvariant(), id, who, ct);
+    if (result.Error == "publicação não encontrada") return Results.NotFound();
+    var checklist = result.Checklist?.Findings.Select(f => new { id = f.Id, status = f.Status.ToString(), blocking = f.Blocking, message = f.Message, fix = f.Fix });
+    if (!result.Approved) return Results.UnprocessableEntity(new { error = result.Error, checklist });
+    return Results.Ok(new { publication = PublicationDto.From((await store.GetAsync(id, ct))!), checklist });
 });
 
 brandProfile.MapPost("/proof/{id:guid}/retire", async (string key, Guid id, IBrandProfileStore store, CancellationToken ct) =>
@@ -448,6 +506,17 @@ record OrderDto(string PaymentId, string ProductKey, int Quantity, string Status
         o.ShipTo.Name, o.ShipTo.CountryCode, o.CreatedAt, o.FailureReason, o.BrandKey);
 }
 
+record PublicationInput(string Channel, string MediaUrl, string Caption, DateTimeOffset ScheduledFor);
+record CaptionInput(string Caption);
+record ScheduleInput(DateTimeOffset ScheduledFor);
+record PublicationDto(Guid Id, string BrandKey, string Channel, string MediaUrl, string Caption, int CaptionVersion,
+    DateTimeOffset ScheduledFor, string Status, string? ApprovedBy, DateTimeOffset? ApprovedAt, int? ApprovedCaptionVersion,
+    string? ExternalId, string? PublishedUrl, string? Error, int Attempts)
+{
+    public static PublicationDto From(Publication p) => new(p.Id, p.BrandKey, p.Channel.ToString(), p.MediaUrl, p.Caption,
+        p.CaptionVersion, p.ScheduledFor, p.Status.ToString(), p.ApprovedBy, p.ApprovedAt, p.ApprovedCaptionVersion,
+        p.ExternalId, p.PublishedUrl, p.Error, p.Attempts);
+}
 record CopyCheckRequest(string Text, string? Channel = null, string? Field = null);
 record ProofInput(string Kind, string Statement, string Source, DateOnly VerifiedAt, DateOnly? ReviewBy = null);
 record PhraseInput(string Text, string Source, DateOnly CollectedAt);

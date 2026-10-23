@@ -35,6 +35,17 @@ public static class DependencyInjection
         services.AddScoped<IBrandStore, EfBrandStore>();
         services.AddScoped<IBrandProfileStore, EfBrandProfileStore>();
 
+        // --- Publicação própria (Fase 4). Social:Live=false (padrão) = só o publicador de mentira: nada sai pra rede. ---
+        services.AddScoped<RootBoost.Application.Publishing.IPublicationStore, EfPublicationStore>();
+        if (!string.Equals(config["Social:Live"], "true", StringComparison.OrdinalIgnoreCase))
+            foreach (var channel in Enum.GetValues<RootBoost.Domain.SocialChannel>())
+                services.AddSingleton<RootBoost.Application.Publishing.ISocialPublisher>(
+                    new RootBoost.Infrastructure.Publishing.FakeSocialPublisher(channel));
+        services.AddScoped<RootBoost.Application.Publishing.ApprovePublication>();
+        services.AddScoped<RootBoost.Application.Publishing.PublishDuePublications>();
+        if (!string.Equals(config["Social:SchedulerEnabled"], "false", StringComparison.OrdinalIgnoreCase))
+            services.AddHostedService<RootBoost.Infrastructure.Publishing.PublicationScheduler>();
+
         // Analytics de topo de funil: contador de visitas (denominador da conversão) + relatório.
         services.AddScoped<IVisitStore, RootBoost.Infrastructure.Analytics.EfVisitStore>();
         services.AddScoped<ProductPerformanceReport>();
