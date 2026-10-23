@@ -7,6 +7,8 @@
   <ItemGroup>
     <!-- Ship catalog.json next to the app so it resolves at runtime. -->
     <None Include="..\..\catalog.json" Link="catalog.json" CopyToOutputDirectory="PreserveNewest" />
+    <!-- Conhecimento geral de marketing (knowledge/) vai junto com a API. -->
+    <None Include="..\..\knowledge\**\*" Link="knowledge\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "updatedAt": "2026-10-23",
+  "source": "aprendizados.txt v1",
+  "notes": "Só princípio + número agregado + etiquetas; nunca texto ou vídeo de cliente. confidence: baixa (1 marca, poucos dados), media (1 marca, dado significativo), alta (3+ marcas). Desempenho em anúncio ainda vazio: o primeiro teste é a matriz de 9 ganchos do cliente zero no Meta Ads.",
+  "items": [
+    {
+      "id": "2026-10-23-voice-continuous",
+      "date": "2026-10-23",
+      "niche": "software-clinicas",
+      "channel": "video",
+      "tested": "voz clonada frase a frase x fala contínua",
+      "result": "fala contínua aprovada pelo dono; frase a frase reprovada (robótica, emendas)",
+      "confidence": "media",
+      "brands": 1
+    },
+    {
+      "id": "2026-10-23-voice-reference-quality",
+      "date": "2026-10-23",
+      "niche": "geral",
+      "channel": "video",
+      "tested": "referência de voz pelo WhatsApp (19 kbps) x gravador do celular (122 kbps)",
+      "result": "gravador muito mais natural",
+      "confidence": "media",
+      "brands": 1
+    },
+    {
+      "id": "2026-10-23-unique-endings",
+      "date": "2026-10-23",
+      "niche": "geral",
+      "channel": "video",
+      "tested": "mesmo final em todos os reels x final próprio por reel",
+      "result": "dono pediu variação; fala e cartão final precisam dizer a mesma coisa",
+      "confidence": "baixa",
+      "brands": 1
+    }
+  ]
+}

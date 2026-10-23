@@ -38,6 +38,21 @@ Fake pra rodar sem credencial e modo Desligado por padrão em produção.
 de voz, FFmpeg) e hoje roda no PC. O worker **puxa** o trabalho da API, então não precisa abrir porta
 nenhuma na rede de casa, e trocar o PC por uma máquina na nuvem depois é só mudar onde o worker roda.
 
+## Público e módulos
+
+**Foco principal:** empresas e agências de marketing que querem fazer marketing com IA. **Também:** a loja
+de dropshipping e a venda de livros na Amazon, que são nossos testes reais de venda.
+
+A plataforma é **modular**: cada cliente usa só o que precisa, e cada módulo funciona sozinho.
+- **Tráfego:** subir anúncio, analisar campanha, otimizar (Meta, Google).
+- **Criativo e vídeo:** só criar peças e editar vídeo com o DMaker, sem tocar em anúncio.
+- **Publicação:** agenda nas redes.
+- **Loja e marketplace:** canais de venda próprios (loja, Amazon).
+Isso vira plano e permissão por módulo na Fase 6 (contas), mas o código já nasce separado por módulo.
+
+**Ferramentas de criativo:** DMaker (vídeo e voz), Higgsfield (imagem e vídeo por IA) e Canva (design por
+template), cada uma atrás de porta própria, escolhida pelo que entrega melhor em cada peça.
+
 ## Fases
 
 ### Fase 0 — Fundação (em andamento)
@@ -68,7 +83,9 @@ nenhuma na rede de casa, e trocar o PC por uma máquina na nuvem depois é só m
 - [ ] Nenhuma escrita nas contas de anúncio nesta fase.
 
 ### Fase 3 — Estúdio (criar)
-- [ ] **Base de conhecimento de marketing que aprende** (RB-15): `knowledge/` versionado, voz e **inventário de
+- [ ] **Base de conhecimento de marketing que aprende** (RB-15). Parte 1 feita: `knowledge/` com playbook,
+      gatilhos, ganchos, checklist, limites, políticas, formatos, regras de teste e aprendizados, validados por
+      teste e servidos em `/admin/knowledge`. Falta: perfil da marca (voz e inventário de prova). `knowledge/` versionado, voz e **inventário de
       prova** por marca, checklist automática antes do humano. Desenho em `docs/BASE-DE-CONHECIMENTO.md`.
 - [ ] Fila de jobs de criativo na API e worker local que roda o DMaker (render, voz clonada, legendas).
 - [ ] Voz em fala contínua (lição do MedlyCare: síntese frase a frase soa picotada). Pedido ao Douglas

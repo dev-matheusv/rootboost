@@ -15,6 +15,10 @@ public sealed class RootBoostDbContext : DbContext
 
     public DbSet<Brand> Brands => Set<Brand>();
 
+    public DbSet<ProofItem> ProofItems => Set<ProofItem>();
+
+    public DbSet<CustomerPhrase> CustomerPhrases => Set<CustomerPhrase>();
+
     protected override void OnModelCreating(ModelBuilder b)
     {
         var view = b.Entity<LandingViewDaily>();
@@ -30,6 +34,26 @@ public sealed class RootBoostDbContext : DbContext
         brand.Property(x => x.Key).HasMaxLength(64);
         brand.Property(x => x.Name).HasMaxLength(120).IsRequired();
         brand.Property(x => x.DefaultLanguage).HasMaxLength(8).IsRequired();
+        brand.Property(x => x.VoiceJson).IsRequired().HasDefaultValue("{}");
+        if (!Database.IsSqlite()) brand.Property(x => x.VoiceJson).HasColumnType("jsonb");
+        brand.Ignore(x => x.Voice);
+
+        var proof = b.Entity<ProofItem>();
+        proof.HasKey(x => x.Id);
+        proof.Property(x => x.BrandKey).HasMaxLength(64).IsRequired();
+        proof.Property(x => x.Kind).HasConversion<string>().HasMaxLength(24);
+        proof.Property(x => x.Statement).HasMaxLength(1000).IsRequired();
+        proof.Property(x => x.Source).HasMaxLength(500).IsRequired();
+        proof.HasIndex(x => new { x.BrandKey, x.Active });
+        // Mesmo motivo dos pedidos: o SQLite não ordena por DateTimeOffset.
+        if (Database.IsSqlite()) proof.Property(x => x.CreatedAt).HasConversion(new DateTimeOffsetToBinaryConverter());
+
+        var phrase = b.Entity<CustomerPhrase>();
+        phrase.HasKey(x => x.Id);
+        phrase.Property(x => x.BrandKey).HasMaxLength(64).IsRequired();
+        phrase.Property(x => x.Text).HasMaxLength(1000).IsRequired();
+        phrase.Property(x => x.Source).HasMaxLength(500).IsRequired();
+        phrase.HasIndex(x => x.BrandKey);
         // Marcas iniciais. Data fixa: HasData precisa de valor determinístico pra não gerar migração a cada build.
         var seededAt = new DateTimeOffset(2026, 10, 23, 0, 0, 0, TimeSpan.Zero);
         brand.HasData(

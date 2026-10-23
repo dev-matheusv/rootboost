@@ -57,6 +57,13 @@ Prompt = conhecimento geral (playbook, gatilhos, checklist) + marca (voz, invent
 + aprendizados (o que venceu no nicho). A saída passa pela **checklist automática** (limites, política,
 verdade contra o inventário, sem travessão) **antes** de chegar ao humano. Nada publica sem aprovação.
 
+### 4.1 Equilíbrio: fundamentado, nunca robotizado
+Regra do Matheus (2026-10-23). O acervo e o inventário dizem **o que é verdade** sobre a empresa; o
+conhecimento de copy (playbook, gatilhos, níveis de consciência, o que venceu no nicho, os plugins de
+marketing) diz **como dizer**. A IA **não copia trecho de documento pro anúncio**: ela entende a empresa,
+a oferta e o público e escreve uma copy nova, persuasiva e humana, que só afirma o que é verdade.
+Documento é matéria-prima, não texto pronto.
+
 ### 5. No Console
 - Ao criar uma peça: "por que este gancho", com o princípio e o dado por trás
 - Nota da checklist em cada criativo, com o que corrigir

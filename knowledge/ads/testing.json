@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "updatedAt": "2026-10-23",
+  "source": "anuncios.txt v1",
+  "notes": "Regras que o advisor e o Console aplicam. Valores numéricos ficam em campos próprios pra virar regra de código.",
+  "items": [
+    { "id": "meta-test-hook-first", "platform": "meta", "kind": "test", "rule": "O que mais muda o resultado é o gancho (3 primeiros segundos). Testar gancho primeiro" },
+    { "id": "meta-test-matrix", "platform": "meta", "kind": "test", "rule": "Matriz inicial: 3 recursos ou benefícios x 3 tipos de gancho = 9 criativos, cada um em 9:16 e 4:5", "features": 3, "hooks": 3, "formats": ["9:16", "4:5"] },
+    { "id": "meta-test-one-variable", "platform": "meta", "kind": "test", "rule": "Uma variável por vez. Mesma verba (CBO), público aberto, posicionamentos automáticos" },
+    { "id": "meta-decide-window", "platform": "meta", "kind": "decision", "rule": "Decisão do 5o ao 7o dia", "dayFrom": 5, "dayTo": 7 },
+    { "id": "meta-pause-no-conversion", "platform": "meta", "kind": "decision", "rule": "Pausar quem gastou 2x o custo-alvo sem conversão", "spendMultipleOfTargetCpa": 2 },
+    { "id": "meta-pause-weak-hook", "platform": "meta", "kind": "decision", "rule": "Retenção de 3 s abaixo de 25% = gancho não prende", "minThreeSecondRetention": 0.25 },
+    { "id": "meta-scale-winner", "platform": "meta", "kind": "decision", "rule": "Vencedor vai para campanha própria com 70% da verba, os 2 seguintes com 30%", "winnerBudgetShare": 0.7, "runnersUp": 2 },
+    { "id": "meta-next-test", "platform": "meta", "kind": "test", "rule": "Próximo teste muda só o recurso (ou só o público ou nicho)" },
+    { "id": "meta-no-pixel", "platform": "meta", "kind": "decision", "rule": "Sem pixel ou evento de conversão medindo, otimizar por clique na 1a semana e trocar depois" },
+
+    { "id": "google-structure", "platform": "google", "kind": "setup", "rule": "Um grupo por intenção ou nicho; correspondência de frase e exata no começo" },
+    { "id": "google-negatives", "platform": "google", "kind": "setup", "rule": "Lista de negativas desde o dia 1", "negatives": ["grátis", "download", "curso", "vaga", "emprego", "planilha", "o que é"] },
+    { "id": "google-bidding", "platform": "google", "kind": "decision", "rule": "Maximizar cliques na 1a semana; Maximizar conversões após 15 a 30 conversões", "switchAfterConversions": [15, 30] },
+
+    { "id": "metrics-order", "platform": "all", "kind": "metrics", "rule": "Custo por conversão real > taxa de conversão da página > CTR no link > retenção de 3 s > CPM. Curtida não é métrica de anúncio", "order": ["cost-per-conversion", "landing-conversion-rate", "link-ctr", "three-second-retention", "cpm"] },
+    { "id": "creative-tags", "platform": "all", "kind": "naming", "rule": "Etiquetas de todo criativo", "tags": ["brand", "niche", "channel", "format", "hook", "awareness", "lever", "feature", "voice", "duration", "date"] },
+    { "id": "ad-naming", "platform": "all", "kind": "naming", "rule": "Nome do anúncio legível", "pattern": "<MARCA>_<recurso>_<gancho>_<formato>" },
+    { "id": "utm", "platform": "all", "kind": "naming", "rule": "UTM padrão", "pattern": "utm_source=<canal>&utm_medium=paid&utm_campaign=<teste>&utm_content=<nome>" }
+  ]
+}
