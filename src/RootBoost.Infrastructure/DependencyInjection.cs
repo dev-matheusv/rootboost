@@ -25,6 +25,10 @@ public static class DependencyInjection
         var catalogPath = config["Catalog:Path"] ?? Path.Combine(contentRoot, "catalog.json");
         services.AddSingleton<IProductCatalog>(_ => JsonCatalog.LoadFromFile(catalogPath));
 
+        // --- Conhecimento geral de marketing (knowledge/), carregado e validado no boot ---
+        var knowledgePath = config["Knowledge:Path"] ?? Path.Combine(contentRoot, "knowledge");
+        services.AddSingleton<IKnowledgeBase>(_ => RootBoost.Infrastructure.Knowledge.FileKnowledgeBase.Load(knowledgePath));
+
         // --- Persistence (EF Core): SQLite por padrão, Postgres com Database__Provider=Postgres ---
         services.AddDbContext<RootBoostDbContext>(o => DatabaseSetup.Configure(o, config));
         services.AddScoped<IOrderRepository, OrderRepository>();

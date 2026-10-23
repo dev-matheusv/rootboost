@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "updatedAt": "2026-10-23",
+  "source": "copy-metodo.txt v1",
+  "notes": "Estes ids viram as etiquetas de todo criativo (tipo de gancho, nível de consciência, fórmula). O teste e o aprendizado entre marcas usam exatamente estes valores.",
+  "items": [
+    { "id": "hook-pain", "kind": "hook", "name": "Dor", "description": "nomeia a perda" },
+    { "id": "hook-question", "kind": "hook", "name": "Pergunta", "description": "faz a pessoa se responder" },
+    { "id": "hook-result", "kind": "hook", "name": "Resultado", "description": "mostra o depois" },
+    { "id": "hook-number", "kind": "hook", "name": "Número", "description": "detalhe concreto (verdadeiro)" },
+    { "id": "hook-contrast", "kind": "hook", "name": "Contraste", "description": "antes e depois" },
+    { "id": "hook-identity", "kind": "hook", "name": "Identidade", "description": "chama o público pelo nome do que ele é" },
+
+    { "id": "awareness-unaware", "kind": "awareness", "name": "Inconsciente", "description": "não sabe que tem o problema", "where": "conteúdo orgânico de dor e bastidor" },
+    { "id": "awareness-problem", "kind": "awareness", "name": "Do problema", "description": "sente a dor, não busca solução", "where": "anúncio frio em rede social" },
+    { "id": "awareness-solution", "kind": "awareness", "name": "Da solução", "description": "sabe que existe esse tipo de solução", "where": "anúncio, vídeo comparativo, carrossel" },
+    { "id": "awareness-product", "kind": "awareness", "name": "Do produto", "description": "conhece a marca", "where": "remarketing, e-mail, depoimento real" },
+    { "id": "awareness-most", "kind": "awareness", "name": "Pronto", "description": "só falta o empurrão", "where": "busca no Google, página de preço" },
+
+    { "id": "formula-pas", "kind": "formula", "name": "PAS", "description": "Problema, Agitação, Solução" },
+    { "id": "formula-aida", "kind": "formula", "name": "AIDA", "description": "Atenção, Interesse, Desejo, Ação (vídeo de 1 a 2 min)" },
+    { "id": "formula-adp", "kind": "formula", "name": "ADP", "description": "Antes, Depois, Ponte" },
+    { "id": "formula-4u", "kind": "formula", "name": "4U", "description": "Útil, Urgente, Único, Ultraespecífico; bom gancho tem 3 dos 4" }
+  ]
+}

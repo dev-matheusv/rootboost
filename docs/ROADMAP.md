@@ -83,7 +83,9 @@ template), cada uma atrás de porta própria, escolhida pelo que entrega melhor 
 - [ ] Nenhuma escrita nas contas de anúncio nesta fase.
 
 ### Fase 3 — Estúdio (criar)
-- [ ] **Base de conhecimento de marketing que aprende** (RB-15): `knowledge/` versionado, voz e **inventário de
+- [ ] **Base de conhecimento de marketing que aprende** (RB-15). Parte 1 feita: `knowledge/` com playbook,
+      gatilhos, ganchos, checklist, limites, políticas, formatos, regras de teste e aprendizados, validados por
+      teste e servidos em `/admin/knowledge`. Falta: perfil da marca (voz e inventário de prova). `knowledge/` versionado, voz e **inventário de
       prova** por marca, checklist automática antes do humano. Desenho em `docs/BASE-DE-CONHECIMENTO.md`.
 - [ ] Fila de jobs de criativo na API e worker local que roda o DMaker (render, voz clonada, legendas).
 - [ ] Voz em fala contínua (lição do MedlyCare: síntese frase a frase soa picotada). Pedido ao Douglas

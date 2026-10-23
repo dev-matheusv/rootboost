@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "updatedAt": "2026-10-23",
+  "source": "conferencia.txt v1",
+  "notes": "group: truth e channel bloqueiam a publicação se falharem; quality dá nota de 1 a 5 (abaixo de 'minScore' em qualquer item, reescrever); style bloqueia. 'auto' indica o que a checklist automática confere sozinha; o resto vai pro humano ou pra IA com o inventário de prova.",
+  "minScore": 4,
+  "items": [
+    { "id": "truth-in-inventory", "group": "truth", "blocking": true, "auto": "inventory", "text": "Toda afirmação está no inventário de prova da marca e é verdade hoje" },
+    { "id": "truth-feature-live", "group": "truth", "blocking": true, "auto": "inventory", "text": "Recurso anunciado está em produção (não em desenvolvimento ou em teste)" },
+    { "id": "truth-price-checked", "group": "truth", "blocking": true, "auto": "none", "text": "Preço e oferta conferidos na página oficial da marca no dia" },
+    { "id": "truth-no-unsourced-proof", "group": "truth", "blocking": true, "auto": "inventory", "text": "Nenhum depoimento, número de clientes, estatística, selo ou prêmio sem fonte da marca" },
+    { "id": "truth-no-fake-urgency", "group": "truth", "blocking": true, "auto": "inventory", "text": "Nenhuma urgência ou escassez que não seja real" },
+    { "id": "truth-no-fake-customer-voice", "group": "truth", "blocking": true, "auto": "none", "text": "Ninguém fala na primeira pessoa como cliente sem ser cliente real com autorização" },
+    { "id": "truth-no-real-personal-data", "group": "truth", "blocking": true, "auto": "none", "text": "Dado pessoal real fora da tela (telefone, CPF, nome de cliente real): usar dados fictícios e conferir quadro a quadro" },
+
+    { "id": "channel-char-limits", "group": "channel", "blocking": true, "auto": "limits", "text": "Limites de caracteres do canal conferidos por script, não no olho" },
+    { "id": "channel-policy", "group": "channel", "blocking": true, "auto": "policies", "text": "Política do canal: nada sobre saúde ou condição pessoal de quem lê, sem promessa de resultado, sem antes e depois de corpo" },
+    { "id": "channel-safe-zone", "group": "channel", "blocking": true, "auto": "formats", "text": "Texto e legenda dentro da zona segura do formato" },
+
+    { "id": "quality-clarity", "group": "quality", "blocking": false, "auto": "none", "text": "Clareza: entende em 3 segundos, sem som?" },
+    { "id": "quality-specificity", "group": "quality", "blocking": false, "auto": "none", "text": "Especificidade: tem um detalhe concreto?" },
+    { "id": "quality-real-pain", "group": "quality", "blocking": false, "auto": "none", "text": "Dor real: usa as palavras do cliente?" },
+    { "id": "quality-credibility", "group": "quality", "blocking": false, "auto": "none", "text": "Credibilidade: tem prova (produto funcionando, fato verificável)?" },
+    { "id": "quality-action", "group": "quality", "blocking": false, "auto": "none", "text": "Ação: o próximo passo está claro e é fácil?" },
+
+    { "id": "style-no-dashes", "group": "style", "blocking": true, "auto": "text", "pattern": "[—–]", "text": "Sem travessão e sem meia-risca" },
+    { "id": "style-no-ai-marks", "group": "style", "blocking": true, "auto": "text", "terms": ["revolucione", "potencialize", "descubra", "no mundo de hoje"], "text": "Sem marcas de texto de IA (inclui 'não é X, é Y' repetido e listas de itens do mesmo tamanho)" }
+  ]
+}
