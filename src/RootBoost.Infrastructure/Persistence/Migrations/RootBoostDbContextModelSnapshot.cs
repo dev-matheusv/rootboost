@@ -41,6 +41,12 @@ namespace RootBoost.Infrastructure.Persistence.Migrations
                         .HasMaxLength(120)
                         .HasColumnType("character varying(120)");
 
+                    b.Property<string>("VoiceJson")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("jsonb")
+                        .HasDefaultValue("{}");
+
                     b.HasKey("Key");
 
                     b.ToTable("Brands");
@@ -51,15 +57,48 @@ namespace RootBoost.Infrastructure.Persistence.Migrations
                             Key = "rootboost-loja",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 10, 23, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             DefaultLanguage = "en-US",
-                            Name = "Loja RootBoost"
+                            Name = "Loja RootBoost",
+                            VoiceJson = "{}"
                         },
                         new
                         {
                             Key = "medlycare",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 10, 23, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             DefaultLanguage = "pt-BR",
-                            Name = "MedlyCare"
+                            Name = "MedlyCare",
+                            VoiceJson = "{}"
                         });
+                });
+
+            modelBuilder.Entity("RootBoost.Domain.CustomerPhrase", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("BrandKey")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<DateOnly>("CollectedAt")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BrandKey");
+
+                    b.ToTable("CustomerPhrases");
                 });
 
             modelBuilder.Entity("RootBoost.Domain.Order", b =>
@@ -125,6 +164,51 @@ namespace RootBoost.Infrastructure.Persistence.Migrations
                     b.HasIndex("SupplierOrderId");
 
                     b.ToTable("Orders");
+                });
+
+            modelBuilder.Entity("RootBoost.Domain.ProofItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("Active")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("BrandKey")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(24)
+                        .HasColumnType("character varying(24)");
+
+                    b.Property<DateOnly?>("ReviewBy")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Statement")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<DateOnly>("VerifiedAt")
+                        .HasColumnType("date");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BrandKey", "Active");
+
+                    b.ToTable("ProofItems");
                 });
 
             modelBuilder.Entity("RootBoost.Infrastructure.Persistence.LandingViewDaily", b =>

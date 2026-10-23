@@ -13,6 +13,9 @@ public sealed class Brand
     public string DefaultLanguage { get; private set; } = default!;
     public DateTimeOffset CreatedAt { get; private set; }
 
+    /// <summary>Voz da marca, guardada como JSON (público, tom, trocas de palavra, termos proibidos, objeções).</summary>
+    public string VoiceJson { get; private set; } = "{}";
+
     private Brand() { }
 
     public Brand(string key, string name, string defaultLanguage, DateTimeOffset createdAt)
@@ -22,6 +25,23 @@ public sealed class Brand
         Name = name.Trim();
         DefaultLanguage = string.IsNullOrWhiteSpace(defaultLanguage) ? "pt-BR" : defaultLanguage.Trim();
         CreatedAt = createdAt;
+    }
+
+    public BrandVoice Voice => BrandVoiceJson.Read(VoiceJson);
+
+    public void SetVoice(BrandVoice voice) => VoiceJson = BrandVoiceJson.Write(voice);
+}
+
+public static class BrandVoiceJson
+{
+    private static readonly System.Text.Json.JsonSerializerOptions Options = new(System.Text.Json.JsonSerializerDefaults.Web);
+
+    public static string Write(BrandVoice voice) => System.Text.Json.JsonSerializer.Serialize(voice, Options);
+
+    public static BrandVoice Read(string json)
+    {
+        if (string.IsNullOrWhiteSpace(json) || json.Trim() == "{}") return BrandVoice.Empty;
+        return System.Text.Json.JsonSerializer.Deserialize<BrandVoice>(json, Options) ?? BrandVoice.Empty;
     }
 }
 
