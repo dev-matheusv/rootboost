@@ -94,9 +94,17 @@ template), cada uma atrás de porta própria, escolhida pelo que entrega melhor 
 - [ ] Biblioteca de criativos com proveniência (de onde veio, custo, qual hook, qual produto).
 - [ ] Higgsfield como gerador de imagem atrás de porta (`IAssetGenerator`), com orçamento.
 
-### Fase 4 — Publicação
-- [ ] Postiz como agendador, atrás de porta (`ISocialPublisher`).
+### Fase 4 — Publicação própria (sem Postiz)
+Decisão de 2026-10-23: o RootBoost publica e agenda sozinho pelas APIs oficiais (grátis pras nossas contas),
+em vez do Postiz (US$ 29/mês). Desenho em `docs/PUBLICACAO.md`. Até existir, publicação manual pelo Meta Business
+Suite e pela página do LinkedIn, com a planilha que o marketing do MedlyCare prepara.
+- [ ] App na Meta (tipo Empresa) + usuário do sistema + permissões, e pedido do Community Management API no
+      LinkedIn (demora dias: pedir cedo). O mesmo app da Meta serve pra Fase 2 (`ads_read`).
+- [ ] Modelo `Publication`, porta `ISocialPublisher`, `FakePublisher`, aprovação auditável e job de publicação.
+- [ ] Instagram (Reels) e Página do Facebook atrás de `Social:Live`.
 - [ ] Calendário editorial no Console. **Nada publica sem aprovação post a post.**
+- [ ] LinkedIn (página da empresa) quando o acesso for aprovado.
+- [ ] Insights orgânicos (alcance, plays, salvamentos) no ciclo de aprendizado.
 
 ### Fase 5 — IA que otimiza
 - [ ] Módulo `Ia` portado do RootFlow, no molde do MedlyCare v14 (e o painel do assistente, em Vue, reaproveitado no Console): `IModeloLinguagem` com tool use e
