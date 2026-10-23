@@ -1,13 +1,65 @@
 {
-  "version": 1,
+  "version": 2,
   "updatedAt": "2026-10-23",
-  "source": "conferencia.txt e persuasao.txt v1",
-  "notes": "O que os canais recusam e o que a lei proíbe. 'channels' vazio = vale pra todos.",
+  "source": "conferencia.txt e persuasao.txt v1; v2 adiciona detectores pra checklist automática (RB-18)",
+  "notes": "O que os canais recusam e o que a lei proíbe. 'channels' vazio = vale pra todos. 'patterns' são regex (sem diferenciar maiúscula nem acento) que a checklist automática procura no texto; 'severity' block bloqueia a publicação, review pede um humano. 'unlessProof' libera pra revisão humana se a marca tiver prova ativa daquele tipo (ex.: escassez real).",
   "items": [
-    { "id": "no-personal-attributes", "channels": ["meta"], "rule": "Nada sobre saúde ou condição pessoal de quem lê; sem 'você' atribuindo característica sensível", "example": "evitar 'Você sofre com dor nas costas?'; preferir falar da situação, não da pessoa" },
-    { "id": "no-result-promise", "channels": [], "rule": "Sem promessa de resultado", "example": "" },
-    { "id": "no-body-before-after", "channels": ["meta"], "rule": "Sem antes e depois de corpo", "example": "" },
-    { "id": "cdc-misleading-ad", "channels": [], "rule": "CDC art. 37: publicidade enganosa (escassez inventada, depoimento fabricado, preço 'de' que nunca existiu, contador que reinicia)", "example": "" },
-    { "id": "google-business-profile", "channels": ["google"], "rule": "Perfil de Empresa no Google só para quem atende presencialmente (loja ou área de serviço); negócio só online não é elegível", "example": "credibilidade de negócio online vem de verificação de anunciante, Search Console, canal no YouTube e dados estruturados no site" }
+    {
+      "id": "no-personal-attributes",
+      "channels": ["meta"],
+      "rule": "Nada sobre saúde ou condição pessoal de quem lê; sem 'você' atribuindo característica sensível",
+      "example": "evitar 'Você sofre com dor nas costas?'; preferir falar da situação, não da pessoa",
+      "severity": "block",
+      "patterns": ["\\bvoce (tem|sofre|esta com|anda com)\\b"]
+    },
+    {
+      "id": "no-result-promise",
+      "channels": [],
+      "rule": "Sem promessa de resultado",
+      "example": "",
+      "severity": "review",
+      "patterns": ["resultado garantido", "\\bgarantimos (que|o resultado)\\b", "\\b(dobre|triplique) (seu|sua|o|a)\\b"]
+    },
+    {
+      "id": "no-body-before-after",
+      "channels": ["meta"],
+      "rule": "Sem antes e depois de corpo",
+      "example": "",
+      "severity": "review",
+      "patterns": []
+    },
+    {
+      "id": "cdc-fake-scarcity",
+      "channels": [],
+      "rule": "CDC art. 37: escassez ou urgência só se for real e verificável",
+      "example": "'só hoje', 'últimas vagas' sem limite real",
+      "severity": "block",
+      "unlessProof": "Scarcity",
+      "patterns": ["\\bso hoje\\b", "\\bultimas (vagas|unidades)\\b", "\\bpor tempo limitado\\b", "\\bcorre que (acaba|esta acabando)\\b"]
+    },
+    {
+      "id": "no-absolute-availability",
+      "channels": [],
+      "rule": "Nenhum sistema tem disponibilidade absoluta; prometer isso é publicidade enganosa",
+      "example": "'nunca sai do ar', '100% disponível'",
+      "severity": "block",
+      "patterns": ["\\bnunca sai do ar\\b", "\\b100% (do tempo )?(disponivel|no ar|online)\\b", "\\b100% de disponibilidade\\b"]
+    },
+    {
+      "id": "cdc-misleading-ad",
+      "channels": [],
+      "rule": "CDC art. 37: publicidade enganosa (depoimento fabricado, preço 'de' que nunca existiu, contador que reinicia)",
+      "example": "",
+      "severity": "review",
+      "patterns": ["\\bde r\\$ ?\\d+[.,]?\\d* por r\\$"]
+    },
+    {
+      "id": "google-business-profile",
+      "channels": ["google"],
+      "rule": "Perfil de Empresa no Google só para quem atende presencialmente (loja ou área de serviço); negócio só online não é elegível",
+      "example": "credibilidade de negócio online vem de verificação de anunciante, Search Console, canal no YouTube e dados estruturados no site",
+      "severity": "review",
+      "patterns": []
+    }
   ]
 }
