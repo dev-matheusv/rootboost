@@ -115,6 +115,16 @@ public static class AuthSetup
             return true;
         }
 
+        // Com a senha mascarada um erro de digitação passa despercebido e o login falha depois
+        // sem pista nenhuma. Digitar duas vezes pega isso na hora.
+        Console.Error.Write("Repita a senha: ");
+        if (ReadPasswordMasked() != password)
+        {
+            Console.Error.WriteLine("As senhas não conferem. Nada foi gerado.");
+            Environment.ExitCode = 1;
+            return true;
+        }
+
         Console.WriteLine(new PasswordHasher<object>().HashPassword(new object(), password));
         return true;
     }
