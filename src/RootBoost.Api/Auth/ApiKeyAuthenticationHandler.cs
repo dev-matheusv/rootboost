@@ -15,7 +15,7 @@ namespace RootBoost.Api.Auth;
 /// </summary>
 public sealed class ApiKeyAuthenticationHandler : AuthenticationHandler<AuthenticationSchemeOptions>
 {
-    public const string Scheme = "ApiKey";
+    public const string SchemeName = "ApiKey";
     public const string HeaderName = "X-Api-Key";
 
     private readonly IConfiguration _config;
@@ -50,7 +50,7 @@ public sealed class ApiKeyAuthenticationHandler : AuthenticationHandler<Authenti
     private AuthenticateResult Success(string name)
     {
         var identity = new ClaimsIdentity(
-            [new Claim(ClaimTypes.Name, name), new Claim(ClaimTypes.Role, AuthSetup.AdminRole)], Scheme);
-        return AuthenticateResult.Success(new AuthenticationTicket(new ClaimsPrincipal(identity), Scheme));
+            [new Claim(ClaimTypes.Name, name), new Claim(ClaimTypes.Role, AuthSetup.AdminRole)], SchemeName);
+        return AuthenticateResult.Success(new AuthenticationTicket(new ClaimsPrincipal(identity), SchemeName));
     }
 }

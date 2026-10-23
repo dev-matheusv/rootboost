@@ -48,11 +48,11 @@ public static class AuthSetup
                     ClockSkew = TimeSpan.FromMinutes(1)
                 };
             })
-            .AddScheme<AuthenticationSchemeOptions, ApiKeyAuthenticationHandler>(ApiKeyAuthenticationHandler.Scheme, _ => { });
+            .AddScheme<AuthenticationSchemeOptions, ApiKeyAuthenticationHandler>(ApiKeyAuthenticationHandler.SchemeName, _ => { });
 
         services.AddAuthorization(options =>
             options.AddPolicy(AdminPolicy, policy => policy
-                .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme, ApiKeyAuthenticationHandler.Scheme)
+                .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme, ApiKeyAuthenticationHandler.SchemeName)
                 .RequireRole(AdminRole)));
 
         // Freio contra força bruta no login: 10 tentativas por minuto por IP.
@@ -107,7 +107,7 @@ public static class AuthSetup
         if (args.Length == 0 || args[0] != "hash-password") return false;
 
         Console.Error.Write("Senha do dono do Console: ");
-        var password = Console.ReadLine() ?? string.Empty;
+        var password = ReadPasswordMasked();
         if (password.Length < 12)
         {
             Console.Error.WriteLine("Use pelo menos 12 caracteres.");
@@ -117,6 +117,34 @@ public static class AuthSetup
 
         Console.WriteLine(new PasswordHasher<object>().HashPassword(new object(), password));
         return true;
+    }
+
+    /// <summary>
+    /// Lê a senha mostrando `*` no lugar das letras. Com a entrada redirecionada (pipe, script)
+    /// não há teclado pra interceptar, então lê a linha inteira.
+    /// </summary>
+    private static string ReadPasswordMasked()
+    {
+        if (Console.IsInputRedirected) return Console.ReadLine() ?? string.Empty;
+
+        var password = new System.Text.StringBuilder();
+        while (true)
+        {
+            var key = Console.ReadKey(intercept: true);
+            if (key.Key == ConsoleKey.Enter) break;
+            if (key.Key == ConsoleKey.Backspace)
+            {
+                if (password.Length == 0) continue;
+                password.Length--;
+                Console.Error.Write("\b \b");
+                continue;
+            }
+            if (char.IsControl(key.KeyChar)) continue;
+            password.Append(key.KeyChar);
+            Console.Error.Write('*');
+        }
+        Console.Error.WriteLine();
+        return password.ToString();
     }
 
     public static void WarnIfAdminIsOpen(WebApplication app)
