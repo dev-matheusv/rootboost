@@ -121,7 +121,10 @@ Segurança: nada gasta anúncio sozinho; travas de orçamento; dry-run por padr�
 
 ---
 
-## 7. Roadmap (ordem sugerida)
+## 7. Roadmap
+
+> **Atualizado em 2026-10-22:** o roadmap oficial agora vive em `docs/ROADMAP.md` (e no Notion). A lista abaixo é o plano original da loja, mantido como histórico.
+
 
 1. Abrir/confirmar PayPal pessoal → **primeira venda real** (valor baixo) end to end.
 2. CJ real (VID) → fulfillment de verdade; Resend ligado.

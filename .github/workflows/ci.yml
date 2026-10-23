@@ -1,0 +1,50 @@
+name: ci
+
+# Status check de todo PR e de push em develop/main. Nao faz deploy:
+# Railway e Vercel ja deployam sozinhos quando main muda.
+on:
+  pull_request:
+  push:
+    branches: [develop, main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: BE (build + test)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - run: dotnet restore
+      - run: dotnet build --no-restore --configuration Release
+      - run: dotnet test --no-build --configuration Release --verbosity normal
+
+  frontend:
+    name: FE (lint + typecheck + build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/rootboost-web
+    steps:
+      - uses: actions/checkout@v4
+      # O front entra na Fase 1; ate la este job passa sem fazer nada.
+      - id: has_web
+        working-directory: .
+        run: echo "present=$([ -f apps/rootboost-web/package.json ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+      - if: steps.has_web.outputs.present == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/rootboost-web/package-lock.json
+      - if: steps.has_web.outputs.present == 'true'
+        run: npm ci
+      - if: steps.has_web.outputs.present == 'true'
+        run: npm run lint
+      - if: steps.has_web.outputs.present == 'true'
+        run: npm run build

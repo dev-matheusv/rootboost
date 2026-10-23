@@ -28,4 +28,4 @@ pra módulos reutilizáveis da plataforma, sem reescrever nada agora.
    (Python hoje; porta `IAssetGenerator` no .NET quando entrar no backend).
 5. Só então: **advisor de IA** (Claude) lendo Insights e propondo o próximo produto, criativo ou ajuste de anúncio.
 
-Princípio: não construir plataforma antes de ter dado de venda. Os livros são o laboratório barato que gera esse dado.
+Princípio original: não construir plataforma antes de ter dado de venda. **Revogado em 2026-10-22** (ver `CLAUDE.md` §0): a plataforma entra agora, e este mapa vira a base dos módulos do `docs/ROADMAP.md`. Os livros seguem como laboratório barato de dado.

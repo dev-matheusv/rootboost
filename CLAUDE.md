@@ -12,6 +12,21 @@ Contexto mestre do projeto para o Claude Code. Leia isto primeiro em toda sessã
 
 ---
 
+## 0. Decisões de rumo (mais recente primeiro)
+
+| Data | Decisão | Por quê |
+|---|---|---|
+| 2026-10-22 | **Construir a plataforma agora** (Console com login, conectores Meta e Google Ads, estúdio de vídeo, publicação, IA). Revoga o "não construir plataforma antes de ter dado de venda". | Pedido do dono. A plataforma já atende loja, livros, marketing do MedlyCare e conteúdo de terceiros, e o fluxo está rendendo. A loja segue no ar; nada novo mexe nela sem flag. Plano em `docs/ROADMAP.md`. |
+| 2026-10-22 | **Front no padrão do RootFlow:** Vite, React 19, React Router 7, TanStack Query, Tailwind 4, zod, em `apps/rootboost-web`, deploy próprio na Vercel. | Consistência entre os produtos Root. Next.js foi considerado e descartado: não há necessidade de SSR num painel com login. |
+| 2026-10-22 | **Login com JWT emitido pelo backend** (molde `JwtTokenGenerator` do RootFlow). API key continua pra scripts. | A API key do `/admin` não pode ir pro navegador. |
+| 2026-10-22 | **Postgres no lugar do SQLite** na Fase 1. | Padrão da casa, pgvector e analytics. A decisão antiga já previa a troca "quando entrar a camada de dados/IA". |
+| 2026-10-22 | **Marca (`Brand`) no modelo desde a Fase 1.** | O Console vai servir loja, MedlyCare e livros; evita refazer o modelo. |
+| 2026-10-22 | **Fluxo de trabalho do MedlyCare** (Gitflow V2f): `develop` integra, `feat/rb-XX-...`, PR com CI, squash, conventional commits com o card. Jira **RB**, Notion "RootBoost — Documentação". | Mesmo processo em todos os produtos. Push em `develop` não faz deploy; só `main` vai pra produção (Railway e Vercel). |
+| 2026-10-22 | **DMaker fica separado** (repo e Jira DMK do Douglas). O RootBoost consome por CLI/MCP; render roda num worker local que puxa jobs da API. | Cada aplicação no seu lugar. O worker que puxa evita abrir porta na rede de casa. |
+| 2026-10-22 | **IA no molde do MedlyCare v14:** `IModeloLinguagem` (tool use, streaming), Claude e Fake, `Ia__Modo=Desligado` por padrão, uso e custo gravados, ação só com confirmação humana (proposta assinada, 15 min). | Reaproveita o que já foi resolvido e testado no MedlyCare e no RootFlow. |
+
+---
+
 ## 1. O que é o RootBoost
 
 Plataforma própria de **dropshipping automatizado**, multi-produto e multi-idioma (EN/ES/PT),
