@@ -20,6 +20,8 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
         builder.UseSetting("Payments:Verifier", "Test");
         builder.UseSetting("ConnectionStrings:Sqlite", $"Data Source={_dbPath}");
         builder.UseSetting("Catalog:Path", Path.Combine(AppContext.BaseDirectory, "test-catalog.json"));
+        // Agendador desligado: os testes disparam o job por /admin/publications/run, sem corrida com o timer.
+        builder.UseSetting("Social:SchedulerEnabled", "false");
         // no Orders:ApiKey -> /orders is open in tests
     }
 

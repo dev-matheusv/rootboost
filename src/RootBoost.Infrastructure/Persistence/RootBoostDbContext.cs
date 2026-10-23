@@ -19,6 +19,8 @@ public sealed class RootBoostDbContext : DbContext
 
     public DbSet<CustomerPhrase> CustomerPhrases => Set<CustomerPhrase>();
 
+    public DbSet<Publication> Publications => Set<Publication>();
+
     protected override void OnModelCreating(ModelBuilder b)
     {
         var view = b.Entity<LandingViewDaily>();
@@ -59,6 +61,31 @@ public sealed class RootBoostDbContext : DbContext
         brand.HasData(
             new Brand(BrandKeys.Store, "Loja RootBoost", "en-US", seededAt),
             new Brand(BrandKeys.MedlyCare, "MedlyCare", "pt-BR", seededAt));
+
+        var pub = b.Entity<Publication>();
+        pub.HasKey(x => x.Id);
+        pub.Property(x => x.BrandKey).HasMaxLength(64).IsRequired();
+        pub.Property(x => x.Channel).HasConversion<string>().HasMaxLength(16);
+        pub.Property(x => x.Status).HasConversion<string>().HasMaxLength(16);
+        pub.Property(x => x.MediaUrl).HasMaxLength(2048).IsRequired();
+        pub.Property(x => x.Caption).HasMaxLength(5000).IsRequired();
+        pub.Property(x => x.ApprovedBy).HasMaxLength(320);
+        pub.Property(x => x.ExternalId).HasMaxLength(256);
+        pub.Property(x => x.PublishedUrl).HasMaxLength(2048);
+        pub.HasIndex(x => new { x.Status, x.ScheduledFor });
+        pub.HasIndex(x => new { x.BrandKey, x.ScheduledFor });
+        // Sem token de concorrência em UpdatedAt de propósito: o Postgres trunca pra microssegundo e o EF compararia
+        // com o valor em ticks, dando conflito falso. Contra publicar duas vezes valem o ExternalId gravado antes do
+        // publish, o FindPublishedAsync antes de repetir e o agendador numa instância só.
+        if (Database.IsSqlite())
+        {
+            var bin = new DateTimeOffsetToBinaryConverter();
+            pub.Property(x => x.ScheduledFor).HasConversion(bin);
+            pub.Property(x => x.CreatedAt).HasConversion(bin);
+            pub.Property(x => x.UpdatedAt).HasConversion(bin);
+            pub.Property(x => x.ApprovedAt).HasConversion(bin);
+            pub.Property(x => x.PublishingStartedAt).HasConversion(bin);
+        }
 
         var order = b.Entity<Order>();
         order.HasKey(o => o.PaymentId);
