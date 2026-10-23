@@ -9,7 +9,7 @@ namespace RootBoost.Api.IntegrationTests;
 /// notifier, Test payment verifier) and an isolated SQLite file + a fulfillable test catalog.
 /// Mirrors the RootFlow integration-test approach: real pipeline, fake externals.
 /// </summary>
-public sealed class CustomWebApplicationFactory : WebApplicationFactory<Program>
+public class CustomWebApplicationFactory : WebApplicationFactory<Program>
 {
     private readonly string _dbPath = Path.Combine(Path.GetTempPath(), $"rootboost-it-{Guid.NewGuid():N}.db");
 

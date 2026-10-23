@@ -62,7 +62,10 @@ Segredos **nunca** no código — via env vars. Nomes aninhados usam `__` (duplo
 | `Cj__Email`, `Cj__ApiKey` | Credenciais da conta CJ. |
 | `PayPal__ClientId`, `PayPal__ClientSecret`, `PayPal__WebhookId` | App + webhook do PayPal. `PayPal__BaseUrl` = `https://api-m.sandbox.paypal.com` pra sandbox. |
 | `Resend__ApiKey`, `Resend__FromEmail`, `Resend__OperatorEmail` | E-mail transacional + inbox de alertas de falha. |
-| `Orders__ApiKey` | Protege o `GET /orders`. |
+| `Orders__ApiKey` | Chave dos scripts (`X-Api-Key`) pro `/orders` e `/admin/*`. Sem ela esses endpoints ficam abertos (só pra dev). |
+| `Jwt__Key` | Assinatura do login do Console (32+ caracteres, aleatória). Sem ela o `/auth/login` responde 503. |
+| `Auth__OwnerEmail`, `Auth__OwnerName` | Dono do Console. |
+| `Auth__OwnerPasswordHash` | Hash da senha do dono. Gerar com `dotnet run --project src/RootBoost.Api --no-launch-profile -- hash-password` (pede a senha na entrada; mínimo 12 caracteres). |
 | `Features__Stripe` | `true` liga o endpoint do Stripe (ainda não implementado). |
 
 ## Deploy no Railway
