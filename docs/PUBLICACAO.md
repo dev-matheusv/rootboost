@@ -74,3 +74,12 @@ Os 9 reels do MedlyCare (`Videos\MedlyCare Reels\finais\`, com a legenda por can
   uma versão); rascunho nunca publica; só o que está no horário publica; container preparado uma vez só;
   retomada depois de queda não publica duas vezes; 3 tentativas e fica `Failed`; mídia só https.
 - **Falta:** publicadores reais (RB-22 Instagram/Facebook, RB-24 LinkedIn), calendário no Console (RB-23).
+
+## LinkedIn: adiado (2026-10-23)
+- A Community Management API só libera pra empresa registrada, com **e-mail corporativo** (gmail é recusado), página
+  da empresa verificando o app, site e política de privacidade. Hoje temos só o CNPJ do MEI e gmail.
+- **Pré-requisitos pra destravar:** domínio próprio + e-mail no domínio, página da empresa no LinkedIn, página
+  `/privacidade`. Passo a passo completo do pedido: docs oficiais `community-management-app-review` e `increasing-access`.
+- **Por enquanto:** LinkedIn fica manual (a plataforma prepara mídia e legenda aprovada; alguém posta à mão).
+  Avaliar depois o produto self-serve "Share on LinkedIn" (post no perfil pessoal) como ponte; confirmar na doc antes.
+- Pedido recusado não pode ser refeito no mesmo app: só pedir com tudo pronto.
