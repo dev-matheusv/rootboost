@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "updatedAt": "2026-10-23",
+  "source": "anuncios.txt e video.txt v1 (limites conferidos por script no cliente zero)",
+  "notes": "Só limites confirmados. Canal mudou a regra? Atualizar 'checkedAt' e o porquê no PR. Limites do Meta Ads (texto principal, título, descrição) ainda não confirmados na doc oficial: conferir antes de usar.",
+  "items": [
+    { "id": "google-search-headline", "channel": "google-search", "field": "headline", "maxChars": 30, "count": 15, "checkedAt": "2026-10-23", "source": "anuncios.txt" },
+    { "id": "google-search-description", "channel": "google-search", "field": "description", "maxChars": 90, "count": 4, "checkedAt": "2026-10-23", "source": "anuncios.txt" },
+    { "id": "reels-hook-line", "channel": "reels", "field": "hook-line", "maxChars": 30, "count": null, "checkedAt": "2026-10-23", "source": "video.txt (aproximado: até ~30 caracteres por linha)" },
+    { "id": "caption-line", "channel": "video", "field": "caption-line", "maxChars": 24, "maxWords": 4, "count": null, "checkedAt": "2026-10-23", "source": "video.txt" }
+  ]
+}

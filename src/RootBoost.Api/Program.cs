@@ -110,6 +110,25 @@ app.MapGet("/orders", async (HttpContext ctx, IOrderRepository repo, Cancellatio
     return Results.Ok(orders.Select(OrderDto.From));
 }).RequireAuthorization(AuthSetup.AdminPolicy);
 
+// --- Conhecimento geral (Admin): o que a IA e a checklist usam. Leitura; mudar é PR no knowledge/. ---
+app.MapGet("/admin/knowledge", (IKnowledgeBase kb) => Results.Ok(new
+{
+    playbook = "copy/playbook",
+    documents = kb.Documents.Select(d => new
+    {
+        name = d.Name, version = d.Version, updatedAt = d.UpdatedAt, source = d.Source, notes = d.Notes,
+        items = d.Items.GetArrayLength()
+    })
+})).RequireAuthorization(AuthSetup.AdminPolicy);
+
+app.MapGet("/admin/knowledge/{**name}", (string name, IKnowledgeBase kb) =>
+{
+    if (string.Equals(name, "copy/playbook", StringComparison.OrdinalIgnoreCase))
+        return Results.Text(kb.Playbook, "text/markdown; charset=utf-8");
+    var doc = kb.Find(name);
+    return doc is null ? Results.NotFound() : Results.Json(doc.Raw);
+}).RequireAuthorization(AuthSetup.AdminPolicy);
+
 // --- Marcas (Admin): a loja, o MedlyCare e quem mais entrar. ---
 app.MapGet("/admin/brands", async (IBrandStore brands, CancellationToken ct) =>
     Results.Ok((await brands.ListAsync(ct)).Select(b => new { key = b.Key, name = b.Name, defaultLanguage = b.DefaultLanguage })))

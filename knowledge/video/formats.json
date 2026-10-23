@@ -1,0 +1,97 @@
+{
+  "version": 1,
+  "updatedAt": "2026-10-23",
+  "source": "video.txt v1 (produção de 9 reels e 9 anúncios no cliente zero)",
+  "notes": "Valores relativos à altura/largura do quadro (0 a 1). Regra: legenda nunca por cima do que está sendo mostrado. O gerador de specs do DMaker lê daqui.",
+  "items": [
+    {
+      "id": "reels-9x16",
+      "kind": "format",
+      "aspect": "9:16",
+      "size": [1080, 1920],
+      "channels": ["instagram-reels", "instagram-stories"],
+      "uiCoverPx": { "top": 220, "bottom": 420 },
+      "contentMargin": 0.14,
+      "captionY": 0.753,
+      "hookY": 0.155
+    },
+    {
+      "id": "social-9x16",
+      "kind": "format",
+      "aspect": "9:16",
+      "size": [1080, 1920],
+      "channels": ["facebook", "linkedin", "whatsapp"],
+      "contentMargin": 0.04,
+      "captionY": 0.865
+    },
+    {
+      "id": "feed-4x5",
+      "kind": "format",
+      "aspect": "4:5",
+      "size": [1080, 1350],
+      "channels": ["instagram-feed", "facebook-feed"],
+      "contentMargin": 0.2,
+      "titleY": 0.075,
+      "captionY": 0.9
+    },
+    {
+      "id": "structure-organic",
+      "kind": "structure",
+      "durationSeconds": [25, 40],
+      "rule": "Cartão de abertura com a dor, blocos de 5 a 12 s (um recurso cada, título no topo), cartão final com frase própria do reel (não repetir o mesmo final em todos)"
+    },
+    {
+      "id": "structure-ad",
+      "kind": "structure",
+      "durationSeconds": [13, 16],
+      "rule": "Sem cartão de abertura; o gancho entra falado e escrito no 1o quadro, sobre o produto em movimento; 1 a 2 blocos; cartão final com a oferta"
+    },
+    {
+      "id": "structure-prospecting",
+      "kind": "structure",
+      "durationSeconds": [60, 120],
+      "rule": "AIDA, um bloco por dor, fechamento com convite"
+    },
+    {
+      "id": "ending-by-channel",
+      "kind": "rule",
+      "rule": "Instagram: 'link na bio'; demais canais: o endereço do site. Sem música no arquivo: o áudio em alta é escolhido no app ao postar"
+    },
+    {
+      "id": "voice-reference",
+      "kind": "voice",
+      "rule": "Referência de ~1 min no gravador do celular (nunca áudio de voz do WhatsApp), quarto sem eco, celular a um palmo, 3 s de silêncio no começo, tom de conversa; clonar a partir de trechos de 10 a 15 s; pode haver mais de uma voz da mesma pessoa"
+    },
+    {
+      "id": "voice-continuous",
+      "kind": "voice",
+      "rule": "Gerar o roteiro inteiro numa síntese só (frase a frase soa robótico). Acima de ~650 caracteres: grupos de falas inteiras, pausa de 0,45 s na troca de bloco",
+      "maxCharsPerSynthesis": 650,
+      "blockPauseSeconds": 0.45
+    },
+    {
+      "id": "voice-transcript-check",
+      "kind": "voice",
+      "rule": "Conferir com transcrição (Whisper) se a voz falou todas as palavras; diferença acima de 0 = ouvir e refazer com outra semente. Palavras que a voz emenda: reescrever a frase"
+    },
+    {
+      "id": "voice-finish",
+      "kind": "voice",
+      "rule": "Tratamento leve: passa-alta 70 Hz, de-esser, compressão suave, -14 LUFS",
+      "highPassHz": 70,
+      "loudnessLufs": -14
+    },
+    {
+      "id": "caption-rules",
+      "kind": "caption",
+      "rule": "Texto da legenda = texto do roteiro (nunca o que a transcrição 'ouviu'), com o tempo de cada palavra da transcrição alinhada; pontuação mantida; até 4 palavras ou 24 caracteres por linha; destaque palavra a palavra; sem legenda sobre o cartão final",
+      "maxWordsPerLine": 4,
+      "maxCharsPerLine": 24
+    },
+    {
+      "id": "screen-recording",
+      "kind": "rule",
+      "rule": "Produto de software: ambiente de demonstração com dados fictícios; gravar em 2x (DPR); telas altas, gravar maior e recortar; conferir quadro a quadro se algum dado real vazou"
+    }
+  ]
+}

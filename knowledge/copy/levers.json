@@ -1,0 +1,148 @@
+{
+  "version": 1,
+  "updatedAt": "2026-10-23",
+  "source": "persuasao.txt v1 (Cialdini, vieses de decisão) + prática no cliente zero",
+  "notes": "Cada gatilho só entra se o fato que o torna legítimo estiver no inventário de prova da marca. 'requiresProof' diz que tipo de prova; vazio = não depende de prova da marca.",
+  "items": [
+    {
+      "id": "reciprocity",
+      "name": "Reciprocidade",
+      "family": "cialdini",
+      "legitimateWhen": "dar valor antes de pedir: conteúdo útil, teste grátis real, material grátis",
+      "neverWhen": "o 'grátis' esconde cobrança ou exige cartão sem avisar",
+      "requiresProof": ["offer"],
+      "evidence": "alta",
+      "legal": "CDC art. 37: oferta tem que ser cumprida como anunciada"
+    },
+    {
+      "id": "commitment",
+      "name": "Compromisso e coerência",
+      "family": "cialdini",
+      "legitimateWhen": "pequeno sim antes do grande: salvar, responder enquete, cadastro de 1 passo",
+      "neverWhen": "o pequeno passo prende a pessoa em algo que ela não escolheu",
+      "requiresProof": [],
+      "evidence": "alta",
+      "legal": ""
+    },
+    {
+      "id": "social-proof",
+      "name": "Prova social",
+      "family": "cialdini",
+      "legitimateWhen": "número medido ou depoimento real autorizado. Sem isso, usar prova de produto: a tela ou o produto funcionando de verdade",
+      "neverWhen": "depoimento inventado, número de clientes sem fonte, selo ou prêmio que não existe",
+      "requiresProof": ["metric", "testimonial"],
+      "evidence": "alta",
+      "legal": "CDC art. 37: depoimento e número falsos são publicidade enganosa"
+    },
+    {
+      "id": "authority",
+      "name": "Autoridade",
+      "family": "cialdini",
+      "legitimateWhen": "conhecimento demonstrado, certificação real, bastidor do fundador",
+      "neverWhen": "título, certificação ou parceria que a marca não tem",
+      "requiresProof": ["credential"],
+      "evidence": "alta",
+      "legal": "CDC art. 37"
+    },
+    {
+      "id": "liking",
+      "name": "Afinidade",
+      "family": "cialdini",
+      "legitimateWhen": "falar a língua do nicho; rosto e voz de gente de verdade",
+      "neverWhen": "fingir ser do nicho ou usar pessoa que não existe",
+      "requiresProof": [],
+      "evidence": "média",
+      "legal": ""
+    },
+    {
+      "id": "scarcity",
+      "name": "Escassez",
+      "family": "cialdini",
+      "legitimateWhen": "só se for real e verificável: vagas, estoque, prazo que acaba mesmo",
+      "neverWhen": "contador que reinicia, 'últimas unidades' sem limite real, prazo que sempre volta",
+      "requiresProof": ["scarcity"],
+      "evidence": "alta",
+      "legal": "CDC art. 37: escassez inventada é enganosa"
+    },
+    {
+      "id": "unity",
+      "name": "Unidade",
+      "family": "cialdini",
+      "legitimateWhen": "de quem é como você, para quem é como você",
+      "neverWhen": "pertencimento forçado a grupo que a marca não representa",
+      "requiresProof": [],
+      "evidence": "média",
+      "legal": ""
+    },
+    {
+      "id": "loss-aversion",
+      "name": "Aversão à perda",
+      "family": "bias",
+      "legitimateWhen": "mostrar o que se perde hoje sem a solução",
+      "neverWhen": "citar tamanho exato do efeito ('dói 2x mais'): o efeito é real, o tamanho varia",
+      "requiresProof": [],
+      "evidence": "alta",
+      "legal": ""
+    },
+    {
+      "id": "anchoring",
+      "name": "Ancoragem",
+      "family": "bias",
+      "legitimateWhen": "comparar o preço com algo de referência que a pessoa já paga ou já perde",
+      "neverWhen": "preço 'de' que nunca existiu",
+      "requiresProof": ["price"],
+      "evidence": "alta",
+      "legal": "CDC art. 37: preço de referência falso é enganoso"
+    },
+    {
+      "id": "default-effect",
+      "name": "Efeito padrão",
+      "family": "bias",
+      "legitimateWhen": "o caminho sem decisão é o bom: teste sem cartão, plano recomendado",
+      "neverWhen": "opção padrão que cobra sem a pessoa perceber",
+      "requiresProof": ["offer"],
+      "evidence": "alta",
+      "legal": ""
+    },
+    {
+      "id": "switching-cost",
+      "name": "Custo de troca",
+      "family": "bias",
+      "legitimateWhen": "em B2B é o maior freio: reduzir o medo de mudar (migração, suporte, dados) vale mais que somar recurso",
+      "neverWhen": "prometer migração ou suporte que a marca não oferece",
+      "requiresProof": ["feature", "offer"],
+      "evidence": "média",
+      "legal": ""
+    },
+    {
+      "id": "cognitive-load",
+      "name": "Carga cognitiva",
+      "family": "bias",
+      "legitimateWhen": "uma ideia por peça; mostrar em vez de listar",
+      "neverWhen": "",
+      "requiresProof": [],
+      "evidence": "alta",
+      "legal": ""
+    },
+    {
+      "id": "specificity",
+      "name": "Especificidade",
+      "family": "bias",
+      "legitimateWhen": "número concreto soa mais verdadeiro, desde que seja verdadeiro",
+      "neverWhen": "número inventado ou arredondado pra impressionar",
+      "requiresProof": ["metric"],
+      "evidence": "média",
+      "legal": "CDC art. 37"
+    },
+    {
+      "id": "decoy",
+      "name": "Isca de preço",
+      "family": "bias",
+      "legitimateWhen": "só com planos reais",
+      "neverWhen": "plano criado só para parecer caro",
+      "requiresProof": ["price"],
+      "evidence": "média",
+      "legal": ""
+    }
+  ]
+}
