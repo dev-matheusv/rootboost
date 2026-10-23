@@ -53,23 +53,38 @@ if (!string.IsNullOrWhiteSpace(landingDir) && Directory.Exists(landingDir))
     app.UseStaticFiles(new StaticFileOptions { FileProvider = provider });
 }
 
-// Create the SQLite schema on startup. Fine for SQLite MVP; swap to migrations before real scale.
+// Schema no boot. Postgres: migrações do EF, mais a importação única do SQLite antigo na virada.
+// SQLite: EnsureCreated + DDL idempotente, como sempre foi, até o SQLite sair de cena.
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<RootBoostDbContext>();
-    db.Database.EnsureCreated();
-    // EnsureCreated só cria o schema num DB novo; num volume já existente (Railway) ele não adiciona
-    // tabelas novas. Este DDL idempotente garante a tabela de analytics no banco que já existe.
-    db.Database.ExecuteSqlRaw(
-        """
-        CREATE TABLE IF NOT EXISTS "LandingViews" (
-            "ProductKey" TEXT NOT NULL,
-            "Lang" TEXT NOT NULL,
-            "DateUtc" TEXT NOT NULL,
-            "Count" INTEGER NOT NULL,
-            CONSTRAINT "PK_LandingViews" PRIMARY KEY ("ProductKey", "Lang", "DateUtc")
-        );
-        """);
+    if (DatabaseSetup.IsPostgres(app.Configuration))
+    {
+        db.Database.Migrate();
+        var importPath = app.Configuration["Database:ImportFromSqlite"];
+        if (!string.IsNullOrWhiteSpace(importPath))
+        {
+            var imported = await SqliteImporter.ImportIfEmptyAsync(db, importPath, app.Logger);
+            app.Logger.LogInformation("Importação do SQLite: {Reason} ({Orders} pedidos, {Views} visitas).",
+                imported.Reason, imported.Orders, imported.Views);
+        }
+    }
+    else
+    {
+        db.Database.EnsureCreated();
+        // EnsureCreated só cria o schema num DB novo; num volume já existente (Railway) ele não adiciona
+        // tabelas novas. Este DDL idempotente garante a tabela de analytics no banco que já existe.
+        db.Database.ExecuteSqlRaw(
+            """
+            CREATE TABLE IF NOT EXISTS "LandingViews" (
+                "ProductKey" TEXT NOT NULL,
+                "Lang" TEXT NOT NULL,
+                "DateUtc" TEXT NOT NULL,
+                "Count" INTEGER NOT NULL,
+                CONSTRAINT "PK_LandingViews" PRIMARY KEY ("ProductKey", "Lang", "DateUtc")
+            );
+            """);
+    }
 }
 
 app.MapGet("/health", () => Results.Ok("ok"));

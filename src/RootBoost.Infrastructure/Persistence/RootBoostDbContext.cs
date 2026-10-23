@@ -19,6 +19,9 @@ public sealed class RootBoostDbContext : DbContext
         view.HasKey(x => new { x.ProductKey, x.Lang, x.DateUtc });
         view.Property(x => x.ProductKey).HasMaxLength(64);
         view.Property(x => x.Lang).HasMaxLength(8);
+        // Só a data importa. No Postgres vira "date", o que dispensa o Kind do DateTime
+        // (dado importado do SQLite chega como Unspecified e o timestamptz recusaria).
+        if (!Database.IsSqlite()) view.Property(x => x.DateUtc).HasColumnType("date");
 
         var order = b.Entity<Order>();
         order.HasKey(o => o.PaymentId);
@@ -30,10 +33,20 @@ public sealed class RootBoostDbContext : DbContext
         order.Property(o => o.TrackingNumber).HasMaxLength(128);
         order.Property(o => o.Status).HasConversion<string>().HasMaxLength(24);
 
-        // SQLite can't ORDER BY a DateTimeOffset column; store it as a sortable binary long.
-        var dto = new DateTimeOffsetToBinaryConverter();
-        order.Property(o => o.CreatedAt).HasConversion(dto);
-        order.Property(o => o.UpdatedAt).HasConversion(dto);
+        if (Database.IsSqlite())
+        {
+            // SQLite can't ORDER BY a DateTimeOffset column; store it as a sortable binary long.
+            var dto = new DateTimeOffsetToBinaryConverter();
+            order.Property(o => o.CreatedAt).HasConversion(dto);
+            order.Property(o => o.UpdatedAt).HasConversion(dto);
+        }
+        else
+        {
+            // Postgres guarda timestamptz e o Npgsql só aceita offset zero: normaliza ao gravar.
+            var utc = new ValueConverter<DateTimeOffset, DateTimeOffset>(v => v.ToUniversalTime(), v => v);
+            order.Property(o => o.CreatedAt).HasConversion(utc);
+            order.Property(o => o.UpdatedAt).HasConversion(utc);
+        }
 
         // Fast lookup for the CJ tracking webhook, which arrives keyed by supplier order id.
         order.HasIndex(o => o.SupplierOrderId);

@@ -20,6 +20,8 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           global-json-file: global.json
+      # Imagem dos testes de integracao com Postgres (Testcontainers); baixar antes evita timeout no primeiro teste.
+      - run: docker pull postgres:16-alpine
       - run: dotnet restore
       - run: dotnet build --no-restore --configuration Release
       - run: dotnet test --no-build --configuration Release --verbosity normal
