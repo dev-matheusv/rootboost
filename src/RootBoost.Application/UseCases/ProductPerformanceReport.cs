@@ -24,7 +24,7 @@ public sealed class ProductPerformanceReport
         _catalog = catalog;
     }
 
-    public async Task<PerformanceReport> BuildAsync(DateTimeOffset? since = null, CancellationToken ct = default)
+    public async Task<PerformanceReport> BuildAsync(DateTimeOffset? since = null, CancellationToken ct = default, string? brandKey = null)
     {
         var viewCounts = await _visits.GetViewCountsAsync(since, ct);
         var allOrders = await _orders.ListAsync(5000, ct);
@@ -49,6 +49,15 @@ public sealed class ProductPerformanceReport
         foreach (var key in keys)
         {
             var product = _catalog.Find(key);
+
+            // Filtro de marca: produto do catálogo diz a marca; produto legado herda a dos pedidos; sem nada, é da loja.
+            if (brandKey is not null)
+            {
+                var owner = product?.BrandKey
+                    ?? (ordersByProduct.TryGetValue(key, out var owned) ? owned.FirstOrDefault()?.BrandKey : null)
+                    ?? RootBoost.Domain.BrandKeys.Store;
+                if (!string.Equals(owner, brandKey, StringComparison.OrdinalIgnoreCase)) continue;
+            }
             long views = viewCounts.TryGetValue(key, out var v) ? v : 0;
             var productOrders = ordersByProduct.TryGetValue(key, out var list) ? list : new();
             int orderCount = productOrders.Count;

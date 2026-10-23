@@ -102,11 +102,18 @@ app.MapPost("/track/view", async (TrackViewRequest req, IVisitStore visits, IPro
 });
 
 // --- Orders dashboard (protected by an API key header) -----------------------
-app.MapGet("/orders", async (HttpContext ctx, IOrderRepository repo, IConfiguration cfg, CancellationToken ct) =>
+// ?brand=medlycare filtra por marca; sem o parâmetro, todas.
+app.MapGet("/orders", async (HttpContext ctx, IOrderRepository repo, CancellationToken ct) =>
 {
-    var orders = await repo.ListAsync(200, ct);
+    if (!TryReadBrand(ctx, out var brand)) return Results.BadRequest(new { error = "brand inválida" });
+    var orders = await repo.ListAsync(200, ct, brand);
     return Results.Ok(orders.Select(OrderDto.From));
 }).RequireAuthorization(AuthSetup.AdminPolicy);
+
+// --- Marcas (Admin): a loja, o MedlyCare e quem mais entrar. ---
+app.MapGet("/admin/brands", async (IBrandStore brands, CancellationToken ct) =>
+    Results.Ok((await brands.ListAsync(ct)).Select(b => new { key = b.Key, name = b.Name, defaultLanguage = b.DefaultLanguage })))
+    .RequireAuthorization(AuthSetup.AdminPolicy);
 
 // --- Payment webhook (PayPal in prod, Test verifier in dev) -------------------
 app.MapPost("/webhook/payment", async (HttpContext ctx, IPaymentVerifier verifier, PlaceOrderOnPayment useCase, ILoggerFactory lf, CancellationToken ct) =>
@@ -262,7 +269,8 @@ app.MapGet("/admin/products/performance", async (HttpContext ctx, ProductPerform
     if (int.TryParse(ctx.Request.Query["days"].FirstOrDefault(), out var d) && d > 0)
         since = DateTimeOffset.UtcNow.AddDays(-d);
 
-    var result = await report.BuildAsync(since, ct);
+    if (!TryReadBrand(ctx, out var brand)) return Results.BadRequest(new { error = "brand inválida" });
+    var result = await report.BuildAsync(since, ct, brand);
     return Results.Ok(result);
 }).RequireAuthorization(AuthSetup.AdminPolicy);
 
@@ -294,14 +302,24 @@ static string? FirstString(JsonElement root, params string[] names)
 static string Trunc(string s) => s.Length <= 400 ? s : s[..400];
 
 // Clean projection for the /orders response (enum as string, address flattened).
+static bool TryReadBrand(HttpContext ctx, out string? brand)
+{
+    brand = null;
+    var raw = ctx.Request.Query["brand"].FirstOrDefault();
+    if (string.IsNullOrWhiteSpace(raw)) return true;
+    try { brand = BrandKeys.Validate(raw); return true; }
+    catch (ArgumentException) { return false; }
+}
+
 record OrderDto(string PaymentId, string ProductKey, int Quantity, string Status, string Email,
                 string? SupplierOrderId, string? Tracking, decimal Amount, string Currency,
-                string ShipName, string ShipCountry, DateTimeOffset CreatedAt, string? FailureReason)
+                string ShipName, string ShipCountry, DateTimeOffset CreatedAt, string? FailureReason,
+                string BrandKey)
 {
     public static OrderDto From(Order o) => new(
         o.PaymentId, o.ProductKey, o.Quantity, o.Status.ToString(), o.CustomerEmail,
         o.SupplierOrderId, o.TrackingNumber, o.AmountPaid, o.Currency,
-        o.ShipTo.Name, o.ShipTo.CountryCode, o.CreatedAt, o.FailureReason);
+        o.ShipTo.Name, o.ShipTo.CountryCode, o.CreatedAt, o.FailureReason, o.BrandKey);
 }
 
 record CreateOrderRequest(string ProductKey, int Quantity, string? Lang = null);

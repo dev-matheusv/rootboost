@@ -41,6 +41,9 @@ public sealed class Order
     public DateTimeOffset CreatedAt { get; private set; }
     public DateTimeOffset UpdatedAt { get; private set; }
 
+    /// <summary>Marca dona do pedido. Pedidos anteriores às marcas são da loja.</summary>
+    public string BrandKey { get; private set; } = BrandKeys.Store;
+
     public Order(
         string paymentId,
         string productKey,
@@ -49,7 +52,8 @@ public sealed class Order
         ShippingAddress shipTo,
         decimal amountPaid,
         string currency,
-        DateTimeOffset? createdAt = null)
+        DateTimeOffset? createdAt = null,
+        string? brandKey = null)
     {
         if (string.IsNullOrWhiteSpace(paymentId)) throw new ArgumentException("paymentId required", nameof(paymentId));
         if (string.IsNullOrWhiteSpace(productKey)) throw new ArgumentException("productKey required", nameof(productKey));
@@ -65,6 +69,7 @@ public sealed class Order
         Status = OrderStatus.Placed;
         CreatedAt = createdAt ?? DateTimeOffset.UtcNow;
         UpdatedAt = CreatedAt;
+        BrandKey = brandKey is null ? BrandKeys.Store : BrandKeys.Validate(brandKey);
     }
 
     /// <summary>The supplier accepted the order. Records their id and advances status.</summary>

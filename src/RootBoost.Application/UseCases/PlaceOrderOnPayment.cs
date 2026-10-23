@@ -68,11 +68,13 @@ public sealed class PlaceOrderOnPayment
             return new PlaceOrderResult(PlaceOrderOutcome.NeedsHuman, null, "productKey ausente no pagamento");
         }
 
-        var order = new Order(
-            pay.PaymentId, pay.ProductKey, pay.Quantity, pay.Email, pay.ShipTo, pay.Amount, pay.Currency);
-
         // (2) Resolve the product. Paid for something we can't map = escalate, don't drop.
         var product = _catalog.Find(pay.ProductKey);
+
+        // O pedido nasce na marca do produto; sem catálogo, cai na loja (ainda fica registrado e escalado).
+        var order = new Order(
+            pay.PaymentId, pay.ProductKey, pay.Quantity, pay.Email, pay.ShipTo, pay.Amount, pay.Currency,
+            brandKey: product?.BrandKey);
         if (product is null || !product.IsFulfillable)
         {
             var reason = product is null

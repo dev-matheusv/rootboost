@@ -13,6 +13,8 @@ public sealed class RootBoostDbContext : DbContext
     /// <summary>Contadores diários de visita de landing (analytics de topo de funil, sem PII).</summary>
     public DbSet<LandingViewDaily> LandingViews => Set<LandingViewDaily>();
 
+    public DbSet<Brand> Brands => Set<Brand>();
+
     protected override void OnModelCreating(ModelBuilder b)
     {
         var view = b.Entity<LandingViewDaily>();
@@ -23,6 +25,17 @@ public sealed class RootBoostDbContext : DbContext
         // (dado importado do SQLite chega como Unspecified e o timestamptz recusaria).
         if (!Database.IsSqlite()) view.Property(x => x.DateUtc).HasColumnType("date");
 
+        var brand = b.Entity<Brand>();
+        brand.HasKey(x => x.Key);
+        brand.Property(x => x.Key).HasMaxLength(64);
+        brand.Property(x => x.Name).HasMaxLength(120).IsRequired();
+        brand.Property(x => x.DefaultLanguage).HasMaxLength(8).IsRequired();
+        // Marcas iniciais. Data fixa: HasData precisa de valor determinístico pra não gerar migração a cada build.
+        var seededAt = new DateTimeOffset(2026, 10, 23, 0, 0, 0, TimeSpan.Zero);
+        brand.HasData(
+            new Brand(BrandKeys.Store, "Loja RootBoost", "en-US", seededAt),
+            new Brand(BrandKeys.MedlyCare, "MedlyCare", "pt-BR", seededAt));
+
         var order = b.Entity<Order>();
         order.HasKey(o => o.PaymentId);
         order.Property(o => o.PaymentId).HasMaxLength(128);
@@ -32,6 +45,9 @@ public sealed class RootBoostDbContext : DbContext
         order.Property(o => o.SupplierOrderId).HasMaxLength(128);
         order.Property(o => o.TrackingNumber).HasMaxLength(128);
         order.Property(o => o.Status).HasConversion<string>().HasMaxLength(24);
+        // Pedidos de antes das marcas viram da loja na migração (valor padrão da coluna).
+        order.Property(o => o.BrandKey).HasMaxLength(64).IsRequired().HasDefaultValue(BrandKeys.Store);
+        order.HasIndex(o => o.BrandKey);
 
         if (Database.IsSqlite())
         {

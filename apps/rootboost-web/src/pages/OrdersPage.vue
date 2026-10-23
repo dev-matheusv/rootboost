@@ -30,7 +30,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import type { QTableColumn } from 'quasar';
 import { mdiRefresh, mdiAlertCircleOutline } from '@quasar/extras/mdi-v7';
@@ -38,6 +38,7 @@ import { api } from 'src/services/api';
 import type { Order } from 'src/types/api';
 import { formatDateTime, formatMoney } from 'src/utils/format';
 import { statusColor } from 'src/utils/orderStatus';
+import { brandParams, useBrandStore } from 'src/stores/brandStore';
 
 defineOptions({ name: 'OrdersPage' });
 
@@ -45,12 +46,13 @@ const { t } = useI18n();
 const orders = ref<Order[]>([]);
 const loading = ref(false);
 const error = ref(false);
+const brand = useBrandStore();
 
 async function load() {
   loading.value = true;
   error.value = false;
   try {
-    const { data } = await api.get<Order[]>('/orders');
+    const { data } = await api.get<Order[]>('/orders', { params: brandParams(brand.selected) });
     orders.value = data;
   } catch {
     error.value = true;
@@ -67,7 +69,9 @@ const columns = computed<QTableColumn<Order>[]>(() => [
   { name: 'status', label: t('pages.orders.status'), field: 'status', align: 'left', sortable: true },
   { name: 'supplier', label: t('pages.orders.supplier'), field: (r) => r.supplierOrderId ?? '', align: 'left' },
   { name: 'tracking', label: t('pages.orders.tracking'), field: (r) => r.tracking ?? '', align: 'left' },
+  { name: 'brand', label: t('pages.orders.brand'), field: (r) => brand.brands.find((b) => b.key === r.brandKey)?.name ?? r.brandKey, align: 'left' },
 ]);
 
 onMounted(load);
+watch(() => brand.selected, load);
 </script>

@@ -22,8 +22,8 @@ public sealed class FakeOrderRepository : IOrderRepository
 
     public Task UpdateAsync(Order order, CancellationToken ct = default) { Store[order.PaymentId] = order; return Task.CompletedTask; }
 
-    public Task<IReadOnlyList<Order>> ListAsync(int limit = 100, CancellationToken ct = default)
-        => Task.FromResult<IReadOnlyList<Order>>(Store.Values.Take(limit).ToList());
+    public Task<IReadOnlyList<Order>> ListAsync(int limit = 100, CancellationToken ct = default, string? brandKey = null)
+        => Task.FromResult<IReadOnlyList<Order>>(Store.Values.Where(o => brandKey == null || o.BrandKey == brandKey).Take(limit).ToList());
 }
 
 public sealed class FakeCatalog : IProductCatalog
