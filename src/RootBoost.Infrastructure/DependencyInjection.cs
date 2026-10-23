@@ -33,6 +33,7 @@ public static class DependencyInjection
         services.AddDbContext<RootBoostDbContext>(o => DatabaseSetup.Configure(o, config));
         services.AddScoped<IOrderRepository, OrderRepository>();
         services.AddScoped<IBrandStore, EfBrandStore>();
+        services.AddScoped<IBrandProfileStore, EfBrandProfileStore>();
 
         // Analytics de topo de funil: contador de visitas (denominador da conversão) + relatório.
         services.AddScoped<IVisitStore, RootBoost.Infrastructure.Analytics.EfVisitStore>();

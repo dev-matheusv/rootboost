@@ -134,6 +134,72 @@ app.MapGet("/admin/brands", async (IBrandStore brands, CancellationToken ct) =>
     Results.Ok((await brands.ListAsync(ct)).Select(b => new { key = b.Key, name = b.Name, defaultLanguage = b.DefaultLanguage })))
     .RequireAuthorization(AuthSetup.AdminPolicy);
 
+// --- Perfil da marca (Admin): voz, inventário de prova e frases reais. A IA só afirma o que está ativo aqui. ---
+var brandProfile = app.MapGroup("/admin/brands/{key}").RequireAuthorization(AuthSetup.AdminPolicy);
+
+brandProfile.MapGet("/profile", async (string key, IBrandProfileStore store, TimeProvider time, CancellationToken ct) =>
+{
+    var profile = await store.GetAsync(key.ToLowerInvariant(), ct);
+    if (profile is null) return Results.NotFound();
+    var today = DateOnly.FromDateTime(time.GetUtcNow().UtcDateTime);
+    return Results.Ok(new
+    {
+        brand = new { key = profile.Brand.Key, name = profile.Brand.Name, defaultLanguage = profile.Brand.DefaultLanguage },
+        voice = profile.Voice,
+        proof = profile.Proof.Select(p => new
+        {
+            id = p.Id, kind = p.Kind.ToString(), statement = p.Statement, source = p.Source,
+            verifiedAt = p.VerifiedAt, reviewBy = p.ReviewBy, active = p.Active, needsReview = p.NeedsReview(today)
+        }),
+        phrases = profile.Phrases.Select(p => new { id = p.Id, text = p.Text, source = p.Source, collectedAt = p.CollectedAt })
+    });
+});
+
+brandProfile.MapPost("/proof", async (string key, ProofInput input, IBrandProfileStore store, TimeProvider time, CancellationToken ct) =>
+{
+    if (await store.GetAsync(key.ToLowerInvariant(), ct) is null) return Results.NotFound();
+    if (!TryBuildProof(key, input, time, out var item, out var error)) return Results.BadRequest(new { error });
+    await store.AddProofAsync(item!, ct);
+    return Results.Created($"/admin/brands/{item!.BrandKey}/profile", new { id = item.Id });
+});
+
+brandProfile.MapPost("/proof/{id:guid}/retire", async (string key, Guid id, IBrandProfileStore store, CancellationToken ct) =>
+    await store.RetireProofAsync(key.ToLowerInvariant(), id, ct) ? Results.NoContent() : Results.NotFound());
+
+brandProfile.MapPost("/phrases", async (string key, PhraseInput input, IBrandProfileStore store, CancellationToken ct) =>
+{
+    if (await store.GetAsync(key.ToLowerInvariant(), ct) is null) return Results.NotFound();
+    try
+    {
+        var phrase = new CustomerPhrase(key, input.Text, input.Source, input.CollectedAt);
+        await store.AddPhraseAsync(phrase, ct);
+        return Results.Created($"/admin/brands/{phrase.BrandKey}/profile", new { id = phrase.Id });
+    }
+    catch (ArgumentException ex) { return Results.BadRequest(new { error = ex.Message }); }
+});
+
+brandProfile.MapPut("/voice", async (string key, BrandVoice voice, IBrandProfileStore store, CancellationToken ct) =>
+    await store.SetVoiceAsync(key.ToLowerInvariant(), voice, ct) ? Results.NoContent() : Results.NotFound());
+
+brandProfile.MapPost("/profile/import", async (string key, ProfileImport input, IBrandProfileStore store, TimeProvider time, CancellationToken ct) =>
+{
+    var proof = new List<ProofItem>();
+    foreach (var p in input.Proof ?? [])
+    {
+        if (!TryBuildProof(key, p, time, out var item, out var error)) return Results.BadRequest(new { error, statement = p.Statement });
+        proof.Add(item!);
+    }
+    var phrases = new List<CustomerPhrase>();
+    try { phrases.AddRange((input.Phrases ?? []).Select(p => new CustomerPhrase(key, p.Text, p.Source, p.CollectedAt))); }
+    catch (ArgumentException ex) { return Results.BadRequest(new { error = ex.Message }); }
+
+    if (await store.GetAsync(key.ToLowerInvariant(), ct) is null) return Results.NotFound();
+    var imported = await store.ImportIfEmptyAsync(key.ToLowerInvariant(), input.Voice ?? BrandVoice.Empty, proof, phrases, ct);
+    return imported
+        ? Results.Ok(new { imported = true, proof = proof.Count, phrases = phrases.Count })
+        : Results.Conflict(new { error = "o perfil desta marca já tem dados; use os endpoints de edição" });
+});
+
 // --- Payment webhook (PayPal in prod, Test verifier in dev) -------------------
 app.MapPost("/webhook/payment", async (HttpContext ctx, IPaymentVerifier verifier, PlaceOrderOnPayment useCase, ILoggerFactory lf, CancellationToken ct) =>
 {
@@ -321,6 +387,29 @@ static string? FirstString(JsonElement root, params string[] names)
 static string Trunc(string s) => s.Length <= 400 ? s : s[..400];
 
 // Clean projection for the /orders response (enum as string, address flattened).
+static bool TryBuildProof(string brandKey, ProofInput input, TimeProvider time, out ProofItem? item, out string? error)
+{
+    item = null;
+    error = null;
+    if (!Enum.TryParse<ProofKind>(input.Kind, ignoreCase: true, out var kind) || !Enum.IsDefined(kind))
+    {
+        error = $"tipo de prova inválido: '{input.Kind}' (use {string.Join(", ", Enum.GetNames<ProofKind>())})";
+        return false;
+    }
+    try
+    {
+        var now = time.GetUtcNow();
+        item = new ProofItem(brandKey, kind, input.Statement, input.Source, input.VerifiedAt, input.ReviewBy,
+            DateOnly.FromDateTime(now.UtcDateTime), now);
+        return true;
+    }
+    catch (ArgumentException ex)
+    {
+        error = ex.Message;
+        return false;
+    }
+}
+
 static bool TryReadBrand(HttpContext ctx, out string? brand)
 {
     brand = null;
@@ -341,6 +430,9 @@ record OrderDto(string PaymentId, string ProductKey, int Quantity, string Status
         o.ShipTo.Name, o.ShipTo.CountryCode, o.CreatedAt, o.FailureReason, o.BrandKey);
 }
 
+record ProofInput(string Kind, string Statement, string Source, DateOnly VerifiedAt, DateOnly? ReviewBy = null);
+record PhraseInput(string Text, string Source, DateOnly CollectedAt);
+record ProfileImport(BrandVoice? Voice, List<ProofInput>? Proof, List<PhraseInput>? Phrases);
 record CreateOrderRequest(string ProductKey, int Quantity, string? Lang = null);
 record CaptureOrderRequest(string OrderId, string? Fbp = null, string? Fbc = null, string? SourceUrl = null);
 record TrackViewRequest(string ProductKey, string? Lang = null);
