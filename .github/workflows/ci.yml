@@ -25,7 +25,7 @@ jobs:
       - run: dotnet test --no-build --configuration Release --verbosity normal
 
   frontend:
-    name: FE (lint + typecheck + build)
+    name: FE (lint + test + build)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -46,5 +46,7 @@ jobs:
         run: npm ci
       - if: steps.has_web.outputs.present == 'true'
         run: npm run lint
+      - if: steps.has_web.outputs.present == 'true'
+        run: npm test
       - if: steps.has_web.outputs.present == 'true'
         run: npm run build
