@@ -6,7 +6,7 @@ public sealed class MetaOptions
 
     public string PixelId { get; set; } = "";
     public string AccessToken { get; set; } = "";
-    public string ApiVersion { get; set; } = "v21.0";
+    public string ApiVersion { get; set; } = "v26.0";
     /// <summary>Optional: código do Test Events (Events Manager) pra depurar sem sujar os dados reais.</summary>
     public string? TestEventCode { get; set; }
 }
