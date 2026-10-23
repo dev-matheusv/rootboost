@@ -7,7 +7,7 @@ export default {
     error: 'Could not load. Check the connection to the API.',
   },
   form: { email: 'Email', password: 'Password' },
-  nav: { overview: 'Overview', orders: 'Orders', darkMode: 'Dark mode' },
+  nav: { overview: 'Overview', orders: 'Orders', brand: 'Brand', allBrands: 'All brands', darkMode: 'Dark mode' },
   pages: {
     login: {
       title: 'Sign in to the Console',
@@ -39,6 +39,7 @@ export default {
       status: 'Status',
       supplier: 'Supplier order',
       tracking: 'Tracking',
+      brand: 'Brand',
       failure: 'Failure reason',
     },
     notFound: 'Page not found.',

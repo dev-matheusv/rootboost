@@ -17,5 +17,6 @@ public interface IOrderRepository
 
     Task UpdateAsync(Order order, CancellationToken ct = default);
 
-    Task<IReadOnlyList<Order>> ListAsync(int limit = 100, CancellationToken ct = default);
+    /// <summary>Mais recentes primeiro. Com <paramref name="brandKey"/>, só os daquela marca.</summary>
+    Task<IReadOnlyList<Order>> ListAsync(int limit = 100, CancellationToken ct = default, string? brandKey = null);
 }

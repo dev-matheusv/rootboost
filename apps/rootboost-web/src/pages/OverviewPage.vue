@@ -61,7 +61,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import type { QTableColumn } from 'quasar';
 import {
@@ -70,6 +70,7 @@ import {
 import { api } from 'src/services/api';
 import type { PerformanceReport, ProductPerformance } from 'src/types/api';
 import { formatInt, formatMoney, formatPercent, sumByCurrency } from 'src/utils/format';
+import { brandParams, useBrandStore } from 'src/stores/brandStore';
 
 defineOptions({ name: 'OverviewPage' });
 
@@ -78,6 +79,7 @@ const report = ref<PerformanceReport | null>(null);
 const loading = ref(false);
 const error = ref(false);
 const days = ref<number>(0);
+const brand = useBrandStore();
 
 const windows = computed(() => [
   { label: t('pages.overview.window.all'), value: 0 },
@@ -89,7 +91,7 @@ async function load() {
   loading.value = true;
   error.value = false;
   try {
-    const params = days.value > 0 ? { days: days.value } : {};
+    const params = { ...brandParams(brand.selected), ...(days.value > 0 ? { days: days.value } : {}) };
     const { data } = await api.get<PerformanceReport>('/admin/products/performance', { params });
     report.value = data;
   } catch {
@@ -126,4 +128,5 @@ const columns = computed<QTableColumn<ProductPerformance>[]>(() => [
 ]);
 
 onMounted(load);
+watch(() => brand.selected, load);
 </script>

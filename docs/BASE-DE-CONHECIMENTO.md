@@ -68,8 +68,25 @@ Primeira `Brand`, com o playbook e o inventário de prova dele importados. O tes
 (`Videos\MedlyCare Reels\anuncios\`) roda pelo próprio RootBoost quando a Fase 2 estiver de pé. O que
 aprendermos ali é o primeiro dado do cérebro.
 
+### 7. Acervo da marca (RAG, no molde do RootFlow)
+Ideia do Matheus (2026-10-23). O cliente sobe **tudo o que tem da empresa**: documentação, apresentações,
+planilhas, criativos antigos, imagens, logo, vídeos. A IA usa esse acervo pra gerenciar a campanha (subir
+anúncio, ler métricas, fazer criativo e copy) com base nos dados **da própria empresa**.
+- **Motor:** o do RootFlow (já portado no MedlyCare v14): extrai texto de PDF, Word, Excel, PowerPoint, CSV,
+  TXT e Markdown, quebra em trechos, gera embeddings e busca no **pgvector**. O RootBoost já está no Postgres.
+  Alvo de longo prazo: um pacote comum `Root.IA` pra família Root, em vez de três cópias.
+- **Mídia:** arquivo no storage de objetos (bucket do Railway, US$ 0,015 por GB/mês), com descrição gerada por
+  IA de visão (o que aparece, cores, texto na imagem) e transcrição dos vídeos (Whisper, que o DMaker já usa).
+  É essa descrição que entra na busca. Logo e cores alimentam a marca do DMaker (`brand.json`).
+- **Resposta com fonte:** toda copy ou recomendação baseada no acervo diz de onde veio (documento e trecho),
+  como o chat do RootFlow faz.
+- **Acervo não é prova:** o acervo pode **sugerir** itens pro inventário de prova, mas só entram depois que um
+  humano confirma. Documento velho com número desatualizado não pode virar anúncio.
+- **Isolamento:** o acervo de uma marca nunca é buscado por outra, e nada dele entra no agregado entre marcas.
+
 ## Ordem
 1. **RB-15, Base de conhecimento v1:** `knowledge/` com os arquivos do item 1 a partir das fontes, mais o modelo
    de `Brand` com inventário de prova (item 2). Depende do `Brand` do RB-11.
 2. Checklist automática como função pura e testada (limites, política, verdade, travessão).
-3. Ciclo de aprendizado (item 3), depois da Fase 2 (métricas).
+3. Acervo da marca (item 7, RB-16): ingestão de documentos primeiro, mídia com descrição por IA depois.
+4. Ciclo de aprendizado (item 3), depois da Fase 2 (métricas).

@@ -16,7 +16,8 @@ public sealed record CatalogProduct(
     IReadOnlyList<string> Languages,
     string? LogisticName = null,
     string? DisplayName = null,
-    string? LandingPath = null)
+    string? LandingPath = null,
+    string BrandKey = RootBoost.Domain.BrandKeys.Store)
 {
     public bool IsFulfillable =>
         !string.IsNullOrWhiteSpace(SupplierVariantId) &&

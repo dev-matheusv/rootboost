@@ -39,13 +39,14 @@ public sealed class JsonCatalog : IProductCatalog
                 var display = GetString(p, "displayName");
                 var logistic = GetString(p, "logisticName");
                 var landingPath = GetString(p, "landingPath");
+                var brand = RootBoost.Domain.BrandKeys.Validate(GetString(p, "brand") ?? RootBoost.Domain.BrandKeys.Store);
 
                 var langs = new List<string>();
                 if (p.TryGetProperty("langs", out var l) && l.ValueKind == JsonValueKind.Array)
                     foreach (var item in l.EnumerateArray())
                         if (item.GetString() is { } s) langs.Add(s);
 
-                map[key] = new CatalogProduct(key, price, currency, variant, langs, logistic, display, landingPath);
+                map[key] = new CatalogProduct(key, price, currency, variant, langs, logistic, display, landingPath, brand);
             }
         }
 
