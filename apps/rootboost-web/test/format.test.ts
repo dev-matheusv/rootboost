@@ -34,3 +34,15 @@ describe('statusColor', () => {
     expect(statusColor('Qualquer')).toBe('grey-6');
   });
 });
+
+import { brandParams } from 'src/stores/brandStore';
+
+describe('brandParams', () => {
+  it('sem marca escolhida não filtra', () => {
+    expect(brandParams('')).toEqual({});
+  });
+
+  it('com marca manda o filtro pra API', () => {
+    expect(brandParams('medlycare')).toEqual({ brand: 'medlycare' });
+  });
+});

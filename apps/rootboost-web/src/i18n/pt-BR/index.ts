@@ -7,7 +7,7 @@ export default {
     error: 'Não foi possível carregar. Confira a conexão com a API.',
   },
   form: { email: 'E-mail', password: 'Senha' },
-  nav: { overview: 'Visão geral', orders: 'Pedidos', darkMode: 'Modo escuro' },
+  nav: { overview: 'Visão geral', orders: 'Pedidos', brand: 'Marca', allBrands: 'Todas as marcas', darkMode: 'Modo escuro' },
   pages: {
     login: {
       title: 'Entrar no Console',
@@ -39,6 +39,7 @@ export default {
       status: 'Status',
       supplier: 'Pedido no fornecedor',
       tracking: 'Rastreio',
+      brand: 'Marca',
       failure: 'Motivo da falha',
     },
     notFound: 'Página não encontrada.',

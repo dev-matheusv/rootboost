@@ -75,4 +75,10 @@ O código suporta os dois bancos; a troca é só de variável. Ordem segura:
 5. Depois de alguns dias estável, remover `Database__ImportFromSqlite` (rodar de novo não duplica, mas não
    precisa mais). O volume com o SQLite fica como backup.
 
+**Feito em 2026-10-23:** 2 pedidos e 29 visitas conferidos antes e depois.
+
+⚠️ Pegadinha do Git Bash: ao passar caminho Unix pra CLI do Railway (`/data/...`), o MSYS converte pra
+`C:/Program Files/Git/data/...`. Use `MSYS_NO_PATHCONV=1 railway variable set ...`. Na virada isso aconteceu, a
+importação não achou o arquivo e não copiou nada (a trava protegeu); bastou corrigir a variável.
+
 Rollback: `Database__Provider=Sqlite` volta pro arquivo antigo, que a virada não altera (é aberto só leitura).

@@ -22,6 +22,46 @@ namespace RootBoost.Infrastructure.Persistence.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("RootBoost.Domain.Brand", b =>
+                {
+                    b.Property<string>("Key")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DefaultLanguage")
+                        .IsRequired()
+                        .HasMaxLength(8)
+                        .HasColumnType("character varying(8)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.HasKey("Key");
+
+                    b.ToTable("Brands");
+
+                    b.HasData(
+                        new
+                        {
+                            Key = "rootboost-loja",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 10, 23, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            DefaultLanguage = "en-US",
+                            Name = "Loja RootBoost"
+                        },
+                        new
+                        {
+                            Key = "medlycare",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 10, 23, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            DefaultLanguage = "pt-BR",
+                            Name = "MedlyCare"
+                        });
+                });
+
             modelBuilder.Entity("RootBoost.Domain.Order", b =>
                 {
                     b.Property<string>("PaymentId")
@@ -30,6 +70,13 @@ namespace RootBoost.Infrastructure.Persistence.Migrations
 
                     b.Property<decimal>("AmountPaid")
                         .HasColumnType("numeric");
+
+                    b.Property<string>("BrandKey")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasDefaultValue("rootboost-loja");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -72,6 +119,8 @@ namespace RootBoost.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("PaymentId");
+
+                    b.HasIndex("BrandKey");
 
                     b.HasIndex("SupplierOrderId");
 

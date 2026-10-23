@@ -48,8 +48,8 @@ nenhuma na rede de casa, e trocar o PC por uma máquina na nuvem depois é só m
 - [ ] Documentação no Notion e projeto RB no Jira.
 
 ### Fase 1 — Console (painel com login)
-- [ ] **Postgres no lugar do SQLite** (padrão da casa; libera pgvector e analytics). Migração dos pedidos
-      e visitas existentes, sem perder nada.
+- [x] **Postgres no lugar do SQLite** (padrão da casa; libera pgvector e analytics). Virada feita em 2026-10-23:
+      2 pedidos e 29 visitas copiados e conferidos.
 - [x] **Login com JWT** emitido pelo backend, no mesmo molde do RootFlow (`JwtTokenGenerator`, 8 h).
       Usuário dono criado por configuração. A API key continua valendo pra scripts.
 - [ ] **Marca como conceito desde o início** (`Brand`): pedidos, produtos, campanhas e criativos
@@ -68,6 +68,8 @@ nenhuma na rede de casa, e trocar o PC por uma máquina na nuvem depois é só m
 - [ ] Nenhuma escrita nas contas de anúncio nesta fase.
 
 ### Fase 3 — Estúdio (criar)
+- [ ] **Base de conhecimento de marketing que aprende** (RB-15): `knowledge/` versionado, voz e **inventário de
+      prova** por marca, checklist automática antes do humano. Desenho em `docs/BASE-DE-CONHECIMENTO.md`.
 - [ ] Fila de jobs de criativo na API e worker local que roda o DMaker (render, voz clonada, legendas).
 - [ ] Voz em fala contínua (lição do MedlyCare: síntese frase a frase soa picotada). Pedido ao Douglas
       no Jira DMK; enquanto isso, o worker chama o OmniVoice direto.

@@ -30,8 +30,9 @@ public sealed class OrderRepository : IOrderRepository
         await _db.SaveChangesAsync(ct);
     }
 
-    public async Task<IReadOnlyList<Order>> ListAsync(int limit = 100, CancellationToken ct = default)
+    public async Task<IReadOnlyList<Order>> ListAsync(int limit = 100, CancellationToken ct = default, string? brandKey = null)
         => await _db.Orders.AsNoTracking()
+            .Where(o => brandKey == null || o.BrandKey == brandKey)
             .OrderByDescending(o => o.CreatedAt)
             .Take(limit)
             .ToListAsync(ct);

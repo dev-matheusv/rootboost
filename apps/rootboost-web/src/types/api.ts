@@ -23,6 +23,14 @@ export interface Order {
   shipCountry: string;
   createdAt: string;
   failureReason: string | null;
+  brandKey: string;
+}
+
+/** `GET /admin/brands`. */
+export interface Brand {
+  key: string;
+  name: string;
+  defaultLanguage: string;
 }
 
 /** Item do `GET /admin/products/performance` (ProductPerformance). */
