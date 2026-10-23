@@ -63,6 +63,9 @@ Segredos **nunca** no código — via env vars. Nomes aninhados usam `__` (duplo
 | `PayPal__ClientId`, `PayPal__ClientSecret`, `PayPal__WebhookId` | App + webhook do PayPal. `PayPal__BaseUrl` = `https://api-m.sandbox.paypal.com` pra sandbox. |
 | `Resend__ApiKey`, `Resend__FromEmail`, `Resend__OperatorEmail` | E-mail transacional + inbox de alertas de falha. |
 | `Orders__ApiKey` | Chave dos scripts (`X-Api-Key`) pro `/orders` e `/admin/*`. Sem ela esses endpoints ficam abertos (só pra dev). |
+| `Database__Provider` | `Sqlite` (padrão) ou `Postgres`. Com Postgres, as migrações do EF rodam no boot. |
+| `ConnectionStrings__Postgres` ou `DATABASE_URL` | Conexão do Postgres. Aceita o formato do Npgsql ou a URL `postgresql://...` que o Railway injeta. |
+| `Database__ImportFromSqlite` | Só na virada: caminho do SQLite antigo (ex.: `/data/rootboost.db`). Copia pedidos e visitas se o Postgres estiver vazio, confere as contagens e nunca duplica. |
 | `Jwt__Key` | Assinatura do login do Console (32+ caracteres, aleatória). Sem ela o `/auth/login` responde 503. |
 | `Auth__OwnerEmail`, `Auth__OwnerName` | Dono do Console. |
 | `Auth__OwnerPasswordHash` | Hash da senha do dono. Gerar com `dotnet run --project src/RootBoost.Api --no-launch-profile -- hash-password` (pede a senha na entrada; mínimo 12 caracteres). |

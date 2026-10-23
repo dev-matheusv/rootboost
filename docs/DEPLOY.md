@@ -59,3 +59,20 @@ qualquer host estático). O banco é SQLite num volume persistente.
 ## 4. Alternativa pra hoje: soft-launch
 Subir com `Supplier=Mock`/PayPal **sandbox** só pra validar a loja no ar e o funil, sem cobrar ninguém;
 trocar pra LIVE quando a conta PayPal receber e a CJ estiver configurada. Assim você "sobe hoje" sem risco.
+
+## Virada SQLite → Postgres (RB-11)
+
+O código suporta os dois bancos; a troca é só de variável. Ordem segura:
+
+1. No Railway, adicionar um serviço **Postgres** no mesmo projeto (`valiant-clarity`).
+2. No serviço `rootboost`, setar `DATABASE_URL=${{Postgres.DATABASE_URL}}` (referência, sem copiar senha),
+   `Database__Provider=Postgres` e `Database__ImportFromSqlite=/data/rootboost.db` (caminho do SQLite no volume;
+   conferir o nome real do arquivo em `ConnectionStrings__Sqlite` antes).
+3. O deploy aplica as migrações e importa pedidos e visitas **só se o Postgres estiver vazio**. Nos logs aparece
+   `SQLite importado pro Postgres: N pedidos e M linhas de visita`. Se as contagens não baterem, nada é gravado
+   e o boot falha (pedido pago não pode sumir).
+4. Conferir no Console: mesmos pedidos e visitas de antes.
+5. Depois de alguns dias estável, remover `Database__ImportFromSqlite` (rodar de novo não duplica, mas não
+   precisa mais). O volume com o SQLite fica como backup.
+
+Rollback: `Database__Provider=Sqlite` volta pro arquivo antigo, que a virada não altera (é aberto só leitura).

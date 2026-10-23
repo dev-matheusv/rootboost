@@ -25,9 +25,8 @@ public static class DependencyInjection
         var catalogPath = config["Catalog:Path"] ?? Path.Combine(contentRoot, "catalog.json");
         services.AddSingleton<IProductCatalog>(_ => JsonCatalog.LoadFromFile(catalogPath));
 
-        // --- Persistence (EF Core + SQLite) ---
-        var conn = config.GetConnectionString("Sqlite") ?? "Data Source=rootboost.db";
-        services.AddDbContext<RootBoostDbContext>(o => o.UseSqlite(conn));
+        // --- Persistence (EF Core): SQLite por padrão, Postgres com Database__Provider=Postgres ---
+        services.AddDbContext<RootBoostDbContext>(o => DatabaseSetup.Configure(o, config));
         services.AddScoped<IOrderRepository, OrderRepository>();
 
         // Analytics de topo de funil: contador de visitas (denominador da conversão) + relatório.
