@@ -24,6 +24,7 @@ public static class AuthSetup
         services.Configure<OwnerOptions>(config.GetSection(OwnerOptions.Section));
         services.AddSingleton(TimeProvider.System);
         services.AddSingleton<JwtTokenGenerator>();
+        services.AddScoped<OwnerCredentials>();
 
         var jwt = config.GetSection(JwtOptions.Section).Get<JwtOptions>() ?? new JwtOptions();
 
@@ -71,8 +72,9 @@ public static class AuthSetup
     {
         var group = app.MapGroup("/auth");
 
-        group.MapPost("/login", (LoginRequest req, IOptions<OwnerOptions> ownerOptions,
-                                 IOptions<JwtOptions> jwtOptions, JwtTokenGenerator tokens) =>
+        group.MapPost("/login", async (LoginRequest req, IOptions<OwnerOptions> ownerOptions,
+                                 IOptions<JwtOptions> jwtOptions, JwtTokenGenerator tokens, OwnerCredentials credentials,
+                                 CancellationToken ct) =>
         {
             var owner = ownerOptions.Value;
             if (!owner.IsConfigured || !IsKeyUsable(jwtOptions.Value.Key))
@@ -80,13 +82,24 @@ public static class AuthSetup
 
             var emailMatches = string.Equals(req.Email?.Trim(), owner.OwnerEmail.Trim(), StringComparison.OrdinalIgnoreCase);
             // Verifica a senha mesmo com e-mail errado, pra o tempo de resposta não revelar se o e-mail existe.
-            var passwordOk = VerifyPassword(owner.OwnerPasswordHash, req.Password ?? string.Empty);
+            var passwordOk = await credentials.VerifyAsync(req.Password ?? string.Empty, ct);
             if (!emailMatches || !passwordOk)
                 return Results.Unauthorized();
 
             var token = tokens.Generate(owner.OwnerEmail, owner.OwnerName, AdminRole);
             return Results.Ok(new LoginResponse(token.Token, token.ExpiresAtUtc, owner.OwnerName, owner.OwnerEmail));
         }).RequireRateLimiting(LoginRateLimit);
+
+        // Trocar a senha logado. Só o dono pelo Console (token com o e-mail dele); API key de script não troca senha.
+        group.MapPost("/change-password", async (ChangePasswordRequest req, ClaimsPrincipal user,
+            IOptions<OwnerOptions> ownerOptions, OwnerCredentials credentials, CancellationToken ct) =>
+        {
+            var email = user.FindFirstValue(ClaimTypes.Email);
+            if (!string.Equals(email, ownerOptions.Value.OwnerEmail.Trim(), StringComparison.OrdinalIgnoreCase))
+                return Results.Forbid();
+            var error = await credentials.ChangeAsync(req.CurrentPassword ?? string.Empty, req.NewPassword ?? string.Empty, ct);
+            return error is null ? Results.NoContent() : Results.BadRequest(new { error });
+        }).RequireAuthorization(AdminPolicy).RequireRateLimiting(LoginRateLimit);
 
         group.MapGet("/me", (ClaimsPrincipal user) => Results.Ok(new
         {
@@ -163,22 +176,11 @@ public static class AuthSetup
             app.Logger.LogWarning("Orders:ApiKey is not set: /orders and /admin/* are OPEN. Set it in production.");
     }
 
-    private static bool VerifyPassword(string hash, string password)
-    {
-        try
-        {
-            return new PasswordHasher<object>().VerifyHashedPassword(new object(), hash, password)
-                != PasswordVerificationResult.Failed;
-        }
-        catch (FormatException)
-        {
-            return false;
-        }
-    }
-
     private static bool IsKeyUsable(string? key) => !string.IsNullOrWhiteSpace(key) && key.Length >= 32;
 }
 
 public sealed record LoginRequest(string? Email, string? Password);
+
+public sealed record ChangePasswordRequest(string? CurrentPassword, string? NewPassword);
 
 public sealed record LoginResponse(string Token, DateTime ExpiresAtUtc, string Name, string Email);

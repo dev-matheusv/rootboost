@@ -8,6 +8,15 @@ export default {
     empty: 'Nothing here yet.',
     error: 'Could not load. Check the connection to the API.',
   },
+  password: {
+    title: 'Change password',
+    current: 'Current password',
+    new: 'New password',
+    confirm: 'Repeat the new password',
+    hint: 'At least {n} characters.',
+    mismatch: 'Passwords do not match.',
+    changed: 'Password changed. Use the new one next time you sign in.',
+  },
   form: { email: 'Email', password: 'Password' },
   nav: { overview: 'Overview', orders: 'Orders', brand: 'Brand', allBrands: 'All brands', darkMode: 'Dark mode', brandProfile: 'Brand profile', campaigns: 'Campaigns', publications: 'Publishing' },
   pages: {

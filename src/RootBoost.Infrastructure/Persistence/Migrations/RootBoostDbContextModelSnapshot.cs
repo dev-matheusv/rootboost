@@ -147,6 +147,30 @@ namespace RootBoost.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("RootBoost.Domain.ConsoleCredential", b =>
+                {
+                    b.Property<string>("Email")
+                        .HasMaxLength(320)
+                        .HasColumnType("character varying(320)");
+
+                    b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)");
+
+                    b.Property<string>("SourceEnvHash")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Email");
+
+                    b.ToTable("ConsoleCredentials");
+                });
+
             modelBuilder.Entity("RootBoost.Domain.CustomerPhrase", b =>
                 {
                     b.Property<Guid>("Id")

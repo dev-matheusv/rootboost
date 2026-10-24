@@ -12,7 +12,8 @@
       </div>
 
       <div class="q-px-sm">
-        <q-item rounded :class="$q.dark.isActive ? 'dark-focus' : 'light-focus'">
+        <q-item clickable rounded :class="$q.dark.isActive ? 'dark-focus' : 'light-focus'" @click="passwordOpen = true">
+          <q-tooltip v-if="isMini" anchor="center right" self="center left">{{ $t('password.title') }}</q-tooltip>
           <q-item-section avatar><q-icon :name="mdiAccountCircleOutline" /></q-item-section>
           <q-item-section v-if="!isMini">
             <q-item-label class="montserrat-bold ellipsis">{{ auth.userName }}</q-item-label>
@@ -49,6 +50,7 @@
         </q-item>
       </q-list>
     </div>
+    <ChangePasswordDialog v-model="passwordOpen" />
   </q-drawer>
 </template>
 
@@ -62,11 +64,13 @@ import {
 } from '@quasar/extras/mdi-v7';
 import { useAuthStore } from 'src/stores/authStore';
 import { useBrandStore } from 'src/stores/brandStore';
+import ChangePasswordDialog from 'src/components/ChangePasswordDialog.vue';
 
 defineOptions({ name: 'SidebarNavigation' });
 
 const open = defineModel<boolean>({ default: false });
 const isMini = ref(false);
+const passwordOpen = ref(false);
 const auth = useAuthStore();
 const brand = useBrandStore();
 const route = useRoute();
