@@ -15,4 +15,5 @@ public sealed record PaymentEvent(
     string Email,
     ShippingAddress ShipTo,
     decimal Amount,
-    string Currency);
+    string Currency,
+    bool IsTest = false); // pagamento de teste (Stripe em modo teste, verificador Test): nunca conta como venda

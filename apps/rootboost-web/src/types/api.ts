@@ -24,6 +24,8 @@ export interface Order {
   createdAt: string;
   failureReason: string | null;
   brandKey: string;
+  /** Pagamento de teste (sandbox, Stripe em modo teste): não conta em pedidos nem receita. */
+  isTest: boolean;
 }
 
 /** `GET /admin/brands`. */
@@ -41,8 +43,9 @@ export interface ProductPerformance {
   orders: number;
   revenue: number;
   currency: string;
-  conversionRate: number;
-  revenuePerVisitor: number;
+  /** Nulo = sem visita medida (não é 0%). */
+  conversionRate: number | null;
+  revenuePerVisitor: number | null;
   fulfillable: boolean;
   enoughData: boolean;
 }

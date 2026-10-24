@@ -210,6 +210,9 @@ namespace RootBoost.Infrastructure.Persistence.Migrations
                     b.Property<string>("FailureReason")
                         .HasColumnType("text");
 
+                    b.Property<bool>("IsTest")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("ProductKey")
                         .IsRequired()
                         .HasMaxLength(64)
