@@ -133,6 +133,15 @@ app.MapGet("/admin/knowledge/{**name}", (string name, IKnowledgeBase kb) =>
 app.MapPost("/admin/publications/run", async (RootBoost.Application.Publishing.PublishDuePublications job, CancellationToken ct) =>
     Results.Ok(await job.RunAsync(ct))).RequireAuthorization(AuthSetup.AdminPolicy);
 
+// --- Anúncios (RB-13): só leitura. Sincroniza agora e mostra as contas ligadas (sem token nenhum). ---
+app.MapPost("/admin/ads/sync", async (int? days, RootBoost.Application.Ads.SyncAdInsights sync, CancellationToken ct) =>
+    Results.Ok(await sync.RunAsync(days ?? RootBoost.Application.Ads.SyncAdInsights.DefaultDays, ct)))
+    .RequireAuthorization(AuthSetup.AdminPolicy);
+
+app.MapGet("/admin/ads/accounts", (RootBoost.Application.Ads.IAdAccountDirectory accounts, IConfiguration cfg) =>
+    Results.Ok(new { reader = cfg["Ads:Reader"] ?? "None", accounts = accounts.All }))
+    .RequireAuthorization(AuthSetup.AdminPolicy);
+
 // --- Marcas (Admin): a loja, o MedlyCare e quem mais entrar. ---
 app.MapGet("/admin/brands", async (IBrandStore brands, CancellationToken ct) =>
     Results.Ok((await brands.ListAsync(ct)).Select(b => new { key = b.Key, name = b.Name, defaultLanguage = b.DefaultLanguage })))
@@ -237,6 +246,17 @@ brandProfile.MapPost("/publications/{id:guid}/approve", async (string key, Guid 
     var checklist = result.Checklist?.Findings.Select(f => new { id = f.Id, status = f.Status.ToString(), blocking = f.Blocking, message = f.Message, fix = f.Fix });
     if (!result.Approved) return Results.UnprocessableEntity(new { error = result.Error, checklist });
     return Results.Ok(new { publication = PublicationDto.From((await store.GetAsync(id, ct))!), checklist });
+});
+
+brandProfile.MapGet("/ads/summary", async (string key, int? days, RootBoost.Application.Ads.IAdInsightStore store,
+    RootBoost.Application.Ads.AdsStopRule rule, TimeProvider time, CancellationToken ct) =>
+{
+    var brandKey = key.ToLowerInvariant();
+    var window = Math.Clamp(days ?? 7, 1, 90);
+    var until = DateOnly.FromDateTime(time.GetUtcNow().UtcDateTime);
+    var since = until.AddDays(-(window - 1));
+    var rows = await store.ListAsync(brandKey, since, until, AdLevel.Campaign, ct);
+    return Results.Ok(RootBoost.Application.Ads.AdsSummary.Build(brandKey, since, until, rows, rule));
 });
 
 brandProfile.MapPost("/proof/{id:guid}/retire", async (string key, Guid id, IBrandProfileStore store, CancellationToken ct) =>
