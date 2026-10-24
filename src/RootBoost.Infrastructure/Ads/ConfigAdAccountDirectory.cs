@@ -17,7 +17,8 @@ public sealed class ConfigAdAccountDirectory : IAdAccountDirectory
             .Select(s => new AdAccount(
                 BrandKeys.Validate(s["Brand"] ?? throw new InvalidOperationException($"Ads:Accounts:{s.Key}:Brand vazio")),
                 (s["Platform"] ?? "meta").Trim().ToLowerInvariant(),
-                s["AccountId"] is { Length: > 0 } id ? id.Trim() : throw new InvalidOperationException($"Ads:Accounts:{s.Key}:AccountId vazio")))
+                s["AccountId"] is { Length: > 0 } id ? id.Trim() : throw new InvalidOperationException($"Ads:Accounts:{s.Key}:AccountId vazio"),
+                string.IsNullOrWhiteSpace(s["ConversionAction"]) ? null : s["ConversionAction"]!.Trim()))
             .ToList();
 
         if (accounts.Count == 0 && fakeReader)

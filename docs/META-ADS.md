@@ -92,5 +92,18 @@ lê insights, cria e edita campanhas, usa o mesmo token de usuário do sistema e
 - **Contas:** `Ads__Accounts__0__Brand=medlycare`, `Ads__Accounts__0__Platform=meta`, `Ads__Accounts__0__AccountId=act_...`.
 - **Endpoints (Admin):** `POST /admin/ads/sync?days=3`, `GET /admin/ads/accounts`,
   `GET /admin/brands/{key}/ads/summary?days=7`.
-- **Falta:** `MetaAdsInsightsReader` real (campos e `actions` conferidos na referência antes de codar, tratamento de
-  limite pelos headers) e a tela Campanhas no Console.
+- **Leitor real feito (24/10/2026):** `MetaAdsInsightsReader`, conferido na referência Ad Account Insights e
+  AdsActionStats. Duas chamadas por conta (`level=campaign` e `level=ad`, `time_increment=1`, `time_range`),
+  métricas em texto numérico, conversão = soma de `actions[].value` do `action_type` configurado (padrão
+  `offsite_conversion.fb_pixel_complete_registration`, o cadastro pelo Pixel). Token no cabeçalho Authorization,
+  nunca na URL; `paging.next` só é seguido pra graph.facebook.com e sem `access_token` embutido. Quota acima de 90%
+  (`X-FB-Ads-Insights-Throttle`) para a rodada; erro do Graph vira mensagem com código e subcódigo.
+- **Tela Campanhas no Console** feita.
+
+### Como ligar em produção (Railway)
+1. `Meta__AdsAccessToken` = token do usuário do sistema com `ads_read` (só no Railway).
+2. `Ads__Reader=Meta`.
+3. `Ads__Accounts__0__Brand=medlycare`, `Ads__Accounts__0__Platform=meta`, `Ads__Accounts__0__AccountId=act_<id da conta>`.
+4. Opcional: `Ads__Accounts__0__ConversionAction` se a conversão não for o cadastro pelo Pixel;
+   `Ads__StopRule__SpendWithoutConversion` (padrão 200).
+5. Conferir: `POST /admin/ads/sync` devolve `ok: true`; a tela Campanhas mostra os números.
