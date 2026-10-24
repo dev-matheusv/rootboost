@@ -153,3 +153,25 @@ export interface AdsAccounts {
   reader: string;
   accounts: { brandKey: string; platform: string; accountId: string }[];
 }
+
+export type SocialChannel = 'Instagram' | 'Facebook' | 'LinkedIn';
+export type PublicationStatus = 'Draft' | 'Approved' | 'Publishing' | 'Published' | 'Failed';
+
+/** `GET /admin/brands/{key}/publications` (PublicationDto). */
+export interface Publication {
+  id: string;
+  brandKey: string;
+  channel: SocialChannel;
+  mediaUrl: string;
+  caption: string;
+  captionVersion: number;
+  scheduledFor: string;
+  status: PublicationStatus;
+  approvedBy: string | null;
+  approvedAt: string | null;
+  approvedCaptionVersion: number | null;
+  externalId: string | null;
+  publishedUrl: string | null;
+  error: string | null;
+  attempts: number;
+}

@@ -1,7 +1,7 @@
 export default {
   app: { name: 'RootBoost', tagline: 'Criar, publicar, medir e otimizar.' },
   common: {
-    actions: { login: 'Entrar', logout: 'Sair', refresh: 'Atualizar', retry: 'Tentar de novo', save: 'Salvar', cancel: 'Cancelar' },
+    actions: { login: 'Entrar', logout: 'Sair', refresh: 'Atualizar', retry: 'Tentar de novo', save: 'Salvar', cancel: 'Cancelar', close: 'Fechar' },
     saved: 'Salvo.',
     saveError: 'Não foi possível salvar.',
     loading: 'Carregando',
@@ -9,7 +9,7 @@ export default {
     error: 'Não foi possível carregar. Confira a conexão com a API.',
   },
   form: { email: 'E-mail', password: 'Senha' },
-  nav: { overview: 'Visão geral', orders: 'Pedidos', brand: 'Marca', allBrands: 'Todas as marcas', darkMode: 'Modo escuro', brandProfile: 'Perfil da marca', campaigns: 'Campanhas' },
+  nav: { overview: 'Visão geral', orders: 'Pedidos', brand: 'Marca', allBrands: 'Todas as marcas', darkMode: 'Modo escuro', brandProfile: 'Perfil da marca', campaigns: 'Campanhas', publications: 'Publicações' },
   pages: {
     login: {
       title: 'Entrar no Console',
@@ -65,6 +65,30 @@ export default {
         fake: 'Dados de demonstração: campanhas de mentira para testar a tela. Nada aqui é real.',
         live: '',
       },
+    },
+    publications: {
+      title: 'Publicações',
+      subtitle: 'Agenda da semana. Nada vai ao ar sem aprovação.',
+      pickBrand: 'Escolha uma marca no menu para ver a agenda.',
+      range: '{from} a {to}',
+      today: 'Hoje',
+      new: 'Novo post',
+      edit: 'Editar',
+      approve: 'Aprovar',
+      approved: 'Aprovado. Vai ao ar no horário.',
+      nothing: 'Nada agendado.',
+      media: 'Ver mídia',
+      openPost: 'Abrir post',
+      approvedBy: 'aprovado por {who}',
+      channel: 'Canal',
+      mediaUrl: 'Link da mídia',
+      mediaHint: 'Link https público do vídeo ou da imagem.',
+      caption: 'Legenda',
+      editResets: 'Mudar a legenda volta o post para rascunho: precisa aprovar de novo.',
+      when: 'Data e hora',
+      blocked: 'A checklist bloqueou a legenda',
+      dryRun: 'Modo de teste: a publicação nas redes ainda não está ligada. O post aprovado é marcado como publicado sem sair daqui.',
+      status: { Draft: 'Rascunho', Approved: 'Aprovado', Publishing: 'Publicando', Published: 'Publicado', Failed: 'Falhou' },
     },
     brandProfile: {
       title: 'Perfil da marca',
