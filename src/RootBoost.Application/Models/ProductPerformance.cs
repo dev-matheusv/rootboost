@@ -15,8 +15,8 @@ public sealed record ProductPerformance(
     int Orders,
     decimal Revenue,
     string Currency,
-    double ConversionRate,
-    decimal RevenuePerVisitor,
+    double? ConversionRate,       // nulo = sem visita medida (não dá pra dividir), diferente de 0%
+    decimal? RevenuePerVisitor,
     bool Fulfillable,
     bool EnoughData);
 

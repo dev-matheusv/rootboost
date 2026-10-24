@@ -49,7 +49,10 @@ public static class StripeSessionParser
 
         var currency = (Str(session, "currency") ?? "usd").ToUpperInvariant();
 
-        return new PaymentEvent(true, paymentId, productKey, quantity, email, shipTo, amount, currency);
+        // "livemode" vem em todo objeto do Stripe: false = chave de teste, dinheiro de mentira.
+        var isTest = session.TryGetProperty("livemode", out var lm) && lm.ValueKind == JsonValueKind.False;
+
+        return new PaymentEvent(true, paymentId, productKey, quantity, email, shipTo, amount, currency, isTest);
     }
 
     /// <summary>

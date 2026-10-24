@@ -32,22 +32,22 @@ public class ProductPerformanceReportTests
         Assert.Equal(200, car.Views);
         Assert.Equal(2, car.Orders);
         Assert.Equal(59.98m, car.Revenue);
-        Assert.Equal(0.01d, car.ConversionRate, 5);       // 2 / 200
+        Assert.Equal(0.01d, car.ConversionRate!.Value, 5);       // 2 / 200
         Assert.Equal(0.2999m, car.RevenuePerVisitor);      // 59.98 / 200
         Assert.True(car.Fulfillable);
         Assert.True(car.EnoughData);                       // 200 >= 100
     }
 
     [Fact]
-    public async Task Zero_views_gives_zero_conversion_without_dividing_by_zero()
+    public async Task Zero_views_gives_no_conversion_instead_of_zero_percent()
     {
         var report = await Sut(new FakeVisitStore(), new FakeOrderRepository(),
             new FakeCatalog(Todo("newproduct"))).BuildAsync();
         var p = report.Products.Single();
 
         Assert.Equal(0, p.Views);
-        Assert.Equal(0d, p.ConversionRate);
-        Assert.Equal(0m, p.RevenuePerVisitor);
+        Assert.Null(p.ConversionRate);                    // sem visita medida não é 0%
+        Assert.Null(p.RevenuePerVisitor);
         Assert.False(p.EnoughData);
         Assert.False(p.Fulfillable);                       // VID ainda é TODO
     }
@@ -93,5 +93,22 @@ public class ProductPerformanceReportTests
 
         var report = await Sut(visits, orders, new FakeCatalog(Live("car"))).BuildAsync();
         Assert.False(report.Products.Single().EnoughData);
+    }
+
+    [Fact]
+    public async Task Test_orders_never_count_as_sales()
+    {
+        var visits = new FakeVisitStore().Seed("car", 50);
+        var orders = new FakeOrderRepository();
+        orders.Store["REAL"] = PaidOrder("REAL", "car", 29.99m);
+        orders.Store["SANDBOX"] = new Order("SANDBOX", "car", 1, "t@example.com", TestData.CompleteAddress(), 34.99m, "USD", isTest: true);
+        var old = PaidOrder("OLD", "car", 10m);
+        old.MarkAsTest();
+        orders.Store["OLD"] = old;
+
+        var p = (await Sut(visits, orders, new FakeCatalog(Live("car"))).BuildAsync()).Products.Single();
+
+        Assert.Equal(1, p.Orders);
+        Assert.Equal(29.99m, p.Revenue);
     }
 }

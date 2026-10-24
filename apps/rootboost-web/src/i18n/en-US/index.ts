@@ -28,6 +28,7 @@ export default {
       perVisitor: 'Revenue per visit',
       product: 'Product',
       fulfillable: 'Fulfillable',
+      noData: 'no data',
       notEnoughData: 'Not enough data yet: below 100 visits conversion is noise.',
       window: { all: 'All time', d7: '7 days', d30: '30 days' },
     },
@@ -43,6 +44,8 @@ export default {
       tracking: 'Tracking',
       brand: 'Brand',
       failure: 'Failure reason',
+      test: 'Test',
+      testHint: 'Test payment: not counted in orders or revenue.',
     },
     campaigns: {
       title: 'Campaigns',

@@ -43,7 +43,7 @@
       </template>
       <template #body-cell-conversionRate="props">
         <q-td :props="props">
-          {{ formatPercent(props.row.conversionRate) }}
+          {{ props.row.conversionRate === null ? $t('pages.overview.noData') : formatPercent(props.row.conversionRate) }}
           <q-icon v-if="!props.row.enoughData" :name="mdiInformationOutline" color="warning" class="q-ml-xs">
             <q-tooltip>{{ $t('pages.overview.notEnoughData') }}</q-tooltip>
           </q-icon>
@@ -123,7 +123,7 @@ const columns = computed<QTableColumn<ProductPerformance>[]>(() => [
   { name: 'orders', label: t('pages.overview.orders'), field: 'orders', align: 'right', sortable: true },
   { name: 'conversionRate', label: t('pages.overview.conversion'), field: 'conversionRate', align: 'right', sortable: true },
   { name: 'revenue', label: t('pages.overview.revenue'), field: (r) => formatMoney(r.revenue, r.currency), align: 'right' },
-  { name: 'revenuePerVisitor', label: t('pages.overview.perVisitor'), field: (r) => formatMoney(r.revenuePerVisitor, r.currency), align: 'right' },
+  { name: 'revenuePerVisitor', label: t('pages.overview.perVisitor'), field: (r) => (r.revenuePerVisitor === null ? t('pages.overview.noData') : formatMoney(r.revenuePerVisitor, r.currency)), align: 'right' },
   { name: 'fulfillable', label: t('pages.overview.fulfillable'), field: 'fulfillable', align: 'center' },
 ]);
 

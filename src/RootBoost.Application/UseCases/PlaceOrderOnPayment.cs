@@ -74,7 +74,7 @@ public sealed class PlaceOrderOnPayment
         // O pedido nasce na marca do produto; sem catálogo, cai na loja (ainda fica registrado e escalado).
         var order = new Order(
             pay.PaymentId, pay.ProductKey, pay.Quantity, pay.Email, pay.ShipTo, pay.Amount, pay.Currency,
-            brandKey: product?.BrandKey);
+            brandKey: product?.BrandKey, isTest: pay.IsTest);
         if (product is null || !product.IsFulfillable)
         {
             var reason = product is null

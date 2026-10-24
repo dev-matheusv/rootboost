@@ -28,7 +28,7 @@ public class ProductPerformanceTests : IClassFixture<CustomWebApplicationFactory
         // 1 pedido pago do "rack".
         await client.PostAsJsonAsync("/webhook/payment", new
         {
-            paymentId = "PAY-PERF-1", productKey = "rack", quantity = 1, email = "b@example.com",
+            paymentId = "PAY-PERF-1", productKey = "rack", quantity = 1, email = "b@example.com", isTest = false,
             name = "B Buyer", line1 = "1 St", city = "Austin", state = "TX", zip = "78701",
             countryCode = "US", phone = "+15551234567", amount = 34.99, currency = "USD"
         });

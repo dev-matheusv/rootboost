@@ -20,6 +20,10 @@
       <template #body-cell-status="props">
         <q-td :props="props">
           <q-chip dense square :color="statusColor(props.row.status)" text-color="white">{{ props.row.status }}</q-chip>
+          <q-chip v-if="props.row.isTest" dense square outline color="grey-6">
+            {{ $t('pages.orders.test') }}
+            <q-tooltip>{{ $t('pages.orders.testHint') }}</q-tooltip>
+          </q-chip>
           <q-icon v-if="props.row.failureReason" :name="mdiAlertCircleOutline" color="negative" class="q-ml-xs">
             <q-tooltip>{{ props.row.failureReason }}</q-tooltip>
           </q-icon>

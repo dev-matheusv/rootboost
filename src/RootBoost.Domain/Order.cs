@@ -44,6 +44,9 @@ public sealed class Order
     /// <summary>Marca dona do pedido. Pedidos anteriores às marcas são da loja.</summary>
     public string BrandKey { get; private set; } = BrandKeys.Store;
 
+    /// <summary>Pagamento de teste (sandbox, Stripe em modo teste). Fica no histórico, mas nunca conta como venda.</summary>
+    public bool IsTest { get; private set; }
+
     public Order(
         string paymentId,
         string productKey,
@@ -53,7 +56,8 @@ public sealed class Order
         decimal amountPaid,
         string currency,
         DateTimeOffset? createdAt = null,
-        string? brandKey = null)
+        string? brandKey = null,
+        bool isTest = false)
     {
         if (string.IsNullOrWhiteSpace(paymentId)) throw new ArgumentException("paymentId required", nameof(paymentId));
         if (string.IsNullOrWhiteSpace(productKey)) throw new ArgumentException("productKey required", nameof(productKey));
@@ -67,6 +71,7 @@ public sealed class Order
         AmountPaid = amountPaid;
         Currency = currency;
         Status = OrderStatus.Placed;
+        IsTest = isTest;
         CreatedAt = createdAt ?? DateTimeOffset.UtcNow;
         UpdatedAt = CreatedAt;
         BrandKey = brandKey is null ? BrandKeys.Store : BrandKeys.Validate(brandKey);
@@ -116,5 +121,12 @@ public sealed class Order
         CustomerEmail = default!;
         ShipTo = default!;
         Currency = default!;
+    }
+
+    /// <summary>Marca como teste um pedido antigo que entrou antes da marcação automática.</summary>
+    public void MarkAsTest()
+    {
+        IsTest = true;
+        UpdatedAt = DateTimeOffset.UtcNow;
     }
 }

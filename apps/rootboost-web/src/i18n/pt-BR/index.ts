@@ -28,6 +28,7 @@ export default {
       perVisitor: 'Receita por visita',
       product: 'Produto',
       fulfillable: 'Faturável',
+      noData: 'sem dado',
       notEnoughData: 'Pouco dado ainda: abaixo de 100 visitas a conversão é ruído.',
       window: { all: 'Tudo', d7: '7 dias', d30: '30 dias' },
     },
@@ -43,6 +44,8 @@ export default {
       tracking: 'Rastreio',
       brand: 'Marca',
       failure: 'Motivo da falha',
+      test: 'Teste',
+      testHint: 'Pagamento de teste: não conta em pedidos nem receita.',
     },
     campaigns: {
       title: 'Campanhas',
