@@ -114,3 +114,42 @@ export interface CopyCheckResult {
   blocked: boolean;
   findings: CopyFinding[];
 }
+
+/** Métricas de anúncio somadas (AdMetrics). Taxas nulas quando não há denominador. */
+export interface AdMetrics {
+  spend: number;
+  impressions: number;
+  clicks: number;
+  reach: number;
+  conversions: number;
+  ctr: number | null;
+  cpc: number | null;
+  cpm: number | null;
+  cpa: number | null;
+}
+
+export interface AdsAlert {
+  /** 'stopRule' ou 'mixedCurrency' hoje; outros tipos podem chegar. */
+  kind: string;
+  objectId: string;
+  name: string;
+  message: string;
+}
+
+/** `GET /admin/brands/{key}/ads/summary`. */
+export interface AdsSummary {
+  brandKey: string;
+  since: string;
+  until: string;
+  currencies: string[];
+  totals: AdMetrics;
+  campaigns: { campaignId: string; name: string; currency: string; metrics: AdMetrics }[];
+  daily: { date: string; metrics: AdMetrics }[];
+  alerts: AdsAlert[];
+}
+
+/** `GET /admin/ads/accounts`. */
+export interface AdsAccounts {
+  reader: string;
+  accounts: { brandKey: string; platform: string; accountId: string }[];
+}

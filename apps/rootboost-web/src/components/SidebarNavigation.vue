@@ -58,7 +58,7 @@ import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 import {
   mdiMenu, mdiAccountCircleOutline, mdiViewDashboardOutline, mdiPackageVariantClosed,
-  mdiWeatherNight, mdiWeatherSunny, mdiLogout, mdiStorefrontOutline, mdiBullhornOutline,
+  mdiWeatherNight, mdiWeatherSunny, mdiLogout, mdiStorefrontOutline, mdiBullhornOutline, mdiChartBar,
 } from '@quasar/extras/mdi-v7';
 import { useAuthStore } from 'src/stores/authStore';
 import { useBrandStore } from 'src/stores/brandStore';
@@ -86,6 +86,7 @@ onMounted(() => {
 const items = [
   { name: 'overview', label: 'nav.overview', icon: mdiViewDashboardOutline },
   { name: 'orders', label: 'nav.orders', icon: mdiPackageVariantClosed },
+  { name: 'campaigns', label: 'nav.campaigns', icon: mdiChartBar },
   { name: 'brandProfile', label: 'nav.brandProfile', icon: mdiBullhornOutline },
 ];
 
