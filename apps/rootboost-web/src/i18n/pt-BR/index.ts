@@ -9,7 +9,7 @@ export default {
     error: 'Não foi possível carregar. Confira a conexão com a API.',
   },
   form: { email: 'E-mail', password: 'Senha' },
-  nav: { overview: 'Visão geral', orders: 'Pedidos', brand: 'Marca', allBrands: 'Todas as marcas', darkMode: 'Modo escuro', brandProfile: 'Perfil da marca' },
+  nav: { overview: 'Visão geral', orders: 'Pedidos', brand: 'Marca', allBrands: 'Todas as marcas', darkMode: 'Modo escuro', brandProfile: 'Perfil da marca', campaigns: 'Campanhas' },
   pages: {
     login: {
       title: 'Entrar no Console',
@@ -43,6 +43,28 @@ export default {
       tracking: 'Rastreio',
       brand: 'Marca',
       failure: 'Motivo da falha',
+    },
+    campaigns: {
+      title: 'Campanhas',
+      subtitle: 'Gasto, conversões e custo por resultado, por dia e por campanha.',
+      pickBrand: 'Escolha uma marca no menu para ver as campanhas.',
+      days: '{n} dias',
+      spend: 'Gasto',
+      conversions: 'Conversões',
+      cpa: 'Custo por conversão',
+      ctr: 'CTR',
+      cpc: 'CPC',
+      impressions: 'Impressões',
+      campaign: 'Campanha',
+      stopRule: '{spend} gastos sem nenhuma conversão no período. Revise criativo e público antes de seguir.',
+      spendPerDay: 'Gasto por dia',
+      empty: 'Nenhum dado de anúncio no período.',
+      state: {
+        off: 'A leitura de anúncios ainda não está ligada. Quando o token da Meta entrar, os números aparecem aqui sozinhos.',
+        noAccount: 'Esta marca ainda não tem conta de anúncios ligada.',
+        fake: 'Dados de demonstração: campanhas de mentira para testar a tela. Nada aqui é real.',
+        live: '',
+      },
     },
     brandProfile: {
       title: 'Perfil da marca',

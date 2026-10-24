@@ -9,7 +9,7 @@ export default {
     error: 'Could not load. Check the connection to the API.',
   },
   form: { email: 'Email', password: 'Password' },
-  nav: { overview: 'Overview', orders: 'Orders', brand: 'Brand', allBrands: 'All brands', darkMode: 'Dark mode', brandProfile: 'Brand profile' },
+  nav: { overview: 'Overview', orders: 'Orders', brand: 'Brand', allBrands: 'All brands', darkMode: 'Dark mode', brandProfile: 'Brand profile', campaigns: 'Campaigns' },
   pages: {
     login: {
       title: 'Sign in to the Console',
@@ -43,6 +43,28 @@ export default {
       tracking: 'Tracking',
       brand: 'Brand',
       failure: 'Failure reason',
+    },
+    campaigns: {
+      title: 'Campaigns',
+      subtitle: 'Spend, conversions and cost per result, by day and by campaign.',
+      pickBrand: 'Pick a brand in the menu to see its campaigns.',
+      days: '{n} days',
+      spend: 'Spend',
+      conversions: 'Conversions',
+      cpa: 'Cost per conversion',
+      ctr: 'CTR',
+      cpc: 'CPC',
+      impressions: 'Impressions',
+      campaign: 'Campaign',
+      stopRule: '{spend} spent without a single conversion in this period. Review creative and audience before going on.',
+      spendPerDay: 'Spend per day',
+      empty: 'No ad data in this period.',
+      state: {
+        off: 'Ad reading is not on yet. Once the Meta token is in, numbers show up here on their own.',
+        noAccount: 'This brand has no ad account connected yet.',
+        fake: 'Demo data: fake campaigns to test the screen. Nothing here is real.',
+        live: '',
+      },
     },
     brandProfile: {
       title: 'Brand profile',
