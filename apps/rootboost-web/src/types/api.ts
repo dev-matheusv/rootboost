@@ -54,3 +54,63 @@ export interface PerformanceReport {
   products: ProductPerformance[];
   note: string;
 }
+
+/** Objeção comum e a resposta da marca (BrandObjection). */
+export interface BrandObjection {
+  objection: string;
+  answer: string;
+}
+
+/** Voz da marca (BrandVoice). `PUT /admin/brands/{key}/voice`. */
+export interface BrandVoice {
+  audience: string;
+  tone: string[];
+  wordSwaps: Record<string, string>;
+  bannedTerms: string[];
+  objections: BrandObjection[];
+}
+
+export type ProofKind = 'Offer' | 'Feature' | 'Price' | 'Metric' | 'Testimonial' | 'Credential' | 'Scarcity' | 'Forbidden';
+
+/** Item do inventário de prova. A IA só afirma o que está ativo aqui. */
+export interface ProofItem {
+  id: string;
+  kind: ProofKind;
+  statement: string;
+  source: string;
+  verifiedAt: string;
+  reviewBy: string | null;
+  active: boolean;
+  needsReview: boolean;
+}
+
+/** Frase real de cliente, com a fonte. */
+export interface CustomerPhrase {
+  id: string;
+  text: string;
+  source: string;
+  collectedAt: string;
+}
+
+/** `GET /admin/brands/{key}/profile`. */
+export interface BrandProfile {
+  brand: Brand;
+  voice: BrandVoice;
+  proof: ProofItem[];
+  phrases: CustomerPhrase[];
+}
+
+/** Achado da checklist de copy (`POST /admin/brands/{key}/copy/check`). */
+export interface CopyFinding {
+  id: string;
+  group: string;
+  status: 'Pass' | 'Fail' | 'NeedsHuman' | 'Suggestion';
+  blocking: boolean;
+  message: string;
+  fix: string | null;
+}
+
+export interface CopyCheckResult {
+  blocked: boolean;
+  findings: CopyFinding[];
+}

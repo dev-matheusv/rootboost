@@ -33,3 +33,7 @@ tools/stripe/.secret
 
 # Dados locais de plugins do Claude Code (nunca versionar)
 .claude/
+
+# Cópias e sobras de banco SQLite local (renomeadas, WAL, SHM)
+*.db.*
+*.db-*
