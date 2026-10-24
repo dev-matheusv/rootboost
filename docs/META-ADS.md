@@ -81,3 +81,16 @@ lê insights, cria e edita campanhas, usa o mesmo token de usuário do sistema e
 - [Marketing API authorization](https://developers.facebook.com/documentation/ads-commerce/marketing-api/get-started/authorization.md)
 - [Marketing API rate limiting](https://developers.facebook.com/documentation/ads-commerce/marketing-api/overview/rate-limiting.md)
 - [Ads CLI overview](https://developers.facebook.com/documentation/ads-commerce/ads-ai-connectors/ads-cli/ads-cli-overview.md)
+
+## Estado (RB-13, parte 1: leitura em modo Fake)
+- **Feito:** snapshot diário `AdInsightDaily` (marca, plataforma, conta, nível, objeto, dia; índice único, upsert
+  idempotente), porta `IAdInsightsReader`, `SyncAdInsights` (relê os últimos 3 dias; conta que falha não para as
+  outras), `AdsSummary` (gasto, impressões, cliques, alcance somado, conversões, CTR, CPC, CPM, CPA, série diária)
+  e a **regra de parada** (`Ads:StopRule:SpendWithoutConversion`, padrão 200 na moeda da conta).
+- **Modos:** `Ads:Reader=None` (padrão, não chama nada), `Fake` (duas campanhas de mentira do MedlyCare em BRL,
+  uma que converte e um remarketing que gasta sem converter). Agendador a cada 6 h (`Ads:SyncEnabled=false` desliga).
+- **Contas:** `Ads__Accounts__0__Brand=medlycare`, `Ads__Accounts__0__Platform=meta`, `Ads__Accounts__0__AccountId=act_...`.
+- **Endpoints (Admin):** `POST /admin/ads/sync?days=3`, `GET /admin/ads/accounts`,
+  `GET /admin/brands/{key}/ads/summary?days=7`.
+- **Falta:** `MetaAdsInsightsReader` real (campos e `actions` conferidos na referência antes de codar, tratamento de
+  limite pelos headers) e a tela Campanhas no Console.

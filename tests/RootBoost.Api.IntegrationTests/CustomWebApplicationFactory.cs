@@ -22,6 +22,7 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
         builder.UseSetting("Catalog:Path", Path.Combine(AppContext.BaseDirectory, "test-catalog.json"));
         // Agendador desligado: os testes disparam o job por /admin/publications/run, sem corrida com o timer.
         builder.UseSetting("Social:SchedulerEnabled", "false");
+        builder.UseSetting("Ads:SyncEnabled", "false");
         // no Orders:ApiKey -> /orders is open in tests
     }
 
