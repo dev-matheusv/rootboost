@@ -51,6 +51,8 @@ public static class DependencyInjection
         var fakeAds = string.Equals(adsReader, "Fake", StringComparison.OrdinalIgnoreCase);
         services.AddSingleton<RootBoost.Application.Ads.IAdAccountDirectory>(new RootBoost.Infrastructure.Ads.ConfigAdAccountDirectory(config, fakeAds));
         if (fakeAds) services.AddSingleton<RootBoost.Application.Ads.IAdInsightsReader, RootBoost.Infrastructure.Ads.FakeAdInsightsReader>();
+        else if (string.Equals(adsReader, "Meta", StringComparison.OrdinalIgnoreCase))
+            services.AddSingleton<RootBoost.Application.Ads.IAdInsightsReader, RootBoost.Infrastructure.Ads.MetaAdsInsightsReader>();
         var stopRule = new RootBoost.Application.Ads.AdsStopRule();
         config.GetSection(RootBoost.Application.Ads.AdsStopRule.Section).Bind(stopRule);
         services.AddSingleton(stopRule);

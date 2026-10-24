@@ -4,7 +4,8 @@ using RootBoost.Domain;
 namespace RootBoost.Application.Ads;
 
 /// <summary>Conta de anúncios ligada a uma marca (ex.: a conta Meta do MedlyCare).</summary>
-public sealed record AdAccount(string BrandKey, string Platform, string AccountId);
+/// <param name="ConversionAction">Qual ação conta como conversão (ex.: cadastro pelo Pixel). Nulo = padrão do leitor.</param>
+public sealed record AdAccount(string BrandKey, string Platform, string AccountId, string? ConversionAction = null);
 
 /// <summary>Uma linha de métrica diária como a plataforma devolve, já traduzida pro nosso formato.</summary>
 public sealed record AdInsightRow(
