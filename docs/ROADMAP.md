@@ -85,7 +85,8 @@ template), cada uma atrás de porta própria, escolhida pelo que entrega melhor 
 ### Fase 3 — Estúdio (criar)
 - [ ] **Base de conhecimento de marketing que aprende** (RB-15). Parte 1 feita: `knowledge/` com playbook,
       gatilhos, ganchos, checklist, limites, políticas, formatos, regras de teste e aprendizados, validados por
-      teste e servidos em `/admin/knowledge`. Falta: perfil da marca (voz e inventário de prova). `knowledge/` versionado, voz e **inventário de
+      teste e servidos em `/admin/knowledge`. Perfil da marca (voz, prova, frases) na API (RB-15), checklist (RB-18) e
+      tela no Console (RB-19: abas Prova, Voz, Frases e Testar copy) feitos. Falta: ciclo de aprendizado. `knowledge/` versionado, voz e **inventário de
       prova** por marca, checklist automática antes do humano. Desenho em `docs/BASE-DE-CONHECIMENTO.md`.
 - [ ] Fila de jobs de criativo na API e worker local que roda o DMaker (render, voz clonada, legendas).
 - [ ] Voz em fala contínua (lição do MedlyCare: síntese frase a frase soa picotada). Pedido ao Douglas

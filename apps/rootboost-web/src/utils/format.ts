@@ -17,6 +17,13 @@ export function formatDateTime(iso: string, locale = 'pt-BR'): string {
 }
 
 /** Soma valores por moeda: pedidos podem vir em USD e EUR, e somar moedas diferentes mente. */
+/** Data pura (AAAA-MM-DD) sem fuso: não pode virar o dia anterior no Brasil. */
+export function formatDate(isoDate: string, locale = 'pt-BR'): string {
+  const [y = 1970, m = 1, d = 1] = isoDate.slice(0, 10).split('-').map(Number);
+  return new Intl.DateTimeFormat(locale, { dateStyle: 'short', timeZone: 'UTC' }).format(new Date(Date.UTC(y, m - 1, d)));
+}
+
+/** Soma valores por moeda: pedidos podem vir em USD e EUR, e somar moedas diferentes mente. */
 export function sumByCurrency<T>(items: T[], amount: (item: T) => number, currency: (item: T) => string): Record<string, number> {
   return items.reduce<Record<string, number>>((acc, item) => {
     const code = currency(item) || 'USD';

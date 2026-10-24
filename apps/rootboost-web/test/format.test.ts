@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatInt, formatMoney, formatPercent, sumByCurrency } from 'src/utils/format';
+import { formatDate, formatInt, formatMoney, formatPercent, sumByCurrency } from 'src/utils/format';
 import { statusColor } from 'src/utils/orderStatus';
 
 describe('format', () => {
@@ -44,5 +44,11 @@ describe('brandParams', () => {
 
   it('com marca manda o filtro pra API', () => {
     expect(brandParams('medlycare')).toEqual({ brand: 'medlycare' });
+  });
+});
+
+describe('formatDate', () => {
+  it('não volta um dia por causa do fuso', () => {
+    expect(formatDate('2026-10-30', 'pt-BR')).toBe('30/10/2026');
   });
 });
