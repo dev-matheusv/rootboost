@@ -119,6 +119,18 @@ Suite e pela página do LinkedIn, com a planilha que o marketing do MedlyCare pr
 - [ ] Várias contas (workspaces) no molde do RootFlow, cobrança, onboarding.
 - [ ] Estúdio aberto para pessoas comuns (ideia de `docs/VIDEO-DMAKER.md`), conversando com o Douglas.
 
+## Pedidos avaliados em 24/10/2026 (Matheus)
+
+| Pedido | Vale? | Onde entra | Avaliação |
+|---|---|---|---|
+| **Postgres também no local, sem SQLite** (RB-29) | Sim, já | Antes do próximo card de banco | Produção já é Postgres com migrações; o SQLite local usa `EnsureCreated` e não ganha tabela nova (já travou o dev 3 vezes). Os testes já rodam em Postgres via Testcontainers. Plano: `docker compose` com Postgres 16 pro dev, migrações nos dois, SQLite fora do código. Requer Docker Desktop no PC (já usado pelos testes). |
+| **PWA igual ao MedlyCare** (RB-30) | Sim | Junto da identidade visual | O front já está no molde do MedlyCare (Quasar tem modo PWA pronto). Ícone, manifest, instalar no celular, cache do shell. Barato. |
+| **Interface mais próxima do MedlyCare + roxo próprio** (RB-14, ampliado) | Sim | Junto da PWA | Reaproveitar componentes, espaçamentos, tipografia e cards do MedlyCare (`C:\SFA_Sistemapps\web`). Paleta: 3 propostas de roxo (do mais sóbrio ao mais vivo), testadas no claro e no escuro, escolha do Matheus antes de aplicar. |
+| **Campanha de teste montada pela IA, Matheus só aprova** (RB-31) | Sim, com cuidado | Fase 5 | Hoje o conector só lê. Montar campanha exige escrita na Marketing API (`ads_management`): criar campanha, conjunto e anúncio **sempre PAUSADOS**, mostrar o resumo (orçamento, público, criativos, link com UTM) e só ativar com o clique do Matheus. Limite de gasto da conta (R$ 250) é a trava final. |
+| **WhatsApp** (RB-32) | Avaliar | Depois | Duas rotas: a extensão do Chrome feita com o Douglas (ver código/doc no MedlyCare) ou a API oficial do WhatsApp Business (Cloud API, pago por conversa). Decidir quando o uso estiver claro (avisos de aprovação? atendimento de lead?). |
+| **Upload de mídia** (RB-33) | Sim, aprovado | Próximo | Bucket de objetos no Railway, link temporário assinado pro Instagram baixar. Custo por uso (ver Railway Pricing); com poucos GB, centavos de dólar por mês. |
+| **Domínio próprio** | Aguarda o nome | Antes da 1ª venda | Destrava e-mail (RB-28), LinkedIn e "esqueci a senha". Confirmar se o nome fica RootBoost. |
+
 ## Fronteira com o DMaker
 
 O DMaker é do Douglas e tem o próprio Jira (**DMK**). Regra: mudança no DMaker vira card no DMK e quem
