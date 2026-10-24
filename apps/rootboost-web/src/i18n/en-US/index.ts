@@ -1,7 +1,7 @@
 export default {
   app: { name: 'RootBoost', tagline: 'Create, publish, measure and optimize.' },
   common: {
-    actions: { login: 'Sign in', logout: 'Sign out', refresh: 'Refresh', retry: 'Try again', save: 'Save', cancel: 'Cancel' },
+    actions: { login: 'Sign in', logout: 'Sign out', refresh: 'Refresh', retry: 'Try again', save: 'Save', cancel: 'Cancel', close: 'Close' },
     saved: 'Saved.',
     saveError: 'Could not save.',
     loading: 'Loading',
@@ -9,7 +9,7 @@ export default {
     error: 'Could not load. Check the connection to the API.',
   },
   form: { email: 'Email', password: 'Password' },
-  nav: { overview: 'Overview', orders: 'Orders', brand: 'Brand', allBrands: 'All brands', darkMode: 'Dark mode', brandProfile: 'Brand profile', campaigns: 'Campaigns' },
+  nav: { overview: 'Overview', orders: 'Orders', brand: 'Brand', allBrands: 'All brands', darkMode: 'Dark mode', brandProfile: 'Brand profile', campaigns: 'Campaigns', publications: 'Publishing' },
   pages: {
     login: {
       title: 'Sign in to the Console',
@@ -65,6 +65,30 @@ export default {
         fake: 'Demo data: fake campaigns to test the screen. Nothing here is real.',
         live: '',
       },
+    },
+    publications: {
+      title: 'Publishing',
+      subtitle: 'This week. Nothing goes live without approval.',
+      pickBrand: 'Pick a brand in the menu to see the schedule.',
+      range: '{from} to {to}',
+      today: 'Today',
+      new: 'New post',
+      edit: 'Edit',
+      approve: 'Approve',
+      approved: 'Approved. It goes live on schedule.',
+      nothing: 'Nothing scheduled.',
+      media: 'See media',
+      openPost: 'Open post',
+      approvedBy: 'approved by {who}',
+      channel: 'Channel',
+      mediaUrl: 'Media link',
+      mediaHint: 'Public https link to the video or image.',
+      caption: 'Caption',
+      editResets: 'Changing the caption sends the post back to draft: it needs approval again.',
+      when: 'Date and time',
+      blocked: 'The checklist blocked the caption',
+      dryRun: 'Test mode: posting to social networks is not on yet. An approved post is marked as published without leaving here.',
+      status: { Draft: 'Draft', Approved: 'Approved', Publishing: 'Publishing', Published: 'Published', Failed: 'Failed' },
     },
     brandProfile: {
       title: 'Brand profile',
