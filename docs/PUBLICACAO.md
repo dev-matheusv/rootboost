@@ -75,7 +75,24 @@ Os 9 reels do MedlyCare (`Videos\MedlyCare Reels\finais\`, com a legenda por can
   retomada depois de queda não publica duas vezes; 3 tentativas e fica `Failed`; mídia só https.
 - **Console (RB-23):** tela Publicações com agenda da semana, novo post, editar legenda e horário, aprovar (bloqueio
   da checklist mostra o motivo) e aviso de modo de teste lido de `GET /admin/publications/mode`.
-- **Falta:** publicadores reais (RB-22 Instagram/Facebook, RB-24 LinkedIn) e upload de mídia (hoje é link https).
+- **Publicadores reais (RB-22, 24/10/2026)**, conferidos na doc oficial:
+  - **Instagram** (`InstagramPublisher`): container (`image_url`, ou `video_url` + `media_type=REELS` pra .mp4/.mov,
+    e `caption`), espera o `status_code` virar FINISHED (1 consulta por minuto, até 5), `media_publish` com
+    `creation_id` e busca o `permalink`. Container PUBLISHED na retomada = já está no ar, não publica de novo.
+    Limite da conta: 100 posts por API em 24 h.
+  - **Página do Facebook** (`FacebookPagePublisher`): foto por `/{page}/photos` com `url` e `caption`; link
+    `https://www.facebook.com/{post_id}`. **Vídeo na Página ainda não** (exige upload em partes): a API recusa na
+    criação. Limite conhecido: sem container, uma queda entre o post e a gravação pode repetir o post.
+  - Token sempre no cabeçalho Authorization, nunca na URL.
+- **Falta:** LinkedIn (RB-24, adiado), vídeo na Página do Facebook e upload de mídia (hoje é link https público:
+  a Meta baixa a mídia do link, então ele precisa abrir sem login).
+
+### Como ligar em produção (Railway)
+1. `Social__Accounts__0__Brand=medlycare`, `Social__Accounts__0__Channel=Instagram`,
+   `Social__Accounts__0__AccountId=<id do usuário do Instagram>`, `Social__Accounts__0__AccessToken=<token>`.
+2. Mesmo formato com índice 1 pra Página do Facebook (`Channel=Facebook`, `AccountId=<id da Página>`, token de Página).
+3. Permissões: `instagram_basic`, `instagram_content_publish`, `pages_read_engagement`, `pages_manage_posts`.
+4. `Social__Live=true`. Testar com um post aprovado de imagem antes do primeiro Reels.
 
 ## LinkedIn: adiado (2026-10-23)
 - A Community Management API só libera pra empresa registrada, com **e-mail corporativo** (gmail é recusado), página
