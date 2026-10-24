@@ -21,6 +21,9 @@ public sealed class RootBoostDbContext : DbContext
 
     public DbSet<Publication> Publications => Set<Publication>();
 
+    /// <summary>Snapshot diário de métricas de anúncio (Meta e o que vier). Uma linha por objeto e dia.</summary>
+    public DbSet<AdInsightDaily> AdInsights => Set<AdInsightDaily>();
+
     protected override void OnModelCreating(ModelBuilder b)
     {
         var view = b.Entity<LandingViewDaily>();
@@ -85,6 +88,31 @@ public sealed class RootBoostDbContext : DbContext
             pub.Property(x => x.UpdatedAt).HasConversion(bin);
             pub.Property(x => x.ApprovedAt).HasConversion(bin);
             pub.Property(x => x.PublishingStartedAt).HasConversion(bin);
+        }
+
+        var ad = b.Entity<AdInsightDaily>();
+        ad.HasKey(x => x.Id);
+        ad.Property(x => x.BrandKey).HasMaxLength(64).IsRequired();
+        ad.Property(x => x.Platform).HasMaxLength(16).IsRequired();
+        ad.Property(x => x.AccountId).HasMaxLength(64).IsRequired();
+        ad.Property(x => x.Level).HasConversion<string>().HasMaxLength(16);
+        ad.Property(x => x.ObjectId).HasMaxLength(64).IsRequired();
+        ad.Property(x => x.ObjectName).HasMaxLength(400).IsRequired();
+        ad.Property(x => x.CampaignId).HasMaxLength(64);
+        ad.Property(x => x.Currency).HasMaxLength(3).IsRequired();
+        ad.Property(x => x.Spend).HasPrecision(18, 2);
+        // A chave natural garante no banco o que o upsert garante no código: nunca duas linhas do mesmo objeto no mesmo dia.
+        ad.HasIndex(x => new { x.Platform, x.AccountId, x.Level, x.ObjectId, x.Date }).IsUnique();
+        ad.HasIndex(x => new { x.BrandKey, x.Level, x.Date });
+        if (Database.IsSqlite())
+        {
+            ad.Property(x => x.FetchedAt).HasConversion(new DateTimeOffsetToBinaryConverter());
+            // SQLite não soma nem compara decimal no servidor; guardado como double basta pra dinheiro com 2 casas.
+            ad.Property(x => x.Spend).HasConversion<double>();
+        }
+        else
+        {
+            ad.Property(x => x.FetchedAt).HasConversion(new ValueConverter<DateTimeOffset, DateTimeOffset>(v => v.ToUniversalTime(), v => v));
         }
 
         var order = b.Entity<Order>();

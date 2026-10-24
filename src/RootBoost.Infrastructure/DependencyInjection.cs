@@ -46,6 +46,20 @@ public static class DependencyInjection
         if (!string.Equals(config["Social:SchedulerEnabled"], "false", StringComparison.OrdinalIgnoreCase))
             services.AddHostedService<RootBoost.Infrastructure.Publishing.PublicationScheduler>();
 
+        // --- Anúncios (RB-13): só leitura. Ads:Reader=None (padrão) não chama nada; Fake = dados de mentira. ---
+        var adsReader = config["Ads:Reader"] ?? "None";
+        var fakeAds = string.Equals(adsReader, "Fake", StringComparison.OrdinalIgnoreCase);
+        services.AddSingleton<RootBoost.Application.Ads.IAdAccountDirectory>(new RootBoost.Infrastructure.Ads.ConfigAdAccountDirectory(config, fakeAds));
+        if (fakeAds) services.AddSingleton<RootBoost.Application.Ads.IAdInsightsReader, RootBoost.Infrastructure.Ads.FakeAdInsightsReader>();
+        var stopRule = new RootBoost.Application.Ads.AdsStopRule();
+        config.GetSection(RootBoost.Application.Ads.AdsStopRule.Section).Bind(stopRule);
+        services.AddSingleton(stopRule);
+        services.AddScoped<RootBoost.Application.Ads.IAdInsightStore, EfAdInsightStore>();
+        services.AddScoped<RootBoost.Application.Ads.SyncAdInsights>();
+        if (!string.Equals(adsReader, "None", StringComparison.OrdinalIgnoreCase) &&
+            !string.Equals(config["Ads:SyncEnabled"], "false", StringComparison.OrdinalIgnoreCase))
+            services.AddHostedService<RootBoost.Infrastructure.Ads.AdInsightsScheduler>();
+
         // Analytics de topo de funil: contador de visitas (denominador da conversão) + relatório.
         services.AddScoped<IVisitStore, RootBoost.Infrastructure.Analytics.EfVisitStore>();
         services.AddScoped<ProductPerformanceReport>();
