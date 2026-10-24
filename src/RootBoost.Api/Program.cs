@@ -129,6 +129,11 @@ app.MapGet("/admin/knowledge/{**name}", (string name, IKnowledgeBase kb) =>
     return doc is null ? Results.NotFound() : Results.Json(doc.Raw);
 }).RequireAuthorization(AuthSetup.AdminPolicy);
 
+// Modo da publicação, pro Console avisar quando é teste (Social:Live=false) e não mentir quando ligar.
+app.MapGet("/admin/publications/mode", (IConfiguration cfg) =>
+    Results.Ok(new { live = string.Equals(cfg["Social:Live"], "true", StringComparison.OrdinalIgnoreCase) }))
+    .RequireAuthorization(AuthSetup.AdminPolicy);
+
 // Roda o job de publicação agora (o agendador já roda a cada minuto; isto é pra teste e operação).
 app.MapPost("/admin/publications/run", async (RootBoost.Application.Publishing.PublishDuePublications job, CancellationToken ct) =>
     Results.Ok(await job.RunAsync(ct))).RequireAuthorization(AuthSetup.AdminPolicy);

@@ -74,6 +74,13 @@ public abstract class PublicationApiTestsBase
     }
 
     [Fact]
+    public async Task Mode_reports_dry_run_by_default()
+    {
+        var mode = await Client().GetFromJsonAsync<JsonElement>("/admin/publications/mode");
+        Assert.False(mode.GetProperty("live").GetBoolean());
+    }
+
+    [Fact]
     public async Task Invalid_input_is_rejected()
     {
         var client = Client();
