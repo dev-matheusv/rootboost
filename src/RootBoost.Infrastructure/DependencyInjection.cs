@@ -38,9 +38,19 @@ public static class DependencyInjection
         // --- Publicação própria (Fase 4). Social:Live=false (padrão) = só o publicador de mentira: nada sai pra rede. ---
         services.AddScoped<RootBoost.Application.Publishing.IPublicationStore, EfPublicationStore>();
         if (!string.Equals(config["Social:Live"], "true", StringComparison.OrdinalIgnoreCase))
+        {
             foreach (var channel in Enum.GetValues<RootBoost.Domain.SocialChannel>())
                 services.AddSingleton<RootBoost.Application.Publishing.ISocialPublisher>(
                     new RootBoost.Infrastructure.Publishing.FakeSocialPublisher(channel));
+        }
+        else
+        {
+            // Publicação de verdade (RB-22): Instagram e Página do Facebook. LinkedIn ainda sem publicador: o job
+            // marca o post com erro claro em vez de fingir que publicou.
+            services.AddSingleton(new RootBoost.Infrastructure.Publishing.SocialAccounts(config));
+            services.AddSingleton<RootBoost.Application.Publishing.ISocialPublisher, RootBoost.Infrastructure.Publishing.InstagramPublisher>();
+            services.AddSingleton<RootBoost.Application.Publishing.ISocialPublisher, RootBoost.Infrastructure.Publishing.FacebookPagePublisher>();
+        }
         services.AddScoped<RootBoost.Application.Publishing.ApprovePublication>();
         services.AddScoped<RootBoost.Application.Publishing.PublishDuePublications>();
         if (!string.Equals(config["Social:SchedulerEnabled"], "false", StringComparison.OrdinalIgnoreCase))
@@ -51,6 +61,8 @@ public static class DependencyInjection
         var fakeAds = string.Equals(adsReader, "Fake", StringComparison.OrdinalIgnoreCase);
         services.AddSingleton<RootBoost.Application.Ads.IAdAccountDirectory>(new RootBoost.Infrastructure.Ads.ConfigAdAccountDirectory(config, fakeAds));
         if (fakeAds) services.AddSingleton<RootBoost.Application.Ads.IAdInsightsReader, RootBoost.Infrastructure.Ads.FakeAdInsightsReader>();
+        else if (string.Equals(adsReader, "Meta", StringComparison.OrdinalIgnoreCase))
+            services.AddSingleton<RootBoost.Application.Ads.IAdInsightsReader, RootBoost.Infrastructure.Ads.MetaAdsInsightsReader>();
         var stopRule = new RootBoost.Application.Ads.AdsStopRule();
         config.GetSection(RootBoost.Application.Ads.AdsStopRule.Section).Bind(stopRule);
         services.AddSingleton(stopRule);

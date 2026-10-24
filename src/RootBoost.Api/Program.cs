@@ -207,6 +207,9 @@ brandProfile.MapPost("/publications", async (string key, PublicationInput input,
     if (!(await brands.ListAsync(ct)).Any(b => b.Key == brandKey)) return Results.NotFound();
     if (!Enum.TryParse<SocialChannel>(input.Channel, true, out var channel) || !Enum.IsDefined(channel))
         return Results.BadRequest(new { error = $"canal inválido: '{input.Channel}'" });
+    if (channel == SocialChannel.Facebook && Uri.TryCreate(input.MediaUrl, UriKind.Absolute, out _) &&
+        RootBoost.Infrastructure.Publishing.InstagramPublisher.IsVideo(input.MediaUrl))
+        return Results.BadRequest(new { error = "vídeo na Página do Facebook ainda não é suportado; use imagem ou publique à mão" });
     try
     {
         var publication = new Publication(brandKey, channel, input.MediaUrl, input.Caption, input.ScheduledFor, time.GetUtcNow());
