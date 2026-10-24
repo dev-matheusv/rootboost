@@ -8,6 +8,15 @@ export default {
     empty: 'Nada por aqui ainda.',
     error: 'Não foi possível carregar. Confira a conexão com a API.',
   },
+  password: {
+    title: 'Trocar senha',
+    current: 'Senha atual',
+    new: 'Senha nova',
+    confirm: 'Repita a senha nova',
+    hint: 'Pelo menos {n} caracteres.',
+    mismatch: 'As senhas não conferem.',
+    changed: 'Senha trocada. Use a nova no próximo login.',
+  },
   form: { email: 'E-mail', password: 'Senha' },
   nav: { overview: 'Visão geral', orders: 'Pedidos', brand: 'Marca', allBrands: 'Todas as marcas', darkMode: 'Modo escuro', brandProfile: 'Perfil da marca', campaigns: 'Campanhas', publications: 'Publicações' },
   pages: {

@@ -21,6 +21,9 @@ public sealed class RootBoostDbContext : DbContext
 
     public DbSet<Publication> Publications => Set<Publication>();
 
+    /// <summary>Senha do dono do Console (só o hash). Ver ConsoleCredential.</summary>
+    public DbSet<ConsoleCredential> ConsoleCredentials => Set<ConsoleCredential>();
+
     /// <summary>Snapshot diário de métricas de anúncio (Meta e o que vier). Uma linha por objeto e dia.</summary>
     public DbSet<AdInsightDaily> AdInsights => Set<AdInsightDaily>();
 
@@ -114,6 +117,14 @@ public sealed class RootBoostDbContext : DbContext
         {
             ad.Property(x => x.FetchedAt).HasConversion(new ValueConverter<DateTimeOffset, DateTimeOffset>(v => v.ToUniversalTime(), v => v));
         }
+
+        var cred = b.Entity<ConsoleCredential>();
+        cred.HasKey(x => x.Email);
+        cred.Property(x => x.Email).HasMaxLength(320);
+        cred.Property(x => x.PasswordHash).HasMaxLength(512).IsRequired();
+        cred.Property(x => x.SourceEnvHash).HasMaxLength(512).IsRequired();
+        if (Database.IsSqlite()) cred.Property(x => x.UpdatedAt).HasConversion(new DateTimeOffsetToBinaryConverter());
+        else cred.Property(x => x.UpdatedAt).HasConversion(new ValueConverter<DateTimeOffset, DateTimeOffset>(v => v.ToUniversalTime(), v => v));
 
         var order = b.Entity<Order>();
         order.HasKey(o => o.PaymentId);
