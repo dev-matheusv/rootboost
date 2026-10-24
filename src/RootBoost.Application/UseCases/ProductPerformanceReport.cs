@@ -31,9 +31,8 @@ public sealed class ProductPerformanceReport
 
         // Cada Order persistido é um pagamento capturado (venda). Failed = pago mas sem fulfillment,
         // ainda conta como conversão do visitante. Filtra por janela quando pedida.
-        var orders = since is { } s
-            ? allOrders.Where(o => o.CreatedAt >= s).ToList()
-            : allOrders.ToList();
+        // Pedido de teste (sandbox, Stripe em modo teste) nunca é venda: fica fora de pedidos e receita.
+        var orders = allOrders.Where(o => !o.IsTest && (since is not { } s || o.CreatedAt >= s)).ToList();
 
         var ordersByProduct = orders
             .GroupBy(o => o.ProductKey, StringComparer.OrdinalIgnoreCase)
@@ -68,8 +67,8 @@ public sealed class ProductPerformanceReport
                 ?? productOrders.FirstOrDefault()?.Currency
                 ?? "USD";
 
-            double conversion = views > 0 ? (double)orderCount / views : 0d;
-            decimal revenuePerVisitor = views > 0 ? Math.Round(revenue / views, 4) : 0m;
+            double? conversion = views > 0 ? (double)orderCount / views : null;
+            decimal? revenuePerVisitor = views > 0 ? Math.Round(revenue / views, 4) : null;
 
             rows.Add(new ProductPerformance(
                 ProductKey: key,
@@ -87,8 +86,8 @@ public sealed class ProductPerformanceReport
         // Ranking: quem rende mais por visitante primeiro (dinheiro é o placar real), depois
         // conversão, depois volume de visitas. Produtos sem tração caem naturalmente pro fim.
         var ranked = rows
-            .OrderByDescending(r => r.RevenuePerVisitor)
-            .ThenByDescending(r => r.ConversionRate)
+            .OrderByDescending(r => r.RevenuePerVisitor ?? -1m)
+            .ThenByDescending(r => r.ConversionRate ?? -1d)
             .ThenByDescending(r => r.Views)
             .ThenBy(r => r.ProductKey, StringComparer.OrdinalIgnoreCase)
             .ToList();

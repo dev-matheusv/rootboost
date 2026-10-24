@@ -147,6 +147,17 @@ app.MapGet("/admin/ads/accounts", (RootBoost.Application.Ads.IAdAccountDirectory
     Results.Ok(new { reader = cfg["Ads:Reader"] ?? "None", accounts = accounts.All }))
     .RequireAuthorization(AuthSetup.AdminPolicy);
 
+// Marca como teste um pedido que entrou antes da marcação automática (sandbox antigo). Só tira dos números;
+// o pedido continua no histórico.
+app.MapPost("/admin/orders/{paymentId}/mark-test", async (string paymentId, IOrderRepository orders, CancellationToken ct) =>
+{
+    var order = await orders.GetByPaymentIdAsync(paymentId, ct);
+    if (order is null) return Results.NotFound();
+    order.MarkAsTest();
+    await orders.UpdateAsync(order, ct);
+    return Results.Ok(OrderDto.From(order));
+}).RequireAuthorization(AuthSetup.AdminPolicy);
+
 // --- Marcas (Admin): a loja, o MedlyCare e quem mais entrar. ---
 app.MapGet("/admin/brands", async (IBrandStore brands, CancellationToken ct) =>
     Results.Ok((await brands.ListAsync(ct)).Select(b => new { key = b.Key, name = b.Name, defaultLanguage = b.DefaultLanguage })))
@@ -526,12 +537,12 @@ static bool TryReadBrand(HttpContext ctx, out string? brand)
 record OrderDto(string PaymentId, string ProductKey, int Quantity, string Status, string Email,
                 string? SupplierOrderId, string? Tracking, decimal Amount, string Currency,
                 string ShipName, string ShipCountry, DateTimeOffset CreatedAt, string? FailureReason,
-                string BrandKey)
+                string BrandKey, bool IsTest)
 {
     public static OrderDto From(Order o) => new(
         o.PaymentId, o.ProductKey, o.Quantity, o.Status.ToString(), o.CustomerEmail,
         o.SupplierOrderId, o.TrackingNumber, o.AmountPaid, o.Currency,
-        o.ShipTo.Name, o.ShipTo.CountryCode, o.CreatedAt, o.FailureReason, o.BrandKey);
+        o.ShipTo.Name, o.ShipTo.CountryCode, o.CreatedAt, o.FailureReason, o.BrandKey, o.IsTest);
 }
 
 record PublicationInput(string Channel, string MediaUrl, string Caption, DateTimeOffset ScheduledFor);

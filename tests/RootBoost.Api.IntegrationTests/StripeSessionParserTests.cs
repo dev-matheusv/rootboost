@@ -87,4 +87,15 @@ public class StripeSessionParserTests
         Assert.Equal(1, pay.Quantity);
         Assert.Equal("", pay.ProductKey);                  // PlaceOrderOnPayment escala pra humano
     }
+
+    [Fact]
+    public void Livemode_false_marks_the_payment_as_test_and_missing_or_true_does_not()
+    {
+        var test = PaidSession.Replace("\"id\": \"cs_test_abc\",", "\"id\": \"cs_test_abc\", \"livemode\": false,");
+        var live = PaidSession.Replace("\"id\": \"cs_test_abc\",", "\"id\": \"cs_test_abc\", \"livemode\": true,");
+
+        Assert.True(StripeSessionParser.ToPaymentEvent(Parse(test))!.IsTest);
+        Assert.False(StripeSessionParser.ToPaymentEvent(Parse(live))!.IsTest);
+        Assert.False(StripeSessionParser.ToPaymentEvent(Parse(PaidSession))!.IsTest); // sem o campo: não presume teste
+    }
 }

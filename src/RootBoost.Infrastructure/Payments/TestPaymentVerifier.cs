@@ -42,7 +42,9 @@ public sealed class TestPaymentVerifier : IPaymentVerifier
             ShipTo: new ShippingAddress(S("name"), S("line1"), S("city"), S("state"), S("zip"), S("countryCode"),
                                         string.IsNullOrEmpty(S("phone")) ? null : S("phone")),
             Amount: D("amount"),
-            Currency: string.IsNullOrEmpty(S("currency")) ? "USD" : S("currency"));
+            Currency: string.IsNullOrEmpty(S("currency")) ? "USD" : S("currency"),
+            // Padrão: é teste. Só "isTest": false explícito simula venda real (teste de ponta a ponta do relatório).
+            IsTest: !(r.TryGetProperty("isTest", out var t) && t.ValueKind == JsonValueKind.False));
 
         return Task.FromResult<PaymentEvent?>(evt);
     }
