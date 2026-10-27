@@ -28,10 +28,14 @@ cliente → **RB-47** regressão com os reels aprovados → **RB-51** tela do es
 que propõe. Worker no PC do Matheus agora; **render na nuvem** é o passo seguinte (cliente não pode
 depender de máquina local).
 
-### Onda 3: a IA da plataforma (o cliente conversa e ela faz)
-**Primeiro decidir o motor (RB-17):** reaproveitar o do RootFlow (RAG, embeddings, pgvector) e o
-molde do assistente do MedlyCare v14 (streaming, tool use, cartão de confirmação), em vez de criar um
-terceiro. Depois, nesta ordem:
+### Onda 3: a IA da plataforma, a Root AI (o cérebro, junto com o DMaker)
+**Decidido (27/10):** a IA do RootFlow vira produto próprio, a **Root AI**, usada no RootFlow, no
+MedlyCare e no RootBoost (RB-17, RB-56). Base: o RAG do RootFlow (documentos da empresa, embeddings,
+pgvector, resposta fundamentada) + o molde do assistente do MedlyCare v14 (streaming, tool use,
+cartão de confirmação). Fontes: documentos do cliente, conhecimento de marketing acumulado
+(`knowledge/`), conectores e internet. **Autonomia por marca:** Copiloto (propõe e espera aprovação,
+padrão) ou Piloto automático (aplica dentro de limites e avisa, com teto de gasto, só ações
+reversíveis, registro e desfazer). Publicar conteúdo novo sempre com aprovação. Depois, nesta ordem:
 - **RB-16** acervo da marca (o cliente joga fotos, vídeos, ideias, documentos; a IA usa como fonte).
 - **RB-45** roteiro e textos pela IA (usa playbook + prova da marca).
 - **RB-55** assistente por texto e **áudio** ("3 reels por semana, seg/qua/sex 12h") que planeja, gera e agenda.
@@ -56,8 +60,7 @@ captação pelo WhatsApp (amadurecer antes) → LinkedIn automático → vídeo 
   "esqueci a senha" e a política de privacidade.
 - **Meta pra clientes (RB-41):** verificação da empresa, revisão do app (vídeo das telas), app em
   modo Live. Depende do domínio (política de privacidade).
-- **Segurança:** 2FA no Facebook, trocar `Orders__ApiKey`, apagar `Database__Provider` e
-  `Database__ImportFromSqlite` no Railway.
+- ~~Segurança: 2FA no Facebook, trocar `Orders__ApiKey`, limpar variáveis antigas~~ (feito pelo Matheus em 27/10).
 
 ## Qualidade e desempenho (vale em toda onda)
 - Toda entrega: testes (unitário + integração em Postgres), CI verde, conferência em produção.
