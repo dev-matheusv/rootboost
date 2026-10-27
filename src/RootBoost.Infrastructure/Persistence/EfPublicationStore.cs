@@ -37,6 +37,9 @@ public sealed class EfPublicationStore : IPublicationStore
             .ToListAsync(ct);
     }
 
+    public async Task RemoveAsync(Publication publication, CancellationToken ct = default) =>
+        await _db.Publications.Where(p => p.Id == publication.Id).ExecuteDeleteAsync(ct);
+
     public async Task SaveAsync(Publication publication, CancellationToken ct = default)
     {
         if (_db.Entry(publication).State == EntityState.Detached) _db.Publications.Update(publication);

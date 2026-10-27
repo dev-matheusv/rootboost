@@ -96,6 +96,8 @@ export default {
       uploadFile: 'Upload file (image or video)',
       uploadHint: 'JPG, PNG, MP4 or MOV up to 300 MB. Or paste an https link below.',
       uploaded: 'File uploaded.',
+      delete: 'Delete',
+      deleteConfirm: 'The post leaves the schedule and is not published. The media file stays saved.',
       mediaUrl: 'Media link',
       mediaHint: 'Public https link to the video or image.',
       caption: 'Caption',

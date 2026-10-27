@@ -100,4 +100,57 @@ public class PublicationApiPostgresTests : PublicationApiTestsBase, IClassFixtur
     private readonly PostgresWebApplicationFactory _factory;
     public PublicationApiPostgresTests(PostgresWebApplicationFactory factory) => _factory = factory;
     protected override HttpClient Client() => _factory.CreateClient();
+
+}
+
+public class PublicationEditApiTests : IClassFixture<CustomWebApplicationFactory>
+{
+    private const string Base = "/admin/brands/medlycare/publications";
+    private readonly CustomWebApplicationFactory _factory;
+    public PublicationEditApiTests(CustomWebApplicationFactory factory) => _factory = factory;
+
+    private async Task<string> Create(HttpClient c, string channel, string media, DateTimeOffset when)
+    {
+        var res = await c.PostAsJsonAsync(Base, new { channel, mediaUrl = media, caption = $"Agenda para fisioterapia {Guid.NewGuid():N}", scheduledFor = when });
+        Assert.Equal(HttpStatusCode.Created, res.StatusCode);
+        return (await res.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetString()!;
+    }
+
+    [Fact]
+    public async Task Media_of_an_approved_post_can_be_swapped_and_it_returns_to_draft()
+    {
+        var c = _factory.CreateClient();
+        var id = await Create(c, "instagram", "https://cdn.exemplo.com/velho.mp4", DateTimeOffset.UtcNow.AddDays(2));
+        Assert.Equal(HttpStatusCode.OK, (await c.PostAsync($"{Base}/{id}/approve", null)).StatusCode);
+
+        var res = await c.PutAsJsonAsync($"{Base}/{id}/media", new { mediaUrl = "https://cdn.exemplo.com/novo.mp4" });
+        Assert.Equal(HttpStatusCode.OK, res.StatusCode);
+        var body = await res.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("Draft", body.GetProperty("status").GetString());
+        Assert.Equal("https://cdn.exemplo.com/novo.mp4", body.GetProperty("mediaUrl").GetString());
+
+        Assert.Equal(HttpStatusCode.BadRequest, (await c.PutAsJsonAsync($"{Base}/{id}/media", new { mediaUrl = "http://inseguro/x.mp4" })).StatusCode);
+    }
+
+    [Fact]
+    public async Task Draft_can_be_deleted_but_a_published_post_cannot()
+    {
+        var c = _factory.CreateClient();
+        var draft = await Create(c, "instagram", "https://cdn.exemplo.com/a.jpg", DateTimeOffset.UtcNow.AddDays(1));
+        Assert.Equal(HttpStatusCode.NoContent, (await c.DeleteAsync($"{Base}/{draft}")).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await c.DeleteAsync($"{Base}/{draft}")).StatusCode);
+
+        var live = await Create(c, "instagram", "https://cdn.exemplo.com/b.jpg", DateTimeOffset.UtcNow.AddMinutes(-1));
+        await c.PostAsync($"{Base}/{live}/approve", null);
+        await c.PostAsync("/admin/publications/run", null);
+        Assert.Equal(HttpStatusCode.Conflict, (await c.DeleteAsync($"{Base}/{live}")).StatusCode);
+    }
+
+    [Fact]
+    public async Task Facebook_post_cannot_get_a_video()
+    {
+        var c = _factory.CreateClient();
+        var id = await Create(c, "facebook", "https://cdn.exemplo.com/a.jpg", DateTimeOffset.UtcNow.AddDays(1));
+        Assert.Equal(HttpStatusCode.BadRequest, (await c.PutAsJsonAsync($"{Base}/{id}/media", new { mediaUrl = "https://cdn.exemplo.com/v.mp4" })).StatusCode);
+    }
 }

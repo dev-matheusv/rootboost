@@ -53,8 +53,7 @@ public sealed class Publication
     public Publication(string brandKey, SocialChannel channel, string mediaUrl, string caption,
         DateTimeOffset scheduledFor, DateTimeOffset now)
     {
-        if (string.IsNullOrWhiteSpace(mediaUrl) || !Uri.TryCreate(mediaUrl, UriKind.Absolute, out var uri) || uri.Scheme != Uri.UriSchemeHttps)
-            throw new ArgumentException("a mídia precisa de URL https pública", nameof(mediaUrl));
+        EnsureHttps(mediaUrl);
         if (string.IsNullOrWhiteSpace(caption)) throw new ArgumentException("legenda vazia", nameof(caption));
 
         Id = Guid.NewGuid();
@@ -79,6 +78,21 @@ public sealed class Publication
         ResetApproval();
         UpdatedAt = now;
     }
+
+    /// <summary>Troca o vídeo ou a imagem. Conteúdo novo: a aprovação anterior não vale mais.</summary>
+    public void ChangeMedia(string mediaUrl, DateTimeOffset now)
+    {
+        EnsureEditable();
+        EnsureHttps(mediaUrl);
+        if (mediaUrl == MediaUrl) return;
+        MediaUrl = mediaUrl;
+        CaptionVersion++;
+        ResetApproval();
+        UpdatedAt = now;
+    }
+
+    /// <summary>Só o que ainda não foi pro ar (nem está indo) pode ser apagado.</summary>
+    public bool CanDelete => Status is PublicationStatus.Draft or PublicationStatus.Approved or PublicationStatus.Failed;
 
     public void Reschedule(DateTimeOffset scheduledFor, DateTimeOffset now)
     {
@@ -149,11 +163,25 @@ public sealed class Publication
             throw new InvalidOperationException($"publicação em {Status} não pode ser alterada");
     }
 
+    /// <summary>
+    /// Conteúdo mudou: volta pra rascunho e descarta o container já preparado no canal (ele carrega a legenda e a
+    /// mídia antigas; reaproveitar publicaria o conteúdo errado). Tentativas e erro zeram: é um conteúdo novo.
+    /// </summary>
     private void ResetApproval()
     {
         Status = PublicationStatus.Draft;
         ApprovedBy = null;
         ApprovedAt = null;
         ApprovedCaptionVersion = null;
+        ExternalId = null;
+        PublishingStartedAt = null;
+        Attempts = 0;
+        Error = null;
+    }
+
+    private static void EnsureHttps(string mediaUrl)
+    {
+        if (string.IsNullOrWhiteSpace(mediaUrl) || !Uri.TryCreate(mediaUrl, UriKind.Absolute, out var uri) || uri.Scheme != Uri.UriSchemeHttps)
+            throw new ArgumentException("a mídia precisa de URL https pública", nameof(mediaUrl));
     }
 }

@@ -96,6 +96,8 @@ export default {
       uploadFile: 'Enviar arquivo (imagem ou vídeo)',
       uploadHint: 'JPG, PNG, MP4 ou MOV até 300 MB. Ou cole um link https abaixo.',
       uploaded: 'Arquivo enviado.',
+      delete: 'Apagar',
+      deleteConfirm: 'O post sai da agenda e não é publicado. O arquivo de mídia continua salvo.',
       mediaUrl: 'Link da mídia',
       mediaHint: 'Link https público do vídeo ou da imagem.',
       caption: 'Legenda',
