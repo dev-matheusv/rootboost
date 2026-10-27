@@ -8,14 +8,15 @@ Cards no Jira RB; o roadmap por fases segue em `ROADMAP.md`.
 Console com login, marcas, perfil da marca com prova, checklist de copy, base de conhecimento,
 leitura de anúncios da Meta com regra de parada, publicação real no Instagram e foto no Facebook,
 agenda com aprovação, upload de mídia, trocar mídia e apagar, importar reel pronto (um post por
-canal, LinkedIn manual), Postgres em todo lugar.
+canal, LinkedIn manual), capa do Reels, Reels automático na Página do Facebook, Postgres em todo lugar.
 
 ## Ondas (ordem de entrega)
 
 ### Onda 1: fechar o ciclo do MedlyCare com qualidade (agora)
 | Card | O quê | Por quê agora |
 |---|---|---|
-| RB-48 | Capa do Reels e "compartilhar no feed" | Último pedido aberto do chat de marketing pros reels de novembro. |
+| ~~RB-48~~ | ~~Capa do Reels e "compartilhar no feed"~~ (feito 27/10) | |
+| ~~RB-57~~ | ~~Reels automático na Página do Facebook~~ (feito 27/10; 1º post real é o teste) | |
 | NOVO | Alerta de falha: post que falhou e sync de anúncios com erro avisam (log + tela + depois push) | Hoje uma falha só aparece se alguém abrir o Console. Qualidade de operação. |
 | NOVO | Saúde da conexão Meta: checagem diária (a do script de 24/10) com aviso | O bloqueio de 25/10 só foi notado por acaso. |
 | NOVO | Limpeza: tirar os mp4 provisórios da landing (repo pesado) depois que os posts usarem o bucket | Repositório leve, uma fonte só de mídia. |
