@@ -27,15 +27,17 @@ public sealed class RootBoostDbContext : DbContext
     /// <summary>Snapshot diário de métricas de anúncio (Meta e o que vier). Uma linha por objeto e dia.</summary>
     public DbSet<AdInsightDaily> AdInsights => Set<AdInsightDaily>();
 
+    /// <summary>Postgres guarda timestamptz e o Npgsql só aceita offset zero: normaliza ao gravar.</summary>
+    private static readonly ValueConverter<DateTimeOffset, DateTimeOffset> Utc = new(v => v.ToUniversalTime(), v => v);
+
     protected override void OnModelCreating(ModelBuilder b)
     {
         var view = b.Entity<LandingViewDaily>();
         view.HasKey(x => new { x.ProductKey, x.Lang, x.DateUtc });
         view.Property(x => x.ProductKey).HasMaxLength(64);
         view.Property(x => x.Lang).HasMaxLength(8);
-        // Só a data importa. No Postgres vira "date", o que dispensa o Kind do DateTime
-        // (dado importado do SQLite chega como Unspecified e o timestamptz recusaria).
-        if (!Database.IsSqlite()) view.Property(x => x.DateUtc).HasColumnType("date");
+        // Só a data importa: "date" dispensa o Kind do DateTime (timestamptz recusaria Unspecified).
+        view.Property(x => x.DateUtc).HasColumnType("date");
 
         var brand = b.Entity<Brand>();
         brand.HasKey(x => x.Key);
@@ -43,7 +45,7 @@ public sealed class RootBoostDbContext : DbContext
         brand.Property(x => x.Name).HasMaxLength(120).IsRequired();
         brand.Property(x => x.DefaultLanguage).HasMaxLength(8).IsRequired();
         brand.Property(x => x.VoiceJson).IsRequired().HasDefaultValue("{}");
-        if (!Database.IsSqlite()) brand.Property(x => x.VoiceJson).HasColumnType("jsonb");
+        brand.Property(x => x.VoiceJson).HasColumnType("jsonb");
         brand.Ignore(x => x.Voice);
 
         var proof = b.Entity<ProofItem>();
@@ -53,8 +55,6 @@ public sealed class RootBoostDbContext : DbContext
         proof.Property(x => x.Statement).HasMaxLength(1000).IsRequired();
         proof.Property(x => x.Source).HasMaxLength(500).IsRequired();
         proof.HasIndex(x => new { x.BrandKey, x.Active });
-        // Mesmo motivo dos pedidos: o SQLite não ordena por DateTimeOffset.
-        if (Database.IsSqlite()) proof.Property(x => x.CreatedAt).HasConversion(new DateTimeOffsetToBinaryConverter());
 
         var phrase = b.Entity<CustomerPhrase>();
         phrase.HasKey(x => x.Id);
@@ -83,15 +83,6 @@ public sealed class RootBoostDbContext : DbContext
         // Sem token de concorrência em UpdatedAt de propósito: o Postgres trunca pra microssegundo e o EF compararia
         // com o valor em ticks, dando conflito falso. Contra publicar duas vezes valem o ExternalId gravado antes do
         // publish, o FindPublishedAsync antes de repetir e o agendador numa instância só.
-        if (Database.IsSqlite())
-        {
-            var bin = new DateTimeOffsetToBinaryConverter();
-            pub.Property(x => x.ScheduledFor).HasConversion(bin);
-            pub.Property(x => x.CreatedAt).HasConversion(bin);
-            pub.Property(x => x.UpdatedAt).HasConversion(bin);
-            pub.Property(x => x.ApprovedAt).HasConversion(bin);
-            pub.Property(x => x.PublishingStartedAt).HasConversion(bin);
-        }
 
         var ad = b.Entity<AdInsightDaily>();
         ad.HasKey(x => x.Id);
@@ -107,24 +98,14 @@ public sealed class RootBoostDbContext : DbContext
         // A chave natural garante no banco o que o upsert garante no código: nunca duas linhas do mesmo objeto no mesmo dia.
         ad.HasIndex(x => new { x.Platform, x.AccountId, x.Level, x.ObjectId, x.Date }).IsUnique();
         ad.HasIndex(x => new { x.BrandKey, x.Level, x.Date });
-        if (Database.IsSqlite())
-        {
-            ad.Property(x => x.FetchedAt).HasConversion(new DateTimeOffsetToBinaryConverter());
-            // SQLite não soma nem compara decimal no servidor; guardado como double basta pra dinheiro com 2 casas.
-            ad.Property(x => x.Spend).HasConversion<double>();
-        }
-        else
-        {
-            ad.Property(x => x.FetchedAt).HasConversion(new ValueConverter<DateTimeOffset, DateTimeOffset>(v => v.ToUniversalTime(), v => v));
-        }
+        ad.Property(x => x.FetchedAt).HasConversion(Utc);
 
         var cred = b.Entity<ConsoleCredential>();
         cred.HasKey(x => x.Email);
         cred.Property(x => x.Email).HasMaxLength(320);
         cred.Property(x => x.PasswordHash).HasMaxLength(512).IsRequired();
         cred.Property(x => x.SourceEnvHash).HasMaxLength(512).IsRequired();
-        if (Database.IsSqlite()) cred.Property(x => x.UpdatedAt).HasConversion(new DateTimeOffsetToBinaryConverter());
-        else cred.Property(x => x.UpdatedAt).HasConversion(new ValueConverter<DateTimeOffset, DateTimeOffset>(v => v.ToUniversalTime(), v => v));
+        cred.Property(x => x.UpdatedAt).HasConversion(Utc);
 
         var order = b.Entity<Order>();
         order.HasKey(o => o.PaymentId);
@@ -139,20 +120,8 @@ public sealed class RootBoostDbContext : DbContext
         order.Property(o => o.BrandKey).HasMaxLength(64).IsRequired().HasDefaultValue(BrandKeys.Store);
         order.HasIndex(o => o.BrandKey);
 
-        if (Database.IsSqlite())
-        {
-            // SQLite can't ORDER BY a DateTimeOffset column; store it as a sortable binary long.
-            var dto = new DateTimeOffsetToBinaryConverter();
-            order.Property(o => o.CreatedAt).HasConversion(dto);
-            order.Property(o => o.UpdatedAt).HasConversion(dto);
-        }
-        else
-        {
-            // Postgres guarda timestamptz e o Npgsql só aceita offset zero: normaliza ao gravar.
-            var utc = new ValueConverter<DateTimeOffset, DateTimeOffset>(v => v.ToUniversalTime(), v => v);
-            order.Property(o => o.CreatedAt).HasConversion(utc);
-            order.Property(o => o.UpdatedAt).HasConversion(utc);
-        }
+        order.Property(o => o.CreatedAt).HasConversion(Utc);
+        order.Property(o => o.UpdatedAt).HasConversion(Utc);
 
         // Fast lookup for the CJ tracking webhook, which arrives keyed by supplier order id.
         order.HasIndex(o => o.SupplierOrderId);

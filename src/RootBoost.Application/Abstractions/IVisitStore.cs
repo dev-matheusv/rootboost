@@ -4,7 +4,7 @@ namespace RootBoost.Application.Abstractions;
 /// Registra visitas de landing por produto (sinal de topo de funil) e devolve as contagens.
 /// Sem PII: só contamos quantas vezes cada landing foi vista, por produto e idioma, por dia.
 /// É o denominador que falta pra calcular conversão (pedidos / visitas). A Infra implementa
-/// com um contador diário no SQLite (barato, sobrevive a restart).
+/// com um contador diário no banco (barato, sobrevive a restart).
 /// </summary>
 public interface IVisitStore
 {

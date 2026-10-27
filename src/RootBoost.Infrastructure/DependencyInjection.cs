@@ -29,7 +29,7 @@ public static class DependencyInjection
         var knowledgePath = config["Knowledge:Path"] ?? Path.Combine(contentRoot, "knowledge");
         services.AddSingleton<IKnowledgeBase>(_ => RootBoost.Infrastructure.Knowledge.FileKnowledgeBase.Load(knowledgePath));
 
-        // --- Persistence (EF Core): SQLite por padrão, Postgres com Database__Provider=Postgres ---
+        // --- Persistence (EF Core): Postgres sempre (ConnectionStrings__Postgres ou DATABASE_URL) ---
         services.AddDbContext<RootBoostDbContext>(o => DatabaseSetup.Configure(o, config));
         services.AddScoped<IOrderRepository, OrderRepository>();
         services.AddScoped<IBrandStore, EfBrandStore>();

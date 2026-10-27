@@ -54,13 +54,6 @@ public abstract class AdsApiTestsBase
     }
 }
 
-public class AdsApiSqliteTests : AdsApiTestsBase, IClassFixture<CustomWebApplicationFactory>
-{
-    private readonly CustomWebApplicationFactory _factory;
-    public AdsApiSqliteTests(CustomWebApplicationFactory factory) => _factory = factory;
-    protected override WebApplicationFactory<Program> Factory() => _factory;
-}
-
 public class AdsApiPostgresTests : AdsApiTestsBase, IClassFixture<PostgresWebApplicationFactory>
 {
     private readonly PostgresWebApplicationFactory _factory;
