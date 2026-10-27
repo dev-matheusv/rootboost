@@ -15,6 +15,17 @@ public class MetaPublishersTests
     private sealed class Graph : HttpMessageHandler
     {
         public List<(HttpMethod Method, string Path, string Query, string Body, string? Auth)> Calls { get; } = new();
+        public List<string?> FileUrls { get; } = new();
+        public Queue<string> ReelStatuses { get; } = new();
+
+        private string ReelStatus()
+        {
+            var s = ReelStatuses.Count > 0 ? ReelStatuses.Dequeue() : "ready";
+            var publish = s == "published" ? "published" : "draft";
+            var video = s == "published" ? "ready" : s;
+            var error = s == "error" ? ""","processing_phase":{"status":"error","error":{"message":"Resolution too low"}}""" : "";
+            return $$"""{"status":{"video_status":"{{video}}","publishing_phase":{"status":"not_started","publish_status":"{{publish}}"}{{error}}},"id":"vid-7"}""";
+        }
         public Queue<string> Statuses { get; } = new();
         public string? PhotoResponse { get; set; } = """{"id":"55","post_id":"200_55"}""";
 
@@ -23,15 +34,20 @@ public class MetaPublishersTests
             var body = req.Content is null ? "" : await req.Content.ReadAsStringAsync(ct);
             var path = req.RequestUri!.AbsolutePath;
             Calls.Add((req.Method, path, req.RequestUri.Query, body, req.Headers.Authorization?.ToString()));
+            if (req.Headers.TryGetValues("file_url", out var fileUrl)) FileUrls.Add(fileUrl.Single());
 
             string json =
                 path.EndsWith("/media") ? """{"id":"cont-1"}""" :
                 path.EndsWith("/media_publish") ? """{"id":"media-9"}""" :
                 path.EndsWith("/photos") ? PhotoResponse! :
+                path.EndsWith("/video_reels") && body.Contains("upload_phase=start") ? """{"video_id":"vid-7","upload_url":"https://rupload.facebook.com/video-upload/vid-7"}""" :
+                path.EndsWith("/video_reels") && body.Contains("upload_phase=finish") ? """{"success":true}""" :
+                req.RequestUri.Host == "rupload.facebook.com" ? """{"success":true}""" :
+                req.RequestUri.Query.Contains("fields=status") && !req.RequestUri.Query.Contains("status_code") ? ReelStatus() :
                 req.RequestUri.Query.Contains("status_code") ? $$"""{"status_code":"{{(Statuses.Count > 0 ? Statuses.Dequeue() : "FINISHED")}}","id":"cont-1"}""" :
                 req.RequestUri.Query.Contains("permalink") ? """{"permalink":"https://www.instagram.com/reel/abc/","id":"media-9"}""" :
                 """{"error":{"message":"rota inesperada","code":100}}""";
-            var status = json.Contains("\"error\"") ? HttpStatusCode.BadRequest : HttpStatusCode.OK;
+            var status = json.StartsWith("{\"error\"") ? HttpStatusCode.BadRequest : HttpStatusCode.OK;
             return new HttpResponseMessage(status) { Content = new StringContent(json, Encoding.UTF8, "application/json") };
         }
     }
@@ -187,26 +203,69 @@ public class MetaPublishersTests
         Assert.Equal("https://www.facebook.com/200_55", published.Url);
     }
 
+    private static (FacebookPagePublisher Pub, List<TimeSpan> Waits) Facebook(Graph g)
+    {
+        var waits = new List<TimeSpan>();
+        return (new FacebookPagePublisher(new Factory(g), Accounts(), Meta, (d, _) => { waits.Add(d); return Task.CompletedTask; }), waits);
+    }
+
     [Fact]
-    public async Task Facebook_video_is_refused_before_any_call()
+    public async Task Facebook_reel_starts_uploads_by_link_waits_and_finishes()
     {
         var g = new Graph();
-        var fb = new FacebookPagePublisher(new Factory(g), Accounts(), Meta);
-        await Assert.ThrowsAsync<InvalidOperationException>(() => fb.PrepareAsync(Post(SocialChannel.Facebook, "https://cdn.exemplo.com/reel.mp4")));
-        Assert.Empty(g.Calls);
-    }
-}
+        g.ReelStatuses.Enqueue("processing");
+        g.ReelStatuses.Enqueue("ready");
+        var (fb, waits) = Facebook(g);
+        var post = Post(SocialChannel.Facebook, "https://cdn.exemplo.com/reel.mp4");
 
-public class FacebookVideoApiTests : IClassFixture<CustomWebApplicationFactory>
-{
-    private readonly CustomWebApplicationFactory _factory;
-    public FacebookVideoApiTests(CustomWebApplicationFactory factory) => _factory = factory;
+        var videoId = await fb.PrepareAsync(post);
+        var published = await fb.PublishAsync(post, videoId);
+
+        Assert.Equal("vid-7", videoId);
+        Assert.Equal("/v26.0/200/video_reels", g.Calls[0].Path);
+        Assert.Equal("upload_phase=start", g.Calls[0].Body);
+        Assert.Equal("Bearer tok-fb", g.Calls[0].Auth);
+
+        Assert.Equal("/video-upload/v26.0/vid-7", g.Calls[1].Path);
+        Assert.Equal("OAuth tok-fb", g.Calls[1].Auth);
+        Assert.Equal("https://cdn.exemplo.com/reel.mp4", Assert.Single(g.FileUrls)); // o Facebook busca pelo link, sem bytes
+        Assert.Equal("", g.Calls[1].Body);
+
+        Assert.Single(waits);
+        Assert.Equal(FacebookPagePublisher.PollInterval, waits[0]);
+        var finish = g.Calls.Last();
+        Assert.Equal("/v26.0/200/video_reels", finish.Path);
+        Assert.Contains("video_id=vid-7", finish.Body);
+        Assert.Contains("upload_phase=finish", finish.Body);
+        Assert.Contains("video_state=PUBLISHED", finish.Body);
+        Assert.Contains("description=Agenda", finish.Body);
+        Assert.DoesNotContain(g.Calls, c => c.Query.Contains("tok-"));
+        Assert.Equal("vid-7", published.ExternalId);
+    }
 
     [Fact]
-    public async Task Creating_a_facebook_video_post_is_rejected_up_front()
+    public async Task Facebook_reel_already_published_is_found_and_not_finished_again()
     {
-        var res = await _factory.CreateClient().PostAsJsonAsync("/admin/brands/medlycare/publications",
-            new { channel = "facebook", mediaUrl = "https://cdn.exemplo.com/reel.mp4", caption = "x", scheduledFor = DateTimeOffset.UtcNow });
-        Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
+        var g = new Graph();
+        g.ReelStatuses.Enqueue("published");
+        var (fb, _) = Facebook(g);
+        var post = Post(SocialChannel.Facebook, "https://cdn.exemplo.com/reel.mp4");
+
+        Assert.NotNull(await fb.FindPublishedAsync(post, "vid-7"));
+        Assert.DoesNotContain(g.Calls, c => c.Body.Contains("upload_phase=finish"));
+        Assert.Null(await fb.FindPublishedAsync(post, $"fb-pending-{post.Id:N}")); // foto: sem como saber
+    }
+
+    [Fact]
+    public async Task Facebook_reel_processing_error_fails_with_the_reason()
+    {
+        var g = new Graph();
+        g.ReelStatuses.Enqueue("error");
+        var (fb, _) = Facebook(g);
+        var post = Post(SocialChannel.Facebook, "https://cdn.exemplo.com/reel.mp4");
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => fb.PublishAsync(post, "vid-7"));
+        Assert.Contains("Resolution too low", ex.Message);
+        Assert.DoesNotContain(g.Calls, c => c.Body.Contains("upload_phase=finish"));
     }
 }

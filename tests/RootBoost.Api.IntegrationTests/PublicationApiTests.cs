@@ -169,10 +169,11 @@ public class PublicationEditApiTests : IClassFixture<CustomWebApplicationFactory
     }
 
     [Fact]
-    public async Task Facebook_post_cannot_get_a_video()
+    public async Task Facebook_post_can_be_a_reel()
     {
         var c = _factory.CreateClient();
         var id = await Create(c, "facebook", "https://cdn.exemplo.com/a.jpg", DateTimeOffset.UtcNow.AddDays(1));
-        Assert.Equal(HttpStatusCode.BadRequest, (await c.PutAsJsonAsync($"{Base}/{id}/media", new { mediaUrl = "https://cdn.exemplo.com/v.mp4" })).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await c.PutAsJsonAsync($"{Base}/{id}/media", new { mediaUrl = "https://cdn.exemplo.com/v.mp4" })).StatusCode);
+        Assert.NotNull(await Create(c, "facebook", "https://cdn.exemplo.com/reel.mp4", DateTimeOffset.UtcNow.AddDays(1)));
     }
 }
