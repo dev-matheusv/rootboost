@@ -35,6 +35,8 @@ public interface IPublicationStore
     Task<IReadOnlyList<Publication>> ListDueAsync(DateTimeOffset now, TimeSpan stuckAfter, CancellationToken ct = default);
 
     Task SaveAsync(Publication publication, CancellationToken ct = default);
+
+    Task RemoveAsync(Publication publication, CancellationToken ct = default);
 }
 
 public sealed record ApprovalResult(bool Approved, string? Error, CopyCheckResult? Checklist);

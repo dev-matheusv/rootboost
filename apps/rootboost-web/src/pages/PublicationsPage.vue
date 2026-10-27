@@ -74,7 +74,7 @@
         <q-card-section class="text-h6">{{ editing ? $t('pages.publications.edit') : $t('pages.publications.new') }}</q-card-section>
         <q-card-section class="q-gutter-md">
           <q-select v-if="!editing" v-model="form.channel" outlined :options="channels" :label="$t('pages.publications.channel')" />
-          <template v-if="!editing">
+          <template v-if="!editing || canEdit(editing)">
             <q-file v-model="upload" outlined clearable accept=".jpg,.jpeg,.png,.mp4,.mov" :label="$t('pages.publications.uploadFile')"
               :hint="$t('pages.publications.uploadHint')" :loading="uploading" @update:model-value="sendFile">
               <template #prepend><q-icon :name="mdiUpload" /></template>
@@ -86,6 +86,8 @@
           <q-input v-model="form.when" outlined type="datetime-local" stack-label :label="$t('pages.publications.when')" />
         </q-card-section>
         <q-card-actions align="right">
+          <q-btn v-if="editing" flat no-caps color="negative" :icon="mdiDeleteOutline" :label="$t('pages.publications.delete')"
+            :loading="deleting" class="q-mr-auto" @click="remove" />
           <q-btn flat no-caps :label="$t('common.actions.cancel')" v-close-popup />
           <q-btn unelevated color="primary" no-caps :label="$t('common.actions.save')" :loading="saving"
             :disable="uploading || !form.caption.trim() || !form.when || (!editing && !form.mediaUrl.trim())" @click="save" />
@@ -117,7 +119,7 @@ import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useQuasar } from 'quasar';
 import { isAxiosError } from 'axios';
-import { mdiChevronLeft, mdiChevronRight, mdiPlus, mdiPencilOutline, mdiInformationOutline, mdiUpload } from '@quasar/extras/mdi-v7';
+import { mdiChevronLeft, mdiChevronRight, mdiPlus, mdiPencilOutline, mdiInformationOutline, mdiUpload, mdiDeleteOutline } from '@quasar/extras/mdi-v7';
 import { api } from 'src/services/api';
 import type { CopyFinding, Publication, SocialChannel } from 'src/types/api';
 import { useBrandStore } from 'src/stores/brandStore';
@@ -225,6 +227,28 @@ function openEdit(p: Publication) {
   dialog.value = true;
 }
 
+const deleting = ref(false);
+
+function remove() {
+  const p = editing.value;
+  if (!p) return;
+  $q.dialog({ title: t('pages.publications.delete'), message: t('pages.publications.deleteConfirm'), cancel: true, persistent: true })
+    .onOk(() => void doRemove(p));
+}
+
+async function doRemove(p: Publication) {
+  deleting.value = true;
+  try {
+    await api.delete(`${base.value}/${p.id}`);
+    dialog.value = false;
+    await load();
+  } catch (e) {
+    $q.notify({ type: 'negative', message: apiError(e) });
+  } finally {
+    deleting.value = false;
+  }
+}
+
 async function save() {
   saving.value = true;
   try {
@@ -233,6 +257,8 @@ async function save() {
     if (!p) {
       await api.post(base.value, { channel: form.channel, mediaUrl: form.mediaUrl.trim(), caption: form.caption, scheduledFor: when });
     } else {
+      // Trocar vídeo ou legenda volta o post pra rascunho (precisa aprovar de novo).
+      if (form.mediaUrl.trim() !== p.mediaUrl) await api.put(`${base.value}/${p.id}/media`, { mediaUrl: form.mediaUrl.trim() });
       if (form.caption.trim() !== p.caption) await api.put(`${base.value}/${p.id}/caption`, { caption: form.caption });
       if (when !== new Date(p.scheduledFor).toISOString()) await api.put(`${base.value}/${p.id}/schedule`, { scheduledFor: when });
     }

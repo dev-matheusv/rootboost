@@ -22,6 +22,7 @@ public sealed class InMemoryPublicationStore : IPublicationStore
     public Task<IReadOnlyList<Publication>> ListDueAsync(DateTimeOffset now, TimeSpan stuckAfter, CancellationToken ct = default) =>
         Task.FromResult<IReadOnlyList<Publication>>(Items.Where(p => p.IsDue(now) || p.IsStuck(now, stuckAfter)).ToList());
     public Task SaveAsync(Publication publication, CancellationToken ct = default) { Saves++; return Task.CompletedTask; }
+    public Task RemoveAsync(Publication publication, CancellationToken ct = default) { Items.Remove(publication); return Task.CompletedTask; }
 }
 
 /// <summary>Publicador de teste: conta publicações por container e pode falhar ou "cair" depois de publicar.</summary>
@@ -181,5 +182,34 @@ public class PublishingTests
 
         Assert.Contains("LinkedIn", p.Error);
         Assert.Equal(1, p.Attempts);
+    }
+
+    [Fact]
+    public async Task Editing_after_a_failed_attempt_discards_the_old_container()
+    {
+        var p = Approved(TimeSpan.Zero);
+        _publisher.FailNext = 1;
+        await Job().RunAsync();                         // prepara o container com a legenda antiga e falha
+        Assert.NotNull(p.ExternalId);
+
+        p.EditCaption("Legenda corrigida para fisioterapia", _time.Now);
+        Assert.Null(p.ExternalId);                      // container antigo descartado
+        Assert.Equal(0, p.Attempts);
+        p.Approve("dono@exemplo.com", _time.Now);
+        await Job().RunAsync();
+
+        Assert.Equal(PublicationStatus.Published, p.Status);
+        Assert.Equal(2, _publisher.Prepares);           // container novo, com a legenda nova
+    }
+
+    [Fact]
+    public void Changing_media_needs_https_and_a_new_approval()
+    {
+        var p = Approved(TimeSpan.FromHours(1));
+        Assert.Throws<ArgumentException>(() => p.ChangeMedia("http://cdn.exemplo.com/b.mp4", _time.Now));
+        p.ChangeMedia("https://cdn.exemplo.com/b.mp4", _time.Now);
+        Assert.Equal(PublicationStatus.Draft, p.Status);
+        Assert.Equal("https://cdn.exemplo.com/b.mp4", p.MediaUrl);
+        Assert.True(p.CanDelete);
     }
 }
