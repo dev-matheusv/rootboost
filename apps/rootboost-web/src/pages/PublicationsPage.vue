@@ -10,6 +10,7 @@
         <div class="text-subtitle2">{{ weekLabel }}</div>
         <q-btn flat round :icon="mdiChevronRight" @click="shiftWeek(1)" />
         <q-btn flat no-caps :label="$t('pages.publications.today')" @click="goToday" />
+        <q-btn outline color="primary" no-caps :icon="mdiMovieOpenOutline" :label="$t('reelImport.title')" @click="importOpen = true" />
         <q-btn unelevated color="primary" no-caps :icon="mdiPlus" :label="$t('pages.publications.new')" @click="openNew" />
       </template>
     </div>
@@ -55,6 +56,11 @@
             </q-item-section>
             <q-item-section side top>
               <div class="row no-wrap">
+                <template v-if="p.channel === 'LinkedIn' && p.status === 'Approved'">
+                  <q-btn flat dense no-caps color="primary" :label="$t('pages.publications.download')" :href="p.mediaUrl" target="_blank" />
+                  <q-btn flat dense no-caps color="primary" :label="$t('pages.publications.copyCaption')" @click="copyCaption(p)" />
+                  <q-btn flat dense no-caps color="positive" :label="$t('pages.publications.markPublished')" @click="markPublished(p)" />
+                </template>
                 <q-btn v-if="p.status === 'Draft'" flat dense no-caps color="primary" :label="$t('pages.publications.approve')"
                   :loading="busy === p.id" @click="approve(p)" />
                 <q-btn v-if="canEdit(p)" flat round dense :icon="mdiPencilOutline" @click="openEdit(p)">
@@ -111,6 +117,7 @@
         <q-card-actions align="right"><q-btn flat no-caps :label="$t('common.actions.close')" v-close-popup /></q-card-actions>
       </q-card>
     </q-dialog>
+    <ReelImportDialog v-model="importOpen" :brand-key="brand.selected" :default-when="nextSlot()" @done="load" />
   </q-page>
 </template>
 
@@ -119,10 +126,11 @@ import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useQuasar } from 'quasar';
 import { isAxiosError } from 'axios';
-import { mdiChevronLeft, mdiChevronRight, mdiPlus, mdiPencilOutline, mdiInformationOutline, mdiUpload, mdiDeleteOutline } from '@quasar/extras/mdi-v7';
+import { mdiChevronLeft, mdiChevronRight, mdiPlus, mdiPencilOutline, mdiInformationOutline, mdiUpload, mdiDeleteOutline, mdiMovieOpenOutline } from '@quasar/extras/mdi-v7';
 import { api } from 'src/services/api';
 import type { CopyFinding, Publication, SocialChannel } from 'src/types/api';
 import { useBrandStore } from 'src/stores/brandStore';
+import ReelImportDialog from 'src/components/ReelImportDialog.vue';
 import { findingColor, sortFindings } from 'src/utils/brandProfile';
 import {
   addDays, canEdit, fromLocalInput, groupByDay, localDayKey, startOfWeek, statusColor, toLocalInput,
@@ -210,6 +218,38 @@ async function sendFile(file: File | null) {
   } finally {
     uploading.value = false;
   }
+}
+
+const importOpen = ref(false);
+
+/** Próxima hora cheia, no formato do campo de data e hora. */
+function nextSlot(): string {
+  const next = new Date();
+  next.setHours(next.getHours() + 1, 0, 0, 0);
+  return toLocalInput(next.toISOString());
+}
+
+async function copyCaption(p: Publication) {
+  try {
+    await navigator.clipboard.writeText(p.caption);
+    $q.notify({ type: 'positive', message: t('pages.publications.copied') });
+  } catch {
+    $q.notify({ type: 'negative', message: t('common.saveError') });
+  }
+}
+
+/** LinkedIn é manual: depois de postar lá, registra aqui com o link do post (opcional). */
+function markPublished(p: Publication) {
+  $q.dialog({
+    title: t('pages.publications.markPublished'),
+    message: t('pages.publications.markPublishedHint'),
+    prompt: { model: '', type: 'url' },
+    cancel: true,
+  }).onOk((url: string) => {
+    void api.post(`${base.value}/${p.id}/mark-published`, { url: url?.trim() || null })
+      .then(() => load())
+      .catch((e: unknown) => $q.notify({ type: 'negative', message: apiError(e) }));
+  });
 }
 
 function openNew() {

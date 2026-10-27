@@ -172,16 +172,28 @@ public class PublishingTests
     }
 
     [Fact]
-    public async Task Channel_without_publisher_fails_with_a_clear_error()
+    public async Task Channel_without_publisher_is_manual_never_attempted_and_marked_by_hand()
     {
-        var p = new Publication(BrandKeys.MedlyCare, SocialChannel.LinkedIn, "https://cdn.exemplo.com/a.jpg", "legenda", _time.Now, _time.Now);
+        var p = new Publication(BrandKeys.MedlyCare, SocialChannel.LinkedIn, "https://cdn.exemplo.com/a.mp4", "legenda", _time.Now, _time.Now);
         p.Approve("dono@exemplo.com", _time.Now);
         _store.Items.Add(p);
 
-        await Job().RunAsync();
+        var result = await Job().RunAsync();
 
-        Assert.Contains("LinkedIn", p.Error);
-        Assert.Equal(1, p.Attempts);
+        Assert.Equal(0, result.Published + result.Failed + result.Retrying);
+        Assert.Equal(PublicationStatus.Approved, p.Status);
+        Assert.Equal(0, p.Attempts);
+
+        p.MarkPublishedManually("https://www.linkedin.com/feed/update/123", _time.Now);
+        Assert.Equal(PublicationStatus.Published, p.Status);
+        Assert.Equal("https://www.linkedin.com/feed/update/123", p.PublishedUrl);
+    }
+
+    [Fact]
+    public void Only_an_approved_post_can_be_marked_as_published_by_hand()
+    {
+        var draft = new Publication(BrandKeys.MedlyCare, SocialChannel.LinkedIn, "https://cdn.exemplo.com/a.mp4", "legenda", _time.Now, _time.Now);
+        Assert.Throws<InvalidOperationException>(() => draft.MarkPublishedManually(null, _time.Now));
     }
 
     [Fact]
