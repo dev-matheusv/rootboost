@@ -140,6 +140,16 @@ public sealed class Publication
         UpdatedAt = now;
     }
 
+    /// <summary>Canal manual (LinkedIn): o humano publicou fora e registra. Só depois de aprovado.</summary>
+    public void MarkPublishedManually(string? url, DateTimeOffset now)
+    {
+        if (Status != PublicationStatus.Approved)
+            throw new InvalidOperationException("só post aprovado pode ser marcado como publicado");
+        if (url is { Length: > 0 } && (!Uri.TryCreate(url, UriKind.Absolute, out var u) || u.Scheme != Uri.UriSchemeHttps))
+            throw new ArgumentException("link do post precisa ser https", nameof(url));
+        MarkPublished("manual", string.IsNullOrWhiteSpace(url) ? null : url, now);
+    }
+
     public void MarkPublished(string externalId, string? url, DateTimeOffset now)
     {
         Status = PublicationStatus.Published;

@@ -109,7 +109,8 @@ public sealed class PublishDuePublications
     public async Task<PublishRunResult> RunAsync(CancellationToken ct = default)
     {
         int published = 0, failed = 0, retrying = 0;
-        foreach (var publication in await _store.ListDueAsync(_time.GetUtcNow(), StuckAfter, ct))
+        // Canal sem publicador (hoje o LinkedIn) é MANUAL: o job não tenta nem falha; o humano publica e marca.
+        foreach (var publication in (await _store.ListDueAsync(_time.GetUtcNow(), StuckAfter, ct)).Where(p => _publishers.ContainsKey(p.Channel)))
         {
             var outcome = await PublishOneAsync(publication, ct);
             if (outcome == PublicationStatus.Published) published++;
@@ -121,13 +122,7 @@ public sealed class PublishDuePublications
 
     private async Task<PublicationStatus> PublishOneAsync(Publication publication, CancellationToken ct)
     {
-        if (!_publishers.TryGetValue(publication.Channel, out var publisher))
-        {
-            publication.StartPublishing(_time.GetUtcNow());
-            publication.MarkFailed($"nenhum publicador configurado pra {publication.Channel}", MaxAttempts, _time.GetUtcNow());
-            await _store.SaveAsync(publication, ct);
-            return publication.Status;
-        }
+        var publisher = _publishers[publication.Channel];
 
         try
         {
