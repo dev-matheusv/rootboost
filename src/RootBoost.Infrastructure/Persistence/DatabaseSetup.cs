@@ -6,25 +6,14 @@ using Npgsql;
 namespace RootBoost.Infrastructure.Persistence;
 
 /// <summary>
-/// Escolha do banco por configuração (`Database__Provider`): `Sqlite` (padrão, dev e testes) ou
-/// `Postgres` (padrão da casa em produção, com migrações do EF). O SQLite segue funcionando até a
-/// virada, então ligar o Postgres é só trocar variável no Railway.
+/// Banco único: Postgres em todo lugar (produção, dev local e testes), sempre com migrações do EF.
+/// O SQLite saiu em 27/10/2026 (RB-29): o EnsureCreated dele não ganhava tabela nova e travava o dev.
 /// </summary>
 public static class DatabaseSetup
 {
-    public const string Postgres = "Postgres";
-
-    public static bool IsPostgres(IConfiguration config) =>
-        string.Equals(config["Database:Provider"], Postgres, StringComparison.OrdinalIgnoreCase);
-
-    public static void Configure(DbContextOptionsBuilder options, IConfiguration config)
-    {
-        if (IsPostgres(config))
-            options.UseNpgsql(PostgresConnectionString(config),
-                npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory"));
-        else
-            options.UseSqlite(config.GetConnectionString("Sqlite") ?? "Data Source=rootboost.db");
-    }
+    public static void Configure(DbContextOptionsBuilder options, IConfiguration config) =>
+        options.UseNpgsql(PostgresConnectionString(config),
+            npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory"));
 
     /// <summary>
     /// Aceita `ConnectionStrings__Postgres` no formato do Npgsql ou a `DATABASE_URL` que o Railway
@@ -35,7 +24,7 @@ public static class DatabaseSetup
         var raw = config.GetConnectionString("Postgres") ?? config["DATABASE_URL"];
         if (string.IsNullOrWhiteSpace(raw))
             throw new InvalidOperationException(
-                "Database:Provider=Postgres mas não há ConnectionStrings:Postgres nem DATABASE_URL.");
+                "Banco não configurado: defina ConnectionStrings:Postgres ou DATABASE_URL (dev local: docker compose up -d).");
 
         return raw.StartsWith("postgres", StringComparison.OrdinalIgnoreCase) && raw.Contains("://")
             ? FromUrl(raw)

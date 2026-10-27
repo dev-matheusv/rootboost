@@ -5,9 +5,9 @@ using RootBoost.Infrastructure.Persistence;
 namespace RootBoost.Infrastructure.Analytics;
 
 /// <summary>
-/// Implementa <see cref="IVisitStore"/> com um contador diário no SQLite. Upsert simples:
-/// acha a linha (produto, idioma, hoje) e incrementa, ou cria. SQLite tem escritor único,
-/// então a corrida entre duas visitas simultâneas é serializada pelo banco.
+/// Implementa <see cref="IVisitStore"/> com um contador diário no banco. O upsert é UMA instrução
+/// atômica (INSERT ... ON CONFLICT DO UPDATE): duas visitas no mesmo instante não perdem contagem nem
+/// batem na chave primária (o "lê, soma, grava" antigo perdia no Postgres).
 /// </summary>
 public sealed class EfVisitStore : IVisitStore
 {
@@ -20,17 +20,15 @@ public sealed class EfVisitStore : IVisitStore
         productKey = productKey.Trim();
         var normLang = (lang ?? "").Trim().ToLowerInvariant();
         if (normLang.Length > 8) normLang = normLang[..8];
-        var today = DateTime.UtcNow.Date;
+        if (productKey.Length > 64) productKey = productKey[..64];
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
 
-        var row = await _db.LandingViews
-            .FirstOrDefaultAsync(x => x.ProductKey == productKey && x.Lang == normLang && x.DateUtc == today, ct);
-
-        if (row is null)
-            _db.LandingViews.Add(new LandingViewDaily { ProductKey = productKey, Lang = normLang, DateUtc = today, Count = 1 });
-        else
-            row.Count += 1;
-
-        await _db.SaveChangesAsync(ct);
+        await _db.Database.ExecuteSqlInterpolatedAsync($"""
+            INSERT INTO "LandingViews" ("ProductKey", "Lang", "DateUtc", "Count")
+            VALUES ({productKey}, {normLang}, {today}, 1)
+            ON CONFLICT ("ProductKey", "Lang", "DateUtc")
+            DO UPDATE SET "Count" = "LandingViews"."Count" + 1
+            """, ct);
     }
 
     public async Task<IReadOnlyDictionary<string, long>> GetViewCountsAsync(DateTimeOffset? since = null, CancellationToken ct = default)

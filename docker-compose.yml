@@ -1,0 +1,25 @@
+# Banco do RootBoost pro desenvolvimento local (RB-29): o mesmo Postgres 16 da produção.
+# Porta 5433 porque a 5432 é do Postgres do MedlyCare (sfa_postgres).
+#   docker compose up -d      sobe (os dados ficam no volume rootboost_pg)
+#   docker compose down       para (os dados continuam)
+# A API cria as tabelas sozinha no boot (migrações do EF).
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: rootboost_postgres
+    environment:
+      POSTGRES_DB: rootboost
+      POSTGRES_USER: rootboost
+      POSTGRES_PASSWORD: rootboost-dev   # só desenvolvimento local; produção usa a DATABASE_URL do Railway
+    ports:
+      - "5433:5432"
+    volumes:
+      - rootboost_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rootboost -d rootboost"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  rootboost_pg:

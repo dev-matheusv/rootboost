@@ -20,8 +20,7 @@ FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
 WORKDIR /app
 COPY --from=build /app ./
 
-# SQLite lives on a persistent volume mounted at /data (configure the volume on the host).
-ENV ConnectionStrings__Sqlite="Data Source=/data/rootboost.db"
+# Banco: Postgres pela DATABASE_URL que o Railway injeta (RB-29: sem SQLite).
 # Bind to the port the platform provides (Railway/Fly set $PORT). Default 8080 locally.
 ENV ASPNETCORE_URLS=http://0.0.0.0:8080
 EXPOSE 8080

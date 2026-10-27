@@ -1,7 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace RootBoost.Api.IntegrationTests;
 
@@ -11,21 +10,12 @@ namespace RootBoost.Api.IntegrationTests;
 /// da pra enviar. Este factory sobe em modo "PayPal" (live) mas o guard responde ANTES de tocar
 /// no PayPal, entao nenhuma chamada externa acontece.
 /// </summary>
-public sealed class LiveModeFactory : WebApplicationFactory<Program>
+public sealed class LiveModeFactory : CustomWebApplicationFactory
 {
-    private readonly string _dbPath = Path.Combine(Path.GetTempPath(), $"rootboost-live-{Guid.NewGuid():N}.db");
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
-        builder.UseSetting("Supplier", "Mock");
-        builder.UseSetting("Notifier", "Logging");
+        base.ConfigureWebHost(builder);
         builder.UseSetting("Payments:Verifier", "PayPal"); // modo LIVE (nao-teste)
-        builder.UseSetting("ConnectionStrings:Sqlite", $"Data Source={_dbPath}");
-        builder.UseSetting("Catalog:Path", Path.Combine(AppContext.BaseDirectory, "test-catalog.json"));
-    }
-    protected override void Dispose(bool disposing)
-    {
-        base.Dispose(disposing);
-        try { if (File.Exists(_dbPath)) File.Delete(_dbPath); } catch { }
     }
 }
 
