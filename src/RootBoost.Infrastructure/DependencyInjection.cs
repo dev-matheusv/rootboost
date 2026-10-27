@@ -72,6 +72,17 @@ public static class DependencyInjection
             !string.Equals(config["Ads:SyncEnabled"], "false", StringComparison.OrdinalIgnoreCase))
             services.AddHostedService<RootBoost.Infrastructure.Ads.AdInsightsScheduler>();
 
+        // --- Mídia (RB-33): bucket S3 do Railway em produção (Media__Storage=S3), pasta local no dev e nos testes. ---
+        var mediaOptions = new RootBoost.Application.Media.MediaOptions();
+        config.GetSection(RootBoost.Application.Media.MediaOptions.Section).Bind(mediaOptions);
+        services.AddSingleton(mediaOptions);
+        if (string.Equals(mediaOptions.Storage, "S3", StringComparison.OrdinalIgnoreCase))
+            services.AddSingleton<RootBoost.Application.Media.IMediaStorage>(new RootBoost.Infrastructure.Media.S3MediaStorage(mediaOptions));
+        else
+            services.AddSingleton<RootBoost.Application.Media.IMediaStorage>(new RootBoost.Infrastructure.Media.LocalMediaStorage(mediaOptions));
+        services.AddScoped<RootBoost.Application.Media.IMediaAssetStore, EfMediaAssetStore>();
+        services.AddScoped<RootBoost.Application.Media.UploadMedia>();
+
         // Analytics de topo de funil: contador de visitas (denominador da conversão) + relatório.
         services.AddScoped<IVisitStore, RootBoost.Infrastructure.Analytics.EfVisitStore>();
         services.AddScoped<ProductPerformanceReport>();

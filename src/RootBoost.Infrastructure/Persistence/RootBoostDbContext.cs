@@ -24,6 +24,9 @@ public sealed class RootBoostDbContext : DbContext
     /// <summary>Senha do dono do Console (só o hash). Ver ConsoleCredential.</summary>
     public DbSet<ConsoleCredential> ConsoleCredentials => Set<ConsoleCredential>();
 
+    /// <summary>Mídias das marcas (o arquivo fica no bucket; aqui só os dados). RB-33.</summary>
+    public DbSet<MediaAsset> MediaAssets => Set<MediaAsset>();
+
     /// <summary>Snapshot diário de métricas de anúncio (Meta e o que vier). Uma linha por objeto e dia.</summary>
     public DbSet<AdInsightDaily> AdInsights => Set<AdInsightDaily>();
 
@@ -106,6 +109,15 @@ public sealed class RootBoostDbContext : DbContext
         cred.Property(x => x.PasswordHash).HasMaxLength(512).IsRequired();
         cred.Property(x => x.SourceEnvHash).HasMaxLength(512).IsRequired();
         cred.Property(x => x.UpdatedAt).HasConversion(Utc);
+
+        var media = b.Entity<MediaAsset>();
+        media.HasKey(x => x.Id);
+        media.Property(x => x.BrandKey).HasMaxLength(64).IsRequired();
+        media.Property(x => x.FileName).HasMaxLength(160).IsRequired();
+        media.Property(x => x.ContentType).HasMaxLength(64).IsRequired();
+        media.Property(x => x.StorageKey).HasMaxLength(300).IsRequired();
+        media.Property(x => x.CreatedAt).HasConversion(Utc);
+        media.HasIndex(x => new { x.BrandKey, x.CreatedAt });
 
         var order = b.Entity<Order>();
         order.HasKey(o => o.PaymentId);
