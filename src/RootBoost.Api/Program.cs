@@ -245,6 +245,29 @@ brandProfile.MapPut("/publications/{id:guid}/schedule", async (string key, Guid 
     return Results.Ok(PublicationDto.From(publication));
 });
 
+brandProfile.MapPut("/publications/{id:guid}/media", async (string key, Guid id, MediaInput input,
+    RootBoost.Application.Publishing.IPublicationStore store, TimeProvider time, CancellationToken ct) =>
+{
+    var publication = await store.GetAsync(id, ct);
+    if (publication is null || publication.BrandKey != key.ToLowerInvariant()) return Results.NotFound();
+    if (publication.Channel == SocialChannel.Facebook && RootBoost.Infrastructure.Publishing.InstagramPublisher.IsVideo(input.MediaUrl ?? ""))
+        return Results.BadRequest(new { error = "vídeo na Página do Facebook ainda não é suportado; use imagem ou publique à mão" });
+    try { publication.ChangeMedia(input.MediaUrl ?? "", time.GetUtcNow()); }
+    catch (Exception ex) when (ex is ArgumentException or InvalidOperationException) { return Results.BadRequest(new { error = ex.Message }); }
+    await store.SaveAsync(publication, ct);
+    return Results.Ok(PublicationDto.From(publication));
+});
+
+brandProfile.MapDelete("/publications/{id:guid}", async (string key, Guid id,
+    RootBoost.Application.Publishing.IPublicationStore store, CancellationToken ct) =>
+{
+    var publication = await store.GetAsync(id, ct);
+    if (publication is null || publication.BrandKey != key.ToLowerInvariant()) return Results.NotFound();
+    if (!publication.CanDelete) return Results.Conflict(new { error = $"publicação em {publication.Status} não pode ser apagada" });
+    await store.RemoveAsync(publication, ct);
+    return Results.NoContent();
+});
+
 brandProfile.MapPost("/publications/{id:guid}/approve", async (string key, Guid id, System.Security.Claims.ClaimsPrincipal user,
     RootBoost.Application.Publishing.ApprovePublication approve, RootBoost.Application.Publishing.IPublicationStore store, CancellationToken ct) =>
 {
@@ -582,6 +605,7 @@ record OrderDto(string PaymentId, string ProductKey, int Quantity, string Status
 record PublicationInput(string Channel, string MediaUrl, string Caption, DateTimeOffset ScheduledFor);
 record CaptionInput(string Caption);
 record ScheduleInput(DateTimeOffset ScheduledFor);
+record MediaInput(string MediaUrl);
 record PublicationDto(Guid Id, string BrandKey, string Channel, string MediaUrl, string Caption, int CaptionVersion,
     DateTimeOffset ScheduledFor, string Status, string? ApprovedBy, DateTimeOffset? ApprovedAt, int? ApprovedCaptionVersion,
     string? ExternalId, string? PublishedUrl, string? Error, int Attempts)
