@@ -5,7 +5,8 @@ import { canEdit, fromLocalInput, groupByDay, localDayKey, startOfWeek, toLocalI
 const pub = (over: Partial<Publication>): Publication => ({
   id: crypto.randomUUID(), brandKey: 'medlycare', channel: 'Instagram', mediaUrl: 'https://x/a.mp4', caption: 'c',
   captionVersion: 1, scheduledFor: new Date(2026, 9, 21, 10, 0).toISOString(), status: 'Draft', approvedBy: null,
-  approvedAt: null, approvedCaptionVersion: null, externalId: null, publishedUrl: null, error: null, attempts: 0, ...over,
+  approvedAt: null, approvedCaptionVersion: null, externalId: null, publishedUrl: null, error: null, attempts: 0,
+  coverUrl: null, thumbOffsetMs: null, shareToFeed: true, ...over,
 });
 
 describe('agenda de publicações', () => {

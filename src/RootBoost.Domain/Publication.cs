@@ -30,6 +30,15 @@ public sealed class Publication
     public string MediaUrl { get; private set; } = default!;
 
     public string Caption { get; private set; } = default!;
+
+    /// <summary>Reels: capa própria (JPEG https, até 8 MB, ideal 9:16). Tem prioridade sobre <see cref="ThumbOffsetMs"/>.</summary>
+    public string? CoverUrl { get; private set; }
+
+    /// <summary>Reels: quadro do vídeo usado como capa, em milissegundos (0 = primeiro quadro). Ignorado se houver capa.</summary>
+    public int? ThumbOffsetMs { get; private set; }
+
+    /// <summary>Reels: aparece também no feed (true) ou só na aba Reels (false).</summary>
+    public bool ShareToFeed { get; private set; } = true;
     public int CaptionVersion { get; private set; }
     public DateTimeOffset ScheduledFor { get; private set; }
     public PublicationStatus Status { get; private set; }
@@ -86,6 +95,30 @@ public sealed class Publication
         EnsureHttps(mediaUrl);
         if (mediaUrl == MediaUrl) return;
         MediaUrl = mediaUrl;
+        CaptionVersion++;
+        ResetApproval();
+        UpdatedAt = now;
+    }
+
+    /// <summary>
+    /// Capa e destino do Reels. Faz parte do que foi aprovado: mudou, volta pra rascunho e o container antigo é descartado.
+    /// </summary>
+    public void SetReelOptions(string? coverUrl, int? thumbOffsetMs, bool shareToFeed, DateTimeOffset now)
+    {
+        EnsureEditable();
+        coverUrl = string.IsNullOrWhiteSpace(coverUrl) ? null : coverUrl.Trim();
+        if (coverUrl is not null)
+        {
+            EnsureHttps(coverUrl);
+            var path = new Uri(coverUrl).AbsolutePath;
+            if (!path.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) && !path.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase))
+                throw new ArgumentException("a capa do Reels precisa ser JPEG (.jpg)", nameof(coverUrl));
+        }
+        if (thumbOffsetMs is < 0) throw new ArgumentException("o quadro da capa não pode ser negativo", nameof(thumbOffsetMs));
+        if (coverUrl == CoverUrl && thumbOffsetMs == ThumbOffsetMs && shareToFeed == ShareToFeed) return;
+        CoverUrl = coverUrl;
+        ThumbOffsetMs = thumbOffsetMs;
+        ShareToFeed = shareToFeed;
         CaptionVersion++;
         ResetApproval();
         UpdatedAt = now;

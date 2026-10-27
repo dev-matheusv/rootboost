@@ -42,6 +42,28 @@ public abstract class PublicationApiTestsBase
     }
 
     [Fact]
+    public async Task Reel_cover_and_feed_option_are_saved_and_only_valid_for_instagram_video()
+    {
+        var client = Client();
+        var res = await client.PostAsJsonAsync(Base, new { channel = "instagram", mediaUrl = "https://cdn.exemplo.com/reel.mp4",
+            caption = $"Reel {Guid.NewGuid():N}", scheduledFor = DateTimeOffset.UtcNow.AddHours(1) });
+        var id = (await res.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetString()!;
+        Assert.True((await Get(client, id)).GetProperty("shareToFeed").GetBoolean());
+
+        var set = await client.PutAsJsonAsync($"{Base}/{id}/reel", new { coverUrl = "https://cdn.exemplo.com/capa.jpg", shareToFeed = false });
+        Assert.Equal(HttpStatusCode.OK, set.StatusCode);
+        var saved = await Get(client, id); // relido do banco: false precisa persistir de verdade
+        Assert.False(saved.GetProperty("shareToFeed").GetBoolean());
+        Assert.Equal("https://cdn.exemplo.com/capa.jpg", saved.GetProperty("coverUrl").GetString());
+
+        Assert.Equal(HttpStatusCode.BadRequest,
+            (await client.PutAsJsonAsync($"{Base}/{id}/reel", new { coverUrl = "https://cdn.exemplo.com/capa.png" })).StatusCode);
+        var image = (await Create(client, $"Foto {Guid.NewGuid():N}", DateTimeOffset.UtcNow.AddHours(1))).GetProperty("id").GetString()!;
+        Assert.Equal(HttpStatusCode.BadRequest,
+            (await client.PutAsJsonAsync($"{Base}/{image}/reel", new { thumbOffsetMs = 1000 })).StatusCode);
+    }
+
+    [Fact]
     public async Task Blocked_caption_cannot_be_approved_and_stays_draft()
     {
         var client = Client();
@@ -147,10 +169,11 @@ public class PublicationEditApiTests : IClassFixture<CustomWebApplicationFactory
     }
 
     [Fact]
-    public async Task Facebook_post_cannot_get_a_video()
+    public async Task Facebook_post_can_be_a_reel()
     {
         var c = _factory.CreateClient();
         var id = await Create(c, "facebook", "https://cdn.exemplo.com/a.jpg", DateTimeOffset.UtcNow.AddDays(1));
-        Assert.Equal(HttpStatusCode.BadRequest, (await c.PutAsJsonAsync($"{Base}/{id}/media", new { mediaUrl = "https://cdn.exemplo.com/v.mp4" })).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await c.PutAsJsonAsync($"{Base}/{id}/media", new { mediaUrl = "https://cdn.exemplo.com/v.mp4" })).StatusCode);
+        Assert.NotNull(await Create(c, "facebook", "https://cdn.exemplo.com/reel.mp4", DateTimeOffset.UtcNow.AddDays(1)));
     }
 }
