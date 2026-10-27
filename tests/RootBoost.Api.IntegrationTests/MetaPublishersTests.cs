@@ -90,6 +90,36 @@ public class MetaPublishersTests
     }
 
     [Fact]
+    public async Task Instagram_reel_sends_cover_and_share_to_feed()
+    {
+        var g = new Graph();
+        var (ig, _) = Instagram(g);
+        var post = Post(SocialChannel.Instagram, "https://cdn.exemplo.com/reel.mp4");
+        post.SetReelOptions("https://cdn.exemplo.com/capa.jpg", 1500, false, DateTimeOffset.UtcNow);
+
+        await ig.PrepareAsync(post);
+
+        Assert.Contains("share_to_feed=false", g.Calls[0].Body);
+        Assert.Contains("cover_url=https%3A%2F%2Fcdn.exemplo.com%2Fcapa.jpg", g.Calls[0].Body);
+        Assert.DoesNotContain("thumb_offset", g.Calls[0].Body); // capa vence o quadro
+    }
+
+    [Fact]
+    public async Task Instagram_reel_without_cover_uses_frame_and_feed_by_default()
+    {
+        var g = new Graph();
+        var (ig, _) = Instagram(g);
+        var post = Post(SocialChannel.Instagram, "https://cdn.exemplo.com/reel.mp4");
+        post.SetReelOptions(null, 2000, true, DateTimeOffset.UtcNow);
+
+        await ig.PrepareAsync(post);
+
+        Assert.Contains("share_to_feed=true", g.Calls[0].Body);
+        Assert.Contains("thumb_offset=2000", g.Calls[0].Body);
+        Assert.DoesNotContain("cover_url", g.Calls[0].Body);
+    }
+
+    [Fact]
     public async Task Instagram_image_uses_image_url()
     {
         var g = new Graph();
@@ -97,6 +127,7 @@ public class MetaPublishersTests
         await ig.PrepareAsync(Post(SocialChannel.Instagram, "https://cdn.exemplo.com/post.jpg"));
         Assert.Contains("image_url=", g.Calls[0].Body);
         Assert.DoesNotContain("media_type", g.Calls[0].Body);
+        Assert.DoesNotContain("share_to_feed", g.Calls[0].Body);
     }
 
     [Fact]

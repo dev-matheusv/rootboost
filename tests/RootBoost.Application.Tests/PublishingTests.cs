@@ -224,4 +224,24 @@ public class PublishingTests
         Assert.Equal("https://cdn.exemplo.com/b.mp4", p.MediaUrl);
         Assert.True(p.CanDelete);
     }
+
+    [Fact]
+    public void Reel_cover_must_be_https_jpeg_and_changing_it_needs_a_new_approval()
+    {
+        var p = Approved(TimeSpan.FromHours(1));
+        Assert.True(p.ShareToFeed); // padrão: aparece também no feed
+        Assert.Throws<ArgumentException>(() => p.SetReelOptions("https://cdn.exemplo.com/capa.png", null, true, _time.Now));
+        Assert.Throws<ArgumentException>(() => p.SetReelOptions("http://cdn.exemplo.com/capa.jpg", null, true, _time.Now));
+        Assert.Throws<ArgumentException>(() => p.SetReelOptions(null, -1, true, _time.Now));
+        Assert.Equal(PublicationStatus.Approved, p.Status);
+
+        p.SetReelOptions("https://cdn.exemplo.com/capa.jpg", null, false, _time.Now);
+        Assert.Equal(PublicationStatus.Draft, p.Status);
+        Assert.Equal("https://cdn.exemplo.com/capa.jpg", p.CoverUrl);
+        Assert.False(p.ShareToFeed);
+
+        p.Approve("dono@exemplo.com", _time.Now);
+        p.SetReelOptions("https://cdn.exemplo.com/capa.jpg", null, false, _time.Now); // nada mudou
+        Assert.Equal(PublicationStatus.Approved, p.Status);
+    }
 }

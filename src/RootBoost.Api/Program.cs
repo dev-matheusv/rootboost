@@ -258,6 +258,20 @@ brandProfile.MapPut("/publications/{id:guid}/media", async (string key, Guid id,
     return Results.Ok(PublicationDto.From(publication));
 });
 
+// Reels (RB-48): capa (JPEG do bucket ou quadro do vídeo) e se aparece também no feed. Mudou, pede aprovação de novo.
+brandProfile.MapPut("/publications/{id:guid}/reel", async (string key, Guid id, ReelOptionsInput input,
+    RootBoost.Application.Publishing.IPublicationStore store, TimeProvider time, CancellationToken ct) =>
+{
+    var publication = await store.GetAsync(id, ct);
+    if (publication is null || publication.BrandKey != key.ToLowerInvariant()) return Results.NotFound();
+    if (publication.Channel != SocialChannel.Instagram || !RootBoost.Infrastructure.Publishing.InstagramPublisher.IsVideo(publication.MediaUrl))
+        return Results.BadRequest(new { error = "capa e feed só valem pra Reels (vídeo no Instagram)" });
+    try { publication.SetReelOptions(input.CoverUrl, input.ThumbOffsetMs, input.ShareToFeed ?? true, time.GetUtcNow()); }
+    catch (Exception ex) when (ex is ArgumentException or InvalidOperationException) { return Results.BadRequest(new { error = ex.Message }); }
+    await store.SaveAsync(publication, ct);
+    return Results.Ok(PublicationDto.From(publication));
+});
+
 // Canal manual (LinkedIn): depois de postar à mão, registra aqui (fica Publicado com o link).
 brandProfile.MapPost("/publications/{id:guid}/mark-published", async (string key, Guid id, ManualPublishedInput input,
     RootBoost.Application.Publishing.IPublicationStore store, TimeProvider time, CancellationToken ct) =>
@@ -619,13 +633,14 @@ record CaptionInput(string Caption);
 record ScheduleInput(DateTimeOffset ScheduledFor);
 record MediaInput(string MediaUrl);
 record ManualPublishedInput(string? Url);
+record ReelOptionsInput(string? CoverUrl, int? ThumbOffsetMs, bool? ShareToFeed);
 record PublicationDto(Guid Id, string BrandKey, string Channel, string MediaUrl, string Caption, int CaptionVersion,
     DateTimeOffset ScheduledFor, string Status, string? ApprovedBy, DateTimeOffset? ApprovedAt, int? ApprovedCaptionVersion,
-    string? ExternalId, string? PublishedUrl, string? Error, int Attempts)
+    string? ExternalId, string? PublishedUrl, string? Error, int Attempts, string? CoverUrl, int? ThumbOffsetMs, bool ShareToFeed)
 {
     public static PublicationDto From(Publication p) => new(p.Id, p.BrandKey, p.Channel.ToString(), p.MediaUrl, p.Caption,
         p.CaptionVersion, p.ScheduledFor, p.Status.ToString(), p.ApprovedBy, p.ApprovedAt, p.ApprovedCaptionVersion,
-        p.ExternalId, p.PublishedUrl, p.Error, p.Attempts);
+        p.ExternalId, p.PublishedUrl, p.Error, p.Attempts, p.CoverUrl, p.ThumbOffsetMs, p.ShareToFeed);
 }
 record CopyCheckRequest(string Text, string? Channel = null, string? Field = null);
 record ProofInput(string Kind, string Statement, string Source, DateOnly VerifiedAt, DateOnly? ReviewBy = null);

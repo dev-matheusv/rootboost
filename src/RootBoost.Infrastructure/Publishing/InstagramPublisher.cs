@@ -49,6 +49,10 @@ public sealed class InstagramPublisher : ISocialPublisher
         {
             form["media_type"] = "REELS";
             form["video_url"] = publication.MediaUrl;
+            // Conferido na referência IG User Media em 27/10/2026: cover_url (JPEG público) vence thumb_offset (ms).
+            form["share_to_feed"] = publication.ShareToFeed ? "true" : "false";
+            if (publication.CoverUrl is { } cover) form["cover_url"] = cover;
+            else if (publication.ThumbOffsetMs is { } offset) form["thumb_offset"] = offset.ToString(System.Globalization.CultureInfo.InvariantCulture);
         }
         else
         {

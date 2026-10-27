@@ -177,4 +177,8 @@ export interface Publication {
   publishedUrl: string | null;
   error: string | null;
   attempts: number;
+  /** Reels: capa própria (JPEG), quadro da capa em ms e se aparece também no feed. */
+  coverUrl: string | null;
+  thumbOffsetMs: number | null;
+  shareToFeed: boolean;
 }
