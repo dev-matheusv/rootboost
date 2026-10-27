@@ -41,6 +41,9 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>, IAsyn
         // Agendadores desligados: os testes disparam os jobs pelos endpoints, sem corrida com o timer.
         builder.UseSetting("Social:SchedulerEnabled", "false");
         builder.UseSetting("Ads:SyncEnabled", "false");
+        // Mídia numa pasta temporária própria da fábrica (o armazenamento local tem o mesmo contrato do bucket).
+        builder.UseSetting("Media:PublicBaseUrl", "https://rootboost.test"); // publicação exige https
+        builder.UseSetting("Media:LocalPath", Path.Combine(Path.GetTempPath(), $"rootboost-media-{_database}"));
         // no Orders:ApiKey -> /orders is open in tests
     }
 }
