@@ -258,6 +258,18 @@ brandProfile.MapPut("/publications/{id:guid}/media", async (string key, Guid id,
     return Results.Ok(PublicationDto.From(publication));
 });
 
+// Canal manual (LinkedIn): depois de postar à mão, registra aqui (fica Publicado com o link).
+brandProfile.MapPost("/publications/{id:guid}/mark-published", async (string key, Guid id, ManualPublishedInput input,
+    RootBoost.Application.Publishing.IPublicationStore store, TimeProvider time, CancellationToken ct) =>
+{
+    var publication = await store.GetAsync(id, ct);
+    if (publication is null || publication.BrandKey != key.ToLowerInvariant()) return Results.NotFound();
+    try { publication.MarkPublishedManually(input.Url, time.GetUtcNow()); }
+    catch (Exception ex) when (ex is ArgumentException or InvalidOperationException) { return Results.BadRequest(new { error = ex.Message }); }
+    await store.SaveAsync(publication, ct);
+    return Results.Ok(PublicationDto.From(publication));
+});
+
 brandProfile.MapDelete("/publications/{id:guid}", async (string key, Guid id,
     RootBoost.Application.Publishing.IPublicationStore store, CancellationToken ct) =>
 {
@@ -606,6 +618,7 @@ record PublicationInput(string Channel, string MediaUrl, string Caption, DateTim
 record CaptionInput(string Caption);
 record ScheduleInput(DateTimeOffset ScheduledFor);
 record MediaInput(string MediaUrl);
+record ManualPublishedInput(string? Url);
 record PublicationDto(Guid Id, string BrandKey, string Channel, string MediaUrl, string Caption, int CaptionVersion,
     DateTimeOffset ScheduledFor, string Status, string? ApprovedBy, DateTimeOffset? ApprovedAt, int? ApprovedCaptionVersion,
     string? ExternalId, string? PublishedUrl, string? Error, int Attempts)
