@@ -74,7 +74,13 @@
         <q-card-section class="text-h6">{{ editing ? $t('pages.publications.edit') : $t('pages.publications.new') }}</q-card-section>
         <q-card-section class="q-gutter-md">
           <q-select v-if="!editing" v-model="form.channel" outlined :options="channels" :label="$t('pages.publications.channel')" />
-          <q-input v-if="!editing" v-model="form.mediaUrl" outlined :label="$t('pages.publications.mediaUrl')" :hint="$t('pages.publications.mediaHint')" />
+          <template v-if="!editing">
+            <q-file v-model="upload" outlined clearable accept=".jpg,.jpeg,.png,.mp4,.mov" :label="$t('pages.publications.uploadFile')"
+              :hint="$t('pages.publications.uploadHint')" :loading="uploading" @update:model-value="sendFile">
+              <template #prepend><q-icon :name="mdiUpload" /></template>
+            </q-file>
+            <q-input v-model="form.mediaUrl" outlined dense :label="$t('pages.publications.mediaUrl')" :hint="$t('pages.publications.mediaHint')" />
+          </template>
           <q-input v-model="form.caption" outlined type="textarea" autogrow :label="$t('pages.publications.caption')"
             :hint="editing?.status === 'Approved' ? $t('pages.publications.editResets') : undefined" />
           <q-input v-model="form.when" outlined type="datetime-local" stack-label :label="$t('pages.publications.when')" />
@@ -82,7 +88,7 @@
         <q-card-actions align="right">
           <q-btn flat no-caps :label="$t('common.actions.cancel')" v-close-popup />
           <q-btn unelevated color="primary" no-caps :label="$t('common.actions.save')" :loading="saving"
-            :disable="!form.caption.trim() || !form.when || (!editing && !form.mediaUrl.trim())" @click="save" />
+            :disable="uploading || !form.caption.trim() || !form.when || (!editing && !form.mediaUrl.trim())" @click="save" />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -111,7 +117,7 @@ import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useQuasar } from 'quasar';
 import { isAxiosError } from 'axios';
-import { mdiChevronLeft, mdiChevronRight, mdiPlus, mdiPencilOutline, mdiInformationOutline } from '@quasar/extras/mdi-v7';
+import { mdiChevronLeft, mdiChevronRight, mdiPlus, mdiPencilOutline, mdiInformationOutline, mdiUpload } from '@quasar/extras/mdi-v7';
 import { api } from 'src/services/api';
 import type { CopyFinding, Publication, SocialChannel } from 'src/types/api';
 import { useBrandStore } from 'src/stores/brandStore';
@@ -183,7 +189,29 @@ const dialog = ref(false);
 const editing = ref<Publication | null>(null);
 const form = reactive<{ channel: SocialChannel; mediaUrl: string; caption: string; when: string }>({ channel: 'Instagram', mediaUrl: '', caption: '', when: '' });
 
+const upload = ref<File | null>(null);
+const uploading = ref(false);
+
+/** Sobe o arquivo pro bucket e preenche o link público estável que a API devolve. */
+async function sendFile(file: File | null) {
+  if (!file) return;
+  uploading.value = true;
+  try {
+    const body = new FormData();
+    body.append('file', file);
+    const { data } = await api.post<{ url: string }>(`/admin/brands/${brand.selected}/media`, body, { timeout: 15 * 60_000 });
+    form.mediaUrl = data.url;
+    $q.notify({ type: 'positive', message: t('pages.publications.uploaded') });
+  } catch (e) {
+    upload.value = null;
+    $q.notify({ type: 'negative', message: apiError(e) });
+  } finally {
+    uploading.value = false;
+  }
+}
+
 function openNew() {
+  upload.value = null;
   editing.value = null;
   const next = new Date();
   next.setHours(next.getHours() + 1, 0, 0, 0);

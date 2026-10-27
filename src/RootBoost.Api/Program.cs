@@ -33,6 +33,9 @@ builder.Services.AddCors(o => o.AddDefaultPolicy(p =>
 
 // Console (JWT) e scripts (API key) sob a política Admin.
 builder.Services.AddConsoleAuth(builder.Configuration);
+// Upload de mídia (RB-33): o formulário aceita até o limite da mídia (+1 MB de folga pros campos).
+var mediaMaxBytes = builder.Configuration.GetValue<long?>("Media:MaxBytes") ?? 300L * 1024 * 1024;
+builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(o => o.MultipartBodyLengthLimit = mediaMaxBytes + 1024 * 1024);
 
 var app = builder.Build();
 
@@ -60,6 +63,20 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.MapGet("/health", () => Results.Ok("ok"));
+
+// Mídia pública (RB-33): o Instagram e o Facebook baixam daqui. Id aleatório (impossível de adivinhar) e é conteúdo
+// feito pra publicar. Link estável: não expira como o link assinado do bucket.
+app.MapGet("/media/{id:guid}/{name}", async (Guid id, string name, HttpContext ctx, RootBoost.Application.Media.IMediaAssetStore assets,
+    RootBoost.Application.Media.IMediaStorage storage, CancellationToken ct) =>
+{
+    var asset = await assets.GetAsync(id, ct);
+    if (asset is null) return Results.NotFound();
+    var stored = await storage.GetAsync(asset.StorageKey, ct);
+    if (stored is null) return Results.NotFound();
+    ctx.Response.ContentLength = stored.Length;
+    ctx.Response.Headers.CacheControl = "public, max-age=86400";
+    return Results.Stream(stored.Content, asset.ContentType);
+});
 
 // --- Landing view beacon (public): conta 1 visita por produto pra medir conversão. Sem PII. ---
 // A landing dispara isto no load. Só contamos productKeys que existem no catálogo (evita lixo de
@@ -248,6 +265,51 @@ brandProfile.MapGet("/ads/summary", async (string key, int? days, RootBoost.Appl
     var since = until.AddDays(-(window - 1));
     var rows = await store.ListAsync(brandKey, since, until, AdLevel.Campaign, ct);
     return Results.Ok(RootBoost.Application.Ads.AdsSummary.Build(brandKey, since, until, rows, rule));
+});
+
+// --- Mídia (RB-33): sobe pro bucket e devolve um link público estável, servido pela API. ---
+static string MediaPublicUrl(RootBoost.Application.Media.MediaOptions options, HttpRequest req, MediaAsset a)
+{
+    var baseUrl = string.IsNullOrWhiteSpace(options.PublicBaseUrl) ? $"{req.Scheme}://{req.Host}" : options.PublicBaseUrl.TrimEnd('/');
+    return $"{baseUrl}/media/{a.Id:N}/{a.FileName}";
+}
+
+static object MediaDto(RootBoost.Application.Media.MediaOptions options, HttpRequest req, MediaAsset a) => new
+{
+    id = a.Id, brandKey = a.BrandKey, fileName = a.FileName, contentType = a.ContentType, sizeBytes = a.SizeBytes,
+    isVideo = a.IsVideo, createdAt = a.CreatedAt, url = MediaPublicUrl(options, req, a)
+};
+
+brandProfile.MapPost("/media", async (string key, IFormFile file, HttpRequest req, IBrandStore brands,
+    RootBoost.Application.Media.UploadMedia upload, RootBoost.Application.Media.MediaOptions options, CancellationToken ct) =>
+{
+    var brandKey = key.ToLowerInvariant();
+    if (!(await brands.ListAsync(ct)).Any(b => b.Key == brandKey)) return Results.NotFound();
+    try
+    {
+        await using var stream = file.OpenReadStream();
+        var asset = await upload.HandleAsync(brandKey, file.FileName, file.Length, stream, ct);
+        return Results.Created(MediaPublicUrl(options, req, asset), MediaDto(options, req, asset));
+    }
+    catch (ArgumentException ex) { return Results.BadRequest(new { error = ex.Message }); }
+}).DisableAntiforgery().WithMetadata(new Microsoft.AspNetCore.Mvc.RequestSizeLimitAttribute(mediaMaxBytes + 1024 * 1024));
+
+brandProfile.MapGet("/media", async (string key, HttpRequest req, RootBoost.Application.Media.IMediaAssetStore assets,
+    RootBoost.Application.Media.MediaOptions options, CancellationToken ct) =>
+    Results.Ok((await assets.ListByBrandAsync(key.ToLowerInvariant(), 200, ct)).Select(a => MediaDto(options, req, a))));
+
+// Apagar só se nenhum post ainda não publicado usa o arquivo (senão o post quebraria no horário).
+brandProfile.MapDelete("/media/{id:guid}", async (string key, Guid id, RootBoost.Application.Media.IMediaAssetStore assets,
+    RootBoost.Application.Media.IMediaStorage storage, RootBoost.Application.Publishing.IPublicationStore publications, CancellationToken ct) =>
+{
+    var asset = await assets.GetAsync(id, ct);
+    if (asset is null || asset.BrandKey != key.ToLowerInvariant()) return Results.NotFound();
+    var inUse = (await publications.ListByBrandAsync(asset.BrandKey, null, null, ct))
+        .Any(p => p.Status != PublicationStatus.Published && p.MediaUrl.Contains($"/media/{asset.Id:N}/", StringComparison.OrdinalIgnoreCase));
+    if (inUse) return Results.Conflict(new { error = "arquivo usado num post ainda não publicado" });
+    await storage.DeleteAsync(asset.StorageKey, ct);
+    await assets.RemoveAsync(asset, ct);
+    return Results.NoContent();
 });
 
 brandProfile.MapPost("/proof/{id:guid}/retire", async (string key, Guid id, IBrandProfileStore store, CancellationToken ct) =>
