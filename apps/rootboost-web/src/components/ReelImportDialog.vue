@@ -72,13 +72,18 @@ const previews = computed(() => {
 
 const canCreate = computed(() =>
   !!blocks.value && blocks.value.errors.length === 0 && !!when.value &&
-  ((!!blocks.value.instagram && !!igVideo.value) || (!!blocks.value.linkedin && !!siteVideo.value)));
+  ((!!blocks.value.instagram && !!igVideo.value) ||
+    ((!!blocks.value.linkedin || !!blocks.value.facebook) && !!siteVideo.value)));
 
-async function uploadAndCreate(channel: string, file: File, caption: string, scheduledFor: string) {
+async function uploadMedia(file: File): Promise<string> {
   const body = new FormData();
   body.append('file', file);
   const { data } = await api.post<{ url: string }>(`/admin/brands/${props.brandKey}/media`, body, { timeout: 15 * 60_000 });
-  await api.post(`/admin/brands/${props.brandKey}/publications`, { channel, mediaUrl: data.url, caption, scheduledFor });
+  return data.url;
+}
+
+async function createDraft(channel: string, mediaUrl: string, caption: string, scheduledFor: string) {
+  await api.post(`/admin/brands/${props.brandKey}/publications`, { channel, mediaUrl, caption, scheduledFor });
 }
 
 async function create() {
@@ -88,8 +93,11 @@ async function create() {
   try {
     const scheduledFor = fromLocalInput(when.value);
     let created = 0;
-    if (b.instagram && igVideo.value) { await uploadAndCreate('instagram', igVideo.value, b.instagram, scheduledFor); created++; }
-    if (b.linkedin && siteVideo.value) { await uploadAndCreate('linkedin', siteVideo.value, b.linkedin, scheduledFor); created++; }
+    if (b.instagram && igVideo.value) { await createDraft('instagram', await uploadMedia(igVideo.value), b.instagram, scheduledFor); created++; }
+    // O -narrado.mp4 serve LinkedIn e Facebook: sobe uma vez e os dois rascunhos usam o mesmo link.
+    const site = siteVideo.value && (b.linkedin || b.facebook) ? await uploadMedia(siteVideo.value) : null;
+    if (b.linkedin && site) { await createDraft('linkedin', site, b.linkedin, scheduledFor); created++; }
+    if (b.facebook && site) { await createDraft('facebook', site, b.facebook, scheduledFor); created++; }
     $q.notify({ type: 'positive', message: t('reelImport.created', { n: created }) });
     open.value = false;
     emit('done');

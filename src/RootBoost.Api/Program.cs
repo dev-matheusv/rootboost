@@ -207,9 +207,6 @@ brandProfile.MapPost("/publications", async (string key, PublicationInput input,
     if (!(await brands.ListAsync(ct)).Any(b => b.Key == brandKey)) return Results.NotFound();
     if (!Enum.TryParse<SocialChannel>(input.Channel, true, out var channel) || !Enum.IsDefined(channel))
         return Results.BadRequest(new { error = $"canal inválido: '{input.Channel}'" });
-    if (channel == SocialChannel.Facebook && Uri.TryCreate(input.MediaUrl, UriKind.Absolute, out _) &&
-        RootBoost.Infrastructure.Publishing.InstagramPublisher.IsVideo(input.MediaUrl))
-        return Results.BadRequest(new { error = "vídeo na Página do Facebook ainda não é suportado; use imagem ou publique à mão" });
     try
     {
         var publication = new Publication(brandKey, channel, input.MediaUrl, input.Caption, input.ScheduledFor, time.GetUtcNow());
@@ -250,8 +247,6 @@ brandProfile.MapPut("/publications/{id:guid}/media", async (string key, Guid id,
 {
     var publication = await store.GetAsync(id, ct);
     if (publication is null || publication.BrandKey != key.ToLowerInvariant()) return Results.NotFound();
-    if (publication.Channel == SocialChannel.Facebook && RootBoost.Infrastructure.Publishing.InstagramPublisher.IsVideo(input.MediaUrl ?? ""))
-        return Results.BadRequest(new { error = "vídeo na Página do Facebook ainda não é suportado; use imagem ou publique à mão" });
     try { publication.ChangeMedia(input.MediaUrl ?? "", time.GetUtcNow()); }
     catch (Exception ex) when (ex is ArgumentException or InvalidOperationException) { return Results.BadRequest(new { error = ex.Message }); }
     await store.SaveAsync(publication, ct);
