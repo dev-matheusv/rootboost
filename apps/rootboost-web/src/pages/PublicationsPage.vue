@@ -86,6 +86,19 @@
               <template #prepend><q-icon :name="mdiUpload" /></template>
             </q-file>
             <q-input v-model="form.mediaUrl" outlined dense :label="$t('pages.publications.mediaUrl')" :hint="$t('pages.publications.mediaHint')" />
+            <q-expansion-item v-if="isReel" dense dense-toggle switch-toggle-side :label="$t('pages.publications.reelOptions')"
+              :caption="$t('pages.publications.reelOptionsHint')" header-class="q-px-none">
+              <div class="q-gutter-sm q-pt-sm">
+                <q-toggle v-model="form.shareToFeed" :label="$t('pages.publications.shareToFeed')" />
+                <q-file v-model="coverUpload" outlined dense clearable accept=".jpg,.jpeg" :label="$t('pages.publications.coverFile')"
+                  :hint="$t('pages.publications.coverHint')" :loading="uploading" @update:model-value="sendCover">
+                  <template #prepend><q-icon :name="mdiUpload" /></template>
+                </q-file>
+                <q-input v-model="form.coverUrl" outlined dense clearable :label="$t('pages.publications.coverUrl')" />
+                <q-input v-model.number="form.thumbSeconds" outlined dense type="number" min="0" step="0.1" clearable
+                  :disable="!!form.coverUrl" :label="$t('pages.publications.thumbSeconds')" :hint="$t('pages.publications.thumbHint')" />
+              </div>
+            </q-expansion-item>
           </template>
           <q-input v-model="form.caption" outlined type="textarea" autogrow :label="$t('pages.publications.caption')"
             :hint="editing?.status === 'Approved' ? $t('pages.publications.editResets') : undefined" />
@@ -197,27 +210,68 @@ function goToday() {
 
 const dialog = ref(false);
 const editing = ref<Publication | null>(null);
-const form = reactive<{ channel: SocialChannel; mediaUrl: string; caption: string; when: string }>({ channel: 'Instagram', mediaUrl: '', caption: '', when: '' });
+interface PublicationForm {
+  channel: SocialChannel;
+  mediaUrl: string;
+  caption: string;
+  when: string;
+  coverUrl: string | null;
+  thumbSeconds: number | null;
+  shareToFeed: boolean;
+}
+const emptyReel = { coverUrl: null, thumbSeconds: null, shareToFeed: true };
+const form = reactive<PublicationForm>({ channel: 'Instagram', mediaUrl: '', caption: '', when: '', ...emptyReel });
+
+/** Capa e feed só valem pra Reels: vídeo no Instagram (mesma regra da API, pela extensão). */
+const isReel = computed(() => form.channel === 'Instagram' && /\.(mp4|mov)$/i.test(safePath(form.mediaUrl)));
+
+function safePath(url: string): string {
+  try {
+    return new URL(url.trim()).pathname;
+  } catch {
+    return '';
+  }
+}
 
 const upload = ref<File | null>(null);
+const coverUpload = ref<File | null>(null);
 const uploading = ref(false);
 
-/** Sobe o arquivo pro bucket e preenche o link público estável que a API devolve. */
-async function sendFile(file: File | null) {
-  if (!file) return;
+/** Sobe o arquivo pro bucket e devolve o link público estável que a API gera. */
+async function uploadToBucket(file: File, reset: () => void): Promise<string | null> {
   uploading.value = true;
   try {
     const body = new FormData();
     body.append('file', file);
     const { data } = await api.post<{ url: string }>(`/admin/brands/${brand.selected}/media`, body, { timeout: 15 * 60_000 });
-    form.mediaUrl = data.url;
     $q.notify({ type: 'positive', message: t('pages.publications.uploaded') });
+    return data.url;
   } catch (e) {
-    upload.value = null;
+    reset();
     $q.notify({ type: 'negative', message: apiError(e) });
+    return null;
   } finally {
     uploading.value = false;
   }
+}
+
+async function sendFile(file: File | null) {
+  if (!file) return;
+  const url = await uploadToBucket(file, () => (upload.value = null));
+  if (url) form.mediaUrl = url;
+}
+
+async function sendCover(file: File | null) {
+  if (!file) return;
+  const url = await uploadToBucket(file, () => (coverUpload.value = null));
+  if (url) form.coverUrl = url;
+}
+
+/** O que vai pro PUT /reel. Quadro em segundos no formulário, milissegundos na API. */
+function reelBody() {
+  const cover = form.coverUrl?.trim() || null;
+  const secs = typeof form.thumbSeconds === 'number' && Number.isFinite(form.thumbSeconds) ? form.thumbSeconds : null;
+  return { coverUrl: cover, thumbOffsetMs: cover || secs === null ? null : Math.round(secs * 1000), shareToFeed: form.shareToFeed };
 }
 
 const importOpen = ref(false);
@@ -257,13 +311,19 @@ function openNew() {
   editing.value = null;
   const next = new Date();
   next.setHours(next.getHours() + 1, 0, 0, 0);
-  Object.assign(form, { channel: 'Instagram', mediaUrl: '', caption: '', when: toLocalInput(next.toISOString()) });
+  coverUpload.value = null;
+  Object.assign(form, { channel: 'Instagram', mediaUrl: '', caption: '', when: toLocalInput(next.toISOString()), ...emptyReel });
   dialog.value = true;
 }
 
 function openEdit(p: Publication) {
   editing.value = p;
-  Object.assign(form, { channel: p.channel, mediaUrl: p.mediaUrl, caption: p.caption, when: toLocalInput(p.scheduledFor) });
+  upload.value = null;
+  coverUpload.value = null;
+  Object.assign(form, {
+    channel: p.channel, mediaUrl: p.mediaUrl, caption: p.caption, when: toLocalInput(p.scheduledFor),
+    coverUrl: p.coverUrl, thumbSeconds: p.thumbOffsetMs === null ? null : p.thumbOffsetMs / 1000, shareToFeed: p.shareToFeed,
+  });
   dialog.value = true;
 }
 
@@ -295,11 +355,17 @@ async function save() {
     const when = fromLocalInput(form.when);
     const p = editing.value;
     if (!p) {
-      await api.post(base.value, { channel: form.channel, mediaUrl: form.mediaUrl.trim(), caption: form.caption, scheduledFor: when });
+      const { data } = await api.post<Publication>(base.value, { channel: form.channel, mediaUrl: form.mediaUrl.trim(), caption: form.caption, scheduledFor: when });
+      const reel = reelBody();
+      if (isReel.value && (reel.coverUrl || reel.thumbOffsetMs !== null || !reel.shareToFeed))
+        await api.put(`${base.value}/${data.id}/reel`, reel);
     } else {
       // Trocar vídeo ou legenda volta o post pra rascunho (precisa aprovar de novo).
       if (form.mediaUrl.trim() !== p.mediaUrl) await api.put(`${base.value}/${p.id}/media`, { mediaUrl: form.mediaUrl.trim() });
       if (form.caption.trim() !== p.caption) await api.put(`${base.value}/${p.id}/caption`, { caption: form.caption });
+      const reel = reelBody();
+      if (isReel.value && (reel.coverUrl !== p.coverUrl || reel.thumbOffsetMs !== p.thumbOffsetMs || reel.shareToFeed !== p.shareToFeed))
+        await api.put(`${base.value}/${p.id}/reel`, reel);
       if (when !== new Date(p.scheduledFor).toISOString()) await api.put(`${base.value}/${p.id}/schedule`, { scheduledFor: when });
     }
     dialog.value = false;
