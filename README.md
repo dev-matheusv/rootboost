@@ -8,7 +8,7 @@ só com `catalog.json` + uma landing nova.
 > Contexto completo do projeto (decisões, arquitetura, riscos, roadmap): veja [CLAUDE.md](CLAUDE.md).
 
 ## Stack
-.NET 9 · Clean Architecture · EF Core + SQLite · minimal API · Docker.
+.NET 9 · Clean Architecture · EF Core + PostgreSQL 16 · minimal API · Docker.
 
 ```
 src/RootBoost.Domain          entidades/VOs puros
@@ -21,8 +21,11 @@ tests/                        unitários dos casos de uso
 ## Rodar local (tudo mockado, sem credencial)
 
 O ambiente `Development` usa fornecedor Mock, notificador de log e verificador de pagamento de teste.
+Banco: o mesmo Postgres da produção, em Docker (porta 5433, a 5432 fica livre pro MedlyCare). Os testes de
+integração sobem o próprio Postgres descartável (Testcontainers), então precisam do Docker ligado.
 
 ```bash
+docker compose up -d
 dotnet build
 dotnet test
 ASPNETCORE_ENVIRONMENT=Development dotnet run --project src/RootBoost.Api --urls http://localhost:5080
@@ -55,7 +58,6 @@ Segredos **nunca** no código — via env vars. Nomes aninhados usam `__` (duplo
 
 | Env var | O quê |
 |---|---|
-| `ConnectionStrings__Sqlite` | Ex.: `Data Source=/data/rootboost.db` (volume persistente). |
 | `Supplier` | `Cj` (prod) ou `Mock` (dev). |
 | `Notifier` | `Resend` (prod) ou `Logging` (dev). |
 | `Payments__Verifier` | `PayPal` (prod) ou `Test` (dev). |
@@ -63,9 +65,7 @@ Segredos **nunca** no código — via env vars. Nomes aninhados usam `__` (duplo
 | `PayPal__ClientId`, `PayPal__ClientSecret`, `PayPal__WebhookId` | App + webhook do PayPal. `PayPal__BaseUrl` = `https://api-m.sandbox.paypal.com` pra sandbox. |
 | `Resend__ApiKey`, `Resend__FromEmail`, `Resend__OperatorEmail` | E-mail transacional + inbox de alertas de falha. |
 | `Orders__ApiKey` | Chave dos scripts (`X-Api-Key`) pro `/orders` e `/admin/*`. Sem ela esses endpoints ficam abertos (só pra dev). |
-| `Database__Provider` | `Sqlite` (padrão) ou `Postgres`. Com Postgres, as migrações do EF rodam no boot. |
-| `ConnectionStrings__Postgres` ou `DATABASE_URL` | Conexão do Postgres. Aceita o formato do Npgsql ou a URL `postgresql://...` que o Railway injeta. |
-| `Database__ImportFromSqlite` | Só na virada: caminho do SQLite antigo (ex.: `/data/rootboost.db`). Copia pedidos e visitas se o Postgres estiver vazio, confere as contagens e nunca duplica. |
+| `ConnectionStrings__Postgres` ou `DATABASE_URL` | Conexão do Postgres (único banco desde 27/10/2026, RB-29). Aceita o formato do Npgsql ou a URL `postgresql://...` que o Railway injeta. As migrações do EF rodam no boot. Dev local: `docker compose up -d` (porta 5433). |
 | `Jwt__Key` | Assinatura do login do Console (32+ caracteres, aleatória). Sem ela o `/auth/login` responde 503. |
 | `Auth__OwnerEmail`, `Auth__OwnerName` | Dono do Console. |
 | `Auth__OwnerPasswordHash` | Hash da senha do dono. Gerar com `dotnet run --project src/RootBoost.Api --no-launch-profile -- hash-password` (pede a senha na entrada; mínimo 12 caracteres). |

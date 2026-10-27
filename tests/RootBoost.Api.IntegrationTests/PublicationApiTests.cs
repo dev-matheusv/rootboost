@@ -95,13 +95,6 @@ public abstract class PublicationApiTestsBase
     }
 }
 
-public class PublicationApiSqliteTests : PublicationApiTestsBase, IClassFixture<CustomWebApplicationFactory>
-{
-    private readonly CustomWebApplicationFactory _factory;
-    public PublicationApiSqliteTests(CustomWebApplicationFactory factory) => _factory = factory;
-    protected override HttpClient Client() => _factory.CreateClient();
-}
-
 public class PublicationApiPostgresTests : PublicationApiTestsBase, IClassFixture<PostgresWebApplicationFactory>
 {
     private readonly PostgresWebApplicationFactory _factory;

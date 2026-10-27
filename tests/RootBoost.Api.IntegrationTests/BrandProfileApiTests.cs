@@ -86,13 +86,6 @@ public abstract class BrandProfileApiTestsBase
     }
 }
 
-public class BrandProfileApiSqliteTests : BrandProfileApiTestsBase, IClassFixture<CustomWebApplicationFactory>
-{
-    private readonly CustomWebApplicationFactory _factory;
-    public BrandProfileApiSqliteTests(CustomWebApplicationFactory factory) => _factory = factory;
-    protected override HttpClient Client() => _factory.CreateClient();
-}
-
 public class BrandProfileApiPostgresTests : BrandProfileApiTestsBase, IClassFixture<PostgresWebApplicationFactory>
 {
     private readonly PostgresWebApplicationFactory _factory;

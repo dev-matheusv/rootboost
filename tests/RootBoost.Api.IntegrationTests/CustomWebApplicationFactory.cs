@@ -1,34 +1,49 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.Configuration;
+using Npgsql;
+using Testcontainers.PostgreSql;
 
 namespace RootBoost.Api.IntegrationTests;
 
 /// <summary>
-/// Boots the real API pipeline with the deterministic dev adapters (Mock supplier, Logging
-/// notifier, Test payment verifier) and an isolated SQLite file + a fulfillable test catalog.
-/// Mirrors the RootFlow integration-test approach: real pipeline, fake externals.
+/// Sobe o pipeline real da API com os adaptadores determinísticos (fornecedor Mock, notificador Logging,
+/// verificador Test) contra um Postgres de verdade, o mesmo banco da produção (RB-29: sem SQLite).
+/// Um contêiner só pra rodada inteira de testes; cada fábrica ganha o próprio banco (as migrações criam).
 /// </summary>
-public class CustomWebApplicationFactory : WebApplicationFactory<Program>
+public class CustomWebApplicationFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
-    private readonly string _dbPath = Path.Combine(Path.GetTempPath(), $"rootboost-it-{Guid.NewGuid():N}.db");
+    private static readonly Lazy<Task<PostgreSqlContainer>> Shared = new(async () =>
+    {
+        var container = new PostgreSqlBuilder().WithImage("postgres:16-alpine").Build();
+        await container.StartAsync();
+        return container; // o Testcontainers (Ryuk) derruba no fim da rodada
+    });
+
+    private readonly string _database = $"it_{Guid.NewGuid():N}";
+
+    public string ConnectionString { get; private set; } = string.Empty;
+
+    public async Task InitializeAsync()
+    {
+        var container = await Shared.Value;
+        ConnectionString = new NpgsqlConnectionStringBuilder(container.GetConnectionString()) { Database = _database }.ConnectionString;
+    }
+
+    Task IAsyncLifetime.DisposeAsync() => Task.CompletedTask;
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        builder.UseSetting("ConnectionStrings:Postgres", ConnectionString);
         builder.UseSetting("Supplier", "Mock");
         builder.UseSetting("Notifier", "Logging");
         builder.UseSetting("Payments:Verifier", "Test");
-        builder.UseSetting("ConnectionStrings:Sqlite", $"Data Source={_dbPath}");
         builder.UseSetting("Catalog:Path", Path.Combine(AppContext.BaseDirectory, "test-catalog.json"));
-        // Agendador desligado: os testes disparam o job por /admin/publications/run, sem corrida com o timer.
+        // Agendadores desligados: os testes disparam os jobs pelos endpoints, sem corrida com o timer.
         builder.UseSetting("Social:SchedulerEnabled", "false");
         builder.UseSetting("Ads:SyncEnabled", "false");
         // no Orders:ApiKey -> /orders is open in tests
     }
-
-    protected override void Dispose(bool disposing)
-    {
-        base.Dispose(disposing);
-        try { if (File.Exists(_dbPath)) File.Delete(_dbPath); } catch { /* best effort */ }
-    }
 }
+
+/// <summary>Mantido pelo nome: os testes que antes rodavam "também no Postgres" agora são o padrão.</summary>
+public sealed class PostgresWebApplicationFactory : CustomWebApplicationFactory;
