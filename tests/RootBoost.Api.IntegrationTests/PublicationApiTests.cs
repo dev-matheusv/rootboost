@@ -42,6 +42,19 @@ public abstract class PublicationApiTestsBase
     }
 
     [Fact]
+    public async Task Approval_can_be_undone_before_it_goes_live()
+    {
+        var client = Client();
+        var id = (await Create(client, $"Agenda para fisioterapia {Guid.NewGuid():N}", DateTimeOffset.UtcNow.AddHours(1))).GetProperty("id").GetString()!;
+        Assert.Equal(HttpStatusCode.OK, (await client.PostAsync($"{Base}/{id}/approve", null)).StatusCode);
+
+        var undo = await client.PostAsync($"{Base}/{id}/unapprove", null);
+        Assert.Equal(HttpStatusCode.OK, undo.StatusCode);
+        Assert.Equal("Draft", (await Get(client, id)).GetProperty("status").GetString());
+        Assert.Equal(HttpStatusCode.BadRequest, (await client.PostAsync($"{Base}/{id}/unapprove", null)).StatusCode);
+    }
+
+    [Fact]
     public async Task Reel_cover_and_feed_option_are_saved_and_only_valid_for_instagram_video()
     {
         var client = Client();

@@ -1,17 +1,20 @@
 <template>
   <q-page class="q-pa-lg">
-    <div class="row items-end q-mb-lg q-gutter-sm">
-      <div class="col">
-        <div class="text-h5 sora-bold">{{ $t('pages.publications.title') }}</div>
-        <div class="text-grey-7">{{ $t('pages.publications.subtitle') }}</div>
+    <div class="row items-center q-mb-lg q-gutter-sm">
+      <div class="col-12 col-md">
+        <div class="text-overline text-grey-7">{{ brand.selected }}</div>
+        <div class="text-h5 sora-bold">{{ heading }}</div>
       </div>
       <template v-if="brand.selected">
-        <q-btn flat round :icon="mdiChevronLeft" @click="shiftWeek(-1)" />
-        <div class="text-subtitle2">{{ weekLabel }}</div>
-        <q-btn flat round :icon="mdiChevronRight" @click="shiftWeek(1)" />
-        <q-btn flat no-caps :label="$t('pages.publications.today')" @click="goToday" />
-        <q-btn outline color="primary" no-caps :icon="mdiMovieOpenOutline" :label="$t('reelImport.title')" @click="importOpen = true" />
-        <q-btn unelevated color="primary" no-caps :icon="mdiPlus" :label="$t('pages.publications.new')" @click="openNew" />
+        <!-- Fila é o padrão: responde "o que precisa de mim". Semana e mês mostram a mesma agenda no calendário. -->
+        <q-btn-toggle v-model="view" no-caps unelevated rounded toggle-color="primary" class="view-toggle" :options="viewOptions" />
+        <template v-if="view !== 'queue'">
+          <q-btn flat round :icon="mdiChevronLeft" @click="shift(-1)" />
+          <q-btn flat no-caps :label="$t('pages.publications.today')" @click="goToday" />
+          <q-btn flat round :icon="mdiChevronRight" @click="shift(1)" />
+        </template>
+        <q-btn unelevated color="accent" text-color="dark" no-caps :icon="mdiMovieOpenOutline" :label="$t('reelImport.title')" @click="importOpen = true" />
+        <q-btn outline color="primary" no-caps :icon="mdiPlus" :label="$t('pages.publications.new')" @click="openNew" />
       </template>
     </div>
 
@@ -28,49 +31,96 @@
         <template #action><q-btn flat :label="$t('common.actions.retry')" @click="load" /></template>
       </q-banner>
 
-      <q-linear-progress v-if="loading" indeterminate color="primary" class="q-mb-sm" />
+      <div class="row q-col-gutter-lg">
+        <div class="col-12 col-md">
+          <div v-if="loading && !items.length" class="column q-gutter-sm">
+            <q-skeleton v-for="n in 4" :key="n" height="76px" class="card-rounded" />
+          </div>
 
-      <div v-for="day in days" :key="day.key" class="q-mb-md">
-        <div class="text-subtitle2 q-mb-xs" :class="{ 'text-primary': day.key === todayKey }">
-          {{ day.date.toLocaleDateString(locale, { weekday: 'long', day: '2-digit', month: '2-digit' }) }}
-        </div>
-        <q-list v-if="day.items.length" bordered separator class="card-rounded">
-          <q-item v-for="p in day.items" :key="p.id">
-            <q-item-section avatar top>
-              <div class="text-weight-bold">{{ new Date(p.scheduledFor).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }) }}</div>
-            </q-item-section>
-            <q-item-section>
-              <q-item-label>
-                <q-chip dense square :color="statusColor(p.status)" text-color="white" class="q-ml-none">
-                  {{ $t(`pages.publications.status.${p.status}`) }}
-                </q-chip>
-                <q-chip dense square outline>{{ p.channel }}</q-chip>
-              </q-item-label>
-              <q-item-label class="q-mt-xs caption-text">{{ p.caption }}</q-item-label>
-              <q-item-label caption>
-                <a :href="p.mediaUrl" target="_blank" rel="noopener">{{ $t('pages.publications.media') }}</a>
-                <span v-if="p.approvedBy"> · {{ $t('pages.publications.approvedBy', { who: p.approvedBy }) }}</span>
-                <span v-if="p.publishedUrl"> · <a :href="p.publishedUrl" target="_blank" rel="noopener">{{ $t('pages.publications.openPost') }}</a></span>
-              </q-item-label>
-              <q-item-label v-if="p.error" caption class="text-negative">{{ p.error }}</q-item-label>
-            </q-item-section>
-            <q-item-section side top>
-              <div class="row no-wrap">
-                <template v-if="p.channel === 'LinkedIn' && p.status === 'Approved'">
-                  <q-btn flat dense no-caps color="primary" :label="$t('pages.publications.download')" :href="p.mediaUrl" target="_blank" />
-                  <q-btn flat dense no-caps color="primary" :label="$t('pages.publications.copyCaption')" @click="copyCaption(p)" />
-                  <q-btn flat dense no-caps color="positive" :label="$t('pages.publications.markPublished')" @click="markPublished(p)" />
-                </template>
-                <q-btn v-if="p.status === 'Draft'" flat dense no-caps color="primary" :label="$t('pages.publications.approve')"
-                  :loading="busy === p.id" @click="approve(p)" />
-                <q-btn v-if="canEdit(p)" flat round dense :icon="mdiPencilOutline" @click="openEdit(p)">
-                  <q-tooltip>{{ $t('pages.publications.edit') }}</q-tooltip>
-                </q-btn>
+          <!-- Fila -->
+          <div v-else-if="view === 'queue'" class="column q-gutter-y-lg">
+            <div v-if="!sections.needs.length" class="all-clear card-rounded row items-center no-wrap q-pa-md q-gutter-x-md">
+              <q-icon :name="mdiCheckCircleOutline" size="32px" color="positive" />
+              <div>
+                <div class="text-subtitle1 text-weight-bold">{{ $t('pages.publications.allClear') }}</div>
+                <div v-if="sections.scheduled[0]" class="text-caption text-grey-7">
+                  {{ $t('pages.publications.nextUp', { when: fmtWhen(sections.scheduled[0].scheduledFor) }) }}
+                </div>
               </div>
-            </q-item-section>
-          </q-item>
-        </q-list>
-        <div v-else class="text-caption text-grey-6 q-pl-sm">{{ $t('pages.publications.nothing') }}</div>
+            </div>
+            <template v-for="stage in stages" :key="stage">
+              <section v-if="sections[stage].length">
+                <div class="section-title q-mb-sm" :class="`text-${stageColor(stage)}`">
+                  {{ $t(`pages.publications.sections.${stage}`) }} · {{ sections[stage].length }}
+                </div>
+                <transition-group name="list" tag="div" class="column q-gutter-y-sm">
+                  <div v-for="b in sections[stage]" :key="b.key" class="bundle-row card-rounded row items-center no-wrap q-pa-sm q-gutter-x-md"
+                    :class="{ selected: b.key === selectedKey }" role="button" tabindex="0" @click="selectBundle(b, true)" @keydown.enter="selectBundle(b, true)">
+                    <div class="thumb" :style="thumbStyle(b)"><q-icon v-if="!thumbOf(b)" :name="mdiPlayCircleOutline" color="white" size="20px" /></div>
+                    <div class="col" style="min-width: 0">
+                      <div class="text-weight-bold ellipsis">{{ b.title }}</div>
+                      <div class="text-caption text-grey-7">{{ fmtWhen(b.scheduledFor) }}</div>
+                      <div class="row q-gutter-xs q-mt-xs">
+                        <span v-for="p in b.items" :key="p.id" class="channel-chip" :class="`ch-${p.channel}`">
+                          <span class="dot" :class="`bg-${statusColor(p.status)}`" />{{ p.channel }}
+                        </span>
+                      </div>
+                    </div>
+                    <q-chip dense :color="stageColor(stage)" text-color="white" class="gt-xs">{{ $t(`pages.publications.stage.${stage}`) }}</q-chip>
+                  </div>
+                </transition-group>
+              </section>
+            </template>
+            <div v-if="!bundles.length" class="text-grey-6">{{ $t('pages.publications.nothing') }}</div>
+          </div>
+
+          <!-- Semana -->
+          <div v-else-if="view === 'week'" class="week-scroll">
+            <div class="week-grid">
+              <div v-for="day in weekDays" :key="day.key" class="column q-gutter-y-sm">
+                <div class="day-head card-rounded column q-py-xs" :class="{ today: day.key === todayKey }">
+                  <span class="text-caption text-uppercase">{{ day.date.toLocaleDateString(locale, { weekday: 'short' }) }}</span>
+                  <span class="sora-bold text-h6">{{ day.date.getDate() }}</span>
+                </div>
+                <div v-for="b in day.bundles" :key="b.key" class="week-card card-rounded q-pa-sm" :class="{ selected: b.key === selectedKey }"
+                  role="button" tabindex="0" @click="selectBundle(b, true)" @keydown.enter="selectBundle(b, true)">
+                  <div class="text-caption text-weight-bold">{{ fmtTime(b.scheduledFor) }}</div>
+                  <div class="text-body2 text-weight-medium ellipsis-2-lines q-my-xs">{{ b.title }}</div>
+                  <div class="row q-gutter-xs">
+                    <span v-for="p in b.items" :key="p.id" class="channel-chip" :class="`ch-${p.channel}`">
+                      <span class="dot" :class="`bg-${statusColor(p.status)}`" />{{ p.channel.slice(0, 2) }}
+                    </span>
+                  </div>
+                </div>
+                <div v-if="!day.bundles.length" class="empty-day card-rounded text-caption text-grey-6 q-pa-sm text-center">
+                  {{ $t('pages.publications.nothing') }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Mês -->
+          <div v-else class="month-grid">
+            <div v-for="c in monthCells.slice(0, 7)" :key="`wd${c.key}`" class="text-caption text-uppercase text-grey-7 q-px-xs">
+              {{ c.date.toLocaleDateString(locale, { weekday: 'short' }) }}
+            </div>
+            <div v-for="c in monthCells" :key="c.key" class="month-cell card-rounded" :class="{ out: !c.inMonth }">
+              <span class="day-num" :class="{ today: c.key === todayKey }">{{ c.date.getDate() }}</span>
+              <div v-for="b in c.bundles" :key="b.key" class="month-chip" :class="[`st-${b.stage}`, { selected: b.key === selectedKey }]"
+                role="button" tabindex="0" @click="selectBundle(b, true)" @keydown.enter="selectBundle(b, true)">
+                <span class="text-weight-bold">{{ fmtTime(b.scheduledFor) }}</span> {{ b.title }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12 col-md-auto">
+          <div ref="previewEl" class="preview-col">
+            <PublicationPreview :bundle="selectedBundle" :selected-id="selectedId" :brand-key="brand.selected" :busy="approving"
+              @select="(id: string) => (selectedId = id)" @approve="approveBundle" @edit="openEdit" @copy="copyCaption"
+              @mark-published="markPublished" />
+          </div>
+        </div>
       </div>
     </template>
 
@@ -135,18 +185,23 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useQuasar } from 'quasar';
 import { isAxiosError } from 'axios';
-import { mdiChevronLeft, mdiChevronRight, mdiPlus, mdiPencilOutline, mdiInformationOutline, mdiUpload, mdiDeleteOutline, mdiMovieOpenOutline } from '@quasar/extras/mdi-v7';
+import {
+  mdiChevronLeft, mdiChevronRight, mdiPlus, mdiInformationOutline, mdiUpload, mdiDeleteOutline, mdiMovieOpenOutline,
+  mdiCheckCircleOutline, mdiPlayCircleOutline,
+} from '@quasar/extras/mdi-v7';
 import { api } from 'src/services/api';
 import type { CopyFinding, Publication, SocialChannel } from 'src/types/api';
 import { useBrandStore } from 'src/stores/brandStore';
 import ReelImportDialog from 'src/components/ReelImportDialog.vue';
+import PublicationPreview from 'src/components/PublicationPreview.vue';
 import { findingColor, sortFindings } from 'src/utils/brandProfile';
 import {
-  addDays, canEdit, fromLocalInput, groupByDay, localDayKey, startOfWeek, statusColor, toLocalInput,
+  addDays, bundlePosts, canEdit, fromLocalInput, groupByDay, isVideo, localDayKey, monthGrid, queueSections, stageColor,
+  startOfWeek, statusColor, toLocalInput, type AgendaView, type BundleStage, type PostBundle,
 } from 'src/utils/publications';
 
 defineOptions({ name: 'PublicationsPage' });
@@ -155,27 +210,104 @@ const { t, locale } = useI18n();
 const $q = useQuasar();
 const brand = useBrandStore();
 
+const VIEW_KEY = 'rb.publications.view';
+function savedView(): AgendaView {
+  try {
+    const v = localStorage.getItem(VIEW_KEY);
+    return v === 'week' || v === 'month' ? v : 'queue';
+  } catch {
+    return 'queue';
+  }
+}
+
+const view = ref<AgendaView>(savedView());
+const viewOptions = computed(() => [
+  { label: t('pages.publications.views.queue'), value: 'queue' },
+  { label: t('pages.publications.views.week'), value: 'week' },
+  { label: t('pages.publications.views.month'), value: 'month' },
+]);
 const weekStart = ref(startOfWeek(new Date()));
+const monthAnchor = ref(firstOfMonth(new Date()));
 const items = ref<Publication[]>([]);
 const loading = ref(false);
 const saving = ref(false);
 const error = ref(false);
-const busy = ref<string | null>(null);
+const approving = ref(false);
 const live = ref(false);
 
 const channels: SocialChannel[] = ['Instagram', 'Facebook', 'LinkedIn'];
+const stages: BundleStage[] = ['needs', 'scheduled', 'published'];
 const todayKey = localDayKey(new Date());
-const days = computed(() => groupByDay(weekStart.value, items.value));
 const base = computed(() => `/admin/brands/${brand.selected}/publications`);
-const weekLabel = computed(() => {
-  const end = addDays(weekStart.value, 6);
-  const f = (d: Date) => d.toLocaleDateString(locale.value, { day: '2-digit', month: '2-digit' });
-  return t('pages.publications.range', { from: f(weekStart.value), to: f(end) });
+
+function firstOfMonth(d: Date): Date {
+  return new Date(d.getFullYear(), d.getMonth(), 1);
+}
+
+const bundles = computed(() => bundlePosts(items.value));
+const sections = computed(() => queueSections(bundles.value));
+const weekDays = computed(() => groupByDay(weekStart.value, items.value).map((d) => ({ ...d, bundles: bundlePosts(d.items) })));
+const monthCells = computed(() => {
+  const byDay = new Map<string, PostBundle[]>();
+  for (const b of bundles.value) {
+    const k = localDayKey(new Date(b.scheduledFor));
+    byDay.set(k, [...(byDay.get(k) ?? []), b]);
+  }
+  return monthGrid(monthAnchor.value).map((date) => {
+    const key = localDayKey(date);
+    return { key, date, inMonth: date.getMonth() === monthAnchor.value.getMonth(), bundles: byDay.get(key) ?? [] };
+  });
 });
+
+/** Ordem que J e K percorrem: a mesma que aparece na tela. */
+const ordered = computed<PostBundle[]>(() =>
+  view.value === 'queue' ? [...sections.value.needs, ...sections.value.scheduled, ...sections.value.published] : bundles.value,
+);
+
+const heading = computed(() => {
+  if (view.value === 'queue') return t('pages.publications.queueTitle');
+  if (view.value === 'month') {
+    const m = monthAnchor.value.toLocaleDateString(locale.value, { month: 'long', year: 'numeric' });
+    return m.charAt(0).toUpperCase() + m.slice(1);
+  }
+  const f = (d: Date) => d.toLocaleDateString(locale.value, { day: '2-digit', month: '2-digit' });
+  return t('pages.publications.range', { from: f(weekStart.value), to: f(addDays(weekStart.value, 6)) });
+});
+
+function fmtWhen(iso: string): string {
+  return new Date(iso).toLocaleString(locale.value, { weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+}
+function fmtTime(iso: string): string {
+  return new Date(iso).toLocaleTimeString(locale.value, { hour: '2-digit', minute: '2-digit' });
+}
+
+/** Miniatura: capa do Reels ou a própria imagem. Vídeo sem capa fica no bloco de cor (não baixa vídeo só pra miniatura). */
+function thumbOf(b: PostBundle): string | null {
+  for (const p of b.items) {
+    if (p.coverUrl) return p.coverUrl;
+    if (!isVideo(p.mediaUrl)) return p.mediaUrl;
+  }
+  return null;
+}
+function thumbStyle(b: PostBundle) {
+  const url = thumbOf(b);
+  return url ? { backgroundImage: `url("${url}")` } : {};
+}
 
 function apiError(e: unknown): string {
   if (isAxiosError(e) && typeof e.response?.data?.error === 'string') return e.response.data.error;
   return t('common.saveError');
+}
+
+/** Intervalo de cada visão. Fila: três semanas pra trás (publicados recentes) e quatro meses pra frente. */
+function range(): { from: Date; to: Date } {
+  if (view.value === 'week') return { from: weekStart.value, to: addDays(weekStart.value, 7) };
+  if (view.value === 'month') {
+    const grid = monthGrid(monthAnchor.value);
+    return { from: grid[0]!, to: addDays(grid[grid.length - 1]!, 1) };
+  }
+  const now = new Date();
+  return { from: addDays(now, -21), to: addDays(now, 120) };
 }
 
 async function load() {
@@ -183,14 +315,14 @@ async function load() {
   loading.value = true;
   error.value = false;
   try {
+    const { from, to } = range();
     const [list, mode] = await Promise.all([
-      api.get<Publication[]>(base.value, {
-        params: { from: weekStart.value.toISOString(), to: addDays(weekStart.value, 7).toISOString() },
-      }),
+      api.get<Publication[]>(base.value, { params: { from: from.toISOString(), to: to.toISOString() } }),
       api.get<{ live: boolean }>('/admin/publications/mode'),
     ]);
     items.value = list.data;
     live.value = mode.data.live;
+    keepSelection();
   } catch {
     error.value = true;
   } finally {
@@ -198,15 +330,50 @@ async function load() {
   }
 }
 
-function shiftWeek(n: number) {
-  weekStart.value = addDays(weekStart.value, 7 * n);
+const selectedKey = ref<string | null>(null);
+const selectedId = ref<string | null>(null);
+const selectedBundle = computed(() => bundles.value.find((b) => b.key === selectedKey.value) ?? null);
+
+const previewEl = ref<HTMLElement | null>(null);
+
+function selectBundle(b: PostBundle | undefined, reveal = false) {
+  if (!b) return;
+  selectedKey.value = b.key;
+  selectedId.value = (b.items.find((p) => p.status === 'Draft' || p.status === 'Failed') ?? b.items[0])?.id ?? null;
+  // No celular a prévia fica embaixo da lista: tocar no post leva até ela.
+  if (reveal && $q.screen.lt.md) previewEl.value?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+/** Depois de recarregar, continua no mesmo post; se ele sumiu, vai pro primeiro que precisa de você. */
+function keepSelection() {
+  const still = bundles.value.find((b) => b.key === selectedKey.value);
+  if (still) {
+    if (!still.items.some((p) => p.id === selectedId.value)) selectedId.value = still.items[0]?.id ?? null;
+    return;
+  }
+  selectBundle(ordered.value[0]);
+}
+
+function shift(n: number) {
+  if (view.value === 'week') weekStart.value = addDays(weekStart.value, 7 * n);
+  else monthAnchor.value = new Date(monthAnchor.value.getFullYear(), monthAnchor.value.getMonth() + n, 1);
   void load();
 }
 
 function goToday() {
   weekStart.value = startOfWeek(new Date());
+  monthAnchor.value = firstOfMonth(new Date());
   void load();
 }
+
+watch(view, (v) => {
+  try {
+    localStorage.setItem(VIEW_KEY, v);
+  } catch {
+    // Sem armazenamento (aba anônima): só não lembra a visão.
+  }
+  void load();
+});
 
 const dialog = ref(false);
 const editing = ref<Publication | null>(null);
@@ -380,12 +547,20 @@ async function save() {
 const blockedDialog = ref(false);
 const blockedFindings = ref<CopyFinding[]>([]);
 
-async function approve(p: Publication) {
-  busy.value = p.id;
+/**
+ * Aprova os rascunhos do grupo, um canal por vez (cada um passa pela checklist). Parou na checklist: mostra o que
+ * corrigir e mantém aprovado o que já passou. No fim, aviso com "Desfazer", que volta tudo pra rascunho.
+ */
+async function approveBundle(b: PostBundle) {
+  const drafts = b.items.filter((p) => p.status === 'Draft');
+  if (!drafts.length || approving.value) return;
+  approving.value = true;
+  const done: string[] = [];
   try {
-    await api.post(`${base.value}/${p.id}/approve`);
-    $q.notify({ type: 'positive', message: t('pages.publications.approved') });
-    await load();
+    for (const p of drafts) {
+      await api.post(`${base.value}/${p.id}/approve`);
+      done.push(p.id);
+    }
   } catch (e) {
     const checklist = isAxiosError(e) && e.response?.status === 422 ? (e.response.data?.checklist as CopyFinding[] | undefined) : undefined;
     if (checklist) {
@@ -395,14 +570,134 @@ async function approve(p: Publication) {
       $q.notify({ type: 'negative', message: apiError(e) });
     }
   } finally {
-    busy.value = null;
+    approving.value = false;
   }
+  if (done.length) {
+    $q.notify({
+      type: 'positive',
+      message: t('pages.publications.approvedN', { n: done.length }, done.length),
+      timeout: 6000,
+      actions: [{ label: t('pages.publications.undo'), color: 'white', noCaps: true, handler: () => void undo(done) }],
+    });
+  }
+  await load();
 }
 
-onMounted(load);
+async function undo(ids: string[]) {
+  try {
+    for (const id of ids) await api.post(`${base.value}/${id}/unapprove`);
+    $q.notify({ type: 'info', message: t('pages.publications.undone') });
+  } catch (e) {
+    $q.notify({ type: 'negative', message: apiError(e) });
+  }
+  await load();
+}
+
+/** Atalhos: J e K andam na lista, A aprova o grupo, E edita o canal aberto. Fora de campo de texto e de diálogo. */
+function onKey(e: KeyboardEvent) {
+  if (e.ctrlKey || e.metaKey || e.altKey || dialog.value || blockedDialog.value || importOpen.value) return;
+  const el = e.target as HTMLElement | null;
+  if (el && (el.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName))) return;
+  const key = e.key.toLowerCase();
+  if (key === 'j' || key === 'k') {
+    const list = ordered.value;
+    if (!list.length) return;
+    const i = list.findIndex((x) => x.key === selectedKey.value);
+    const next = key === 'j' ? Math.min(i + 1, list.length - 1) : Math.max(i - 1, 0);
+    selectBundle(list[i < 0 ? 0 : next]);
+  } else if (key === 'a' && selectedBundle.value) {
+    void approveBundle(selectedBundle.value);
+  } else if (key === 'e') {
+    const p = selectedBundle.value?.items.find((x) => x.id === selectedId.value);
+    if (p && canEdit(p)) openEdit(p);
+  } else {
+    return;
+  }
+  e.preventDefault();
+}
+
+onMounted(() => {
+  void load();
+  window.addEventListener('keydown', onKey);
+});
+onBeforeUnmount(() => window.removeEventListener('keydown', onKey));
 watch(() => brand.selected, () => void load());
 </script>
 
 <style lang="scss" scoped>
-.caption-text { white-space: pre-line; }
+$line-light: rgba(0, 0, 0, 0.08);
+$line-dark: rgba(255, 255, 255, 0.08);
+
+.view-toggle { border: 1px solid $line-light; }
+.body--dark .view-toggle { border-color: $line-dark; }
+.section-title { font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
+
+.bundle-row, .week-card, .month-cell, .all-clear, .day-head, .empty-day {
+  border: 1px solid $line-light; background: #fff;
+}
+.body--dark .bundle-row, .body--dark .week-card, .body--dark .month-cell, .body--dark .all-clear,
+.body--dark .day-head, .body--dark .empty-day { border-color: $line-dark; background: $dark; }
+
+.bundle-row, .week-card {
+  cursor: pointer; outline: none;
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  &:hover { transform: translateX(2px); border-color: rgba($primary, 0.5); }
+  &:focus-visible, &.selected { border-color: $primary; box-shadow: 0 0 0 3px rgba($primary, 0.18); }
+}
+.week-card:hover { transform: translateY(-2px); }
+.bundle-row.selected { background: $light-focus; }
+.body--dark .bundle-row.selected { background: $dark-focus; }
+
+.thumb {
+  width: 40px; height: 64px; border-radius: 10px; flex: none; display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(160deg, $primary, $dark-focus) center / cover no-repeat;
+}
+
+.channel-chip {
+  display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 6px;
+  &.ch-Instagram { background: #fce7f3; color: #9d174d; }
+  &.ch-Facebook { background: #dbeafe; color: #1e40af; }
+  &.ch-LinkedIn { background: #cffafe; color: #155e75; }
+}
+.body--dark .channel-chip {
+  &.ch-Instagram { background: #3b1b2e; color: #fbcfe8; }
+  &.ch-Facebook { background: #172a4a; color: #bfdbfe; }
+  &.ch-LinkedIn { background: #123039; color: #cffafe; }
+}
+.dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+
+.week-scroll { overflow-x: auto; }
+.week-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; > div { min-width: 0; } }
+@media (max-width: $breakpoint-sm-max) { .week-grid { grid-template-columns: repeat(7, minmax(120px, 1fr)); min-width: 860px; } }
+.day-head { padding-left: 10px; padding-right: 10px; line-height: 1.2; }
+.day-head.today { background: $primary; color: #fff; border-color: $primary; }
+.empty-day { border-style: dashed; background: transparent !important; overflow-wrap: anywhere; }
+
+.month-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+.month-cell {
+  min-height: 96px; padding: 6px; display: flex; flex-direction: column; gap: 4px; border-radius: 12px; min-width: 0;
+  &.out { background: transparent !important; .day-num { opacity: 0.45; } }
+}
+.day-num { font-size: 12px; font-weight: 600; align-self: flex-start; padding: 1px 7px; border-radius: 999px; }
+.day-num.today { background: $primary; color: #fff; }
+.month-chip {
+  font-size: 11px; font-weight: 500; line-height: 1.3; padding: 3px 6px; border-radius: 6px; cursor: pointer; outline: none;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere;
+  &.st-needs { background: #fef3c7; color: #92400e; }
+  &.st-scheduled { background: #ede7ff; color: #5b2fc2; }
+  &.st-published { background: #d1fae5; color: #065f46; }
+  &.selected, &:focus-visible { box-shadow: 0 0 0 2px $primary; }
+}
+.body--dark .month-chip {
+  &.st-needs { background: #3d2a12; color: #fcd34d; }
+  &.st-scheduled { background: #2b2150; color: #cfc2ff; }
+  &.st-published { background: #0f2a20; color: #6ee7b7; }
+}
+
+.preview-col { width: 340px; max-width: 100%; position: sticky; top: 16px; }
+@media (max-width: $breakpoint-sm-max) { .preview-col { width: 100%; position: static; } }
+
+.list-move, .list-enter-active, .list-leave-active { transition: all 0.25s ease; }
+.list-enter-from, .list-leave-to { opacity: 0; transform: translateX(-12px); }
+.list-leave-active { position: absolute; }
 </style>

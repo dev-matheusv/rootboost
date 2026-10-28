@@ -325,6 +325,17 @@ brandProfile.MapPost("/publications/{id:guid}/approve", async (string key, Guid 
     return Results.Ok(new { publication = PublicationDto.From((await store.GetAsync(id, ct))!), checklist });
 });
 
+brandProfile.MapPost("/publications/{id:guid}/unapprove", async (string key, Guid id,
+    RootBoost.Application.Publishing.IPublicationStore store, TimeProvider time, CancellationToken ct) =>
+{
+    var publication = await store.GetAsync(id, ct);
+    if (publication is null || publication.BrandKey != key.ToLowerInvariant()) return Results.NotFound();
+    try { publication.Unapprove(time.GetUtcNow()); }
+    catch (InvalidOperationException ex) { return Results.BadRequest(new { error = ex.Message }); }
+    await store.SaveAsync(publication, ct);
+    return Results.Ok(PublicationDto.From(publication));
+});
+
 brandProfile.MapGet("/ads/summary", async (string key, int? days, RootBoost.Application.Ads.IAdInsightStore store,
     RootBoost.Application.Ads.AdsStopRule rule, TimeProvider time, CancellationToken ct) =>
 {
