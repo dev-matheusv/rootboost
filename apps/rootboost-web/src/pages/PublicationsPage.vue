@@ -77,12 +77,15 @@
           <!-- Semana -->
           <div v-else-if="view === 'week'" class="week-scroll">
             <div class="week-grid">
-              <div v-for="day in weekDays" :key="day.key" class="column q-gutter-y-sm">
+              <div v-for="day in weekDays" :key="day.key" class="day-col column q-gutter-y-sm" :class="dropClass(day.key)"
+                @dragover="onDragOver($event, day.key)" @dragleave="dropTarget = null" @drop="onDrop(day.key)">
                 <div class="day-head card-rounded column q-py-xs" :class="{ today: day.key === todayKey }">
                   <span class="text-caption text-uppercase">{{ day.date.toLocaleDateString(locale, { weekday: 'short' }) }}</span>
                   <span class="sora-bold text-h6">{{ day.date.getDate() }}</span>
                 </div>
-                <div v-for="b in day.bundles" :key="b.key" class="week-card card-rounded q-pa-sm" :class="{ selected: b.key === selectedKey }"
+                <div v-for="b in day.bundles" :key="b.key" class="week-card card-rounded q-pa-sm"
+                  :class="{ selected: b.key === selectedKey, movable: canMove(b) }" :draggable="canMove(b)"
+                  @dragstart="onDragStart($event, b)" @dragend="onDragEnd"
                   role="button" tabindex="0" @click="selectBundle(b, true)" @keydown.enter="selectBundle(b, true)">
                   <div class="text-caption text-weight-bold">{{ fmtTime(b.scheduledFor) }}</div>
                   <div class="text-body2 text-weight-medium ellipsis-2-lines q-my-xs">{{ b.title }}</div>
@@ -104,9 +107,11 @@
             <div v-for="c in monthCells.slice(0, 7)" :key="`wd${c.key}`" class="text-caption text-uppercase text-grey-7 q-px-xs">
               {{ c.date.toLocaleDateString(locale, { weekday: 'short' }) }}
             </div>
-            <div v-for="c in monthCells" :key="c.key" class="month-cell card-rounded" :class="{ out: !c.inMonth }">
+            <div v-for="c in monthCells" :key="c.key" class="month-cell card-rounded" :class="[{ out: !c.inMonth }, dropClass(c.key)]"
+              @dragover="onDragOver($event, c.key)" @dragleave="dropTarget = null" @drop="onDrop(c.key)">
               <span class="day-num" :class="{ today: c.key === todayKey }">{{ c.date.getDate() }}</span>
-              <div v-for="b in c.bundles" :key="b.key" class="month-chip" :class="[`st-${b.stage}`, { selected: b.key === selectedKey }]"
+              <div v-for="b in c.bundles" :key="b.key" class="month-chip" :class="[`st-${b.stage}`, { selected: b.key === selectedKey, movable: canMove(b) }]"
+                :draggable="canMove(b)" @dragstart="onDragStart($event, b)" @dragend="onDragEnd"
                 role="button" tabindex="0" @click="selectBundle(b, true)" @keydown.enter="selectBundle(b, true)">
                 <span class="text-weight-bold">{{ fmtTime(b.scheduledFor) }}</span> {{ b.title }}
               </div>
@@ -188,6 +193,7 @@
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useQuasar } from 'quasar';
+import { useRoute, useRouter } from 'vue-router';
 import { isAxiosError } from 'axios';
 import {
   mdiChevronLeft, mdiChevronRight, mdiPlus, mdiInformationOutline, mdiUpload, mdiDeleteOutline, mdiMovieOpenOutline,
@@ -201,7 +207,7 @@ import PublicationPreview from 'src/components/PublicationPreview.vue';
 import { findingColor, sortFindings } from 'src/utils/brandProfile';
 import {
   addDays, bundlePosts, canEdit, fromLocalInput, groupByDay, isVideo, localDayKey, monthGrid, queueSections, stageColor,
-  startOfWeek, statusColor, toLocalInput, type AgendaView, type BundleStage, type PostBundle,
+  startOfWeek, statusColor, toLocalInput, canMove, moveToDay, type AgendaView, type BundleStage, type PostBundle,
 } from 'src/utils/publications';
 
 defineOptions({ name: 'PublicationsPage' });
@@ -209,6 +215,8 @@ defineOptions({ name: 'PublicationsPage' });
 const { t, locale } = useI18n();
 const $q = useQuasar();
 const brand = useBrandStore();
+const route = useRoute();
+const router = useRouter();
 
 const VIEW_KEY = 'rb.publications.view';
 function savedView(): AgendaView {
@@ -364,6 +372,68 @@ function goToday() {
   weekStart.value = startOfWeek(new Date());
   monthAnchor.value = firstOfMonth(new Date());
   void load();
+}
+
+/**
+ * Arrastar um grupo pra outro dia (semana e mês): mesmo horário, canais juntos. A tela muda na hora e o servidor
+ * confirma depois; se falhar, volta. Dia que já passou não aceita. Aprovação continua valendo (só a data mudou).
+ */
+const dragging = ref<PostBundle | null>(null);
+const dropTarget = ref<string | null>(null);
+
+function onDragStart(e: DragEvent, b: PostBundle) {
+  dragging.value = b;
+  e.dataTransfer?.setData('text/plain', b.key);
+  if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move';
+}
+
+function onDragEnd() {
+  dragging.value = null;
+  dropTarget.value = null;
+}
+
+function onDragOver(e: DragEvent, dayKey: string) {
+  if (!dragging.value || dayKey < todayKey) return;
+  e.preventDefault();
+  dropTarget.value = dayKey;
+}
+
+function dropClass(dayKey: string) {
+  if (!dragging.value) return {};
+  return { 'drop-ok': dropTarget.value === dayKey, 'drop-no': dayKey < todayKey };
+}
+
+async function onDrop(dayKey: string) {
+  const b = dragging.value;
+  onDragEnd();
+  if (!b || dayKey < todayKey || localDayKey(new Date(b.scheduledFor)) === dayKey) return;
+  const fromKey = localDayKey(new Date(b.scheduledFor));
+  if (await moveBundle(b, dayKey)) {
+    const day = new Date(moveToDay(b.scheduledFor, dayKey)).toLocaleDateString(locale.value, { weekday: 'long', day: '2-digit', month: '2-digit' });
+    $q.notify({
+      type: 'positive',
+      message: t('pages.publications.moved', { day }),
+      timeout: 6000,
+      actions: [{ label: t('pages.publications.undo'), color: 'white', noCaps: true, handler: () => void moveBundle({ ...b, scheduledFor: moveToDay(b.scheduledFor, dayKey) }, fromKey) }],
+    });
+  }
+}
+
+async function moveBundle(b: PostBundle, dayKey: string): Promise<boolean> {
+  const before = items.value;
+  const ids = new Set(b.items.map((p) => p.id));
+  items.value = items.value.map((p) => (ids.has(p.id) ? { ...p, scheduledFor: moveToDay(p.scheduledFor, dayKey) } : p));
+  selectedKey.value = moveToDay(b.scheduledFor, dayKey).slice(0, 16);
+  try {
+    for (const p of b.items) await api.put(`${base.value}/${p.id}/schedule`, { scheduledFor: moveToDay(p.scheduledFor, dayKey) });
+    return true;
+  } catch (e) {
+    items.value = before;
+    $q.notify({ type: 'negative', message: apiError(e) });
+    return false;
+  } finally {
+    await load();
+  }
 }
 
 watch(view, (v) => {
@@ -616,8 +686,29 @@ function onKey(e: KeyboardEvent) {
   e.preventDefault();
 }
 
-onMounted(() => {
-  void load();
+/**
+ * Pedidos vindos da busca rápida (Ctrl+K): ?action=new|import abre o diálogo, ?post=<grupo> abre a fila nele.
+ * A query é limpa antes, pra não reabrir ao voltar na página.
+ */
+async function handleQuery() {
+  const { action, post } = route.query;
+  if (!action && !post) return;
+  // Limpa antes de abrir: o Quasar fecha diálogo quando a rota muda.
+  await router.replace({ query: {} });
+  if (action === 'new') openNew();
+  else if (action === 'import') importOpen.value = true;
+  if (typeof post === 'string') {
+    view.value = 'queue';
+    await load();
+    selectBundle(bundles.value.find((b) => b.key === post), true);
+  }
+}
+
+watch(() => route.query, () => void handleQuery());
+
+onMounted(async () => {
+  await load();
+  await handleQuery();
   window.addEventListener('keydown', onKey);
 });
 onBeforeUnmount(() => window.removeEventListener('keydown', onKey));
@@ -693,6 +784,12 @@ $line-dark: rgba(255, 255, 255, 0.08);
   &.st-scheduled { background: #2b2150; color: #cfc2ff; }
   &.st-published { background: #0f2a20; color: #6ee7b7; }
 }
+
+.week-card.movable, .month-chip.movable { cursor: grab; }
+.week-card.movable:active, .month-chip.movable:active { cursor: grabbing; }
+.day-col, .month-cell { transition: background 0.15s ease, box-shadow 0.15s ease; border-radius: 12px; }
+.drop-ok { box-shadow: 0 0 0 2px $primary inset; background: rgba($primary, 0.08) !important; }
+.drop-no { opacity: 0.5; }
 
 .preview-col { width: 340px; max-width: 100%; position: sticky; top: 16px; }
 @media (max-width: $breakpoint-sm-max) { .preview-col { width: 100%; position: static; } }

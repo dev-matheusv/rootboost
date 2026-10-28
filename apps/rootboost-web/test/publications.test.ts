@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Publication } from 'src/types/api';
 import {
-  bundlePosts, canEdit, fromLocalInput, groupByDay, localDayKey, monthGrid, postTitle, queueSections, stageOf, startOfWeek, toLocalInput,
+  bundlePosts, canEdit, canMove, moveToDay, fromLocalInput, groupByDay, localDayKey, monthGrid, postTitle, queueSections, stageOf, startOfWeek, toLocalInput,
 } from 'src/utils/publications';
 
 const pub = (over: Partial<Publication>): Publication => ({
@@ -81,5 +81,19 @@ describe('fila de aprovação', () => {
     expect(g).toHaveLength(42);
     expect(localDayKey(g[0]!)).toBe('2026-09-28');
     expect(g[0]!.getDay()).toBe(1);
+  });
+});
+
+describe('arrastar no calendário', () => {
+  it('muda o dia e mantém o horário local', () => {
+    const iso = moveToDay(new Date(2026, 9, 30, 12, 0).toISOString(), '2026-11-03');
+    expect(toLocalInput(iso)).toBe('2026-11-03T12:00');
+  });
+
+  it('grupo com canal já publicado não se move', () => {
+    const [b] = bundlePosts([pub({ status: 'Approved' }), pub({ status: 'Published', channel: 'Facebook' })]);
+    expect(canMove(b!)).toBe(false);
+    const [c] = bundlePosts([pub({ status: 'Approved' }), pub({ status: 'Draft', channel: 'Facebook' })]);
+    expect(canMove(c!)).toBe(true);
   });
 });

@@ -22,6 +22,12 @@ export default {
       MetaConnection: 'Conexão com a Meta caiu',
     },
   },
+  palette: {
+    open: 'Buscar',
+    placeholder: 'Ir para uma página, criar post, achar um post agendado…',
+    empty: 'Nada encontrado.',
+    groups: { nav: 'Ir para', actions: 'Ações', posts: 'Posts' },
+  },
   reelImport: {
     title: 'Importar reel pronto',
     txt: 'Arquivo .txt com os textos dos canais',
@@ -159,6 +165,7 @@ export default {
       undone: 'Aprovação desfeita. Voltou para rascunho.',
       shortcuts: 'Atalhos: J e K navegam, A aprova, E edita',
       pickPost: 'Escolha um post para ver como ele fica em cada canal.',
+      moved: 'Movido para {day}. Mesmo horário.',
       status: { Draft: 'Rascunho', Approved: 'Aprovado', Publishing: 'Publicando', Published: 'Publicado', Failed: 'Falhou' },
     },
     brandProfile: {
