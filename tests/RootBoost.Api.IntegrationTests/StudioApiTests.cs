@@ -127,6 +127,44 @@ public class StudioApiTests : IClassFixture<StudioWebApplicationFactory>
     }
 
     [Fact]
+    public async Task Copy_checklist_blocks_the_script_and_soft_gates_become_warnings_kept_after_delivery()
+    {
+        var c = _factory.CreateClient();
+        var id = await NewJob(c);
+        var blocked = await c.PutAsJsonAsync($"{Base}/{id}/script", new
+        {
+            roteiro = Roteiro,
+            falas = new[] { "Revolucione sua agenda.", "Você marca uma vez.", "A evolução vai pronta.", "Fim." },
+        });
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, blocked.StatusCode);
+        Assert.NotEmpty((await blocked.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("errors").EnumerateArray());
+
+        // Curto demais pra reel orgânico e com número em algarismo: passa, mas com aviso.
+        var ok = await c.PutAsJsonAsync($"{Base}/{id}/script", new
+        {
+            roteiro = Roteiro,
+            falas = new[] { "Agenda no papel perde sessão.", "Toda terça às 16h.", "A evolução vai pronta.", "Três meses grátis." },
+        });
+        Assert.Equal(HttpStatusCode.OK, ok.StatusCode);
+        var warnings = (await ok.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("warnings").EnumerateArray().Select(w => w.GetString()!).ToList();
+        Assert.Contains(warnings, w => w.StartsWith("Roteiro: duração estimada"));
+        Assert.Contains(warnings, w => w.Contains("fala 2 tem número em algarismo"));
+
+        var worker = Worker();
+        await c.PostAsync($"{Base}/{id}/render", null);
+        await ClaimUntil(worker, id);
+        var delivered = await worker.PostAsJsonAsync($"/worker/jobs/{id}/deliver", new
+        {
+            workerId = "pc-teste",
+            warnings = new[] { "AVISO bloco 2 lento" },
+            outputs = new[] { new { role = "video", url = "https://rootboost.test/media/x/v.mp4" } },
+        });
+        var after = (await delivered.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("warnings").EnumerateArray().Select(w => w.GetString()!).ToList();
+        Assert.Contains(after, w => w.StartsWith("Roteiro: duração estimada"));
+        Assert.Contains("AVISO bloco 2 lento", after);
+    }
+
+    [Fact]
     public async Task Worker_routes_need_the_key()
     {
         var anon = _factory.CreateClient();
