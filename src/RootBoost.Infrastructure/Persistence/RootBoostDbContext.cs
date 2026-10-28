@@ -34,6 +34,7 @@ public sealed class RootBoostDbContext : DbContext
     public DbSet<OpsAlert> OpsAlerts => Set<OpsAlert>();
     public DbSet<CreativeJob> CreativeJobs => Set<CreativeJob>();
     public DbSet<PushDevice> PushDevices => Set<PushDevice>();
+    public DbSet<BrandProduct> BrandProducts => Set<BrandProduct>();
     public DbSet<RootBoost.Application.Ai.AiUsageEntry> AiUsage => Set<RootBoost.Application.Ai.AiUsageEntry>();
 
     /// <summary>Postgres guarda timestamptz e o Npgsql só aceita offset zero: normaliza ao gravar.</summary>
@@ -176,6 +177,25 @@ public sealed class RootBoostDbContext : DbContext
         usage.Property(x => x.CostUsd).HasPrecision(18, 6);
         usage.Property(x => x.CreatedAt).HasConversion(Utc);
         usage.HasIndex(x => new { x.BrandKey, x.CreatedAt });
+
+        // Produto da marca (RB-60): um por marca, montado na conversa com a IA.
+        var product = b.Entity<BrandProduct>();
+        product.HasKey(x => x.Id);
+        product.Property(x => x.BrandKey).HasMaxLength(64).IsRequired();
+        product.Property(x => x.Name).HasMaxLength(120).IsRequired();
+        product.Property(x => x.Kind).HasMaxLength(16).IsRequired();
+        product.Property(x => x.Url).HasMaxLength(500);
+        product.Property(x => x.AppUrl).HasMaxLength(500);
+        product.Property(x => x.Summary).HasMaxLength(1000).IsRequired();
+        product.Property(x => x.Audience).HasMaxLength(500).IsRequired();
+        product.Property(x => x.FeaturesJson).HasColumnType("jsonb").IsRequired();
+        product.Property(x => x.DifferentialsJson).HasColumnType("jsonb").IsRequired();
+        product.Property(x => x.Offer).HasMaxLength(300);
+        product.Property(x => x.CreatedAt).HasConversion(Utc);
+        product.Property(x => x.UpdatedAt).HasConversion(Utc);
+        product.Ignore(x => x.Features);
+        product.Ignore(x => x.Differentials);
+        product.HasIndex(x => x.BrandKey).IsUnique();
 
         var media = b.Entity<MediaAsset>();
         media.HasKey(x => x.Id);

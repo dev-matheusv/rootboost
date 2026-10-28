@@ -441,18 +441,58 @@ brandProfile.MapPut("/creative-jobs/{id:guid}/script", async (string key, Guid i
 // A IA escreve roteiro e falas com o perfil, as provas e o playbook (RB-45); passa pelos mesmos portões.
 brandProfile.MapPost("/creative-jobs/{id:guid}/write-script", async (string key, Guid id, WriteScriptInput? input,
     RootBoost.Application.Studio.ICreativeJobStore store, IBrandProfileStore profiles, RootBoost.Application.Ai.ScriptWriter writer,
-    TimeProvider time, CancellationToken ct) =>
+    RootBoost.Application.Ai.IBrandProductStore products, TimeProvider time, CancellationToken ct) =>
 {
     var job = await store.GetAsync(id, ct);
     if (job is null || job.BrandKey != key.ToLowerInvariant()) return Results.NotFound();
     try
     {
-        var (ok, failed) = await writer.WriteAsync(job, await profiles.GetAsync(job.BrandKey, ct), input?.Instructions, ct);
+        var (ok, failed) = await writer.WriteAsync(job, await profiles.GetAsync(job.BrandKey, ct), input?.Instructions, ct,
+            await products.GetAsync(job.BrandKey, ct));
         if (ok is null) return Results.UnprocessableEntity(new { error = "a IA não acertou o roteiro em duas tentativas", errors = failed!.Errors });
         job.SetScript(ok.Script.GetRawText(), ok.Lines.GetRawText(), time.GetUtcNow(),
             ok.Warnings.Select(w => CreativeJob.ScriptWarningPrefix + w).ToList());
         await store.SaveAsync(job, ct);
         return Results.Ok(new { job = CreativeJobDto.From(job), hooks = ok.Hooks, costUsd = ok.CostUsd });
+    }
+    catch (RootBoost.Application.Ai.AiDisabledException ex) { return Results.Conflict(new { error = ex.Message }); }
+    catch (InvalidOperationException ex) { return Results.BadRequest(new { error = ex.Message }); }
+});
+
+// --- Produto da marca (RB-60): a IA conduz a conversa e propõe; a pessoa confere e salva. ---
+brandProfile.MapGet("/product", async (string key, RootBoost.Application.Ai.IBrandProductStore products, CancellationToken ct) =>
+    await products.GetAsync(key.ToLowerInvariant(), ct) is { } p ? Results.Ok(ProductDto.From(p)) : Results.NoContent());
+
+brandProfile.MapPut("/product", async (string key, ProductInput input, IBrandStore brands,
+    RootBoost.Application.Ai.IBrandProductStore products, TimeProvider time, CancellationToken ct) =>
+{
+    var brandKey = key.ToLowerInvariant();
+    if (!(await brands.ListAsync(ct)).Any(b => b.Key == brandKey)) return Results.NotFound();
+    var current = await products.GetAsync(brandKey, ct);
+    var product = current ?? new BrandProduct(brandKey, time.GetUtcNow());
+    try
+    {
+        product.Update(input.Name, input.Kind, input.Url, input.AppUrl, input.Summary ?? string.Empty, input.Audience ?? string.Empty,
+            input.Features ?? [], input.Differentials ?? [], input.Offer, time.GetUtcNow());
+    }
+    catch (ArgumentException ex) { return Results.BadRequest(new { error = ex.Message }); }
+    if (current is null) await products.AddAsync(product, ct);
+    else await products.SaveAsync(product, ct);
+    return Results.Ok(ProductDto.From(product));
+});
+
+brandProfile.MapPost("/onboarding/chat", async (string key, OnboardingChatInput input, IBrandStore brands,
+    RootBoost.Application.Ai.IBrandProductStore products, RootBoost.Application.Ai.ProductInterviewer interviewer, CancellationToken ct) =>
+{
+    var brandKey = key.ToLowerInvariant();
+    var brand = (await brands.ListAsync(ct)).FirstOrDefault(b => b.Key == brandKey);
+    if (brand is null) return Results.NotFound();
+    var turns = (input.Messages ?? []).Select(m => new RootBoost.Application.Ai.ChatTurn(m.Role == "user" ? "user" : "assistant",
+        (m.Text ?? string.Empty).Length > 4000 ? m.Text![..4000] : m.Text ?? string.Empty)).ToList();
+    try
+    {
+        var reply = await interviewer.NextAsync(brandKey, brand.Name, await products.GetAsync(brandKey, ct), turns, ct);
+        return Results.Ok(reply);
     }
     catch (RootBoost.Application.Ai.AiDisabledException ex) { return Results.Conflict(new { error = ex.Message }); }
     catch (InvalidOperationException ex) { return Results.BadRequest(new { error = ex.Message }); }
@@ -912,6 +952,16 @@ record PushKeys(string P256dh, string Auth);
 record PushDeviceInput(string Endpoint, PushKeys Keys);
 record PushRemoveInput(string Endpoint);
 record WriteScriptInput(string? Instructions);
+record ProductInput(string Name, string Kind, string? Url, string? AppUrl, string? Summary, string? Audience,
+    List<string>? Features, List<string>? Differentials, string? Offer);
+record ChatMessageInput(string? Role, string? Text);
+record OnboardingChatInput(List<ChatMessageInput>? Messages);
+record ProductDto(string Name, string Kind, string? Url, string? AppUrl, string Summary, string Audience,
+    IReadOnlyList<string> Features, IReadOnlyList<string> Differentials, string? Offer, DateTimeOffset UpdatedAt)
+{
+    public static ProductDto From(BrandProduct p) => new(p.Name, p.Kind, p.Url, p.AppUrl, p.Summary, p.Audience, p.Features,
+        p.Differentials, p.Offer, p.UpdatedAt);
+}
 record CreativeJobInput(string Kind, string Theme, string? VoiceKey);
 record ScriptInput(System.Text.Json.JsonElement Roteiro, System.Text.Json.JsonElement Falas);
 record JobPublicationsInput(DateTimeOffset ScheduledFor, string? Instagram, string? Facebook, string? LinkedIn);

@@ -54,6 +54,7 @@ public sealed class FakeLanguageModel : ILanguageModel
 {
     public Task<LanguageModelResult> GenerateJsonAsync(LanguageModelRequest request, CancellationToken ct = default)
     {
+        if (request.Purpose == "onboarding-chat") return Task.FromResult(Interview(request));
         var ad = request.System.Contains("Anúncio: sem abertura", StringComparison.Ordinal);
         object? opening = ad ? null : new { titulo = "Agenda no papel", subtitulo = "Tudo num lugar só", fala = "Agenda no papel perde paciente sem você perceber." };
         var blocks = ad
@@ -77,6 +78,24 @@ public sealed class FakeLanguageModel : ILanguageModel
             ganchosAlternativos = new[] { "Quantas sessões você perdeu este mês?", "Sua agenda ainda é no papel?", "Paciente esqueceu de novo?" },
         });
         return Task.FromResult(new LanguageModelResult(json, "fake", 0, 0, 0m));
+    }
+
+    /// <summary>Entrevista de mentira: com o site lido, já propõe o cadastro; sem ele, pergunta o que a pessoa vende.</summary>
+    private static LanguageModelResult Interview(LanguageModelRequest request)
+    {
+        var site = request.User.Contains("<conteudo_do_site>", StringComparison.Ordinal);
+        var json = JsonSerializer.Serialize(new
+        {
+            resposta = site ? "Li o seu site. Confere se está certo e me diz pra quem é o produto?" : "Oi! O que você vende? Pode mandar o link do site também.",
+            pronto = site,
+            proposta = new
+            {
+                nome = site ? "Produto do site" : "", tipo = site ? "app" : "", site = "", app = "", resumo = site ? "Resumo lido do site." : "",
+                publico = site ? "Profissionais de saúde" : "", recursos = site ? new[] { "Agenda", "Prontuário" } : Array.Empty<string>(),
+                diferenciais = Array.Empty<string>(), oferta = "",
+            },
+        });
+        return new LanguageModelResult(json, "fake", 0, 0, 0m);
     }
 }
 
