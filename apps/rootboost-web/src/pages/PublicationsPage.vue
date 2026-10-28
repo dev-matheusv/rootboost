@@ -2,7 +2,7 @@
   <q-page class="q-pa-lg">
     <div class="row items-center q-mb-lg q-gutter-sm">
       <div class="col-12 col-md">
-        <div class="text-overline text-grey-7">{{ brand.selected }}</div>
+        <div class="page-eyebrow">{{ brand.selectedName }}</div>
         <div class="text-h5 sora-bold">{{ heading }}</div>
       </div>
       <template v-if="brand.selected">

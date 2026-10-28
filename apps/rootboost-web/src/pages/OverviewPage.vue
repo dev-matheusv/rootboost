@@ -2,7 +2,7 @@
   <q-page class="q-pa-lg">
     <!-- Hoje: o que precisa de você agora, antes dos números da loja. -->
     <div class="q-mb-lg">
-      <div class="text-overline text-grey-7">{{ todayLabel }}</div>
+      <div class="page-eyebrow">{{ todayLabel }}</div>
       <div class="text-h5 sora-bold">{{ $t(`pages.overview.greeting.${greeting}`, { name: firstName(auth.userName) }) }}</div>
     </div>
 
