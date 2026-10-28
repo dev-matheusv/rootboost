@@ -34,7 +34,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useQuasar } from 'quasar';
 import { isAxiosError } from 'axios';
@@ -59,6 +59,11 @@ const igCover = ref<File | null>(null);
 const when = ref(props.defaultWhen);
 const blocks = ref<ReelBlocks | null>(null);
 const working = ref(false);
+
+// A data sugerida pode mudar depois que a agenda carrega: vale a da hora em que o diálogo abre.
+watch(open, (isOpen) => {
+  if (isOpen) when.value = props.defaultWhen;
+});
 
 function reset() {
   txt.value = igVideo.value = siteVideo.value = igCover.value = null;
