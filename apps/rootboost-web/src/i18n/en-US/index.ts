@@ -77,6 +77,12 @@ export default {
     doneHint: 'This video already became posts.',
     goPublications: 'See in Publications',
   },
+  push: {
+    label: 'Phone alerts',
+    on: 'Alerts on for this device. I sent a test.',
+    denied: 'The browser blocked notifications. Allow them in the site settings.',
+    error: 'Could not turn on alerts on this device.',
+  },
   reelImport: {
     title: 'Import finished reel',
     txt: '.txt file with the channel texts',

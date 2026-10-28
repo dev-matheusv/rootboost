@@ -13,20 +13,22 @@ public interface IAlertStore
 }
 
 /// <summary>
-/// Abre, atualiza e fecha avisos de operação (RB-58). Hoje o aviso vai pro log e pra tela; a push da PWA (RB-37)
-/// lê daqui depois. Falha ao gravar aviso nunca derruba quem chamou: só vai pro log.
+/// Abre, atualiza e fecha avisos de operação (RB-58). O aviso vai pro log, pra tela e, quando é novo, pro celular
+/// (push da PWA, RB-37). Falha ao gravar ou avisar nunca derruba quem chamou: só vai pro log.
 /// </summary>
 public sealed class AlertService
 {
     private readonly IAlertStore _store;
     private readonly TimeProvider _time;
     private readonly ILogger<AlertService> _log;
+    private readonly RootBoost.Application.Push.PushNotifier? _push;
 
-    public AlertService(IAlertStore store, TimeProvider time, ILogger<AlertService> log)
+    public AlertService(IAlertStore store, TimeProvider time, ILogger<AlertService> log, RootBoost.Application.Push.PushNotifier? push = null)
     {
         _store = store;
         _time = time;
         _log = log;
+        _push = push;
     }
 
     public async Task RaiseAsync(AlertKind kind, string key, string? brandKey, string message, CancellationToken ct = default)
@@ -42,6 +44,9 @@ public sealed class AlertService
             }
             await _store.AddAsync(new OpsAlert(kind, key, brandKey, message, now), ct);
             _log.LogWarning("AVISO {Kind} ({Key}): {Message}", kind, key, message);
+            // Só o aviso novo vai pro celular; o mesmo problema repetindo não manda de novo.
+            if (_push is not null)
+                await _push.SendAsync(new RootBoost.Application.Push.PushMessage("Aviso no Console", message, "/?avisos=1", key), ct);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {

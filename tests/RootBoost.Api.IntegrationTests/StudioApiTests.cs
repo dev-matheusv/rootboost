@@ -200,3 +200,19 @@ public class StudioWithoutWorkerKeyTests : IClassFixture<CustomWebApplicationFac
         Assert.Equal(HttpStatusCode.NotFound, (await c.PostAsJsonAsync("/worker/jobs/claim", new { workerId = "x" })).StatusCode);
     }
 }
+
+public class PushApiTests : IClassFixture<CustomWebApplicationFactory>
+{
+    private readonly CustomWebApplicationFactory _factory;
+    public PushApiTests(CustomWebApplicationFactory factory) => _factory = factory;
+
+    [Fact]
+    public async Task Without_keys_push_is_off_and_subscribing_is_refused()
+    {
+        var c = _factory.CreateClient();
+        var cfg = await c.GetFromJsonAsync<JsonElement>("/admin/push/config");
+        Assert.False(cfg.GetProperty("enabled").GetBoolean());
+        var res = await c.PostAsJsonAsync("/admin/push/devices", new { endpoint = "https://push.exemplo.com/x", keys = new { p256dh = "p", auth = "a" } });
+        Assert.Equal(HttpStatusCode.Conflict, res.StatusCode);
+    }
+}

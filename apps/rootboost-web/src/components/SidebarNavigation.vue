@@ -57,6 +57,7 @@
           <q-item-section v-if="!isMini">{{ $t('alerts.title') }}</q-item-section>
           <q-tooltip v-if="isMini" anchor="center right" self="center left">{{ $t('alerts.title') }}</q-tooltip>
         </q-item>
+        <PushToggle :mini="isMini" />
         <q-item clickable v-ripple rounded @click="$q.dark.toggle()">
           <q-item-section avatar><q-icon :name="$q.dark.isActive ? mdiWeatherSunny : mdiWeatherNight" /></q-item-section>
           <q-item-section v-if="!isMini">{{ $t('nav.darkMode') }}</q-item-section>
@@ -89,6 +90,7 @@ import AlertsDialog from 'src/components/AlertsDialog.vue';
 import { useAuthStore } from 'src/stores/authStore';
 import { useBrandStore } from 'src/stores/brandStore';
 import ChangePasswordDialog from 'src/components/ChangePasswordDialog.vue';
+import PushToggle from 'src/components/PushToggle.vue';
 
 defineOptions({ name: 'SidebarNavigation' });
 
@@ -126,6 +128,11 @@ const showAlerts = () => (alertsOpen.value = true);
 
 onMounted(() => {
   window.addEventListener(OPEN_ALERTS_EVENT, showAlerts);
+  // Tocar no aviso do celular abre o Console com ?avisos=1: já mostra a lista.
+  if (route.query.avisos) {
+    alertsOpen.value = true;
+    void router.replace({ query: {} });
+  }
   if (!brand.loaded) void brand.load().catch(() => undefined);
   void loadAlerts();
   alertsTimer = setInterval(() => void loadAlerts(), 2 * 60_000);
