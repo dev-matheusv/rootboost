@@ -15,6 +15,16 @@ public interface IMediaStorage
     Task DeleteAsync(string key, CancellationToken ct = default);
 }
 
+/// <summary>
+/// Converte foto de qualquer formato comum (JPEG, PNG, WebP, GIF, BMP) em JPEG, de pé como foi tirada e com o lado maior
+/// limitado. A IA só recebe JPEG pequeno: aceita qualquer foto do cliente e o custo por imagem fica previsível.
+/// </summary>
+public interface IImageConverter
+{
+    /// <summary>Nulo quando o arquivo não é uma imagem legível.</summary>
+    byte[]? ToJpeg(byte[] image, int maxSide);
+}
+
 public interface IMediaAssetStore
 {
     Task AddAsync(MediaAsset asset, CancellationToken ct = default);

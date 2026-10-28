@@ -21,6 +21,8 @@
     <!-- Fixa o EF Core na versão do Design (o Npgsql sozinho puxaria a 9.0.1 e conflitaria). -->
     <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="9.0.9" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.4" />
+    <PackageReference Include="SkiaSharp" Version="4.154.0" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="4.154.0" />
     <PackageReference Include="WebPush" Version="1.0.13" />
   </ItemGroup>
 
