@@ -392,6 +392,180 @@ brandProfile.MapDelete("/media/{id:guid}", async (string key, Guid id, RootBoost
     return Results.NoContent();
 });
 
+// --- Estúdio (RB-42): jobs de criativo. O Console cria e libera; o worker local (PC com DMaker) puxa e entrega. ---
+brandProfile.MapPost("/creative-jobs", async (string key, CreativeJobInput input, IBrandStore brands,
+    RootBoost.Application.Studio.ICreativeJobStore store, TimeProvider time, CancellationToken ct) =>
+{
+    var brandKey = key.ToLowerInvariant();
+    if (!(await brands.ListAsync(ct)).Any(b => b.Key == brandKey)) return Results.NotFound();
+    if (!Enum.TryParse<CreativeKind>(input.Kind, true, out var kind) || !Enum.IsDefined(kind))
+        return Results.BadRequest(new { error = $"formato inválido: '{input.Kind}' (use Organic, Ad ou Prospecting)" });
+    try
+    {
+        var job = new CreativeJob(brandKey, kind, input.Theme, input.VoiceKey, time.GetUtcNow());
+        await store.AddAsync(job, ct);
+        return Results.Created($"/admin/brands/{brandKey}/creative-jobs/{job.Id}", CreativeJobDto.From(job));
+    }
+    catch (ArgumentException ex) { return Results.BadRequest(new { error = ex.Message }); }
+});
+
+brandProfile.MapGet("/creative-jobs", async (string key, RootBoost.Application.Studio.ICreativeJobStore store, CancellationToken ct) =>
+    Results.Ok((await store.ListByBrandAsync(key.ToLowerInvariant(), ct)).Select(CreativeJobDto.From)));
+
+brandProfile.MapGet("/creative-jobs/{id:guid}", async (string key, Guid id, RootBoost.Application.Studio.ICreativeJobStore store, CancellationToken ct) =>
+{
+    var job = await store.GetAsync(id, ct);
+    return job is null || job.BrandKey != key.ToLowerInvariant() ? Results.NotFound() : Results.Ok(CreativeJobDto.From(job));
+});
+
+// Roteiro e falas nos contratos do pacote; recusa com a lista do que não bate (contagem de falas, trechos, travessão).
+brandProfile.MapPut("/creative-jobs/{id:guid}/script", async (string key, Guid id, ScriptInput input,
+    RootBoost.Application.Studio.ICreativeJobStore store, TimeProvider time, CancellationToken ct) =>
+{
+    var job = await store.GetAsync(id, ct);
+    if (job is null || job.BrandKey != key.ToLowerInvariant()) return Results.NotFound();
+    var errors = RootBoost.Application.Studio.ScriptContract.Validate(input.Roteiro, input.Falas);
+    if (errors.Count > 0) return Results.UnprocessableEntity(new { error = "roteiro ou falas fora do contrato", errors });
+    try { job.SetScript(input.Roteiro.GetRawText(), input.Falas.GetRawText(), time.GetUtcNow()); }
+    catch (Exception ex) when (ex is ArgumentException or InvalidOperationException) { return Results.BadRequest(new { error = ex.Message }); }
+    await store.SaveAsync(job, ct);
+    return Results.Ok(CreativeJobDto.From(job));
+});
+
+brandProfile.MapPost("/creative-jobs/{id:guid}/render", async (string key, Guid id,
+    RootBoost.Application.Studio.ICreativeJobStore store, TimeProvider time, CancellationToken ct) =>
+{
+    var job = await store.GetAsync(id, ct);
+    if (job is null || job.BrandKey != key.ToLowerInvariant()) return Results.NotFound();
+    try { job.QueueRender(time.GetUtcNow()); }
+    catch (InvalidOperationException ex) { return Results.BadRequest(new { error = ex.Message }); }
+    await store.SaveAsync(job, ct);
+    return Results.Ok(CreativeJobDto.From(job));
+});
+
+// Revisado: vira rascunhos de publicação. Vídeo do Instagram (com a capa, se veio) e o outro vídeo pra Facebook e
+// LinkedIn, do mesmo jeito do "Importar reel pronto". Só cria o canal que tiver legenda; nada é aprovado aqui.
+brandProfile.MapPost("/creative-jobs/{id:guid}/publications", async (string key, Guid id, JobPublicationsInput input,
+    RootBoost.Application.Studio.ICreativeJobStore jobs, RootBoost.Application.Publishing.IPublicationStore publications,
+    TimeProvider time, CancellationToken ct) =>
+{
+    var job = await jobs.GetAsync(id, ct);
+    if (job is null || job.BrandKey != key.ToLowerInvariant()) return Results.NotFound();
+    if (job.Status != CreativeJobStatus.Review) return Results.BadRequest(new { error = $"só job em revisão vira post (status atual: {job.Status})" });
+    var outputs = job.Outputs;
+    string? Url(string role) => outputs.FirstOrDefault(o => string.Equals(o.Role, role, StringComparison.OrdinalIgnoreCase))?.Url;
+    var igVideo = Url("video-instagram");
+    var siteVideo = Url("video") ?? igVideo;
+    var cover = Url("cover-instagram");
+
+    var plan = new List<(SocialChannel Channel, string Media, string Caption)>();
+    if (!string.IsNullOrWhiteSpace(input.Instagram))
+    {
+        if (igVideo is null) return Results.BadRequest(new { error = "job sem o vídeo do Instagram (papel video-instagram)" });
+        plan.Add((SocialChannel.Instagram, igVideo, input.Instagram));
+    }
+    if (!string.IsNullOrWhiteSpace(input.Facebook))
+    {
+        if (siteVideo is null) return Results.BadRequest(new { error = "job sem vídeo pro Facebook (papel video)" });
+        plan.Add((SocialChannel.Facebook, siteVideo, input.Facebook));
+    }
+    if (!string.IsNullOrWhiteSpace(input.LinkedIn))
+    {
+        if (siteVideo is null) return Results.BadRequest(new { error = "job sem vídeo pro LinkedIn (papel video)" });
+        plan.Add((SocialChannel.LinkedIn, siteVideo, input.LinkedIn));
+    }
+    if (plan.Count == 0) return Results.BadRequest(new { error = "informe a legenda de pelo menos um canal" });
+
+    var now = time.GetUtcNow();
+    var created = new List<Publication>();
+    try
+    {
+        foreach (var (channel, media, caption) in plan)
+        {
+            var publication = new Publication(job.BrandKey, channel, media, caption, input.ScheduledFor, now);
+            if (channel == SocialChannel.Instagram && cover is not null) publication.SetReelOptions(cover, null, true, now);
+            created.Add(publication);
+        }
+    }
+    catch (Exception ex) when (ex is ArgumentException or InvalidOperationException) { return Results.BadRequest(new { error = ex.Message }); }
+    foreach (var publication in created) await publications.AddAsync(publication, ct);
+    job.MarkDone(now);
+    await jobs.SaveAsync(job, ct);
+    return Results.Ok(new { job = CreativeJobDto.From(job), publications = created.Select(PublicationDto.From) });
+});
+
+// Rotas do worker: chave própria no cabeçalho X-Worker-Key (Studio:WorkerKey). Sem chave configurada, nada abre.
+var worker = app.MapGroup("/worker").AddEndpointFilter(async (ctx, next) =>
+{
+    var options = ctx.HttpContext.RequestServices.GetRequiredService<RootBoost.Application.Studio.StudioOptions>();
+    if (string.IsNullOrWhiteSpace(options.WorkerKey)) return Results.NotFound();
+    var sent = ctx.HttpContext.Request.Headers["X-Worker-Key"].ToString();
+    var ok = System.Security.Cryptography.CryptographicOperations.FixedTimeEquals(
+        System.Text.Encoding.UTF8.GetBytes(sent), System.Text.Encoding.UTF8.GetBytes(options.WorkerKey));
+    return ok ? await next(ctx) : Results.Unauthorized();
+});
+
+worker.MapPost("/jobs/claim", async (WorkerClaimInput input, RootBoost.Application.Studio.ICreativeJobStore store,
+    RootBoost.Application.Studio.StudioOptions options, TimeProvider time, CancellationToken ct) =>
+{
+    if (string.IsNullOrWhiteSpace(input.WorkerId)) return Results.BadRequest(new { error = "workerId obrigatório" });
+    var job = await store.ClaimNextAsync(input.WorkerId, time.GetUtcNow(), options.Lease, ct);
+    return job is null ? Results.NoContent() : Results.Ok(WorkerJobDto.From(job));
+});
+
+worker.MapPost("/jobs/{id:guid}/progress", async (Guid id, WorkerProgressInput input, RootBoost.Application.Studio.ICreativeJobStore store,
+    RootBoost.Application.Studio.StudioOptions options, TimeProvider time, CancellationToken ct) =>
+{
+    var job = await store.GetAsync(id, ct);
+    if (job is null) return Results.NotFound();
+    try { job.ReportProgress(input.WorkerId, input.Percent, input.Note, time.GetUtcNow(), options.Lease); }
+    catch (Exception ex) when (ex is ArgumentException or InvalidOperationException) { return Results.Conflict(new { error = ex.Message }); }
+    await store.SaveAsync(job, ct);
+    return Results.NoContent();
+});
+
+worker.MapPost("/jobs/{id:guid}/deliver", async (Guid id, WorkerDeliverInput input, RootBoost.Application.Studio.ICreativeJobStore store,
+    TimeProvider time, CancellationToken ct) =>
+{
+    var job = await store.GetAsync(id, ct);
+    if (job is null) return Results.NotFound();
+    try
+    {
+        var outputs = (input.Outputs ?? []).Select(o => new CreativeOutput(o.Role ?? string.Empty, o.Url ?? string.Empty)).ToList();
+        job.Deliver(input.WorkerId, outputs, input.Warnings, input.Seed, time.GetUtcNow());
+    }
+    catch (InvalidOperationException ex) { return Results.Conflict(new { error = ex.Message }); }
+    catch (ArgumentException ex) { return Results.BadRequest(new { error = ex.Message }); }
+    await store.SaveAsync(job, ct);
+    return Results.Ok(CreativeJobDto.From(job));
+});
+
+worker.MapPost("/jobs/{id:guid}/fail", async (Guid id, WorkerFailInput input, RootBoost.Application.Studio.ICreativeJobStore store,
+    TimeProvider time, CancellationToken ct) =>
+{
+    var job = await store.GetAsync(id, ct);
+    if (job is null) return Results.NotFound();
+    try { job.Fail(input.WorkerId, input.Error ?? string.Empty, input.Retry, time.GetUtcNow()); }
+    catch (Exception ex) when (ex is ArgumentException or InvalidOperationException) { return Results.Conflict(new { error = ex.Message }); }
+    await store.SaveAsync(job, ct);
+    return Results.Ok(CreativeJobDto.From(job));
+});
+
+// O worker sobe vídeo, capa e grade pelo mesmo bucket do Console e recebe o link público pra entregar no job.
+worker.MapPost("/media/{brandKey}", async (string brandKey, IFormFile file, HttpRequest req, IBrandStore brands,
+    RootBoost.Application.Media.UploadMedia upload, RootBoost.Application.Media.MediaOptions options, CancellationToken ct) =>
+{
+    var key = brandKey.ToLowerInvariant();
+    if (!(await brands.ListAsync(ct)).Any(b => b.Key == key)) return Results.NotFound();
+    try
+    {
+        await using var stream = file.OpenReadStream();
+        var asset = await upload.HandleAsync(key, file.FileName, file.Length, stream, ct);
+        return Results.Created(MediaPublicUrl(options, req, asset), MediaDto(options, req, asset));
+    }
+    catch (ArgumentException ex) { return Results.BadRequest(new { error = ex.Message }); }
+}).DisableAntiforgery().WithMetadata(new Microsoft.AspNetCore.Mvc.RequestSizeLimitAttribute(mediaMaxBytes + 1024 * 1024));
+
 brandProfile.MapPost("/proof/{id:guid}/retire", async (string key, Guid id, IBrandProfileStore store, CancellationToken ct) =>
     await store.RetireProofAsync(key.ToLowerInvariant(), id, ct) ? Results.NoContent() : Results.NotFound());
 
@@ -657,6 +831,36 @@ record OrderDto(string PaymentId, string ProductKey, int Quantity, string Status
         o.PaymentId, o.ProductKey, o.Quantity, o.Status.ToString(), o.CustomerEmail,
         o.SupplierOrderId, o.TrackingNumber, o.AmountPaid, o.Currency,
         o.ShipTo.Name, o.ShipTo.CountryCode, o.CreatedAt, o.FailureReason, o.BrandKey, o.IsTest);
+}
+
+record CreativeJobInput(string Kind, string Theme, string? VoiceKey);
+record ScriptInput(System.Text.Json.JsonElement Roteiro, System.Text.Json.JsonElement Falas);
+record JobPublicationsInput(DateTimeOffset ScheduledFor, string? Instagram, string? Facebook, string? LinkedIn);
+record WorkerClaimInput(string WorkerId);
+record WorkerProgressInput(string WorkerId, int Percent, string? Note);
+record WorkerOutputInput(string? Role, string? Url);
+record WorkerDeliverInput(string WorkerId, List<WorkerOutputInput>? Outputs, List<string>? Warnings, int? Seed);
+record WorkerFailInput(string WorkerId, string? Error, bool Retry);
+
+record CreativeJobDto(Guid Id, string BrandKey, string Kind, string Theme, string? VoiceKey, string Status,
+    System.Text.Json.JsonElement? Roteiro, System.Text.Json.JsonElement? Falas, int? Seed, IReadOnlyList<string> Warnings,
+    IReadOnlyList<CreativeOutput> Outputs, int Attempts, int Progress, string? ProgressNote, string? Error,
+    DateTimeOffset CreatedAt, DateTimeOffset UpdatedAt)
+{
+    public static CreativeJobDto From(CreativeJob j) => new(j.Id, j.BrandKey, j.Kind.ToString(), j.Theme, j.VoiceKey,
+        j.Status.ToString(), Parse(j.Script), Parse(j.Lines), j.Seed, j.Warnings, j.Outputs, j.Attempts, j.Progress,
+        j.ProgressNote, j.Error, j.CreatedAt, j.UpdatedAt);
+
+    public static System.Text.Json.JsonElement? Parse(string? json) =>
+        json is null ? null : System.Text.Json.JsonDocument.Parse(json).RootElement.Clone();
+}
+
+/// <summary>O que o worker precisa pra renderizar: contratos, voz, semente e formato. Sem dado de outras marcas.</summary>
+record WorkerJobDto(Guid Id, string BrandKey, string Kind, string Theme, string? VoiceKey, int? Seed, int Attempts,
+    System.Text.Json.JsonElement? Roteiro, System.Text.Json.JsonElement? Falas)
+{
+    public static WorkerJobDto From(CreativeJob j) => new(j.Id, j.BrandKey, j.Kind.ToString(), j.Theme, j.VoiceKey, j.Seed,
+        j.Attempts, CreativeJobDto.Parse(j.Script), CreativeJobDto.Parse(j.Lines));
 }
 
 record PublicationInput(string Channel, string MediaUrl, string Caption, DateTimeOffset ScheduledFor);

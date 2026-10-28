@@ -32,6 +32,7 @@ public sealed class RootBoostDbContext : DbContext
 
     /// <summary>Avisos de operação pro humano (post que falhou, sync de anúncio, conexão da Meta). RB-58.</summary>
     public DbSet<OpsAlert> OpsAlerts => Set<OpsAlert>();
+    public DbSet<CreativeJob> CreativeJobs => Set<CreativeJob>();
 
     /// <summary>Postgres guarda timestamptz e o Npgsql só aceita offset zero: normaliza ao gravar.</summary>
     private static readonly ValueConverter<DateTimeOffset, DateTimeOffset> Utc = new(v => v.ToUniversalTime(), v => v);
@@ -127,6 +128,29 @@ public sealed class RootBoostDbContext : DbContext
         alert.Property(x => x.ResolvedAt).HasConversion(v => v.HasValue ? v.Value.ToUniversalTime() : v, v => v);
         // Um aviso aberto por problema: o índice único parcial impede duplicar mesmo com duas rodadas ao mesmo tempo.
         alert.HasIndex(x => x.Key).IsUnique().HasFilter("\"ResolvedAt\" IS NULL");
+
+        // Estúdio (RB-42): roteiro e falas guardados como JSON do jeito que o worker vai ler (contratos do pacote).
+        var job = b.Entity<CreativeJob>();
+        job.HasKey(x => x.Id);
+        job.Property(x => x.BrandKey).HasMaxLength(64).IsRequired();
+        job.Property(x => x.Kind).HasConversion<string>().HasMaxLength(16);
+        job.Property(x => x.Status).HasConversion<string>().HasMaxLength(16);
+        job.Property(x => x.Theme).HasMaxLength(300).IsRequired();
+        job.Property(x => x.VoiceKey).HasMaxLength(64);
+        job.Property(x => x.Script).HasColumnType("jsonb");
+        job.Property(x => x.Lines).HasColumnType("jsonb");
+        job.Property(x => x.WarningsJson).HasColumnType("jsonb").IsRequired();
+        job.Property(x => x.OutputsJson).HasColumnType("jsonb").IsRequired();
+        job.Property(x => x.WorkerId).HasMaxLength(100);
+        job.Property(x => x.ProgressNote).HasMaxLength(300);
+        job.Property(x => x.Error).HasMaxLength(1000);
+        job.Property(x => x.CreatedAt).HasConversion(Utc);
+        job.Property(x => x.UpdatedAt).HasConversion(Utc);
+        job.Property(x => x.LeaseUntil).HasConversion(v => v.HasValue ? v.Value.ToUniversalTime() : v, v => v);
+        job.Ignore(x => x.Warnings);
+        job.Ignore(x => x.Outputs);
+        job.HasIndex(x => new { x.Status, x.CreatedAt });
+        job.HasIndex(x => new { x.BrandKey, x.CreatedAt });
 
         var media = b.Entity<MediaAsset>();
         media.HasKey(x => x.Id);
