@@ -37,6 +37,9 @@ public static class DependencyInjection
 
         // --- Publicação própria (Fase 4). Social:Live=false (padrão) = só o publicador de mentira: nada sai pra rede. ---
         services.AddScoped<RootBoost.Application.Publishing.IPublicationStore, EfPublicationStore>();
+        // Avisos de operação (RB-58): post que falhou, sync de anúncio, conexão da Meta. Log + tela; push depois.
+        services.AddScoped<RootBoost.Application.Alerts.IAlertStore, EfAlertStore>();
+        services.AddScoped<RootBoost.Application.Alerts.AlertService>();
         if (!string.Equals(config["Social:Live"], "true", StringComparison.OrdinalIgnoreCase))
         {
             foreach (var channel in Enum.GetValues<RootBoost.Domain.SocialChannel>())
@@ -50,6 +53,9 @@ public static class DependencyInjection
             services.AddSingleton(new RootBoost.Infrastructure.Publishing.SocialAccounts(config));
             services.AddSingleton<RootBoost.Application.Publishing.ISocialPublisher, RootBoost.Infrastructure.Publishing.InstagramPublisher>();
             services.AddSingleton<RootBoost.Application.Publishing.ISocialPublisher, RootBoost.Infrastructure.Publishing.FacebookPagePublisher>();
+            services.AddScoped<RootBoost.Infrastructure.Publishing.MetaConnectionCheck>();
+            if (!string.Equals(config["Social:HealthCheckEnabled"], "false", StringComparison.OrdinalIgnoreCase))
+                services.AddHostedService<RootBoost.Infrastructure.Publishing.MetaConnectionScheduler>();
         }
         services.AddScoped<RootBoost.Application.Publishing.ApprovePublication>();
         services.AddScoped<RootBoost.Application.Publishing.PublishDuePublications>();

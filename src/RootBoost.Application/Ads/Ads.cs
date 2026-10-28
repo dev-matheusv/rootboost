@@ -61,10 +61,12 @@ public sealed class SyncAdInsights
     private readonly IAdInsightStore _store;
     private readonly TimeProvider _time;
     private readonly ILogger<SyncAdInsights> _log;
+    private readonly RootBoost.Application.Alerts.AlertService? _alerts;
 
     public SyncAdInsights(IAdAccountDirectory accounts, IEnumerable<IAdInsightsReader> readers, IAdInsightStore store,
-        TimeProvider time, ILogger<SyncAdInsights> log)
+        TimeProvider time, ILogger<SyncAdInsights> log, RootBoost.Application.Alerts.AlertService? alerts = null)
     {
+        _alerts = alerts;
         _accounts = accounts;
         _readers = readers.ToDictionary(r => r.Platform, StringComparer.OrdinalIgnoreCase);
         _store = store;
@@ -106,6 +108,15 @@ public sealed class SyncAdInsights
                 results.Add(new(account.BrandKey, account.Platform, account.AccountId, false, 0, 0, ex.Message));
             }
         }
+
+        if (_alerts is not null)
+            foreach (var r in results)
+            {
+                var key = RootBoost.Application.Alerts.AlertService.AdsKey(r.Platform, r.AccountId);
+                if (r.Ok) await _alerts.ResolveAsync(key, ct);
+                else await _alerts.RaiseAsync(RootBoost.Domain.AlertKind.AdsSyncFailed, key, r.BrandKey,
+                    $"Métricas de anúncio ({r.Platform} {r.AccountId}) não sincronizaram: {r.Error}", ct);
+            }
 
         return results;
     }

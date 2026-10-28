@@ -119,6 +119,31 @@ app.MapGet("/admin/knowledge/{**name}", (string name, IKnowledgeBase kb) =>
 }).RequireAuthorization(AuthSetup.AdminPolicy);
 
 // Modo da publicação, pro Console avisar quando é teste (Social:Live=false) e não mentir quando ligar.
+// --- Avisos de operação (RB-58). Abertos primeiro pelos mais recentes; dispensar fecha à mão. ---
+app.MapGet("/admin/alerts", async (RootBoost.Application.Alerts.IAlertStore store, CancellationToken ct) =>
+    Results.Ok((await store.ListOpenAsync(ct)).Select(a => new
+    {
+        id = a.Id, kind = a.Kind.ToString(), key = a.Key, brandKey = a.BrandKey, message = a.Message, count = a.Count,
+        firstSeenAt = a.FirstSeenAt, lastSeenAt = a.LastSeenAt,
+    }))).RequireAuthorization(AuthSetup.AdminPolicy);
+
+app.MapPost("/admin/alerts/{id:guid}/dismiss", async (Guid id, System.Security.Claims.ClaimsPrincipal user,
+    RootBoost.Application.Alerts.IAlertStore store, TimeProvider time, CancellationToken ct) =>
+{
+    var alert = await store.GetAsync(id, ct);
+    if (alert is null) return Results.NotFound();
+    alert.Resolve(user.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value ?? user.Identity?.Name ?? "console", time.GetUtcNow());
+    await store.SaveAsync(alert, ct);
+    return Results.NoContent();
+}).RequireAuthorization(AuthSetup.AdminPolicy);
+
+// Checagem da conexão com a Meta sob demanda (a mesma que roda 1x por dia). Só com Social:Live=true.
+app.MapPost("/admin/alerts/check-meta", async (IServiceProvider sp, CancellationToken ct) =>
+    sp.GetService<RootBoost.Infrastructure.Publishing.MetaConnectionCheck>() is { } check
+        ? Results.Ok(await check.RunAsync(ct))
+        : Results.BadRequest(new { error = "publicação real desligada (Social:Live=false): não há conta da Meta pra checar" }))
+    .RequireAuthorization(AuthSetup.AdminPolicy);
+
 app.MapGet("/admin/publications/mode", (IConfiguration cfg) =>
     Results.Ok(new { live = string.Equals(cfg["Social:Live"], "true", StringComparison.OrdinalIgnoreCase) }))
     .RequireAuthorization(AuthSetup.AdminPolicy);

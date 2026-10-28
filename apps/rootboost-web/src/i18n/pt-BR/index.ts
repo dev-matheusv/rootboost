@@ -8,6 +8,20 @@ export default {
     empty: 'Nada por aqui ainda.',
     error: 'Não foi possível carregar. Confira a conexão com a API.',
   },
+  alerts: {
+    title: 'Avisos',
+    empty: 'Nenhum aviso aberto. Tudo funcionando.',
+    dismiss: 'Dispensar',
+    checkMeta: 'Checar conexão Meta agora',
+    checked: 'Conexão Meta: {ok} de {total} contas ok.',
+    seen: 'Última vez: {when} · {n} vez(es)',
+    hint: 'O aviso fecha sozinho quando o problema some. Dispensar só tira da lista; se voltar a acontecer, aparece de novo.',
+    kinds: {
+      PublicationFailed: 'Post não publicou',
+      AdsSyncFailed: 'Métricas de anúncio não atualizaram',
+      MetaConnection: 'Conexão com a Meta caiu',
+    },
+  },
   reelImport: {
     title: 'Importar reel pronto',
     txt: 'Arquivo .txt com os textos dos canais',
