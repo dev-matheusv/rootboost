@@ -65,7 +65,7 @@ que mostra a cena (campo `midia`). O trecho vira `["acervo-<id>", 0, segundos]`;
 O worker baixa cada uma para `brutos/acervo-<id>/acervo-<id>.mp4`: vídeo é normalizado (H.264, 30 fps, sem som, até 1080 de
 largura); foto vira trecho com aproximação lenta (zoompan, 10%) com 2 s de folga, porque o pipeline só desacelera foto pra
 caber na fala. Foto sem descrição não entra na lista (a IA não enxerga a imagem no roteiro, só a descrição).
-Custo: zero de IA além do roteiro; a descrição da foto é feita uma vez no upload (`media-describe`, ~US$ 0,01).
+Custo: zero de IA além do roteiro; a descrição da foto é feita uma vez no upload (`media-describe`, ~US$ 0,01). Qualquer foto (JPG, PNG, WebP, até 40 MB, de pé conforme o EXIF) é convertida no servidor pra JPEG de até 1568 px antes de ir pra IA (SkiaSharp, MIT): o limite de 5 MB da API vale pra imagem em base64, e foto de celular passava disso. Erro do provedor vira 502 com mensagem clara e o motivo vai pro log.
 
 ## Rotas do Console (login do Console)
 

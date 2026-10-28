@@ -6,7 +6,7 @@
         <div class="text-h5 sora-bold">{{ $t('acervo.title') }}</div>
         <div class="text-grey-7">{{ $t('acervo.subtitle') }}</div>
       </div>
-      <q-file v-if="brand.selected" :model-value="null" multiple dense outlined accept=".jpg,.jpeg,.png,.mp4,.mov" class="upload"
+      <q-file v-if="brand.selected" :model-value="null" multiple dense outlined accept=".jpg,.jpeg,.png,.webp,.mp4,.mov" class="upload"
         :label="$t('acervo.upload')" :loading="uploading" @update:model-value="upload">
         <template #prepend><q-icon :name="mdiCloudUploadOutline" /></template>
       </q-file>

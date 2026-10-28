@@ -395,9 +395,11 @@ brandProfile.MapPost("/media/{id:guid}/describe", async (string key, Guid id, Ht
     var brand = (await brands.ListAsync(ct)).FirstOrDefault(b => b.Key == asset.BrandKey);
     try
     {
-        if (!await describer.DescribeAsync(asset, brand?.Name, ct)) return Results.BadRequest(new { error = "só foto JPEG de até 5 MB é descrita pela IA" });
+        if (!await describer.DescribeAsync(asset, brand?.Name, ct))
+            return Results.BadRequest(new { error = "não consegui abrir essa foto (use JPG, PNG ou WebP de até 40 MB)" });
     }
     catch (RootBoost.Application.Ai.AiDisabledException ex) { return Results.Conflict(new { error = ex.Message }); }
+    catch (RootBoost.Application.Ai.AiRequestFailedException ex) { return Results.Json(new { error = ex.Message }, statusCode: 502); }
     await assets.SaveAsync(asset, ct);
     return Results.Ok(MediaDto(options, req, asset));
 });

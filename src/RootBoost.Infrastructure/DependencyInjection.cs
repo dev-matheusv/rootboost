@@ -53,10 +53,11 @@ public static class DependencyInjection
         config.GetSection("Ai").Bind(ai);
         ai.ApiKey ??= config["Anthropic:ApiKey"] ?? Environment.GetEnvironmentVariable("ANTHROPIC_API_KEY");
         services.AddSingleton(ai);
-        services.AddSingleton<RootBoost.Application.Ai.ILanguageModel>(ai.Mode switch
+        services.AddSingleton<RootBoost.Application.Ai.ILanguageModel>(sp => ai.Mode switch
         {
             RootBoost.Application.Ai.AiMode.Fake => new RootBoost.Infrastructure.Ai.FakeLanguageModel(),
-            RootBoost.Application.Ai.AiMode.Claude when !string.IsNullOrWhiteSpace(ai.ApiKey) => new RootBoost.Infrastructure.Ai.ClaudeLanguageModel(ai),
+            RootBoost.Application.Ai.AiMode.Claude when !string.IsNullOrWhiteSpace(ai.ApiKey) => new RootBoost.Infrastructure.Ai.ClaudeLanguageModel(ai,
+                sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<RootBoost.Infrastructure.Ai.ClaudeLanguageModel>>()),
             _ => new RootBoost.Infrastructure.Ai.DisabledLanguageModel(),
         });
         services.AddScoped<RootBoost.Application.Ai.IAiUsageStore, EfAiUsageStore>();
@@ -66,6 +67,7 @@ public static class DependencyInjection
         services.AddScoped<RootBoost.Application.Ai.ProductInterviewer>();
         services.AddScoped<RootBoost.Application.Ai.ScreenAgent>();
         services.AddScoped<RootBoost.Application.Ai.MediaDescriber>();
+        services.AddSingleton<RootBoost.Application.Media.IImageConverter, RootBoost.Infrastructure.Media.SkiaImageConverter>();
         // Estúdio (RB-42): fila de jobs de criativo que o worker local puxa. Sem Studio:WorkerKey as rotas do worker ficam fechadas.
         services.AddScoped<RootBoost.Application.Studio.ICreativeJobStore, EfCreativeJobStore>();
         var studio = new RootBoost.Application.Studio.StudioOptions();

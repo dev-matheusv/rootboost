@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Anthropic;
 using Anthropic.Models.Messages;
+using Microsoft.Extensions.Logging;
 using RootBoost.Application.Ai;
 
 namespace RootBoost.Infrastructure.Ai;
@@ -10,9 +11,11 @@ public sealed class ClaudeLanguageModel : ILanguageModel
 {
     private readonly AnthropicClient _client;
     private readonly AiOptions _options;
+    private readonly ILogger<ClaudeLanguageModel> _logger;
 
-    public ClaudeLanguageModel(AiOptions options)
+    public ClaudeLanguageModel(AiOptions options, ILogger<ClaudeLanguageModel> logger)
     {
+        _logger = logger;
         _options = options;
         _client = new AnthropicClient { ApiKey = options.ApiKey };
     }
@@ -20,14 +23,24 @@ public sealed class ClaudeLanguageModel : ILanguageModel
     public async Task<LanguageModelResult> GenerateJsonAsync(LanguageModelRequest request, CancellationToken ct = default)
     {
         var schema = request.Schema.EnumerateObject().ToDictionary(p => p.Name, p => p.Value.Clone());
-        var message = await _client.Messages.Create(new MessageCreateParams
+        Message message;
+        try
         {
-            Model = _options.ModelFor(request.Purpose),
-            MaxTokens = 16000,
-            System = request.System,
-            Messages = [new UserMessageParam { Content = UserContent(request) }],
-            OutputConfig = new OutputConfig { Effort = EffortOf(_options.Effort), Format = new JsonOutputFormat { Schema = schema } },
-        }, ct);
+            message = await _client.Messages.Create(new MessageCreateParams
+            {
+                Model = _options.ModelFor(request.Purpose),
+                MaxTokens = 16000,
+                System = request.System,
+                Messages = [new UserMessageParam { Content = UserContent(request) }],
+                OutputConfig = new OutputConfig { Effort = EffortOf(_options.Effort), Format = new JsonOutputFormat { Schema = schema } },
+            }, ct);
+        }
+        catch (Anthropic.Exceptions.AnthropicApiException ex)
+        {
+            // O corpo da resposta diz o motivo (modelo, imagem, limite); vai pro log, nunca a chave nem o conteúdo enviado.
+            _logger.LogWarning(ex, "Claude recusou a chamada {Purpose}: {Status} {Body}", request.Purpose, ex.StatusCode, ex.ResponseBody);
+            throw new AiRequestFailedException($"a IA não aceitou o pedido ({(int)ex.StatusCode}); tente de novo ou avise o suporte", ex);
+        }
 
         if (message.StopReason == "refusal")
             throw new InvalidOperationException($"a IA recusou o pedido ({message.StopDetails?.Category})");
