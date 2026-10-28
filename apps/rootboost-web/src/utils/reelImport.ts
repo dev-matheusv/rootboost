@@ -59,3 +59,27 @@ export function edges(caption: string): { first: string; last: string } {
   const ls = caption.split('\n').filter((l) => l.trim());
   return { first: ls[0] ?? '', last: ls[ls.length - 1] ?? '' };
 }
+
+export interface ReelFiles {
+  txt?: File;
+  igVideo?: File;
+  siteVideo?: File;
+  igCover?: File;
+}
+
+/**
+ * Separa os arquivos de um reel pelo nome, do jeito que o marketing entrega:
+ * <nome>.txt, <nome>-narrado-instagram.mp4 (Instagram), <nome>-narrado-instagram.jpg (capa) e <nome>-narrado.mp4
+ * (LinkedIn e Facebook). Arquivo que não casa com nenhum é ignorado; havendo dois do mesmo tipo, fica o primeiro.
+ */
+export function classifyReelFiles(files: File[]): ReelFiles {
+  const out: ReelFiles = {};
+  for (const f of files) {
+    const name = f.name.toLowerCase();
+    if (name.endsWith('.txt')) out.txt ??= f;
+    else if (/-narrado-instagram\.(mp4|mov)$/.test(name)) out.igVideo ??= f;
+    else if (/-narrado-instagram\.jpe?g$/.test(name)) out.igCover ??= f;
+    else if (/-narrado\.(mp4|mov)$/.test(name)) out.siteVideo ??= f;
+  }
+  return out;
+}
