@@ -40,6 +40,11 @@ public static class DependencyInjection
         // Avisos de operação (RB-58): post que falhou, sync de anúncio, conexão da Meta. Log + tela; push depois.
         services.AddScoped<RootBoost.Application.Alerts.IAlertStore, EfAlertStore>();
         services.AddScoped<RootBoost.Application.Alerts.AlertService>();
+        // Estúdio (RB-42): fila de jobs de criativo que o worker local puxa. Sem Studio:WorkerKey as rotas do worker ficam fechadas.
+        services.AddScoped<RootBoost.Application.Studio.ICreativeJobStore, EfCreativeJobStore>();
+        var studio = new RootBoost.Application.Studio.StudioOptions();
+        config.GetSection("Studio").Bind(studio);
+        services.AddSingleton(studio);
         if (!string.Equals(config["Social:Live"], "true", StringComparison.OrdinalIgnoreCase))
         {
             foreach (var channel in Enum.GetValues<RootBoost.Domain.SocialChannel>())

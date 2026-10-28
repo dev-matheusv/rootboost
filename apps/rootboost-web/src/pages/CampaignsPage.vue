@@ -2,6 +2,7 @@
   <q-page class="q-pa-lg">
     <div class="row items-end q-mb-lg q-gutter-sm">
       <div class="col">
+        <div class="page-eyebrow">{{ brand.selectedName || $t('nav.allBrands') }}</div>
         <div class="text-h5 sora-bold">{{ $t('pages.campaigns.title') }}</div>
         <div class="text-grey-7">{{ $t('pages.campaigns.subtitle') }}</div>
       </div>
@@ -44,7 +45,7 @@
         <div class="text-subtitle2 q-mb-sm">{{ $t('pages.campaigns.spendPerDay') }}</div>
         <div class="row no-wrap bars">
           <div v-for="b in bars" :key="b.date" class="col row items-end justify-center">
-            <div class="bar bg-primary" :style="{ height: `${Math.max(b.height * 100, 2)}%` }">
+            <div class="bar" :style="{ height: `${Math.max(b.height * 100, 2)}%` }">
               <q-tooltip>
                 {{ formatDate(b.date) }}: {{ money(b.spend) }} · {{ b.conversions }} {{ $t('pages.campaigns.conversions').toLowerCase() }}
               </q-tooltip>
@@ -153,5 +154,9 @@ watch(() => brand.selected, () => {
 
 <style lang="scss" scoped>
 .bars { height: 140px; gap: 6px; }
-.bar { width: 100%; max-width: 36px; border-radius: 6px 6px 2px 2px; min-height: 2px; }
+.bar {
+  width: 100%; max-width: 36px; border-radius: 8px 8px 3px 3px; min-height: 2px;
+  background: linear-gradient(180deg, #a98bff, $primary); transition: filter 0.15s ease;
+  &:hover { filter: brightness(1.15); }
+}
 </style>

@@ -2,7 +2,7 @@
   <q-page class="q-pa-lg">
     <div class="row items-center q-mb-lg q-gutter-sm">
       <div class="col-12 col-md">
-        <div class="text-overline text-grey-7">{{ brand.selected }}</div>
+        <div class="page-eyebrow">{{ brand.selectedName }}</div>
         <div class="text-h5 sora-bold">{{ heading }}</div>
       </div>
       <template v-if="brand.selected">
@@ -38,7 +38,7 @@
           </div>
 
           <!-- Fila -->
-          <div v-else-if="view === 'queue'" class="column q-gutter-y-lg">
+          <div v-else-if="view === 'queue'" class="column no-wrap q-gutter-y-lg">
             <div v-if="!sections.needs.length" class="all-clear card-rounded row items-center no-wrap q-pa-md q-gutter-x-md">
               <q-icon :name="mdiCheckCircleOutline" size="32px" color="positive" />
               <div>
@@ -53,7 +53,7 @@
                 <div class="section-title q-mb-sm" :class="`text-${stageColor(stage)}`">
                   {{ $t(`pages.publications.sections.${stage}`) }} · {{ sections[stage].length }}
                 </div>
-                <transition-group name="list" tag="div" class="column q-gutter-y-sm">
+                <transition-group name="list" tag="div" class="column no-wrap q-gutter-y-sm">
                   <div v-for="b in sections[stage]" :key="b.key" class="bundle-row card-rounded row items-center no-wrap q-pa-sm q-gutter-x-md"
                     :class="{ selected: b.key === selectedKey }" role="button" tabindex="0" @click="selectBundle(b, true)" @keydown.enter="selectBundle(b, true)">
                     <div class="thumb" :style="thumbStyle(b)"><q-icon v-if="!thumbOf(b)" :name="mdiPlayCircleOutline" color="white" size="20px" /></div>

@@ -194,3 +194,32 @@ export interface Publication {
   thumbOffsetMs: number | null;
   shareToFeed: boolean;
 }
+
+/** Estúdio (RB-42/RB-51): job de criativo que o worker local renderiza. */
+export type CreativeKind = 'Organic' | 'Ad' | 'Prospecting';
+export type CreativeJobStatus = 'Draft' | 'ScriptReady' | 'Queued' | 'Rendering' | 'Review' | 'Done' | 'Failed';
+
+export interface CreativeOutput {
+  role: string;
+  url: string;
+}
+
+export interface CreativeJob {
+  id: string;
+  brandKey: string;
+  kind: CreativeKind;
+  theme: string;
+  voiceKey: string | null;
+  status: CreativeJobStatus;
+  roteiro: unknown;
+  falas: unknown;
+  seed: number | null;
+  warnings: string[];
+  outputs: CreativeOutput[];
+  attempts: number;
+  progress: number;
+  progressNote: string | null;
+  error: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
