@@ -37,3 +37,7 @@ tools/stripe/.secret
 # Cópias e sobras de banco SQLite local (renomeadas, WAL, SHM)
 *.db.*
 *.db-*
+
+# Vídeo de post vai pro bucket (RB-33), nunca pro repositório.
+landing/media/posts/**/*.mp4
+landing/media/posts/**/*.mov

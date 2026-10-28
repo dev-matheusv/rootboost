@@ -96,14 +96,16 @@ public sealed class PublishDuePublications
     private readonly IReadOnlyDictionary<SocialChannel, ISocialPublisher> _publishers;
     private readonly TimeProvider _time;
     private readonly ILogger<PublishDuePublications> _log;
+    private readonly RootBoost.Application.Alerts.AlertService? _alerts;
 
     public PublishDuePublications(IPublicationStore store, IEnumerable<ISocialPublisher> publishers, TimeProvider time,
-        ILogger<PublishDuePublications> log)
+        ILogger<PublishDuePublications> log, RootBoost.Application.Alerts.AlertService? alerts = null)
     {
         _store = store;
         _publishers = publishers.ToDictionary(p => p.Channel);
         _time = time;
         _log = log;
+        _alerts = alerts;
     }
 
     public async Task<PublishRunResult> RunAsync(CancellationToken ct = default)
@@ -116,8 +118,20 @@ public sealed class PublishDuePublications
             if (outcome == PublicationStatus.Published) published++;
             else if (outcome == PublicationStatus.Failed) failed++;
             else retrying++;
+            await AlertAsync(publication, outcome, ct);
         }
         return new(published, failed, retrying);
+    }
+
+    /// <summary>Esgotou as tentativas: avisa o humano (RB-58). Publicou: fecha o aviso, se havia.</summary>
+    private async Task AlertAsync(Publication p, PublicationStatus outcome, CancellationToken ct)
+    {
+        if (_alerts is null) return;
+        var key = RootBoost.Application.Alerts.AlertService.PublicationKey(p.Id);
+        if (outcome == PublicationStatus.Published) await _alerts.ResolveAsync(key, ct);
+        else if (outcome == PublicationStatus.Failed)
+            await _alerts.RaiseAsync(AlertKind.PublicationFailed, key, p.BrandKey,
+                $"Post do {p.Channel} agendado pra {p.ScheduledFor:dd/MM HH:mm} UTC falhou {p.Attempts} vezes: {p.Error}", ct);
     }
 
     private async Task<PublicationStatus> PublishOneAsync(Publication publication, CancellationToken ct)

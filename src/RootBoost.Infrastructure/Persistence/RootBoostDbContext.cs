@@ -30,6 +30,9 @@ public sealed class RootBoostDbContext : DbContext
     /// <summary>Snapshot diário de métricas de anúncio (Meta e o que vier). Uma linha por objeto e dia.</summary>
     public DbSet<AdInsightDaily> AdInsights => Set<AdInsightDaily>();
 
+    /// <summary>Avisos de operação pro humano (post que falhou, sync de anúncio, conexão da Meta). RB-58.</summary>
+    public DbSet<OpsAlert> OpsAlerts => Set<OpsAlert>();
+
     /// <summary>Postgres guarda timestamptz e o Npgsql só aceita offset zero: normaliza ao gravar.</summary>
     private static readonly ValueConverter<DateTimeOffset, DateTimeOffset> Utc = new(v => v.ToUniversalTime(), v => v);
 
@@ -111,6 +114,19 @@ public sealed class RootBoostDbContext : DbContext
         cred.Property(x => x.PasswordHash).HasMaxLength(512).IsRequired();
         cred.Property(x => x.SourceEnvHash).HasMaxLength(512).IsRequired();
         cred.Property(x => x.UpdatedAt).HasConversion(Utc);
+
+        var alert = b.Entity<OpsAlert>();
+        alert.HasKey(x => x.Id);
+        alert.Property(x => x.Kind).HasConversion<string>().HasMaxLength(32);
+        alert.Property(x => x.Key).HasMaxLength(200).IsRequired();
+        alert.Property(x => x.BrandKey).HasMaxLength(64);
+        alert.Property(x => x.Message).HasMaxLength(1000).IsRequired();
+        alert.Property(x => x.ResolvedBy).HasMaxLength(320);
+        alert.Property(x => x.FirstSeenAt).HasConversion(Utc);
+        alert.Property(x => x.LastSeenAt).HasConversion(Utc);
+        alert.Property(x => x.ResolvedAt).HasConversion(v => v.HasValue ? v.Value.ToUniversalTime() : v, v => v);
+        // Um aviso aberto por problema: o índice único parcial impede duplicar mesmo com duas rodadas ao mesmo tempo.
+        alert.HasIndex(x => x.Key).IsUnique().HasFilter("\"ResolvedAt\" IS NULL");
 
         var media = b.Entity<MediaAsset>();
         media.HasKey(x => x.Id);
