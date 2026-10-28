@@ -73,6 +73,24 @@ public class PublishingTests
     }
 
     [Fact]
+    public void Failed_post_can_be_retried_keeping_approval_and_channel_id()
+    {
+        var p = Approved(TimeSpan.FromMinutes(-1));
+        for (var i = 0; i < 3; i++)
+        {
+            p.StartPublishing(_time.Now);
+            if (i == 0) p.RecordExternalId("vid-7", _time.Now);
+            p.MarkFailed("processando", 3, _time.Now);
+        }
+        Assert.Equal(PublicationStatus.Failed, p.Status);
+        p.Retry(_time.Now);
+        Assert.Equal(PublicationStatus.Approved, p.Status);
+        Assert.Equal("vid-7", p.ExternalId);
+        Assert.Equal(0, p.Attempts);
+        Assert.Throws<InvalidOperationException>(() => p.Retry(_time.Now));
+    }
+
+    [Fact]
     public void Unapprove_returns_to_draft_only_before_publishing()
     {
         var p = Approved(TimeSpan.FromHours(1));

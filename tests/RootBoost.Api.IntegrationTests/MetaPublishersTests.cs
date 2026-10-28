@@ -22,9 +22,10 @@ public class MetaPublishersTests
         {
             var s = ReelStatuses.Count > 0 ? ReelStatuses.Dequeue() : "ready";
             var publish = s == "published" ? "published" : "draft";
-            var video = s == "published" ? "ready" : s;
+            var video = s is "published" or "in_progress" ? "ready" : s;
+            var phase = s == "published" ? "complete" : s == "in_progress" ? "in_progress" : "not_started";
             var error = s == "error" ? ""","processing_phase":{"status":"error","error":{"message":"Resolution too low"}}""" : "";
-            return $$"""{"status":{"video_status":"{{video}}","publishing_phase":{"status":"not_started","publish_status":"{{publish}}"}{{error}}},"id":"vid-7"}""";
+            return $$"""{"status":{"video_status":"{{video}}","publishing_phase":{"status":"{{phase}}","publish_status":"{{publish}}"}{{error}}},"id":"vid-7"}""";
         }
         public Queue<string> Statuses { get; } = new();
         public string? PhotoResponse { get; set; } = """{"id":"55","post_id":"200_55"}""";
@@ -210,11 +211,11 @@ public class MetaPublishersTests
     }
 
     [Fact]
-    public async Task Facebook_reel_starts_uploads_by_link_waits_and_finishes()
+    public async Task Facebook_reel_starts_uploads_by_link_finishes_and_follows_until_published()
     {
         var g = new Graph();
-        g.ReelStatuses.Enqueue("processing");
-        g.ReelStatuses.Enqueue("ready");
+        g.ReelStatuses.Enqueue("upload_complete"); // processamento só começa depois do finish (28/10)
+        g.ReelStatuses.Enqueue("published");
         var (fb, waits) = Facebook(g);
         var post = Post(SocialChannel.Facebook, "https://cdn.exemplo.com/reel.mp4");
 
@@ -233,7 +234,8 @@ public class MetaPublishersTests
 
         Assert.Single(waits);
         Assert.Equal(FacebookPagePublisher.PollInterval, waits[0]);
-        var finish = g.Calls.Last();
+        var finish = g.Calls.Single(c => c.Body.Contains("upload_phase=finish"));
+        Assert.True(g.Calls.IndexOf(finish) < g.Calls.Count - 1); // finish antes de acompanhar
         Assert.Equal("/v26.0/200/video_reels", finish.Path);
         Assert.Contains("video_id=vid-7", finish.Body);
         Assert.Contains("upload_phase=finish", finish.Body);
@@ -241,6 +243,19 @@ public class MetaPublishersTests
         Assert.Contains("description=Agenda", finish.Body);
         Assert.DoesNotContain(g.Calls, c => c.Query.Contains("tok-"));
         Assert.Equal("vid-7", published.ExternalId);
+    }
+
+    [Fact]
+    public async Task Facebook_reel_retry_while_meta_is_publishing_does_not_finish_twice()
+    {
+        var g = new Graph();
+        for (var i = 0; i < 6; i++) g.ReelStatuses.Enqueue("in_progress");
+        var (fb, _) = Facebook(g);
+        var post = Post(SocialChannel.Facebook, "https://cdn.exemplo.com/reel.mp4");
+
+        var published = await fb.PublishAsync(post, "vid-7"); // ainda processando: aceito, a Meta conclui sozinha
+        Assert.Equal("vid-7", published.ExternalId);
+        Assert.DoesNotContain(g.Calls, c => c.Body.Contains("upload_phase=finish"));
     }
 
     [Fact]

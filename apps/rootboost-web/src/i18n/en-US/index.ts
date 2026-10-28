@@ -283,6 +283,8 @@ export default {
       shortcuts: 'Shortcuts: J and K move, A approves, E edits',
       pickPost: 'Pick a post to see how it looks on each channel.',
       moved: 'Moved to {day}. Same time.',
+      retry: 'Try again',
+      retried: 'Back in the queue; goes out on the next round.',
       status: { Draft: 'Draft', Approved: 'Approved', Publishing: 'Publishing', Published: 'Published', Failed: 'Failed' },
     },
     brandProfile: {

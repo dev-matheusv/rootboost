@@ -214,6 +214,20 @@ public sealed class Publication
         UpdatedAt = now;
     }
 
+    /// <summary>
+    /// Tentar de novo um post que falhou: volta pra aprovado (a aprovação da legenda continua valendo) e sai na próxima
+    /// rodada do job. Mantém o id já criado no canal, pra reaproveitar o vídeo enviado em vez de subir outro.
+    /// </summary>
+    public void Retry(DateTimeOffset now)
+    {
+        if (Status != PublicationStatus.Failed) throw new InvalidOperationException($"só post que falhou pode tentar de novo (status atual: {Status})");
+        if (ApprovedBy is null) throw new InvalidOperationException("post sem aprovação: aprove antes");
+        Status = PublicationStatus.Approved;
+        Attempts = 0;
+        Error = null;
+        UpdatedAt = now;
+    }
+
     private void EnsureEditable()
     {
         if (Status is PublicationStatus.Publishing or PublicationStatus.Published)
