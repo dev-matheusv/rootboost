@@ -150,6 +150,10 @@ public sealed class CreativeJob
             if (string.IsNullOrWhiteSpace(o.Role)) throw new ArgumentException("arquivo sem papel", nameof(outputs));
             if (!Uri.TryCreate(o.Url, UriKind.Absolute, out var u) || u.Scheme != Uri.UriSchemeHttps)
                 throw new ArgumentException($"link do arquivo precisa ser https: {o.Url}", nameof(outputs));
+            // A capa vira cover_url do Reels, que só aceita JPEG: recusa aqui, enquanto o worker ainda pode refazer.
+            if (o.Role.Trim().StartsWith("cover", StringComparison.OrdinalIgnoreCase) &&
+                !(u.AbsolutePath.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) || u.AbsolutePath.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase)))
+                throw new ArgumentException($"capa precisa ser JPEG (.jpg): {o.Url}", nameof(outputs));
         }
         OutputsJson = JsonSerializer.Serialize(outputs.Select(o => new CreativeOutput(o.Role.Trim(), o.Url)).ToList(), Json);
         WarningsJson = JsonSerializer.Serialize((warnings ?? []).Where(w => !string.IsNullOrWhiteSpace(w)).Select(w => Truncate(w, 500)!).ToList(), Json);
