@@ -80,7 +80,7 @@ import { useRoute, useRouter } from 'vue-router';
 import {
   mdiMenu, mdiAccountCircleOutline, mdiViewDashboardOutline, mdiPackageVariantClosed,
   mdiWeatherNight, mdiWeatherSunny, mdiLogout, mdiStorefrontOutline, mdiBullhornOutline, mdiChartBar, mdiCalendarMonthOutline,
-  mdiBellOutline, mdiBellAlertOutline, mdiMagnify, mdiMovieOpenPlayOutline,
+  mdiBellOutline, mdiBellAlertOutline, mdiMagnify, mdiMovieOpenPlayOutline, mdiImageMultipleOutline,
 } from '@quasar/extras/mdi-v7';
 import { api } from 'src/services/api';
 import type { OpsAlert } from 'src/types/api';
@@ -150,6 +150,7 @@ const items = [
   { name: 'campaigns', label: 'nav.campaigns', icon: mdiChartBar },
   { name: 'publications', label: 'nav.publications', icon: mdiCalendarMonthOutline },
   { name: 'studio', label: 'nav.studio', icon: mdiMovieOpenPlayOutline },
+  { name: 'acervo', label: 'nav.acervo', icon: mdiImageMultipleOutline },
   { name: 'brandProfile', label: 'nav.brandProfile', icon: mdiBullhornOutline },
 ];
 

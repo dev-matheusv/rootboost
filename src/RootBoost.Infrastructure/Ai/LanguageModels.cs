@@ -68,6 +68,8 @@ public sealed class FakeLanguageModel : ILanguageModel
     {
         if (request.Purpose == "onboarding-chat") return Task.FromResult(Interview(request));
         if (request.Purpose == "screen-recording") return Task.FromResult(Screen(request));
+        if (request.Purpose == "media-describe")
+            return Task.FromResult(new LanguageModelResult(JsonSerializer.Serialize(new { descricao = "Foto de teste do acervo.", tags = new[] { "teste", "acervo" } }), "fake", 0, 0, 0m));
         var ad = request.System.Contains("Anúncio: sem abertura", StringComparison.Ordinal);
         object? opening = ad ? null : new { titulo = "Agenda no papel", subtitulo = "Tudo num lugar só", fala = "Agenda no papel perde paciente sem você perceber." };
         var blocks = ad

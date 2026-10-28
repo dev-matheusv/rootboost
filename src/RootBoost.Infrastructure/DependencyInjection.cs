@@ -65,6 +65,7 @@ public static class DependencyInjection
         services.AddSingleton<RootBoost.Application.Ai.IWebPageReader, RootBoost.Infrastructure.Ai.SafeWebPageReader>();
         services.AddScoped<RootBoost.Application.Ai.ProductInterviewer>();
         services.AddScoped<RootBoost.Application.Ai.ScreenAgent>();
+        services.AddScoped<RootBoost.Application.Ai.MediaDescriber>();
         // Estúdio (RB-42): fila de jobs de criativo que o worker local puxa. Sem Studio:WorkerKey as rotas do worker ficam fechadas.
         services.AddScoped<RootBoost.Application.Studio.ICreativeJobStore, EfCreativeJobStore>();
         var studio = new RootBoost.Application.Studio.StudioOptions();
