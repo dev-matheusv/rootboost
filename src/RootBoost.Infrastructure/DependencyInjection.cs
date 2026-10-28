@@ -39,6 +39,13 @@ public static class DependencyInjection
         services.AddScoped<RootBoost.Application.Publishing.IPublicationStore, EfPublicationStore>();
         // Avisos de operação (RB-58): post que falhou, sync de anúncio, conexão da Meta. Log + tela; push depois.
         services.AddScoped<RootBoost.Application.Alerts.IAlertStore, EfAlertStore>();
+        // Push da PWA (RB-37): sem Push__PublicKey, Push__PrivateKey e Push__Subject nada é enviado.
+        var push = new RootBoost.Application.Push.PushOptions();
+        config.GetSection("Push").Bind(push);
+        services.AddSingleton(push);
+        services.AddScoped<RootBoost.Application.Push.IPushDeviceStore, EfPushDeviceStore>();
+        services.AddHttpClient<RootBoost.Application.Push.IPushTransport, RootBoost.Infrastructure.Push.WebPushTransport>();
+        services.AddScoped<RootBoost.Application.Push.PushNotifier>();
         services.AddScoped<RootBoost.Application.Alerts.AlertService>();
         // Estúdio (RB-42): fila de jobs de criativo que o worker local puxa. Sem Studio:WorkerKey as rotas do worker ficam fechadas.
         services.AddScoped<RootBoost.Application.Studio.ICreativeJobStore, EfCreativeJobStore>();
