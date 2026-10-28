@@ -77,6 +77,12 @@ export default {
     doneHint: 'Este vídeo já virou post.',
     goPublications: 'Ver em Publicações',
   },
+  push: {
+    label: 'Avisos no celular',
+    on: 'Avisos ligados neste aparelho. Mandei um teste.',
+    denied: 'O navegador bloqueou as notificações. Libere nas configurações do site.',
+    error: 'Não consegui ligar os avisos neste aparelho.',
+  },
   reelImport: {
     title: 'Importar reel pronto',
     txt: 'Arquivo .txt com os textos dos canais',

@@ -33,6 +33,7 @@ public sealed class RootBoostDbContext : DbContext
     /// <summary>Avisos de operação pro humano (post que falhou, sync de anúncio, conexão da Meta). RB-58.</summary>
     public DbSet<OpsAlert> OpsAlerts => Set<OpsAlert>();
     public DbSet<CreativeJob> CreativeJobs => Set<CreativeJob>();
+    public DbSet<PushDevice> PushDevices => Set<PushDevice>();
 
     /// <summary>Postgres guarda timestamptz e o Npgsql só aceita offset zero: normaliza ao gravar.</summary>
     private static readonly ValueConverter<DateTimeOffset, DateTimeOffset> Utc = new(v => v.ToUniversalTime(), v => v);
@@ -151,6 +152,17 @@ public sealed class RootBoostDbContext : DbContext
         job.Ignore(x => x.Outputs);
         job.HasIndex(x => new { x.Status, x.CreatedAt });
         job.HasIndex(x => new { x.BrandKey, x.CreatedAt });
+
+        // Aparelhos inscritos no push da PWA (RB-37). Um registro por endereço do navegador.
+        var device = b.Entity<PushDevice>();
+        device.HasKey(x => x.Id);
+        device.Property(x => x.Endpoint).HasMaxLength(1000).IsRequired();
+        device.Property(x => x.P256dh).HasMaxLength(200).IsRequired();
+        device.Property(x => x.Auth).HasMaxLength(100).IsRequired();
+        device.Property(x => x.UserEmail).HasMaxLength(320).IsRequired();
+        device.Property(x => x.CreatedAt).HasConversion(Utc);
+        device.Property(x => x.LastSentAt).HasConversion(v => v.HasValue ? v.Value.ToUniversalTime() : v, v => v);
+        device.HasIndex(x => x.Endpoint).IsUnique();
 
         var media = b.Entity<MediaAsset>();
         media.HasKey(x => x.Id);

@@ -500,6 +500,44 @@ brandProfile.MapPost("/creative-jobs/{id:guid}/publications", async (string key,
     return Results.Ok(new { job = CreativeJobDto.From(job), publications = created.Select(PublicationDto.From) });
 });
 
+// --- Push da PWA (RB-37): o Console inscreve o aparelho e o servidor avisa pendência e problema. ---
+var push = app.MapGroup("/admin/push").RequireAuthorization(AuthSetup.AdminPolicy);
+
+push.MapGet("/config", (RootBoost.Application.Push.PushOptions options) =>
+    Results.Ok(new { enabled = options.Enabled, publicKey = options.Enabled ? options.PublicKey : null }));
+
+push.MapPost("/devices", async (PushDeviceInput input, System.Security.Claims.ClaimsPrincipal user,
+    RootBoost.Application.Push.IPushDeviceStore devices, RootBoost.Application.Push.PushOptions options, TimeProvider time, CancellationToken ct) =>
+{
+    if (!options.Enabled) return Results.Conflict(new { error = "push desligado no servidor" });
+    var email = user.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value ?? user.Identity?.Name ?? string.Empty;
+    try
+    {
+        if (await devices.GetByEndpointAsync(input.Endpoint, ct) is { } existing)
+        {
+            existing.Renew(input.Keys.P256dh, input.Keys.Auth, email);
+            await devices.SaveAsync(existing, ct);
+        }
+        else await devices.AddAsync(new PushDevice(input.Endpoint, input.Keys.P256dh, input.Keys.Auth, email, time.GetUtcNow()), ct);
+        return Results.NoContent();
+    }
+    catch (ArgumentException ex) { return Results.BadRequest(new { error = ex.Message }); }
+});
+
+push.MapPost("/devices/remove", async (PushRemoveInput input, RootBoost.Application.Push.IPushDeviceStore devices, CancellationToken ct) =>
+{
+    if (await devices.GetByEndpointAsync(input.Endpoint, ct) is { } d) await devices.RemoveAsync(d, ct);
+    return Results.NoContent();
+});
+
+push.MapPost("/test", async (RootBoost.Application.Push.PushNotifier notifier, CancellationToken ct) =>
+{
+    if (!notifier.Enabled) return Results.Conflict(new { error = "push desligado no servidor" });
+    var sent = await notifier.SendAsync(new RootBoost.Application.Push.PushMessage(
+        "Teste do Console", "Os avisos estão chegando neste aparelho.", "/", "teste"), ct);
+    return Results.Ok(new { sent });
+});
+
 // Rotas do worker: chave própria no cabeçalho X-Worker-Key (Studio:WorkerKey). Sem chave configurada, nada abre.
 var worker = app.MapGroup("/worker").AddEndpointFilter(async (ctx, next) =>
 {
@@ -531,7 +569,7 @@ worker.MapPost("/jobs/{id:guid}/progress", async (Guid id, WorkerProgressInput i
 });
 
 worker.MapPost("/jobs/{id:guid}/deliver", async (Guid id, WorkerDeliverInput input, RootBoost.Application.Studio.ICreativeJobStore store,
-    TimeProvider time, CancellationToken ct) =>
+    RootBoost.Application.Push.PushNotifier notifier, TimeProvider time, CancellationToken ct) =>
 {
     var job = await store.GetAsync(id, ct);
     if (job is null) return Results.NotFound();
@@ -543,6 +581,9 @@ worker.MapPost("/jobs/{id:guid}/deliver", async (Guid id, WorkerDeliverInput inp
     catch (InvalidOperationException ex) { return Results.Conflict(new { error = ex.Message }); }
     catch (ArgumentException ex) { return Results.BadRequest(new { error = ex.Message }); }
     await store.SaveAsync(job, ct);
+    // Vídeo pronto: avisa no celular pra revisar (aprovação continua no Console).
+    await notifier.SendAsync(new RootBoost.Application.Push.PushMessage(
+        "Vídeo pronto pra revisar", job.Theme, "/studio", $"job:{job.Id:N}"), ct);
     return Results.Ok(CreativeJobDto.From(job));
 });
 
@@ -839,6 +880,9 @@ record OrderDto(string PaymentId, string ProductKey, int Quantity, string Status
         o.ShipTo.Name, o.ShipTo.CountryCode, o.CreatedAt, o.FailureReason, o.BrandKey, o.IsTest);
 }
 
+record PushKeys(string P256dh, string Auth);
+record PushDeviceInput(string Endpoint, PushKeys Keys);
+record PushRemoveInput(string Endpoint);
 record CreativeJobInput(string Kind, string Theme, string? VoiceKey);
 record ScriptInput(System.Text.Json.JsonElement Roteiro, System.Text.Json.JsonElement Falas);
 record JobPublicationsInput(DateTimeOffset ScheduledFor, string? Instagram, string? Facebook, string? LinkedIn);
