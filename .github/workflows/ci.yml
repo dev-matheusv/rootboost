@@ -52,3 +52,7 @@ jobs:
         run: npm test
       - if: steps.has_web.outputs.present == 'true'
         run: npm run build
+      # Worker do estúdio (RB-43): funções puras, sem dependência.
+      - if: steps.has_web.outputs.present == 'true'
+        working-directory: .
+        run: node --test tools/studio-worker/lib.test.mjs
