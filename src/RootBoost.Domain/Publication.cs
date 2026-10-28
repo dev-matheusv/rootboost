@@ -148,6 +148,15 @@ public sealed class Publication
         UpdatedAt = now;
     }
 
+    /// <summary>Desfaz a aprovação (botão "Desfazer" do Console): volta pra rascunho enquanto não foi pro ar.</summary>
+    public void Unapprove(DateTimeOffset now)
+    {
+        if (Status != PublicationStatus.Approved)
+            throw new InvalidOperationException($"só aprovado pode voltar pra rascunho (status atual: {Status})");
+        ResetApproval();
+        UpdatedAt = now;
+    }
+
     public bool IsDue(DateTimeOffset now) => Status == PublicationStatus.Approved && ScheduledFor <= now;
 
     /// <summary>Ficou travada em Publishing (o processo caiu no meio)? Pode ser retomada com segurança.</summary>
