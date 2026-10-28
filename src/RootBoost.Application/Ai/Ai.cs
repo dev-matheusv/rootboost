@@ -41,7 +41,20 @@ public sealed class AiOptions
     /// <summary>low, medium, high, xhigh ou max. Medium é o padrão do modelo; roteiro curto não precisa de mais.</summary>
     public string Effort { get; set; } = "medium";
     public string? ApiKey { get; set; }
+
+    /// <summary>
+    /// Modelo por finalidade, pra controlar custo sem mexer em código (ex.: Ai__Models__screen-recording=claude-haiku-5-5).
+    /// Sem entrada, vale <see cref="Model"/>.
+    /// </summary>
+    public Dictionary<string, string> Models { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+
+    public string ModelFor(string purpose) => Models.TryGetValue(purpose, out var m) && !string.IsNullOrWhiteSpace(m) ? m : Model;
 }
+
+/// <summary>Gasto com IA num período, por finalidade e por marca (pra acompanhar o custo da plataforma).</summary>
+public sealed record AiUsageSummary(decimal TotalUsd, int Calls, IReadOnlyList<AiUsageLine> ByPurpose, IReadOnlyList<AiUsageLine> ByBrand);
+
+public sealed record AiUsageLine(string Key, decimal CostUsd, int Calls, long InputTokens, long OutputTokens);
 
 /// <summary>Uma chamada à IA: quanto custou, pra quê e de qual marca (decisão: uso e custo gravados).</summary>
 public sealed record AiUsageEntry(Guid Id, string? BrandKey, string Purpose, string Model, long InputTokens, long OutputTokens,
@@ -50,6 +63,7 @@ public sealed record AiUsageEntry(Guid Id, string? BrandKey, string Purpose, str
 public interface IAiUsageStore
 {
     Task AddAsync(AiUsageEntry entry, CancellationToken ct = default);
+    Task<IReadOnlyList<AiUsageEntry>> ListSinceAsync(DateTimeOffset since, CancellationToken ct = default);
 }
 
 /// <summary>Preço por milhão de tokens (entrada, saída) em dólar, pra registrar o custo de cada chamada.</summary>

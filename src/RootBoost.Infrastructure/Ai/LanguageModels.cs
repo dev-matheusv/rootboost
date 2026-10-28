@@ -22,7 +22,7 @@ public sealed class ClaudeLanguageModel : ILanguageModel
         var schema = request.Schema.EnumerateObject().ToDictionary(p => p.Name, p => p.Value.Clone());
         var message = await _client.Messages.Create(new MessageCreateParams
         {
-            Model = _options.Model,
+            Model = _options.ModelFor(request.Purpose),
             MaxTokens = 16000,
             System = request.System,
             Messages = [new UserMessageParam { Content = UserContent(request) }],
@@ -35,7 +35,7 @@ public sealed class ClaudeLanguageModel : ILanguageModel
             throw new InvalidOperationException("a resposta da IA passou do tamanho máximo");
 
         var json = string.Concat(message.Content.Select(b => b.Value).OfType<TextBlock>().Select(t => t.Text));
-        var model = _options.Model;
+        var model = _options.ModelFor(request.Purpose);
         long input = message.Usage.InputTokens, output = message.Usage.OutputTokens;
         return new LanguageModelResult(json, model, input, output, AiPricing.Cost(model, input, output));
     }

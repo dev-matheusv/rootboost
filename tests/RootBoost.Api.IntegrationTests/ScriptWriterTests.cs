@@ -71,6 +71,8 @@ public class ScriptWriterTests
 
     private sealed class Usage : IAiUsageStore
     {
+        public Task<IReadOnlyList<AiUsageEntry>> ListSinceAsync(DateTimeOffset since, CancellationToken ct = default) =>
+            Task.FromResult<IReadOnlyList<AiUsageEntry>>([]);
         public List<AiUsageEntry> Items { get; } = new();
         public Task AddAsync(AiUsageEntry entry, CancellationToken ct = default) { Items.Add(entry); return Task.CompletedTask; }
     }
@@ -121,6 +123,8 @@ public class OnboardingTests
 {
     private sealed class Usage : IAiUsageStore
     {
+        public Task<IReadOnlyList<AiUsageEntry>> ListSinceAsync(DateTimeOffset since, CancellationToken ct = default) =>
+            Task.FromResult<IReadOnlyList<AiUsageEntry>>([]);
         public Task AddAsync(AiUsageEntry entry, CancellationToken ct = default) => Task.CompletedTask;
     }
 
@@ -234,6 +238,8 @@ public class ScreenAgentTests : IClassFixture<StudioAiWebApplicationFactory>
 
     private sealed class Usage : IAiUsageStore
     {
+        public Task<IReadOnlyList<AiUsageEntry>> ListSinceAsync(DateTimeOffset since, CancellationToken ct = default) =>
+            Task.FromResult<IReadOnlyList<AiUsageEntry>>([]);
         public List<AiUsageEntry> Items { get; } = new();
         public Task AddAsync(AiUsageEntry entry, CancellationToken ct = default) { Items.Add(entry); return Task.CompletedTask; }
     }
@@ -271,5 +277,32 @@ public class ScreenAgentTests : IClassFixture<StudioAiWebApplicationFactory>
         Assert.Equal(HttpStatusCode.OK, res.StatusCode);
         Assert.Equal("clicar", (await res.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("action").GetString());
         Assert.Equal(HttpStatusCode.BadRequest, (await worker.PostAsJsonAsync("/worker/ai/next-action", new { scene = "x", image = "" })).StatusCode);
+    }
+}
+
+public class AiCostTests : IClassFixture<FakeAiWebApplicationFactory>
+{
+    private readonly FakeAiWebApplicationFactory _factory;
+    public AiCostTests(FakeAiWebApplicationFactory factory) => _factory = factory;
+
+    [Fact]
+    public void Model_can_be_chosen_per_purpose()
+    {
+        var o = new AiOptions { Model = "claude-opus-5-5", Models = new(StringComparer.OrdinalIgnoreCase) { ["screen-recording"] = "claude-haiku-5-5" } };
+        Assert.Equal("claude-haiku-5-5", o.ModelFor("screen-recording"));
+        Assert.Equal("claude-opus-5-5", o.ModelFor("studio-script"));
+    }
+
+    [Fact]
+    public async Task Usage_report_sums_by_purpose_and_brand()
+    {
+        var c = _factory.CreateClient();
+        var created = await c.PostAsJsonAsync("/admin/brands/medlycare/creative-jobs", new { kind = "ad", theme = "Custo" });
+        var id = (await created.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetString();
+        await c.PostAsJsonAsync($"/admin/brands/medlycare/creative-jobs/{id}/write-script", new { });
+        var report = await c.GetFromJsonAsync<JsonElement>("/admin/ai/usage?days=7");
+        var summary = report.GetProperty("summary");
+        Assert.True(summary.GetProperty("calls").GetInt32() >= 1);
+        Assert.Contains(summary.GetProperty("byPurpose").EnumerateArray(), l => l.GetProperty("key").GetString() == "studio-script");
     }
 }

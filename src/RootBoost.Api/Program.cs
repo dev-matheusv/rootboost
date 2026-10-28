@@ -498,6 +498,18 @@ brandProfile.MapPost("/onboarding/chat", async (string key, OnboardingChatInput 
     catch (InvalidOperationException ex) { return Results.BadRequest(new { error = ex.Message }); }
 });
 
+// Custo da IA (todas as marcas): total, por finalidade e por marca. Pra acompanhar se a plataforma está ficando cara.
+app.MapGet("/admin/ai/usage", async (int? days, RootBoost.Application.Ai.IAiUsageStore usage, TimeProvider time, CancellationToken ct) =>
+{
+    var window = Math.Clamp(days ?? 30, 1, 365);
+    var rows = await usage.ListSinceAsync(time.GetUtcNow().AddDays(-window), ct);
+    static List<RootBoost.Application.Ai.AiUsageLine> By(IEnumerable<RootBoost.Application.Ai.AiUsageEntry> r, Func<RootBoost.Application.Ai.AiUsageEntry, string> key) =>
+        r.GroupBy(key).Select(g => new RootBoost.Application.Ai.AiUsageLine(g.Key, g.Sum(x => x.CostUsd), g.Count(), g.Sum(x => x.InputTokens), g.Sum(x => x.OutputTokens)))
+         .OrderByDescending(l => l.CostUsd).ToList();
+    return Results.Ok(new { days = window, summary = new RootBoost.Application.Ai.AiUsageSummary(rows.Sum(r => r.CostUsd), rows.Count,
+        By(rows, r => r.Purpose), By(rows, r => r.BrandKey ?? "geral")) });
+}).RequireAuthorization(AuthSetup.AdminPolicy);
+
 brandProfile.MapGet("/ai/status", (RootBoost.Application.Ai.AiOptions ai) =>
     Results.Ok(new { mode = ai.Mode.ToString(), enabled = ai.Mode == RootBoost.Application.Ai.AiMode.Fake ||
         (ai.Mode == RootBoost.Application.Ai.AiMode.Claude && !string.IsNullOrWhiteSpace(ai.ApiKey)) }));

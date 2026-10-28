@@ -49,7 +49,9 @@ passar, a IA tenta de novo uma vez com os erros. A pessoa ajusta em texto, trech
 em "Avançado". Cada chamada grava modelo, tokens e custo em `AiUsage`.
 
 Ligar em produção (Railway): `Ai__Mode=Claude` e `Anthropic__ApiKey` (chave da API da Anthropic, só no Railway).
-Opcional: `Ai__Model` (padrão `claude-opus-5-5`) e `Ai__Effort` (padrão `medium`). Sem isso fica `Off` e a tela
+Opcional: `Ai__Model` (padrão `claude-opus-5-5`) e `Ai__Effort` (padrão `medium`). **Modelo por finalidade**
+(controle de custo): `Ai__Models__studio-script`, `Ai__Models__onboarding-chat`, `Ai__Models__screen-recording`
+(ex.: `claude-haiku-5-5`). O custo dos últimos 30 dias aparece na Visão geral e em `GET /admin/ai/usage`. Sem isso fica `Off` e a tela
 avisa. `Ai__Mode=Fake` dá um roteiro fixo pra testar sem custo.
 
 Enquanto a gravação automática da tela (RB-50) não existe, cada bloco escrito pela IA vem com um trecho
