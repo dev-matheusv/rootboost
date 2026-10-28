@@ -98,6 +98,7 @@ public class CreativeJobTests
         job.Claim("pc", Now, Lease);
         Assert.Throws<ArgumentException>(() => job.Deliver("pc", [new("video", "http://x/v.mp4")], null, 1, Now));
         Assert.Throws<ArgumentException>(() => job.Deliver("pc", [], null, 1, Now));
+        Assert.Throws<ArgumentException>(() => job.Deliver("pc", [new("video", "https://x/v.mp4"), new("cover-instagram", "https://x/capa.png")], null, 1, Now));
 
         job.Deliver("pc", [new("video-instagram", "https://x/ig.mp4"), new("video", "https://x/v.mp4")], ["fator 2,1 no bloco 2"], 42, Now);
         Assert.Equal(CreativeJobStatus.Review, job.Status);
