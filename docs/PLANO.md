@@ -12,14 +12,13 @@ canal, LinkedIn manual), capa do Reels, Reels automático na Página do Facebook
 
 ## Ondas (ordem de entrega)
 
-### Onda 1: fechar o ciclo do MedlyCare com qualidade (agora)
+### Onda 1: fechar o ciclo do MedlyCare com qualidade (concluída em 27/10)
 | Card | O quê | Por quê agora |
 |---|---|---|
 | ~~RB-48~~ | ~~Capa do Reels e "compartilhar no feed"~~ (feito 27/10) | |
 | ~~RB-57~~ | ~~Reels automático na Página do Facebook~~ (feito 27/10; 1º post real é o teste) | |
-| NOVO | Alerta de falha: post que falhou e sync de anúncios com erro avisam (log + tela + depois push) | Hoje uma falha só aparece se alguém abrir o Console. Qualidade de operação. |
-| NOVO | Saúde da conexão Meta: checagem diária (a do script de 24/10) com aviso | O bloqueio de 25/10 só foi notado por acaso. |
-| NOVO | Limpeza: tirar os mp4 provisórios da landing (repo pesado) depois que os posts usarem o bucket | Repositório leve, uma fonte só de mídia. |
+| ~~RB-58~~ | ~~Avisos: post que falhou, sync de anúncios e saúde diária da conexão Meta (log + tela; push no RB-37)~~ (feito 27/10) | |
+| ~~Limpeza~~ | ~~mp4 provisórios da landing saíram; os 3 rascunhos antigos passaram pro bucket~~ (feito 27/10) | |
 
 ### Onda 2: o estúdio (coração da visão: a plataforma gera o conteúdo)
 Ordem por dependência: **RB-42** fila de jobs → **RB-43** worker (voz contínua, alinhamento,
