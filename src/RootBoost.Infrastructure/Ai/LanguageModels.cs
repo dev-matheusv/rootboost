@@ -25,7 +25,7 @@ public sealed class ClaudeLanguageModel : ILanguageModel
             Model = _options.Model,
             MaxTokens = 16000,
             System = request.System,
-            Messages = [new UserMessageParam { Content = request.User }],
+            Messages = [new UserMessageParam { Content = UserContent(request) }],
             OutputConfig = new OutputConfig { Effort = EffortOf(_options.Effort), Format = new JsonOutputFormat { Schema = schema } },
         }, ct);
 
@@ -38,6 +38,18 @@ public sealed class ClaudeLanguageModel : ILanguageModel
         var model = _options.Model;
         long input = message.Usage.InputTokens, output = message.Usage.OutputTokens;
         return new LanguageModelResult(json, model, input, output, AiPricing.Cost(model, input, output));
+    }
+
+    /// <summary>Só texto, ou a foto antes do texto quando houver (ordem recomendada pra imagem).</summary>
+    private static MessageContentParam UserContent(LanguageModelRequest request)
+    {
+        if (string.IsNullOrEmpty(request.ImageJpegBase64)) return request.User;
+        List<ContentBlockParam> blocks =
+        [
+            new ImageBlockParam { Source = new Base64ImageSource { Data = request.ImageJpegBase64, MediaType = MediaType.ImageJpeg } },
+            new TextBlockParam { Text = request.User },
+        ];
+        return blocks;
     }
 
     private static Effort EffortOf(string value) => value.ToLowerInvariant() switch
@@ -55,6 +67,7 @@ public sealed class FakeLanguageModel : ILanguageModel
     public Task<LanguageModelResult> GenerateJsonAsync(LanguageModelRequest request, CancellationToken ct = default)
     {
         if (request.Purpose == "onboarding-chat") return Task.FromResult(Interview(request));
+        if (request.Purpose == "screen-recording") return Task.FromResult(Screen(request));
         var ad = request.System.Contains("Anúncio: sem abertura", StringComparison.Ordinal);
         object? opening = ad ? null : new { titulo = "Agenda no papel", subtitulo = "Tudo num lugar só", fala = "Agenda no papel perde paciente sem você perceber." };
         var blocks = ad
@@ -78,6 +91,15 @@ public sealed class FakeLanguageModel : ILanguageModel
             ganchosAlternativos = new[] { "Quantas sessões você perdeu este mês?", "Sua agenda ainda é no papel?", "Paciente esqueceu de novo?" },
         });
         return Task.FromResult(new LanguageModelResult(json, "fake", 0, 0, 0m));
+    }
+
+    /// <summary>Gravação de mentira: clica no primeiro elemento e, a partir do terceiro passo, dá a cena por pronta.</summary>
+    private static LanguageModelResult Screen(LanguageModelRequest request)
+    {
+        var done = request.User.Contains("Passo 3 ", StringComparison.Ordinal) || request.User.Contains("Passo 4 ", StringComparison.Ordinal);
+        var first = request.User.Split('\n').FirstOrDefault(l => l.StartsWith("e1:", StringComparison.Ordinal)) is null ? "" : "e1";
+        var json = JsonSerializer.Serialize(new { acao = done ? "pronto" : "clicar", alvo = done ? "" : first, texto = "", motivo = done ? "cena mostrada" : "abrir a agenda" });
+        return new LanguageModelResult(json, "fake", 0, 0, 0m);
     }
 
     /// <summary>Entrevista de mentira: com o site lido, já propõe o cadastro; sem ele, pergunta o que a pessoa vende.</summary>
