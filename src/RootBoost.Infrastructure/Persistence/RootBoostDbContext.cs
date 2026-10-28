@@ -87,6 +87,7 @@ public sealed class RootBoostDbContext : DbContext
         pub.Property(x => x.ExternalId).HasMaxLength(256);
         pub.Property(x => x.PublishedUrl).HasMaxLength(2048);
         pub.Property(x => x.CoverUrl).HasMaxLength(2048);
+        pub.Property(x => x.ReminderSentAt).HasConversion(v => v.HasValue ? v.Value.ToUniversalTime() : v, v => v);
         pub.Property(x => x.ShareToFeed).HasDefaultValue(true).HasSentinel(true); // linhas antigas: aparecem no feed; false é gravado de verdade
         pub.HasIndex(x => new { x.Status, x.ScheduledFor });
         pub.HasIndex(x => new { x.BrandKey, x.ScheduledFor });

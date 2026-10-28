@@ -27,6 +27,12 @@ public sealed class EfPublicationStore : IPublicationStore
         return await q.OrderBy(p => p.ScheduledFor).ToListAsync(ct);
     }
 
+    public async Task<IReadOnlyList<Publication>> ListDraftsToRemindAsync(DateTimeOffset from, DateTimeOffset to, CancellationToken ct = default) =>
+        await _db.Publications
+            .Where(p => p.Status == PublicationStatus.Draft && p.ReminderSentAt == null && p.ScheduledFor >= from && p.ScheduledFor <= to)
+            .OrderBy(p => p.ScheduledFor)
+            .ToListAsync(ct);
+
     public async Task<IReadOnlyList<Publication>> ListDueAsync(DateTimeOffset now, TimeSpan stuckAfter, CancellationToken ct = default)
     {
         var stuckBefore = now - stuckAfter;
