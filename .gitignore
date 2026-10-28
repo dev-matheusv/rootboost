@@ -43,3 +43,4 @@ landing/media/posts/**/*.mp4
 landing/media/posts/**/*.mov
 tools/studio-worker/worker.env
 src/RootBoost.Api/media-local/
+tools/studio-worker/contas.json

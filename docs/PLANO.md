@@ -42,6 +42,10 @@ público, recursos; lê o site) → **RB-50** gravação de tela automática no 
 celular, com autorização falada; Android e iPhone explicados) → **RB-16** acervo → **RB-55** chat geral.
 **A voz do Matheus nunca sai do PC dele nem narra outra marca** (trava no worker: `STUDIO_PRIVATE_VOICES`).
 
+**Padrão do sistema (Matheus, 28/10): cadastro e configuração por conversa com a IA.** Molde do RB-60 (chat + proposta
++ formulário ao lado + salvar com um toque) aplicado a: perfil e voz da marca, provas, escolha de voz (RB-59), contas de
+anúncio e regra de parada, agenda e horários, publicação nos canais. ~~**RB-60**~~ feito (28/10).
+
 ### Onda 3: a IA da plataforma, a Root AI (o cérebro, junto com o DMaker)
 **Decidido (27/10):** a IA do RootFlow vira produto próprio, a **Root AI**, usada no RootFlow, no
 MedlyCare e no RootBoost (RB-17, RB-56). Base: o RAG do RootFlow (documentos da empresa, embeddings,
