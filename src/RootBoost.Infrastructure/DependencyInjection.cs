@@ -46,6 +46,7 @@ public static class DependencyInjection
         services.AddScoped<RootBoost.Application.Push.IPushDeviceStore, EfPushDeviceStore>();
         services.AddHttpClient<RootBoost.Application.Push.IPushTransport, RootBoost.Infrastructure.Push.WebPushTransport>();
         services.AddScoped<RootBoost.Application.Push.PushNotifier>();
+        services.AddScoped<RootBoost.Application.Push.RemindPendingApprovals>();
         services.AddScoped<RootBoost.Application.Alerts.AlertService>();
         // Estúdio (RB-42): fila de jobs de criativo que o worker local puxa. Sem Studio:WorkerKey as rotas do worker ficam fechadas.
         services.AddScoped<RootBoost.Application.Studio.ICreativeJobStore, EfCreativeJobStore>();
@@ -72,7 +73,10 @@ public static class DependencyInjection
         services.AddScoped<RootBoost.Application.Publishing.ApprovePublication>();
         services.AddScoped<RootBoost.Application.Publishing.PublishDuePublications>();
         if (!string.Equals(config["Social:SchedulerEnabled"], "false", StringComparison.OrdinalIgnoreCase))
+        {
             services.AddHostedService<RootBoost.Infrastructure.Publishing.PublicationScheduler>();
+            services.AddHostedService<RootBoost.Infrastructure.Push.ApprovalReminderScheduler>();
+        }
 
         // --- Anúncios (RB-13): só leitura. Ads:Reader=None (padrão) não chama nada; Fake = dados de mentira. ---
         var adsReader = config["Ads:Reader"] ?? "None";

@@ -32,6 +32,8 @@ public interface IPublicationStore
     Task<IReadOnlyList<Publication>> ListByBrandAsync(string brandKey, DateTimeOffset? from, DateTimeOffset? to, CancellationToken ct = default);
 
     /// <summary>Aprovadas no horário e travadas em Publishing há mais de <paramref name="stuckAfter"/>.</summary>
+    /// <summary>Rascunhos agendados dentro da janela que ainda não receberam lembrete.</summary>
+    Task<IReadOnlyList<Publication>> ListDraftsToRemindAsync(DateTimeOffset from, DateTimeOffset to, CancellationToken ct = default);
     Task<IReadOnlyList<Publication>> ListDueAsync(DateTimeOffset now, TimeSpan stuckAfter, CancellationToken ct = default);
 
     Task SaveAsync(Publication publication, CancellationToken ct = default);

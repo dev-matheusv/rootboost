@@ -204,6 +204,7 @@ import type { CopyFinding, Publication, SocialChannel } from 'src/types/api';
 import { useBrandStore } from 'src/stores/brandStore';
 import ReelImportDialog from 'src/components/ReelImportDialog.vue';
 import PublicationPreview from 'src/components/PublicationPreview.vue';
+import { proposeSlots } from 'src/utils/calendar';
 import { findingColor, sortFindings } from 'src/utils/brandProfile';
 import {
   addDays, bundlePosts, canEdit, fromLocalInput, groupByDay, isVideo, localDayKey, monthGrid, queueSections, stageColor,
@@ -514,7 +515,11 @@ function reelBody() {
 const importOpen = ref(false);
 
 /** Próxima hora cheia, no formato do campo de data e hora. */
+/** Próxima data livre do calendário (seg, qua e sex às 12h, feriado vai pro dia seguinte, dia ocupado fica de fora). */
 function nextSlot(): string {
+  const occupied = new Set(items.value.map((p) => localDayKey(new Date(p.scheduledFor))));
+  const slot = proposeSlots(new Date(), 1, occupied)[0];
+  if (slot) return toLocalInput(slot.toISOString());
   const next = new Date();
   next.setHours(next.getHours() + 1, 0, 0, 0);
   return toLocalInput(next.toISOString());
@@ -546,10 +551,8 @@ function markPublished(p: Publication) {
 function openNew() {
   upload.value = null;
   editing.value = null;
-  const next = new Date();
-  next.setHours(next.getHours() + 1, 0, 0, 0);
   coverUpload.value = null;
-  Object.assign(form, { channel: 'Instagram', mediaUrl: '', caption: '', when: toLocalInput(next.toISOString()), ...emptyReel });
+  Object.assign(form, { channel: 'Instagram', mediaUrl: '', caption: '', when: nextSlot(), ...emptyReel });
   dialog.value = true;
 }
 

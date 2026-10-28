@@ -86,4 +86,46 @@ public class PushTests
         Assert.Throws<ArgumentException>(() => new PushDevice("http://push.exemplo.com/x", "p", "a", "e", _time.Now));
         Assert.Throws<ArgumentException>(() => new PushDevice("https://push.exemplo.com/x", "", "a", "e", _time.Now));
     }
+
+    [Fact]
+    public async Task Reminds_once_per_group_of_channels_and_again_after_rescheduling()
+    {
+        Device("https://push.exemplo.com/ok");
+        var store = new InMemoryPublicationStore();
+        var when = _time.Now.AddHours(5);
+        Publication Draft(SocialChannel ch, DateTimeOffset at) =>
+            new(BrandKeys.MedlyCare, ch, "https://cdn.exemplo.com/v.mp4", "R1 pacote completo\nresto", at, _time.Now);
+        var ig = Draft(SocialChannel.Instagram, when);
+        var fb = Draft(SocialChannel.Facebook, when);
+        var later = Draft(SocialChannel.Instagram, _time.Now.AddDays(3)); // fora da janela
+        var approved = Draft(SocialChannel.LinkedIn, when.AddHours(1));
+        approved.Approve("dono@exemplo.com", _time.Now);
+        store.Items.AddRange([ig, fb, later, approved]);
+        var remind = new RemindPendingApprovals(store, Notifier(), _time);
+
+        Assert.Equal(1, await remind.RunAsync());
+        var sent = Assert.Single(_transport.Sent).Payload;
+        Assert.Contains("Falta aprovar", sent);
+        Assert.Contains("R1 pacote completo (Instagram, Facebook)", sent);
+        Assert.Equal(0, await remind.RunAsync()); // não repete
+
+        ig.Reschedule(when.AddHours(2), _time.Now);
+        Assert.Equal(1, await remind.RunAsync()); // data nova, lembra de novo
+    }
+
+    [Fact]
+    public async Task Reminder_waits_while_push_is_off()
+    {
+        var store = new InMemoryPublicationStore();
+        var p = new Publication(BrandKeys.MedlyCare, SocialChannel.Instagram, "https://cdn.exemplo.com/v.mp4", "Post", _time.Now.AddHours(2), _time.Now);
+        store.Items.Add(p);
+        Assert.Equal(0, await new RemindPendingApprovals(store, Notifier(new PushOptions()), _time).RunAsync());
+        Assert.Null(p.ReminderSentAt);
+    }
+
+    [Fact]
+    public void Brasilia_time_in_the_text()
+    {
+        Assert.Equal("ter 12:00", RemindPendingApprovals.Local(new DateTimeOffset(2026, 10, 27, 15, 0, 0, TimeSpan.Zero)));
+    }
 }

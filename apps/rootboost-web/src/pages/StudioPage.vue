@@ -180,10 +180,11 @@ import {
   mdiPlus, mdiMovieOpenPlayOutline, mdiMicrophoneOutline, mdiCodeJson, mdiPlay, mdiCalendarPlus, mdiCheckCircleOutline,
 } from '@quasar/extras/mdi-v7';
 import { api } from 'src/services/api';
-import type { CreativeJob, CreativeKind } from 'src/types/api';
+import type { CreativeJob, CreativeKind, Publication } from 'src/types/api';
 import { useBrandStore } from 'src/stores/brandStore';
 import { estimateSeconds, isActive, jobColor, jobStep, parseJson, scriptSegments } from 'src/utils/studio';
-import { fromLocalInput, isVideo, toLocalInput } from 'src/utils/publications';
+import { addDays, fromLocalInput, isVideo, localDayKey, toLocalInput } from 'src/utils/publications';
+import { proposeSlots } from 'src/utils/calendar';
 import { parseReelText } from 'src/utils/reelImport';
 
 defineOptions({ name: 'StudioPage' });
@@ -316,19 +317,30 @@ const txtErrors = ref<string[]>([]);
 const when = ref('');
 const captions = reactive({ instagram: '', facebook: '', linkedin: '' });
 
-/** Próximo dia útil às 12h (seg/qua/sex 12h é o padrão do MedlyCare; a pessoa ajusta). */
-function defaultWhen(): string {
-  const d = new Date();
-  d.setDate(d.getDate() + 1);
-  d.setHours(12, 0, 0, 0);
-  return toLocalInput(d.toISOString());
+/**
+ * Próxima data livre do calendário da marca (seg, qua e sex às 12h, feriado vai pro dia seguinte, dia que já tem
+ * post fica de fora). A pessoa ajusta se quiser.
+ */
+async function suggestWhen() {
+  try {
+    const now = new Date();
+    const { data } = await api.get<Publication[]>(`/admin/brands/${brand.selected}/publications`, {
+      params: { from: now.toISOString(), to: addDays(now, 120).toISOString() },
+    });
+    const slot = proposeSlots(now, 1, new Set(data.map((p) => localDayKey(new Date(p.scheduledFor)))))[0];
+    if (slot) when.value = toLocalInput(slot.toISOString());
+  } catch {
+    // Sem a agenda, fica a sugestão sem conferir dia ocupado.
+  }
 }
 
 function resetPosts() {
   txt.value = null;
   txtErrors.value = [];
-  when.value = defaultWhen();
+  const first = proposeSlots(new Date(), 1, new Set())[0];
+  when.value = first ? toLocalInput(first.toISOString()) : '';
   Object.assign(captions, { instagram: '', facebook: '', linkedin: '' });
+  void suggestWhen();
 }
 
 async function readTxt(file: File | null) {
