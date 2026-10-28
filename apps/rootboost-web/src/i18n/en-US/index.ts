@@ -98,6 +98,24 @@ export default {
     denied: 'The browser blocked notifications. Allow them in the site settings.',
     error: 'Could not turn on alerts on this device.',
   },
+  onboarding: {
+    placeholder: 'Type here. You can send your website link.',
+    off: 'AI is off. Fill in the form beside.',
+    thinking: 'Thinking…',
+    readingSite: 'Reading your website…',
+    form: 'Product profile',
+    formHint: 'The AI fills this in as you chat. Check and save; you can edit by hand.',
+    saved: 'Saved',
+    savedHint: 'Profile saved. The AI uses it in scripts.',
+    save: 'Save profile',
+    missing: 'For a good script: name, what it is, who it is for and one feature.',
+    kinds: { app: 'App or system', site: 'Website', loja: 'Store', servico: 'Service', outro: 'Other' },
+    f: {
+      name: 'Product name', kind: 'Type', summary: 'What it is, in one sentence', audience: 'Who it is for', url: 'Website or store',
+      appUrl: 'Sign in address', appUrlHint: 'Where the platform records the screen showing it in use.',
+      features: 'Main features or products', listHint: 'Type and press Enter.', differentials: 'Differentials', offer: 'Current offer',
+    },
+  },
   reelImport: {
     title: 'Import finished reel',
     txt: '.txt file with the channel texts',
@@ -258,7 +276,7 @@ export default {
       title: 'Brand profile',
       subtitle: 'Voice, proof and real phrases. The AI only claims what is here.',
       pickBrand: 'Pick a brand in the menu to see its profile.',
-      tabs: { proof: 'Proof', voice: 'Voice', phrases: 'Customer phrases', check: 'Check copy' },
+      tabs: { product: 'Product', proof: 'Proof', voice: 'Voice', phrases: 'Customer phrases', check: 'Check copy' },
       proof: {
         hint: 'What the brand can claim, always with a source. Forbidden is what must never be said.',
         add: 'Add proof',

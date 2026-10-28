@@ -90,9 +90,10 @@ public sealed class ScriptWriter
     public sealed record Failed(IReadOnlyList<string> Errors);
 
     /// <returns>O roteiro pronto ou os erros que sobraram depois de duas tentativas.</returns>
-    public async Task<(Written? Ok, Failed? Error)> WriteAsync(CreativeJob job, BrandProfile? brand, string? instructions, CancellationToken ct = default)
+    public async Task<(Written? Ok, Failed? Error)> WriteAsync(CreativeJob job, BrandProfile? brand, string? instructions, CancellationToken ct = default,
+        BrandProduct? product = null)
     {
-        var system = SystemPrompt(job.Kind, brand);
+        var system = SystemPrompt(job.Kind, brand, product);
         var user = UserPrompt(job, instructions);
         decimal cost = 0;
         IReadOnlyList<string> errors = [];
@@ -163,7 +164,7 @@ public sealed class ScriptWriter
     private static string Str(JsonElement e, string prop) =>
         e.TryGetProperty(prop, out var v) && v.ValueKind == JsonValueKind.String ? v.GetString()!.Trim() : string.Empty;
 
-    private string SystemPrompt(CreativeKind kind, BrandProfile? brand)
+    private string SystemPrompt(CreativeKind kind, BrandProfile? brand, BrandProduct? product)
     {
         var (min, max) = ScriptGates.Range(kind);
         var sb = new StringBuilder();
@@ -185,6 +186,15 @@ public sealed class ScriptWriter
         sb.AppendLine("Como escrever copy (playbook da plataforma):");
         sb.AppendLine(_knowledge.Playbook);
 
+        if (product is not null && !string.IsNullOrWhiteSpace(product.Name))
+        {
+            sb.AppendLine();
+            sb.AppendLine($"Produto: {product.Name} ({product.Kind}). {product.Summary}");
+            if (!string.IsNullOrWhiteSpace(product.Audience)) sb.AppendLine($"Pra quem: {product.Audience}");
+            if (product.Features.Count > 0) sb.AppendLine($"Recursos (as cenas mostram estes, usando o produto de verdade): {string.Join("; ", product.Features)}");
+            if (product.Differentials.Count > 0) sb.AppendLine($"Diferenciais: {string.Join("; ", product.Differentials)}");
+            if (!string.IsNullOrWhiteSpace(product.Offer)) sb.AppendLine($"Oferta atual: {product.Offer}");
+        }
         if (brand is not null)
         {
             sb.AppendLine();

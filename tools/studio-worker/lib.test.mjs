@@ -41,3 +41,12 @@ test("avisos e nota de progresso", () => {
   assert.deepEqual(warningsFrom("ok\nAVISO bloco 2 lento\nQA: legenda perto da borda\nPronto"), ["AVISO bloco 2 lento", "QA: legenda perto da borda"]);
   assert.equal(lastLine("a\n\nsintetizando 600 caracteres\n"), "sintetizando 600 caracteres");
 });
+
+test("voz particular só narra a marca dona", async () => {
+  const { parsePrivateVoices, voiceProblem } = await import("./lib.mjs");
+  const priv = parsePrivateVoices("matheus2a:medlycare, matheus2b:medlycare");
+  assert.equal(voiceProblem("matheus2b", "medlycare", priv), null);
+  assert.match(voiceProblem("matheus2b", "clinica-x", priv), /particular de medlycare/);
+  assert.equal(voiceProblem("banco-ana", "clinica-x", priv), null);
+  assert.match(voiceProblem(null, "clinica-x", priv), /sem voz/);
+});
