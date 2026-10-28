@@ -121,3 +121,15 @@ export function isVideo(url: string): boolean {
     return false;
   }
 }
+
+/** Mesmo horário local, outro dia: é o que arrastar no calendário faz. */
+export function moveToDay(iso: string, dayKey: string): string {
+  const d = new Date(iso);
+  const [y, m, day] = dayKey.split('-').map(Number);
+  return new Date(y!, m! - 1, day, d.getHours(), d.getMinutes()).toISOString();
+}
+
+/** Só dá pra arrastar o grupo inteiro, e só enquanto nenhum canal foi pro ar. */
+export function canMove(b: PostBundle): boolean {
+  return b.items.every(canEdit);
+}
