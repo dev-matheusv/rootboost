@@ -27,7 +27,7 @@ job com trechos "gravar-bloco-N"  ──►  worker abre o Chrome (sem janela, 5
 
 ## Segurança
 
-- **Conta de demonstração no PC** (`tools/studio-worker/contas.json`, fora do git): `{ "<marca>": { "url", "usuario",
+- **Conta de demonstração no PC** (`tools/studio-worker/contas.json`, fora do git; modelo em `contas.exemplo.json`): `{ "<marca>": { "url", "usuario",
   "senha" } }`. A senha nunca vai pra API nem pra IA: o worker digita ele mesmo quando a IA pede o passo `login`.
 - **Só a conta de demonstração**, com dados fictícios. A IA recebe a instrução de nunca mostrar dado real e o quadro
   passa pela checagem de texto proibido da marca antes de virar vídeo.
@@ -37,6 +37,10 @@ job com trechos "gravar-bloco-N"  ──►  worker abre o Chrome (sem janela, 5
 - Depois: conta no servidor, criptografada, cadastrada pelo cliente na conversa com a IA (quando entrarem clientes).
 
 ## Partes
+
+Andamento (28/10): partes 1, 2 e 3 feitas. Testado no PC gravando o próprio Console local (Chrome sem janela,
+login com a conta de demonstração, passos da IA em modo de teste, mp4 de saída). Falta testar com a IA de verdade
+num sistema real e a parte 4.
 
 1. **API:** `POST /worker/ai/next-action` (foto + elementos + cena + histórico curto → próximo passo), porta da IA
    aceitando imagem, custo registrado. Modo Fake pra teste.

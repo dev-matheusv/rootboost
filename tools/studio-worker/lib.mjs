@@ -95,3 +95,44 @@ export function voiceProblem(voice, brandKey, privateVoices) {
   if (owner && owner !== String(brandKey).toLowerCase()) return `a voz ${voice} é particular de ${owner} e não pode narrar ${brandKey}`;
   return null;
 }
+
+// --- Gravação de tela (RB-50, docs/GRAVACAO.md) ---
+
+/** Botões que a gravação nunca clica, mesmo que a IA peça: nada destrutivo, nada que saia ou mande algo de verdade. */
+const DESTRUCTIVE = /\b(excluir|apagar|deletar|remover|cancelar assinatura|encerrar conta|pagar|comprar|finalizar compra|enviar mensagem|disparar|sair|logout|desconectar|redefinir|resetar|delete|remove|pay|buy|sign out|log out)\b/i;
+
+export function isDestructive(label) {
+  return DESTRUCTIVE.test(String(label ?? ""));
+}
+
+/** A gravação só anda dentro do site do produto (mesmo domínio ou subdomínio dele). */
+export function sameSite(url, allowedUrl) {
+  try {
+    const host = new URL(url).hostname.toLowerCase();
+    const allowed = new URL(allowedUrl).hostname.toLowerCase().replace(/^www\./, "");
+    return host === allowed || host.endsWith(`.${allowed}`) || host === `www.${allowed}`;
+  } catch {
+    return false;
+  }
+}
+
+/** Blocos do roteiro que a IA deixou pra gravar: [{ index, scene, source }]. */
+export function scenesToRecord(roteiro) {
+  return (roteiro?.blocos ?? [])
+    .map((b, i) => ({ index: i, scene: typeof b.cena === "string" ? b.cena : "", source: b.trechos?.[0]?.[0] }))
+    .filter((b) => typeof b.source === "string" && b.source.startsWith("gravar-bloco-") && b.scene.trim());
+}
+
+/**
+ * Troca o trecho "a gravar" de cada bloco pelo bruto gravado: [fonte, início, fim, 1]. Corta meio segundo do começo
+ * (página ainda montando) e mantém o resto; bloco sem gravação fica como estava (o pipeline acusa).
+ */
+export function applyRecordings(roteiro, recordings) {
+  const out = JSON.parse(JSON.stringify(roteiro));
+  for (const r of recordings) {
+    const b = out.blocos?.[r.index];
+    if (!b || !(r.duration > 1)) continue;
+    b.trechos = [[r.source, 0.5, Math.round((r.duration - 0.2) * 10) / 10, 1]];
+  }
+  return out;
+}
