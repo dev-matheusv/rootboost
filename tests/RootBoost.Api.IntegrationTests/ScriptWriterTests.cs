@@ -216,3 +216,60 @@ public class ProductApiTests : IClassFixture<FakeAiWebApplicationFactory>
         Assert.Equal(2, saved.GetProperty("features").GetArrayLength());
     }
 }
+
+public sealed class StudioAiWebApplicationFactory : CustomWebApplicationFactory
+{
+    protected override void ConfigureWebHost(IWebHostBuilder builder)
+    {
+        base.ConfigureWebHost(builder);
+        builder.UseSetting("Ai:Mode", "Fake");
+        builder.UseSetting("Studio:WorkerKey", "chave-gravacao");
+    }
+}
+
+public class ScreenAgentTests : IClassFixture<StudioAiWebApplicationFactory>
+{
+    private readonly StudioAiWebApplicationFactory _factory;
+    public ScreenAgentTests(StudioAiWebApplicationFactory factory) => _factory = factory;
+
+    private sealed class Usage : IAiUsageStore
+    {
+        public List<AiUsageEntry> Items { get; } = new();
+        public Task AddAsync(AiUsageEntry entry, CancellationToken ct = default) { Items.Add(entry); return Task.CompletedTask; }
+    }
+
+    private static ScreenState State(int step, params ScreenElement[] elements) =>
+        new("medlycare", "Abrir a agenda e criar sessão semanal", "https://app.exemplo.com", elements, [], step, "AAAA");
+
+    [Fact]
+    public async Task Next_step_points_to_a_real_element_and_is_logged()
+    {
+        var usage = new Usage();
+        var agent = new ScreenAgent(new FakeLanguageModel(), usage, TimeProvider.System);
+        var step = await agent.NextAsync(State(0, new ScreenElement("e1", "botão", "Agenda")));
+        Assert.Equal("clicar", step.Action);
+        Assert.Equal("e1", step.Target);
+        Assert.Equal("screen-recording", Assert.Single(usage.Items).Purpose);
+
+        var missing = await agent.NextAsync(State(0)); // sem e1 na página: não clica no escuro
+        Assert.Equal("esperar", missing.Action);
+        Assert.Equal("pronto", (await agent.NextAsync(State(2, new ScreenElement("e1", "botão", "Agenda")))).Action);
+        Assert.Equal("desistir", (await agent.NextAsync(State(ScreenAgent.MaxSteps))).Action);
+    }
+
+    [Fact]
+    public async Task Worker_asks_the_api_for_the_next_step_with_its_key()
+    {
+        var anon = _factory.CreateClient();
+        var body = new { brandKey = "medlycare", scene = "Abrir a agenda", url = "https://app.exemplo.com",
+            elements = new[] { new { id = "e1", role = "botão", text = "Agenda" } }, history = Array.Empty<string>(), step = 0, image = "AAAA" };
+        Assert.Equal(HttpStatusCode.Unauthorized, (await anon.PostAsJsonAsync("/worker/ai/next-action", body)).StatusCode);
+
+        var worker = _factory.CreateClient();
+        worker.DefaultRequestHeaders.Add("X-Worker-Key", "chave-gravacao");
+        var res = await worker.PostAsJsonAsync("/worker/ai/next-action", body);
+        Assert.Equal(HttpStatusCode.OK, res.StatusCode);
+        Assert.Equal("clicar", (await res.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("action").GetString());
+        Assert.Equal(HttpStatusCode.BadRequest, (await worker.PostAsJsonAsync("/worker/ai/next-action", new { scene = "x", image = "" })).StatusCode);
+    }
+}

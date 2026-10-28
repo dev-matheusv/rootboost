@@ -666,6 +666,22 @@ worker.MapPost("/jobs/{id:guid}/fail", async (Guid id, WorkerFailInput input, Ro
     return Results.Ok(CreativeJobDto.From(job));
 });
 
+// Gravação de tela (RB-50): o worker manda a foto e os elementos; a IA devolve o próximo passo. A chave fica aqui.
+worker.MapPost("/ai/next-action", async (ScreenStateInput input, RootBoost.Application.Ai.ScreenAgent agent, CancellationToken ct) =>
+{
+    if (string.IsNullOrWhiteSpace(input.Scene) || string.IsNullOrWhiteSpace(input.Image) || input.Image.Length > 2_000_000)
+        return Results.BadRequest(new { error = "cena e foto (JPEG base64, até ~1,5 MB) são obrigatórias" });
+    try
+    {
+        var state = new RootBoost.Application.Ai.ScreenState(input.BrandKey ?? string.Empty, input.Scene, input.Url ?? string.Empty,
+            (input.Elements ?? []).Select(e => new RootBoost.Application.Ai.ScreenElement(e.Id ?? string.Empty, e.Role ?? string.Empty, e.Text ?? string.Empty)).ToList(),
+            input.History ?? [], Math.Max(0, input.Step), input.Image);
+        return Results.Ok(await agent.NextAsync(state, ct));
+    }
+    catch (RootBoost.Application.Ai.AiDisabledException ex) { return Results.Conflict(new { error = ex.Message }); }
+    catch (InvalidOperationException ex) { return Results.BadRequest(new { error = ex.Message }); }
+});
+
 // O worker sobe vídeo, capa e grade pelo mesmo bucket do Console e recebe o link público pra entregar no job.
 worker.MapPost("/media/{brandKey}", async (string brandKey, IFormFile file, HttpRequest req, IBrandStore brands,
     RootBoost.Application.Media.UploadMedia upload, RootBoost.Application.Media.MediaOptions options, CancellationToken ct) =>
@@ -952,6 +968,8 @@ record PushKeys(string P256dh, string Auth);
 record PushDeviceInput(string Endpoint, PushKeys Keys);
 record PushRemoveInput(string Endpoint);
 record WriteScriptInput(string? Instructions);
+record ScreenElementInput(string? Id, string? Role, string? Text);
+record ScreenStateInput(string? BrandKey, string Scene, string? Url, List<ScreenElementInput>? Elements, List<string>? History, int Step, string Image);
 record ProductInput(string Name, string Kind, string? Url, string? AppUrl, string? Summary, string? Audience,
     List<string>? Features, List<string>? Differentials, string? Offer);
 record ChatMessageInput(string? Role, string? Text);

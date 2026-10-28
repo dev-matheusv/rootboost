@@ -17,7 +17,9 @@ public interface ILanguageModel
 
 /// <param name="Schema">JSON Schema da resposta (o modelo é obrigado a seguir).</param>
 /// <param name="Purpose">Pra que serve a chamada (vai pro registro de uso).</param>
-public sealed record LanguageModelRequest(string System, string User, JsonElement Schema, string Purpose, string? BrandKey);
+/// <param name="ImageJpegBase64">Foto opcional (JPEG em base64) que vai junto da mensagem, ex.: a tela na gravação.</param>
+public sealed record LanguageModelRequest(string System, string User, JsonElement Schema, string Purpose, string? BrandKey,
+    string? ImageJpegBase64 = null);
 
 public sealed record LanguageModelResult(string Json, string Model, long InputTokens, long OutputTokens, decimal CostUsd);
 
