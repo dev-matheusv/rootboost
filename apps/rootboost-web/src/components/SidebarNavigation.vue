@@ -40,6 +40,16 @@
       </q-list>
 
       <q-list padding class="q-px-sm">
+        <!-- Avisos de operação (RB-58): post que falhou, sync de anúncio, conexão da Meta. -->
+        <q-item clickable v-ripple rounded :class="{ 'text-negative': alerts.length > 0 }" @click="alertsOpen = true">
+          <q-item-section avatar>
+            <q-icon :name="alerts.length > 0 ? mdiBellAlertOutline : mdiBellOutline">
+              <q-badge v-if="badge" color="negative" floating rounded>{{ badge }}</q-badge>
+            </q-icon>
+          </q-item-section>
+          <q-item-section v-if="!isMini">{{ $t('alerts.title') }}</q-item-section>
+          <q-tooltip v-if="isMini" anchor="center right" self="center left">{{ $t('alerts.title') }}</q-tooltip>
+        </q-item>
         <q-item clickable v-ripple rounded @click="$q.dark.toggle()">
           <q-item-section avatar><q-icon :name="$q.dark.isActive ? mdiWeatherSunny : mdiWeatherNight" /></q-item-section>
           <q-item-section v-if="!isMini">{{ $t('nav.darkMode') }}</q-item-section>
@@ -51,17 +61,23 @@
       </q-list>
     </div>
     <ChangePasswordDialog v-model="passwordOpen" />
+    <AlertsDialog v-model="alertsOpen" v-model:alerts="alerts" @changed="loadAlerts" />
   </q-drawer>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 import {
   mdiMenu, mdiAccountCircleOutline, mdiViewDashboardOutline, mdiPackageVariantClosed,
   mdiWeatherNight, mdiWeatherSunny, mdiLogout, mdiStorefrontOutline, mdiBullhornOutline, mdiChartBar, mdiCalendarMonthOutline,
+  mdiBellOutline, mdiBellAlertOutline,
 } from '@quasar/extras/mdi-v7';
+import { api } from 'src/services/api';
+import type { OpsAlert } from 'src/types/api';
+import { badgeText } from 'src/utils/alerts';
+import AlertsDialog from 'src/components/AlertsDialog.vue';
 import { useAuthStore } from 'src/stores/authStore';
 import { useBrandStore } from 'src/stores/brandStore';
 import ChangePasswordDialog from 'src/components/ChangePasswordDialog.vue';
@@ -82,9 +98,27 @@ const brandOptions = computed(() => [
   ...brand.brands.map((b) => ({ label: b.name, value: b.key })),
 ]);
 
+const alertsOpen = ref(false);
+const alerts = ref<OpsAlert[]>([]);
+const badge = computed(() => badgeText(alerts.value));
+let alertsTimer: ReturnType<typeof setInterval> | undefined;
+
+/** Falha ao buscar avisos não atrapalha o Console: mantém a lista anterior. */
+async function loadAlerts() {
+  try {
+    alerts.value = (await api.get<OpsAlert[]>('/admin/alerts')).data;
+  } catch {
+    // sem rede ou sessão vencida: a próxima rodada tenta de novo
+  }
+}
+
 onMounted(() => {
   if (!brand.loaded) void brand.load().catch(() => undefined);
+  void loadAlerts();
+  alertsTimer = setInterval(() => void loadAlerts(), 2 * 60_000);
 });
+
+onUnmounted(() => clearInterval(alertsTimer));
 
 // Cada fase do roadmap acrescenta itens aqui (Campanhas, Criativos, Agenda, IA).
 const items = [

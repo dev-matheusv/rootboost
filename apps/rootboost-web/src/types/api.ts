@@ -158,6 +158,18 @@ export interface AdsAccounts {
 }
 
 export type SocialChannel = 'Instagram' | 'Facebook' | 'LinkedIn';
+
+/** `GET /admin/alerts`: avisos de operação abertos (RB-58). */
+export interface OpsAlert {
+  id: string;
+  kind: 'PublicationFailed' | 'AdsSyncFailed' | 'MetaConnection';
+  key: string;
+  brandKey: string | null;
+  message: string;
+  count: number;
+  firstSeenAt: string;
+  lastSeenAt: string;
+}
 export type PublicationStatus = 'Draft' | 'Approved' | 'Publishing' | 'Published' | 'Failed';
 
 /** `GET /admin/brands/{key}/publications` (PublicationDto). */

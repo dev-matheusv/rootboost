@@ -72,20 +72,21 @@ public class AdsTests
         Assert.Throws<ArgumentException>(() => r.SetMetrics("x", -1m, 0, 0, 0, 0, "BRL", Now));
     }
 
-    private sealed class Accounts(params AdAccount[] all) : IAdAccountDirectory
+    internal sealed class Accounts(params AdAccount[] all) : IAdAccountDirectory
     {
         public IReadOnlyList<AdAccount> All { get; } = all;
     }
 
-    private sealed class Reader(string platform, bool fail) : IAdInsightsReader
+    internal sealed class Reader(string platform, bool fail) : IAdInsightsReader
     {
         public string Platform => platform;
+        public bool Fail { get; set; } = fail;
         public (DateOnly Since, DateOnly Until)? LastWindow { get; private set; }
 
         public Task<IReadOnlyList<AdInsightRow>> ReadDailyAsync(AdAccount account, DateOnly since, DateOnly until, CancellationToken ct = default)
         {
             LastWindow = (since, until);
-            if (fail) throw new HttpRequestException("limite da API");
+            if (Fail) throw new HttpRequestException("limite da API");
             return Task.FromResult<IReadOnlyList<AdInsightRow>>(new[]
             {
                 new AdInsightRow(AdLevel.Campaign, "c1", "C1", "c1", until, 10m, 100, 2, 90, 1, "BRL"),
@@ -93,7 +94,7 @@ public class AdsTests
         }
     }
 
-    private sealed class Store : IAdInsightStore
+    internal sealed class Store : IAdInsightStore
     {
         public int Calls { get; private set; }
         public Task<UpsertResult> UpsertAsync(AdAccount account, IReadOnlyList<AdInsightRow> rows, DateTimeOffset fetchedAt, CancellationToken ct = default)

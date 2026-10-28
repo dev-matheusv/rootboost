@@ -8,6 +8,20 @@ export default {
     empty: 'Nothing here yet.',
     error: 'Could not load. Check the connection to the API.',
   },
+  alerts: {
+    title: 'Alerts',
+    empty: 'No open alerts. Everything is working.',
+    dismiss: 'Dismiss',
+    checkMeta: 'Check Meta connection now',
+    checked: 'Meta connection: {ok} of {total} accounts ok.',
+    seen: 'Last seen: {when} · {n} time(s)',
+    hint: 'An alert closes by itself when the problem goes away. Dismiss only hides it; if it happens again, it comes back.',
+    kinds: {
+      PublicationFailed: 'Post was not published',
+      AdsSyncFailed: 'Ad metrics did not update',
+      MetaConnection: 'Meta connection is down',
+    },
+  },
   reelImport: {
     title: 'Import finished reel',
     txt: '.txt file with the channel texts',
