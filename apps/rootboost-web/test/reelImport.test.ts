@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { edges, parseReelText } from 'src/utils/reelImport';
+import { classifyReelFiles, edges, parseReelText } from 'src/utils/reelImport';
 
 const RULE = '-'.repeat(66);
 const SAMPLE = [
@@ -52,5 +52,25 @@ describe('importar reel pronto', () => {
 
   it('mostra começo e fim pra conferência', () => {
     expect(edges('Primeira\n\nmeio\n#tags')).toEqual({ first: 'Primeira', last: '#tags' });
+  });
+});
+
+describe('arquivos do reel pelo nome', () => {
+  const file = (name: string) => new File(['x'], name);
+
+  it('separa txt, vídeo do Instagram, capa e vídeo do LinkedIn e Facebook', () => {
+    const f = classifyReelFiles([
+      file('R05-receitas-narrado.mp4'), file('R05-receitas-narrado-instagram.JPG'),
+      file('R05-receitas.txt'), file('R05-receitas-narrado-instagram.mp4'), file('rascunho.png'),
+    ]);
+    expect(f.txt?.name).toBe('R05-receitas.txt');
+    expect(f.igVideo?.name).toBe('R05-receitas-narrado-instagram.mp4');
+    expect(f.igCover?.name).toBe('R05-receitas-narrado-instagram.JPG');
+    expect(f.siteVideo?.name).toBe('R05-receitas-narrado.mp4');
+  });
+
+  it('nome fora do padrão não vira capa nem vídeo', () => {
+    const f = classifyReelFiles([file('capa.jpg'), file('video.mp4')]);
+    expect(f).toEqual({});
   });
 });

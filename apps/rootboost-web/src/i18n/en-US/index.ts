@@ -25,6 +25,10 @@ export default {
   reelImport: {
     title: 'Import finished reel',
     txt: '.txt file with the channel texts',
+    all: 'Pick all reel files at once',
+    allHint: 'Select the .txt, both .mp4 and the cover .jpg; each goes to its field by name.',
+    igCover: 'Instagram cover (-narrado-instagram.jpg)',
+    igCoverHint: 'Optional. Without a cover, Instagram uses the first frame.',
     igVideo: 'Instagram video (-narrado-instagram.mp4)',
     siteVideo: 'LinkedIn and Facebook video (-narrado.mp4)',
     create: 'Create drafts',

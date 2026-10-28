@@ -25,6 +25,10 @@ export default {
   reelImport: {
     title: 'Importar reel pronto',
     txt: 'Arquivo .txt com os textos dos canais',
+    all: 'Escolher todos os arquivos do reel de uma vez',
+    allHint: 'Selecione o .txt, os dois .mp4 e o .jpg da capa; cada um vai pro seu campo pelo nome.',
+    igCover: 'Capa do Instagram (-narrado-instagram.jpg)',
+    igCoverHint: 'Opcional. Sem capa, o Instagram usa o primeiro quadro.',
     igVideo: 'Vídeo do Instagram (-narrado-instagram.mp4)',
     siteVideo: 'Vídeo do LinkedIn e do Facebook (-narrado.mp4)',
     create: 'Criar rascunhos',
