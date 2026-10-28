@@ -438,6 +438,30 @@ brandProfile.MapPut("/creative-jobs/{id:guid}/script", async (string key, Guid i
     return Results.Ok(CreativeJobDto.From(job));
 });
 
+// A IA escreve roteiro e falas com o perfil, as provas e o playbook (RB-45); passa pelos mesmos portões.
+brandProfile.MapPost("/creative-jobs/{id:guid}/write-script", async (string key, Guid id, WriteScriptInput? input,
+    RootBoost.Application.Studio.ICreativeJobStore store, IBrandProfileStore profiles, RootBoost.Application.Ai.ScriptWriter writer,
+    TimeProvider time, CancellationToken ct) =>
+{
+    var job = await store.GetAsync(id, ct);
+    if (job is null || job.BrandKey != key.ToLowerInvariant()) return Results.NotFound();
+    try
+    {
+        var (ok, failed) = await writer.WriteAsync(job, await profiles.GetAsync(job.BrandKey, ct), input?.Instructions, ct);
+        if (ok is null) return Results.UnprocessableEntity(new { error = "a IA não acertou o roteiro em duas tentativas", errors = failed!.Errors });
+        job.SetScript(ok.Script.GetRawText(), ok.Lines.GetRawText(), time.GetUtcNow(),
+            ok.Warnings.Select(w => CreativeJob.ScriptWarningPrefix + w).ToList());
+        await store.SaveAsync(job, ct);
+        return Results.Ok(new { job = CreativeJobDto.From(job), hooks = ok.Hooks, costUsd = ok.CostUsd });
+    }
+    catch (RootBoost.Application.Ai.AiDisabledException ex) { return Results.Conflict(new { error = ex.Message }); }
+    catch (InvalidOperationException ex) { return Results.BadRequest(new { error = ex.Message }); }
+});
+
+brandProfile.MapGet("/ai/status", (RootBoost.Application.Ai.AiOptions ai) =>
+    Results.Ok(new { mode = ai.Mode.ToString(), enabled = ai.Mode == RootBoost.Application.Ai.AiMode.Fake ||
+        (ai.Mode == RootBoost.Application.Ai.AiMode.Claude && !string.IsNullOrWhiteSpace(ai.ApiKey)) }));
+
 brandProfile.MapPost("/creative-jobs/{id:guid}/render", async (string key, Guid id,
     RootBoost.Application.Studio.ICreativeJobStore store, TimeProvider time, CancellationToken ct) =>
 {
@@ -887,6 +911,7 @@ record OrderDto(string PaymentId, string ProductKey, int Quantity, string Status
 record PushKeys(string P256dh, string Auth);
 record PushDeviceInput(string Endpoint, PushKeys Keys);
 record PushRemoveInput(string Endpoint);
+record WriteScriptInput(string? Instructions);
 record CreativeJobInput(string Kind, string Theme, string? VoiceKey);
 record ScriptInput(System.Text.Json.JsonElement Roteiro, System.Text.Json.JsonElement Falas);
 record JobPublicationsInput(DateTimeOffset ScheduledFor, string? Instagram, string? Facebook, string? LinkedIn);

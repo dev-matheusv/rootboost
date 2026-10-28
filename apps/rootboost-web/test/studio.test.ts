@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { estimateSeconds, jobStep, parseJson, scriptSegments } from 'src/utils/studio';
+import { applySegmentEdits, estimateSeconds, jobStep, parseJson, sceneOf, scriptSegments } from 'src/utils/studio';
 
 const roteiro = {
   nome: 'combo-8',
@@ -35,5 +35,25 @@ describe('estúdio', () => {
     expect(jobStep('ScriptReady')).toBe(0);
     expect(jobStep('Rendering')).toBe(2);
     expect(jobStep('Done')).toBe(4);
+  });
+});
+
+describe('edição sem JSON', () => {
+  it('aplica título, subtítulo e fala de volta nos contratos e mantém os trechos', () => {
+    const r = { ...roteiro, fecho: ['Teste grátis', 'Link na bio'] };
+    const edits = scriptSegments(r, ['a', 'b', 'c', 'd']).map((s) => ({ label: s.label, title: s.title, sub: s.sub, fala: s.fala ?? '' }));
+    edits[1]!.title = 'Sessão fixa';
+    edits[1]!.fala = 'Nova fala do bloco um.';
+    const out = applySegmentEdits(r, edits);
+    expect(out.falas).toEqual(['a', 'Nova fala do bloco um.', 'c', 'd']);
+    const blocos = out.roteiro.blocos as { titulo: string; trechos: unknown[] }[];
+    expect(blocos[0]!.titulo).toBe('Sessão fixa');
+    expect(blocos[0]!.trechos).toEqual([]);
+    expect(out.roteiro.fecho).toEqual(['Teste grátis', 'Link na bio']);
+  });
+
+  it('cena do bloco', () => {
+    expect(sceneOf({ blocos: [{ cena: 'abrir a agenda' }] }, 'block:1')).toBe('abrir a agenda');
+    expect(sceneOf({ blocos: [] }, 'opening')).toBe('');
   });
 });

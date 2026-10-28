@@ -69,20 +69,73 @@
             <div class="text-caption text-grey-6">{{ $t('studio.attempts', { n: job.attempts }) }}</div>
           </div>
 
-          <!-- Roteiro -->
-          <q-expansion-item v-model="scriptOpen" switch-toggle-side dense header-class="q-px-none text-subtitle1 text-weight-bold"
-            :label="$t('studio.script')" :caption="segments.length ? $t('studio.duration', { s: seconds }) : $t('studio.noScript')">
-            <div class="column no-wrap q-gutter-y-sm q-pt-sm">
-              <div v-for="seg in segments" :key="seg.label" class="segment card-rounded q-pa-sm">
-                <div class="text-caption text-uppercase text-grey-7">{{ segmentLabel(seg.label) }}</div>
-                <div class="text-weight-bold">{{ seg.title || '·' }}</div>
-                <div v-if="seg.sub" class="text-caption">{{ seg.sub }}</div>
-                <div class="q-mt-xs fala" :class="{ 'text-negative': seg.fala === null }">
-                  <q-icon :name="mdiMicrophoneOutline" size="16px" class="q-mr-xs" />{{ seg.fala ?? $t('studio.missingLine') }}
+          <!-- Roteiro: a IA escreve; a pessoa só ajusta o texto, trecho por trecho. -->
+          <div v-if="writing" class="writing card-rounded q-pa-lg row items-center no-wrap q-gutter-x-md">
+            <q-spinner-dots color="primary" size="32px" />
+            <div>
+              <div class="text-weight-bold">{{ $t('studio.ai.writing') }}</div>
+              <div class="text-caption text-grey-7">{{ $t('studio.ai.writingHint') }}</div>
+            </div>
+          </div>
+
+          <template v-else>
+            <div v-if="canEditScript && aiEnabled" class="ai-box card-rounded q-pa-md column q-gutter-y-sm">
+              <div class="row items-center q-gutter-sm">
+                <q-icon :name="mdiCreationOutline" color="primary" size="22px" />
+                <div class="text-weight-bold col">{{ segments.length ? $t('studio.ai.rewriteTitle') : $t('studio.ai.writeTitle') }}</div>
+              </div>
+              <q-input v-model="instructions" outlined dense autogrow :label="$t('studio.ai.instructions')" :hint="$t('studio.ai.instructionsHint')" />
+              <div class="row q-gutter-sm">
+                <q-btn unelevated color="primary" no-caps :icon="mdiCreationOutline" :loading="busy"
+                  :label="segments.length ? $t('studio.ai.rewrite') : $t('studio.ai.write')" @click="writeWithAi()" />
+              </div>
+            </div>
+            <q-banner v-else-if="canEditScript && !segments.length" rounded class="bg-blue-1 text-primary">{{ $t('studio.ai.off') }}</q-banner>
+
+            <q-banner v-if="scriptErrors.length" rounded class="bg-red-1 text-negative">
+              <div class="text-weight-bold q-mb-xs">{{ $t('studio.scriptRefused') }}</div>
+              <div v-for="e in scriptErrors" :key="e">· {{ e }}</div>
+            </q-banner>
+
+            <div v-if="hooks.length" class="column q-gutter-y-xs">
+              <div class="text-caption text-weight-bold">{{ $t('studio.ai.hooks') }}</div>
+              <div class="row q-gutter-sm">
+                <q-chip v-for="h in hooks" :key="h" clickable outline color="primary" :icon="mdiFormatQuoteOpen" @click="useHook(h)">{{ h }}</q-chip>
+              </div>
+            </div>
+
+            <div v-if="edits.length" class="column no-wrap q-gutter-y-sm">
+              <div class="row items-center">
+                <div class="text-subtitle1 text-weight-bold col">{{ $t('studio.script') }}</div>
+                <div class="text-caption text-grey-7">{{ $t('studio.duration', { s: seconds }) }}</div>
+              </div>
+              <div v-for="e in edits" :key="e.label" class="segment card-rounded q-pa-sm column q-gutter-y-xs">
+                <div class="text-caption text-uppercase text-grey-7">{{ segmentLabel(e.label) }}</div>
+                <template v-if="canEditScript">
+                  <q-input v-model="e.title" dense borderless class="text-weight-bold" :placeholder="$t('studio.edit.title')" />
+                  <q-input v-model="e.sub" dense borderless :placeholder="$t('studio.edit.sub')" />
+                  <q-input v-model="e.fala" dense outlined autogrow :label="$t('studio.edit.fala')">
+                    <template #prepend><q-icon :name="mdiMicrophoneOutline" size="18px" /></template>
+                  </q-input>
+                </template>
+                <template v-else>
+                  <div class="text-weight-bold">{{ e.title || '·' }}</div>
+                  <div v-if="e.sub" class="text-caption">{{ e.sub }}</div>
+                  <div class="fala"><q-icon :name="mdiMicrophoneOutline" size="16px" class="q-mr-xs" />{{ e.fala }}</div>
+                </template>
+                <div v-if="sceneOf(job.roteiro, e.label)" class="text-caption text-grey-7">
+                  <q-icon :name="mdiMonitorScreenshot" size="14px" class="q-mr-xs" />{{ sceneOf(job.roteiro, e.label) }}
                 </div>
               </div>
+              <div v-if="canEditScript" class="row q-gutter-sm">
+                <q-btn outline color="primary" no-caps :label="$t('studio.edit.save')" :loading="busy" :disable="!dirty" @click="saveEdits" />
+              </div>
+            </div>
 
-              <template v-if="canEditScript">
+            <!-- Arquivos do pacote: só pra quem já tem roteiro.json e falas.json (equipe do marketing). -->
+            <q-expansion-item v-if="canEditScript" dense switch-toggle-side header-class="q-px-none text-caption text-grey-7"
+              :label="$t('studio.advanced')">
+              <div class="column no-wrap q-gutter-y-sm q-pt-sm">
                 <q-file :model-value="null" outlined dense multiple accept=".json" :label="$t('studio.pickJson')"
                   :hint="$t('studio.pickJsonHint')" @update:model-value="pickJson">
                   <template #prepend><q-icon :name="mdiCodeJson" /></template>
@@ -93,16 +146,12 @@
                   <q-input v-model="falasText" outlined type="textarea" class="col-12 col-md-5 mono" input-style="min-height: 180px"
                     :label="$t('studio.falas')" />
                 </div>
-                <q-banner v-if="scriptErrors.length" rounded class="bg-red-1 text-negative">
-                  <div class="text-weight-bold q-mb-xs">{{ $t('studio.scriptRefused') }}</div>
-                  <div v-for="e in scriptErrors" :key="e">· {{ e }}</div>
-                </q-banner>
                 <div class="row q-gutter-sm">
-                  <q-btn unelevated color="primary" no-caps :label="$t('studio.saveScript')" :loading="busy" @click="saveScript" />
+                  <q-btn outline color="primary" no-caps :label="$t('studio.saveScript')" :loading="busy" @click="saveScript" />
                 </div>
-              </template>
-            </div>
-          </q-expansion-item>
+              </div>
+            </q-expansion-item>
+          </template>
 
           <template v-if="job.status === 'ScriptReady' || job.status === 'Failed'">
             <q-banner v-for="w in job.warnings" :key="w" dense rounded class="bg-amber-1 text-brown-9">{{ w }}</q-banner>
@@ -161,10 +210,13 @@
           <q-btn-toggle v-model="form.kind" spread no-caps unelevated rounded toggle-color="primary" :options="kindOptions" />
           <q-input v-model="form.theme" outlined :label="$t('studio.theme')" :hint="$t('studio.themeHint')" maxlength="300" />
           <q-input v-model="form.voiceKey" outlined :label="$t('studio.voice')" :hint="$t('studio.voiceHint')" maxlength="64" />
+          <q-input v-if="aiEnabled" v-model="form.instructions" outlined autogrow :label="$t('studio.ai.instructions')"
+            :hint="$t('studio.ai.instructionsHint')" />
         </q-card-section>
         <q-card-actions align="right">
           <q-btn flat no-caps :label="$t('common.actions.cancel')" v-close-popup />
-          <q-btn unelevated color="primary" no-caps :label="$t('studio.create')" :loading="busy" :disable="!form.theme.trim()" @click="createJob" />
+          <q-btn unelevated color="primary" no-caps :icon="aiEnabled ? mdiCreationOutline : undefined"
+            :label="aiEnabled ? $t('studio.ai.createAndWrite') : $t('studio.create')" :loading="busy" :disable="!form.theme.trim()" @click="createJob" />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -178,11 +230,14 @@ import { useQuasar } from 'quasar';
 import { isAxiosError } from 'axios';
 import {
   mdiPlus, mdiMovieOpenPlayOutline, mdiMicrophoneOutline, mdiCodeJson, mdiPlay, mdiCalendarPlus, mdiCheckCircleOutline,
+  mdiCreationOutline, mdiFormatQuoteOpen, mdiMonitorScreenshot,
 } from '@quasar/extras/mdi-v7';
 import { api } from 'src/services/api';
 import type { CreativeJob, CreativeKind, Publication } from 'src/types/api';
 import { useBrandStore } from 'src/stores/brandStore';
-import { estimateSeconds, isActive, jobColor, jobStep, parseJson, scriptSegments } from 'src/utils/studio';
+import {
+  applySegmentEdits, estimateSeconds, isActive, jobColor, jobStep, parseJson, sceneOf, scriptSegments, type SegmentEdit,
+} from 'src/utils/studio';
 import { addDays, fromLocalInput, isVideo, localDayKey, toLocalInput } from 'src/utils/publications';
 import { proposeSlots } from 'src/utils/calendar';
 import { parseReelText } from 'src/utils/reelImport';
@@ -206,6 +261,63 @@ const segments = computed(() => (job.value ? scriptSegments(job.value.roteiro, j
 const seconds = computed(() => estimateSeconds(job.value?.falas));
 const canEditScript = computed(() => !!job.value && ['Draft', 'ScriptReady', 'Review', 'Failed'].includes(job.value.status));
 const scriptOpen = ref(true);
+
+// --- IA (RB-45) ---
+const aiEnabled = ref(false);
+const writing = ref(false);
+const instructions = ref('');
+const hooks = ref<string[]>([]);
+
+async function loadAiStatus() {
+  try {
+    aiEnabled.value = (await api.get<{ enabled: boolean }>(`/admin/brands/${brand.selected}/ai/status`)).data.enabled;
+  } catch {
+    aiEnabled.value = false;
+  }
+}
+
+/** A IA escreve (ou reescreve) roteiro e falas com o perfil, as provas e o playbook da marca. */
+async function writeWithAi(extra?: string) {
+  if (!job.value) return;
+  writing.value = true;
+  scriptErrors.value = [];
+  try {
+    const { data } = await api.post<{ job: CreativeJob; hooks: string[] }>(`${base.value}/${job.value.id}/write-script`,
+      { instructions: (extra ?? instructions.value).trim() || null }, { timeout: 5 * 60_000 });
+    replace(data.job);
+    select(data.job);
+    hooks.value = data.hooks;
+    instructions.value = '';
+  } catch (e) {
+    const errors = isAxiosError(e) && e.response?.status === 422 ? (e.response.data?.errors as string[] | undefined) : undefined;
+    if (errors) scriptErrors.value = errors;
+    else $q.notify({ type: 'negative', message: apiError(e) });
+  } finally {
+    writing.value = false;
+  }
+}
+
+// --- Edição em texto, trecho por trecho ---
+const edits = ref<SegmentEdit[]>([]);
+const editsBase = ref('');
+const dirty = computed(() => JSON.stringify(edits.value) !== editsBase.value);
+
+function loadEdits(j: CreativeJob) {
+  edits.value = scriptSegments(j.roteiro, j.falas).map((s) => ({ label: s.label, title: s.title, sub: s.sub, fala: s.fala ?? '' }));
+  editsBase.value = JSON.stringify(edits.value);
+}
+
+/** Gancho alternativo vira a primeira fala (abertura ou, no anúncio, o primeiro bloco). */
+function useHook(h: string) {
+  const first = edits.value[0];
+  if (first) first.fala = h;
+}
+
+async function saveEdits() {
+  if (!job.value) return;
+  const out = applySegmentEdits(job.value.roteiro, edits.value);
+  await putScript(out.roteiro, out.falas);
+}
 
 function fmt(iso: string) {
   return new Date(iso).toLocaleString(locale.value, { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
@@ -257,7 +369,9 @@ const falasText = ref('');
 const scriptErrors = ref<string[]>([]);
 
 function select(j: CreativeJob) {
+  if (selectedId.value !== j.id) hooks.value = [];
   selectedId.value = j.id;
+  loadEdits(j);
   roteiroText.value = j.roteiro ? JSON.stringify(j.roteiro, null, 2) : '';
   falasText.value = j.falas ? JSON.stringify(j.falas, null, 2) : '';
   scriptErrors.value = [];
@@ -284,10 +398,17 @@ async function saveScript() {
     ...(f.error ? [`${t('studio.falas')}: ${f.error}`] : []),
   ];
   if (scriptErrors.value.length) return;
+  await putScript(r.value, f.value);
+}
+
+async function putScript(roteiro: unknown, falas: unknown) {
+  if (!job.value) return;
+  scriptErrors.value = [];
   busy.value = true;
   try {
-    const { data } = await api.put<CreativeJob>(`${base.value}/${job.value.id}/script`, { roteiro: r.value, falas: f.value });
+    const { data } = await api.put<CreativeJob>(`${base.value}/${job.value.id}/script`, { roteiro, falas });
     replace(data);
+    select(data);
     $q.notify({ type: 'positive', message: t('studio.scriptSaved') });
   } catch (e) {
     const errors = isAxiosError(e) && e.response?.status === 422 ? (e.response.data?.errors as string[] | undefined) : undefined;
@@ -373,7 +494,8 @@ async function createPosts() {
 
 // --- Novo job ---
 const newOpen = ref(false);
-const form = reactive<{ kind: CreativeKind; theme: string; voiceKey: string }>({ kind: 'Organic', theme: '', voiceKey: '' });
+const form = reactive<{ kind: CreativeKind; theme: string; voiceKey: string; instructions: string }>(
+  { kind: 'Organic', theme: '', voiceKey: '', instructions: '' });
 const kindOptions = computed(() => (['Organic', 'Ad', 'Prospecting'] as const).map((k) => ({ value: k, label: t(`studio.kind.${k}`) })));
 
 async function createJob() {
@@ -383,7 +505,10 @@ async function createJob() {
     jobs.value.unshift(data);
     select(data);
     newOpen.value = false;
-    Object.assign(form, { kind: 'Organic', theme: '', voiceKey: '' });
+    const extra = form.instructions;
+    Object.assign(form, { kind: 'Organic', theme: '', voiceKey: '', instructions: '' });
+    // Com a IA ligada, criar o vídeo já pede o roteiro: a pessoa só revisa.
+    if (aiEnabled.value) void writeWithAi(extra);
   } catch (e) {
     $q.notify({ type: 'negative', message: apiError(e) });
   } finally {
@@ -400,6 +525,7 @@ watch(() => job.value?.status, (now, before) => {
 let timer: ReturnType<typeof setInterval> | undefined;
 onMounted(() => {
   void load();
+  void loadAiStatus();
   timer = setInterval(() => {
     if (jobs.value.some((j) => isActive(j.status))) void load();
   }, 10_000);
@@ -409,6 +535,7 @@ watch(() => brand.selected, () => {
   jobs.value = [];
   selectedId.value = null;
   void load();
+  void loadAiStatus();
 });
 </script>
 
@@ -419,6 +546,8 @@ watch(() => brand.selected, () => {
 }
 .body--dark .segment { background: rgba(255, 255, 255, 0.02); }
 .empty { border-style: dashed; }
+.ai-box { border: 1px solid rgba($primary, 0.35); background: rgba($primary, 0.05); }
+.writing { border: 1px solid rgba($primary, 0.35); }
 .job-row {
   cursor: pointer; outline: none; transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
   &:hover { transform: translateX(2px); border-color: rgba($primary, 0.5); }
