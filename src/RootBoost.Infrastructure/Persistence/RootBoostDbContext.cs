@@ -34,6 +34,7 @@ public sealed class RootBoostDbContext : DbContext
     public DbSet<OpsAlert> OpsAlerts => Set<OpsAlert>();
     public DbSet<CreativeJob> CreativeJobs => Set<CreativeJob>();
     public DbSet<PushDevice> PushDevices => Set<PushDevice>();
+    public DbSet<RootBoost.Application.Ai.AiUsageEntry> AiUsage => Set<RootBoost.Application.Ai.AiUsageEntry>();
 
     /// <summary>Postgres guarda timestamptz e o Npgsql só aceita offset zero: normaliza ao gravar.</summary>
     private static readonly ValueConverter<DateTimeOffset, DateTimeOffset> Utc = new(v => v.ToUniversalTime(), v => v);
@@ -164,6 +165,17 @@ public sealed class RootBoostDbContext : DbContext
         device.Property(x => x.CreatedAt).HasConversion(Utc);
         device.Property(x => x.LastSentAt).HasConversion(v => v.HasValue ? v.Value.ToUniversalTime() : v, v => v);
         device.HasIndex(x => x.Endpoint).IsUnique();
+
+        // Uso e custo de cada chamada à IA (decisão: tudo registrado, por marca e finalidade).
+        var usage = b.Entity<RootBoost.Application.Ai.AiUsageEntry>();
+        usage.ToTable("AiUsage");
+        usage.HasKey(x => x.Id);
+        usage.Property(x => x.BrandKey).HasMaxLength(64);
+        usage.Property(x => x.Purpose).HasMaxLength(64).IsRequired();
+        usage.Property(x => x.Model).HasMaxLength(64).IsRequired();
+        usage.Property(x => x.CostUsd).HasPrecision(18, 6);
+        usage.Property(x => x.CreatedAt).HasConversion(Utc);
+        usage.HasIndex(x => new { x.BrandKey, x.CreatedAt });
 
         var media = b.Entity<MediaAsset>();
         media.HasKey(x => x.Id);

@@ -61,3 +61,47 @@ export function jobColor(s: CreativeJobStatus): string {
 export function isActive(s: CreativeJobStatus): boolean {
   return s === 'Queued' || s === 'Rendering';
 }
+
+/** Edição em texto de um trecho: o que aparece na tela (título e subtítulo) e o que a voz fala. */
+export interface SegmentEdit {
+  label: string;
+  title: string;
+  sub: string;
+  fala: string;
+}
+
+/**
+ * Aplica a edição feita em texto de volta nos contratos (roteiro.json e falas.json), sem a pessoa ver JSON.
+ * Mantém tudo o que não é texto (trechos de imagem, cena, nome) do jeito que estava.
+ */
+export function applySegmentEdits(roteiro: unknown, edits: SegmentEdit[]): { roteiro: Record<string, unknown>; falas: string[] } {
+  const r = JSON.parse(JSON.stringify(roteiro ?? {})) as Record<string, unknown> & {
+    abertura?: [string, string] | null;
+    fecho?: [string, string] | null;
+    blocos?: Record<string, unknown>[];
+  };
+  const falas: string[] = [];
+  for (const e of edits) {
+    falas.push(e.fala.trim());
+    if (e.label === 'opening') r.abertura = [e.title.trim(), e.sub.trim()];
+    else if (e.label === 'closing') {
+      if (e.title.trim() || e.sub.trim() || r.fecho) r.fecho = [e.title.trim(), e.sub.trim()];
+    } else {
+      const i = Number(e.label.split(':')[1]) - 1;
+      const b = r.blocos?.[i];
+      if (b) {
+        b.titulo = e.title.trim();
+        b.sub = e.sub.trim();
+      }
+    }
+  }
+  return { roteiro: r, falas };
+}
+
+/** Cena que a IA descreveu pro bloco (o que gravar), quando houver. */
+export function sceneOf(roteiro: unknown, label: string): string {
+  if (!label.startsWith('block:') || !roteiro || typeof roteiro !== 'object') return '';
+  const blocos = (roteiro as { blocos?: { cena?: unknown }[] }).blocos ?? [];
+  const cena = blocos[Number(label.split(':')[1]) - 1]?.cena;
+  return typeof cena === 'string' ? cena : '';
+}

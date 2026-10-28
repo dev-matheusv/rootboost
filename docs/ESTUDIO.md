@@ -40,6 +40,21 @@ Failed: 3 tentativas sem sucesso ou falha sem retry. POST render manda de novo.
 Recusa (HTTP 422 com a lista `errors`): contagem de falas errada, trecho com fim antes do início, velocidade
 zero, texto vazio, travessão ou meia-risca em título, subtítulo ou fala.
 
+## IA escreve o roteiro (RB-45)
+
+Na tela, **Novo vídeo** já pede o roteiro à IA: ela usa o perfil da marca (público, tom, termos proibidos, trocas de
+palavra), as provas ativas (só afirma o que está ali), frases de clientes, o playbook de copy e as regras do formato.
+Devolve 3 aberturas alternativas e, por bloco, a **cena** (o que gravar). A resposta passa pelos mesmos portões; se não
+passar, a IA tenta de novo uma vez com os erros. A pessoa ajusta em texto, trecho por trecho; os arquivos JSON ficam
+em "Avançado". Cada chamada grava modelo, tokens e custo em `AiUsage`.
+
+Ligar em produção (Railway): `Ai__Mode=Claude` e `Anthropic__ApiKey` (chave da API da Anthropic, só no Railway).
+Opcional: `Ai__Model` (padrão `claude-opus-5-5`) e `Ai__Effort` (padrão `medium`). Sem isso fica `Off` e a tela
+avisa. `Ai__Mode=Fake` dá um roteiro fixo pra testar sem custo.
+
+Enquanto a gravação automática da tela (RB-50) não existe, cada bloco escrito pela IA vem com um trecho
+`gravar-bloco-N` e a duração estimada da fala: é a lista do que gravar.
+
 ## Rotas do Console (login do Console)
 
 | Rota | O que faz |
@@ -47,6 +62,8 @@ zero, texto vazio, travessão ou meia-risca em título, subtítulo ou fala.
 | `POST /admin/brands/{key}/creative-jobs` `{ kind: Organic\|Ad\|Prospecting, theme, voiceKey? }` | cria o job |
 | `GET /admin/brands/{key}/creative-jobs[/{id}]` | lista ou detalhe (com roteiro, falas, avisos e arquivos) |
 | `PUT .../{id}/script` `{ roteiro, falas }` | grava o roteiro (422 se fora do contrato) |
+| `POST .../{id}/write-script` `{ instructions? }` | a IA escreve roteiro e falas (409 com a IA desligada) |
+| `GET /admin/brands/{key}/ai/status` | se a IA está ligada |
 | `POST .../{id}/render` | manda pra fila |
 | `POST .../{id}/publications` `{ scheduledFor, instagram?, facebook?, linkedIn? }` | cria os rascunhos com os arquivos |
 
@@ -80,6 +97,12 @@ voz nem montagem. A cada rodada:
    porque outra semente não resolve (precisa mexer nos trechos do roteiro);
 6. sobe `finais/<nome>-narrado-instagram.mp4` (+ `.jpg` da capa), `<nome>-narrado.mp4` e a grade de revisão,
    e entrega com os papéis `video-instagram`, `cover-instagram`, `video` e `grade`, mais os avisos do log.
+
+Pré-requisitos no PC: o mesmo ambiente do `narrado-calmo.mjs` (DMaker com o extra de voz, `pip install -e .[voice]`,
+que inclui o `audioseal` da marca d'água nas falas; FFmpeg; faster-whisper). O worker chama a cópia viva das
+ferramentas (`STUDIO_TOOLS`), então mudanças do marketing no pipeline valem na hora. Desde 28/10 o cache da voz
+também considera o dicionário de pronúncia da marca (`voz-continua/<voz>/lexico.json`): mudar uma pronúncia
+ressintetiza mesmo com o texto igual.
 
 Como ligar no PC:
 
