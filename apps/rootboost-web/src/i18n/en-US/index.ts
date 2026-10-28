@@ -116,6 +116,18 @@ export default {
       features: 'Main features or products', listHint: 'Type and press Enter.', differentials: 'Differentials', offer: 'Current offer',
     },
   },
+  acervo: {
+    title: 'Library',
+    subtitle: 'Brand photos, videos and creatives. The AI uses them to build videos and posts.',
+    pickBrand: 'Pick a brand in the menu to see the library.',
+    upload: 'Upload photos and videos',
+    empty: 'Nothing here yet. Upload photos of your work, videos and creatives you already have.',
+    describeHint: 'What is in it? (AI fills this for photos)',
+    tags: 'keywords',
+    describe: 'Describe with AI',
+    delete: 'Delete',
+    deleteConfirm: 'The file leaves the library. A post still using it blocks deleting.',
+  },
   reelImport: {
     title: 'Import finished reel',
     txt: '.txt file with the channel texts',
@@ -141,7 +153,7 @@ export default {
     changed: 'Password changed. Use the new one next time you sign in.',
   },
   form: { email: 'Email', password: 'Password' },
-  nav: { overview: 'Overview', orders: 'Orders', brand: 'Brand', allBrands: 'All brands', darkMode: 'Dark mode', brandProfile: 'Brand profile', campaigns: 'Campaigns', publications: 'Publishing', studio: 'Studio' },
+  nav: { overview: 'Overview', orders: 'Orders', brand: 'Brand', allBrands: 'All brands', darkMode: 'Dark mode', brandProfile: 'Brand profile', campaigns: 'Campaigns', publications: 'Publishing', studio: 'Studio', acervo: 'Library' },
   pages: {
     login: {
       title: 'Sign in to the Console',

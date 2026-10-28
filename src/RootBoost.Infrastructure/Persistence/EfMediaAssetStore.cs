@@ -30,4 +30,6 @@ public sealed class EfMediaAssetStore : IMediaAssetStore
     {
         await _db.MediaAssets.Where(x => x.Id == asset.Id).ExecuteDeleteAsync(ct);
     }
+
+    public Task SaveAsync(MediaAsset asset, CancellationToken ct = default) => _db.SaveChangesAsync(ct);
 }

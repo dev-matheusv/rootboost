@@ -357,7 +357,7 @@ static string MediaPublicUrl(RootBoost.Application.Media.MediaOptions options, H
 static object MediaDto(RootBoost.Application.Media.MediaOptions options, HttpRequest req, MediaAsset a) => new
 {
     id = a.Id, brandKey = a.BrandKey, fileName = a.FileName, contentType = a.ContentType, sizeBytes = a.SizeBytes,
-    isVideo = a.IsVideo, createdAt = a.CreatedAt, url = MediaPublicUrl(options, req, a)
+    isVideo = a.IsVideo, createdAt = a.CreatedAt, url = MediaPublicUrl(options, req, a), description = a.Description, tags = a.Tags
 };
 
 brandProfile.MapPost("/media", async (string key, IFormFile file, HttpRequest req, IBrandStore brands,
@@ -373,6 +373,33 @@ brandProfile.MapPost("/media", async (string key, IFormFile file, HttpRequest re
     }
     catch (ArgumentException ex) { return Results.BadRequest(new { error = ex.Message }); }
 }).DisableAntiforgery().WithMetadata(new Microsoft.AspNetCore.Mvc.RequestSizeLimitAttribute(mediaMaxBytes + 1024 * 1024));
+
+// Acervo (RB-16): a IA descreve a foto; a pessoa pode corrigir à mão.
+brandProfile.MapPost("/media/{id:guid}/describe", async (string key, Guid id, HttpRequest req, IBrandStore brands,
+    RootBoost.Application.Media.IMediaAssetStore assets, RootBoost.Application.Ai.MediaDescriber describer,
+    RootBoost.Application.Media.MediaOptions options, CancellationToken ct) =>
+{
+    var asset = await assets.GetAsync(id, ct);
+    if (asset is null || asset.BrandKey != key.ToLowerInvariant()) return Results.NotFound();
+    var brand = (await brands.ListAsync(ct)).FirstOrDefault(b => b.Key == asset.BrandKey);
+    try
+    {
+        if (!await describer.DescribeAsync(asset, brand?.Name, ct)) return Results.BadRequest(new { error = "só foto JPEG de até 5 MB é descrita pela IA" });
+    }
+    catch (RootBoost.Application.Ai.AiDisabledException ex) { return Results.Conflict(new { error = ex.Message }); }
+    await assets.SaveAsync(asset, ct);
+    return Results.Ok(MediaDto(options, req, asset));
+});
+
+brandProfile.MapPut("/media/{id:guid}/description", async (string key, Guid id, MediaDescriptionInput input, HttpRequest req,
+    RootBoost.Application.Media.IMediaAssetStore assets, RootBoost.Application.Media.MediaOptions options, CancellationToken ct) =>
+{
+    var asset = await assets.GetAsync(id, ct);
+    if (asset is null || asset.BrandKey != key.ToLowerInvariant()) return Results.NotFound();
+    asset.Describe(input.Description, input.Tags);
+    await assets.SaveAsync(asset, ct);
+    return Results.Ok(MediaDto(options, req, asset));
+});
 
 brandProfile.MapGet("/media", async (string key, HttpRequest req, RootBoost.Application.Media.IMediaAssetStore assets,
     RootBoost.Application.Media.MediaOptions options, CancellationToken ct) =>
@@ -980,6 +1007,7 @@ record PushKeys(string P256dh, string Auth);
 record PushDeviceInput(string Endpoint, PushKeys Keys);
 record PushRemoveInput(string Endpoint);
 record WriteScriptInput(string? Instructions);
+record MediaDescriptionInput(string? Description, string? Tags);
 record ScreenElementInput(string? Id, string? Role, string? Text);
 record ScreenStateInput(string? BrandKey, string Scene, string? Url, List<ScreenElementInput>? Elements, List<string>? History, int Step, string Image);
 record ProductInput(string Name, string Kind, string? Url, string? AppUrl, string? Summary, string? Audience,

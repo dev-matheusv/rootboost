@@ -306,3 +306,34 @@ public class AiCostTests : IClassFixture<FakeAiWebApplicationFactory>
         Assert.Contains(summary.GetProperty("byPurpose").EnumerateArray(), l => l.GetProperty("key").GetString() == "studio-script");
     }
 }
+
+public class AcervoApiTests : IClassFixture<FakeAiWebApplicationFactory>
+{
+    private readonly FakeAiWebApplicationFactory _factory;
+    public AcervoApiTests(FakeAiWebApplicationFactory factory) => _factory = factory;
+
+    private static async Task<string> Upload(HttpClient c, string name)
+    {
+        using var form = new MultipartFormDataContent();
+        form.Add(new ByteArrayContent([0xFF, 0xD8, 0xFF, 0xE0, 1, 2, 3]), "file", name);
+        var res = await c.PostAsync("/admin/brands/medlycare/media", form);
+        Assert.Equal(HttpStatusCode.Created, res.StatusCode);
+        return (await res.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetString()!;
+    }
+
+    [Fact]
+    public async Task Ai_describes_photos_and_the_person_can_correct()
+    {
+        var c = _factory.CreateClient();
+        var photo = await Upload(c, "corte-antes-depois.jpg");
+        var described = await c.PostAsync($"/admin/brands/medlycare/media/{photo}/describe", null);
+        Assert.Equal(HttpStatusCode.OK, described.StatusCode);
+        Assert.Equal("Foto de teste do acervo.", (await described.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("description").GetString());
+
+        var fixedRes = await c.PutAsJsonAsync($"/admin/brands/medlycare/media/{photo}/description", new { description = "Corte chanel, antes e depois", tags = "corte, chanel" });
+        Assert.Equal("corte, chanel", (await fixedRes.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("tags").GetString());
+
+        var video = await Upload(c, "salao.mp4");
+        Assert.Equal(HttpStatusCode.BadRequest, (await c.PostAsync($"/admin/brands/medlycare/media/{video}/describe", null)).StatusCode);
+    }
+}

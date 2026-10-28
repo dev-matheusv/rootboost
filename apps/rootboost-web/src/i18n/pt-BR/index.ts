@@ -116,6 +116,18 @@ export default {
       features: 'Principais recursos ou produtos', listHint: 'Digite e aperte Enter.', differentials: 'Diferenciais', offer: 'Oferta atual',
     },
   },
+  acervo: {
+    title: 'Acervo',
+    subtitle: 'Fotos, vídeos e criativos da marca. A IA usa pra montar os vídeos e posts.',
+    pickBrand: 'Escolha uma marca no menu para ver o acervo.',
+    upload: 'Subir fotos e vídeos',
+    empty: 'Nada aqui ainda. Suba fotos do seu trabalho, vídeos e criativos que você já tem.',
+    describeHint: 'O que aparece? (a IA preenche nas fotos)',
+    tags: 'palavras-chave',
+    describe: 'Descrever com a IA',
+    delete: 'Apagar',
+    deleteConfirm: 'O arquivo sai do acervo. Post que ainda usa ele impede apagar.',
+  },
   reelImport: {
     title: 'Importar reel pronto',
     txt: 'Arquivo .txt com os textos dos canais',
@@ -141,7 +153,7 @@ export default {
     changed: 'Senha trocada. Use a nova no próximo login.',
   },
   form: { email: 'E-mail', password: 'Senha' },
-  nav: { overview: 'Visão geral', orders: 'Pedidos', brand: 'Marca', allBrands: 'Todas as marcas', darkMode: 'Modo escuro', brandProfile: 'Perfil da marca', campaigns: 'Campanhas', publications: 'Publicações', studio: 'Estúdio' },
+  nav: { overview: 'Visão geral', orders: 'Pedidos', brand: 'Marca', allBrands: 'Todas as marcas', darkMode: 'Modo escuro', brandProfile: 'Perfil da marca', campaigns: 'Campanhas', publications: 'Publicações', studio: 'Estúdio', acervo: 'Acervo' },
   pages: {
     login: {
       title: 'Entrar no Console',

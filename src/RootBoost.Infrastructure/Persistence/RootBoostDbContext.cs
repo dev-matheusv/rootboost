@@ -203,6 +203,8 @@ public sealed class RootBoostDbContext : DbContext
         media.Property(x => x.FileName).HasMaxLength(160).IsRequired();
         media.Property(x => x.ContentType).HasMaxLength(64).IsRequired();
         media.Property(x => x.StorageKey).HasMaxLength(300).IsRequired();
+        media.Property(x => x.Description).HasMaxLength(500);
+        media.Property(x => x.Tags).HasMaxLength(300);
         media.Property(x => x.CreatedAt).HasConversion(Utc);
         media.HasIndex(x => new { x.BrandKey, x.CreatedAt });
 
