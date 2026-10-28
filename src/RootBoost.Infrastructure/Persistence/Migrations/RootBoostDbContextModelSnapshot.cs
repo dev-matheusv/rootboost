@@ -550,6 +550,9 @@ namespace RootBoost.Infrastructure.Persistence.Migrations
                     b.Property<DateTimeOffset?>("PublishingStartedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<DateTimeOffset?>("ReminderSentAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<DateTimeOffset>("ScheduledFor")
                         .HasColumnType("timestamp with time zone");
 

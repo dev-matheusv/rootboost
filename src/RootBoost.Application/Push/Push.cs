@@ -114,3 +114,65 @@ public sealed class PushNotifier
         }
     }
 }
+
+/// <summary>
+/// Lembrete de aprovação (RB-37): rascunho que sai nas próximas 24 h ainda sem aprovação manda um aviso por grupo
+/// (os canais do mesmo reel no mesmo horário viram um aviso só) e não repete. Push desligado: não marca nada,
+/// pra lembrar quando ligar.
+/// </summary>
+public sealed class RemindPendingApprovals
+{
+    public static readonly TimeSpan Window = TimeSpan.FromHours(24);
+    private readonly RootBoost.Application.Publishing.IPublicationStore _store;
+    private readonly PushNotifier _push;
+    private readonly TimeProvider _time;
+
+    public RemindPendingApprovals(RootBoost.Application.Publishing.IPublicationStore store, PushNotifier push, TimeProvider time)
+    {
+        _store = store;
+        _push = push;
+        _time = time;
+    }
+
+    public async Task<int> RunAsync(CancellationToken ct = default)
+    {
+        if (!_push.Enabled) return 0;
+        var now = _time.GetUtcNow();
+        var drafts = await _store.ListDraftsToRemindAsync(now, now + Window, ct);
+        var groups = drafts.GroupBy(p => (p.BrandKey, Minute: p.ScheduledFor.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm"))).ToList();
+        foreach (var g in groups)
+        {
+            var first = g.First();
+            var title = FirstLine(first.Caption);
+            var channels = string.Join(", ", g.Select(p => p.Channel.ToString()).Distinct());
+            await _push.SendAsync(new PushMessage(
+                $"Falta aprovar: sai {Local(first.ScheduledFor)}",
+                $"{title} ({channels})",
+                "/publications",
+                $"remind:{g.Key.BrandKey}:{g.Key.Minute}"), ct);
+            foreach (var p in g)
+            {
+                p.MarkReminded(now);
+                await _store.SaveAsync(p, ct);
+            }
+        }
+        return groups.Count;
+    }
+
+    private static string FirstLine(string caption)
+    {
+        var line = caption.Split('\n').Select(l => l.Trim()).FirstOrDefault(l => l.Length > 0) ?? string.Empty;
+        return line.Length > 60 ? line[..59].TrimEnd() + "…" : line;
+    }
+
+    /// <summary>Horário de Brasília no texto ("ter 12:00"); sem o fuso no sistema, usa UTC-3.</summary>
+    public static string Local(DateTimeOffset when)
+    {
+        TimeSpan offset;
+        try { offset = TimeZoneInfo.FindSystemTimeZoneById("America/Sao_Paulo").GetUtcOffset(when); }
+        catch (TimeZoneNotFoundException) { offset = TimeSpan.FromHours(-3); }
+        var local = when.ToOffset(offset);
+        var day = new System.Globalization.CultureInfo("pt-BR").DateTimeFormat.GetAbbreviatedDayName(local.DayOfWeek).TrimEnd('.');
+        return $"{day} {local:HH:mm}";
+    }
+}

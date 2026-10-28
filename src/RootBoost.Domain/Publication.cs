@@ -54,6 +54,8 @@ public sealed class Publication
     public string? Error { get; private set; }
     public int Attempts { get; private set; }
     public DateTimeOffset? PublishingStartedAt { get; private set; }
+    /// <summary>Quando o lembrete de "sai em breve e ainda não foi aprovado" foi enviado (RB-37). Reagendar zera.</summary>
+    public DateTimeOffset? ReminderSentAt { get; private set; }
     public DateTimeOffset CreatedAt { get; private set; }
     public DateTimeOffset UpdatedAt { get; private set; }
 
@@ -131,6 +133,7 @@ public sealed class Publication
     {
         EnsureEditable();
         ScheduledFor = scheduledFor.ToUniversalTime();
+        ReminderSentAt = null; // data nova: se continuar sem aprovação, lembra de novo
         UpdatedAt = now;
     }
 
@@ -156,6 +159,8 @@ public sealed class Publication
         ResetApproval();
         UpdatedAt = now;
     }
+
+    public void MarkReminded(DateTimeOffset now) => ReminderSentAt = now;
 
     public bool IsDue(DateTimeOffset now) => Status == PublicationStatus.Approved && ScheduledFor <= now;
 

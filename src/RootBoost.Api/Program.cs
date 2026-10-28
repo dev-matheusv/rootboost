@@ -530,6 +530,10 @@ push.MapPost("/devices/remove", async (PushRemoveInput input, RootBoost.Applicat
     return Results.NoContent();
 });
 
+// Roda o lembrete de aprovação na hora (o agendador roda a cada 15 min). Útil pra testar e no Console.
+push.MapPost("/remind", async (RootBoost.Application.Push.RemindPendingApprovals remind, CancellationToken ct) =>
+    Results.Ok(new { reminded = await remind.RunAsync(ct) }));
+
 push.MapPost("/test", async (RootBoost.Application.Push.PushNotifier notifier, CancellationToken ct) =>
 {
     if (!notifier.Enabled) return Results.Conflict(new { error = "push desligado no servidor" });

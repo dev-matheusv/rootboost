@@ -19,6 +19,9 @@ public sealed class InMemoryPublicationStore : IPublicationStore
     public Task<Publication?> GetAsync(Guid id, CancellationToken ct = default) => Task.FromResult(Items.FirstOrDefault(p => p.Id == id));
     public Task<IReadOnlyList<Publication>> ListByBrandAsync(string brandKey, DateTimeOffset? from, DateTimeOffset? to, CancellationToken ct = default) =>
         Task.FromResult<IReadOnlyList<Publication>>(Items.Where(p => p.BrandKey == brandKey).ToList());
+    public Task<IReadOnlyList<Publication>> ListDraftsToRemindAsync(DateTimeOffset from, DateTimeOffset to, CancellationToken ct = default) =>
+        Task.FromResult<IReadOnlyList<Publication>>(Items.Where(p => p.Status == PublicationStatus.Draft && p.ReminderSentAt == null
+            && p.ScheduledFor >= from && p.ScheduledFor <= to).OrderBy(p => p.ScheduledFor).ToList());
     public Task<IReadOnlyList<Publication>> ListDueAsync(DateTimeOffset now, TimeSpan stuckAfter, CancellationToken ct = default) =>
         Task.FromResult<IReadOnlyList<Publication>>(Items.Where(p => p.IsDue(now) || p.IsStuck(now, stuckAfter)).ToList());
     public Task SaveAsync(Publication publication, CancellationToken ct = default) { Saves++; return Task.CompletedTask; }

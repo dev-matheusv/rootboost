@@ -9,6 +9,7 @@ inicial (Safari, Compartilhar, Adicionar à Tela de Início).
 |---|---|---|
 | Aviso de operação **novo** (post que falhou, sync de anúncio, conexão da Meta) | "Aviso no Console" + a mensagem | Console com a lista de avisos |
 | Worker entregou um vídeo do estúdio | "Vídeo pronto pra revisar" + o tema | Estúdio |
+| Post que sai em menos de 24 h ainda em rascunho (um aviso por grupo de canais; reagendar lembra de novo) | "Falta aprovar: sai ter 12:00" + título e canais | Publicações |
 | Botão de teste (ao ligar os avisos) | "Teste do Console" | Console |
 
 O mesmo problema repetindo não manda de novo (só o aviso novo). Nada é aprovado nem publicado pelo aviso: ele só
@@ -39,5 +40,5 @@ Sem as três variáveis o push fica desligado: o item nem aparece no menu e nada
 
 ## Próximos
 
-Lembrete de post que sai em menos de 24 h ainda sem aprovação; preferência de canal por usuário; WhatsApp (RB-32)
+Preferência de canal por usuário; WhatsApp (RB-32)
 e e-mail (RB-28) como outros canais.
