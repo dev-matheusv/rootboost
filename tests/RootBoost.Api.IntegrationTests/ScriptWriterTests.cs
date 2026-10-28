@@ -332,8 +332,47 @@ public class AcervoApiTests : IClassFixture<FakeAiWebApplicationFactory>
 
         var fixedRes = await c.PutAsJsonAsync($"/admin/brands/medlycare/media/{photo}/description", new { description = "Corte chanel, antes e depois", tags = "corte, chanel" });
         Assert.Equal("corte, chanel", (await fixedRes.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("tags").GetString());
+        var listed = (await c.GetFromJsonAsync<JsonElement>("/admin/brands/medlycare/media")).EnumerateArray().Single(m => m.GetProperty("id").GetString() == photo);
+        Assert.Equal("Corte chanel, antes e depois", listed.GetProperty("description").GetString()); // gravou no banco de verdade
 
         var video = await Upload(c, "salao.mp4");
         Assert.Equal(HttpStatusCode.BadRequest, (await c.PostAsync($"/admin/brands/medlycare/media/{video}/describe", null)).StatusCode);
+    }
+}
+
+public class AcervoVideoTests : IClassFixture<StudioAiWebApplicationFactory>
+{
+    private readonly StudioAiWebApplicationFactory _factory;
+    public AcervoVideoTests(StudioAiWebApplicationFactory factory) => _factory = factory;
+
+    [Fact]
+    public async Task Ai_puts_a_library_photo_in_the_scene_and_the_worker_gets_its_link()
+    {
+        var c = _factory.CreateClient();
+        using var form = new MultipartFormDataContent();
+        form.Add(new ByteArrayContent([0xFF, 0xD8, 0xFF, 0xE0, 9]), "file", "corte-chanel.jpg");
+        var up = await (await c.PostAsync("/admin/brands/medlycare/media", form)).Content.ReadFromJsonAsync<JsonElement>();
+        var mediaId = up.GetProperty("id").GetString()!.Replace("-", "");
+        await c.PostAsync($"/admin/brands/medlycare/media/{up.GetProperty("id").GetString()}/describe", null);
+
+        var created = await c.PostAsJsonAsync("/admin/brands/medlycare/creative-jobs", new { kind = "organic", theme = "Corte chanel" });
+        var id = (await created.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetString();
+        var written = await (await c.PostAsJsonAsync($"/admin/brands/medlycare/creative-jobs/{id}/write-script", new { })).Content.ReadFromJsonAsync<JsonElement>();
+        var blocks = written.GetProperty("job").GetProperty("roteiro").GetProperty("blocos");
+        Assert.Equal($"acervo-{mediaId}", blocks[0].GetProperty("trechos")[0][0].GetString());
+
+        await c.PostAsync($"/admin/brands/medlycare/creative-jobs/{id}/render", null);
+        var worker = _factory.CreateClient();
+        worker.DefaultRequestHeaders.Add("X-Worker-Key", "chave-gravacao");
+        JsonElement job = default;
+        for (var i = 0; i < 20; i++)
+        {
+            job = await (await worker.PostAsJsonAsync("/worker/jobs/claim", new { workerId = "pc" })).Content.ReadFromJsonAsync<JsonElement>();
+            if (job.GetProperty("id").GetString() == id) break;
+        }
+        var media = Assert.Single(job.GetProperty("media").EnumerateArray());
+        Assert.Equal(mediaId, media.GetProperty("id").GetString());
+        Assert.EndsWith("corte-chanel.jpg", media.GetProperty("url").GetString());
+        Assert.False(media.GetProperty("isVideo").GetBoolean());
     }
 }

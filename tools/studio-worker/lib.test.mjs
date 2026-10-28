@@ -68,3 +68,20 @@ test("gravação: travas e troca dos trechos", async () => {
   assert.deepEqual(out.blocos[0].trechos, [["x-bloco-1", 0.5, 12.1, 1]]);
   assert.deepEqual(roteiro.blocos[0].trechos, [["gravar-bloco-1", 0, 5]]); // original intacto
 });
+
+test("acervo: blocos com mídia, foto vira trecho e troca dos trechos", async () => {
+  const { libraryScenes, photoClipArgs, applyLibrary } = await import("./lib.mjs");
+  const id = "d063b8ee53e2455f899ff9752759f2ee";
+  const roteiro = { blocos: [
+    { trechos: [[`acervo-${id}`, 0, 6]] },
+    { trechos: [["acervo-../../x", 0, 6]] },
+    { cena: "agenda", trechos: [["gravar-bloco-3", 0, 5]] },
+  ] };
+  assert.deepEqual(libraryScenes(roteiro), [{ index: 0, id, seconds: 6 }]);
+  const args = photoClipArgs("in.jpg", "out.mp4", 3000, 4000, 6);
+  assert.equal(args[args.indexOf("-t") + 1], "8");
+  assert.match(args[args.indexOf("-vf") + 1], /s=1080x1440/);
+  const out = applyLibrary(roteiro, [{ index: 0, source: `acervo-${id}`, duration: 8 }]);
+  assert.deepEqual(out.blocos[0].trechos, [[`acervo-${id}`, 0, 7.9, 1]]);
+  assert.deepEqual(roteiro.blocos[0].trechos, [[`acervo-${id}`, 0, 6]]);
+});

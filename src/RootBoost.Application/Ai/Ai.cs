@@ -107,9 +107,11 @@ public sealed class ScriptWriter
 
     /// <returns>O roteiro pronto ou os erros que sobraram depois de duas tentativas.</returns>
     public async Task<(Written? Ok, Failed? Error)> WriteAsync(CreativeJob job, BrandProfile? brand, string? instructions, CancellationToken ct = default,
-        BrandProduct? product = null)
+        BrandProduct? product = null, IReadOnlyList<MediaAsset>? library = null)
     {
-        var system = SystemPrompt(job.Kind, brand, product);
+        // Acervo (RB-16): fotos e vídeos com descrição que a IA pode pôr nas cenas. Sem descrição, foto não entra (a IA não vê).
+        var media = (library ?? []).Where(m => m.IsVideo || !string.IsNullOrWhiteSpace(m.Description)).Take(60).ToList();
+        var system = SystemPrompt(job.Kind, brand, product, media);
         var user = UserPrompt(job, instructions);
         decimal cost = 0;
         IReadOnlyList<string> errors = [];
@@ -123,7 +125,7 @@ public sealed class ScriptWriter
                 result.InputTokens, result.OutputTokens, result.CostUsd, _time.GetUtcNow()), ct);
 
             using var doc = JsonDocument.Parse(result.Json);
-            var (script, lines, hooks) = ToContracts(doc.RootElement);
+            var (script, lines, hooks) = ToContracts(doc.RootElement, media.Select(m => m.Id.ToString("N")).ToHashSet());
             errors = ScriptContract.Validate(script, lines);
             if (errors.Count == 0)
             {
@@ -139,7 +141,7 @@ public sealed class ScriptWriter
     /// A IA não sabe o tempo de cada gravação ainda: cada bloco ganha um trecho "a gravar" com a duração estimada
     /// da fala (o worker troca pela gravação de tela no RB-50) e guarda a descrição da cena pra quem for gravar.
     /// </summary>
-    private static (JsonElement Script, JsonElement Lines, IReadOnlyList<string> Hooks) ToContracts(JsonElement ai)
+    private static (JsonElement Script, JsonElement Lines, IReadOnlyList<string> Hooks) ToContracts(JsonElement ai, IReadOnlySet<string> mediaIds)
     {
         var lines = new List<string>();
         var opening = ai.TryGetProperty("abertura", out var a) && a.ValueKind == JsonValueKind.Object
@@ -159,7 +161,8 @@ public sealed class ScriptWriter
                 titulo = Str(b, "titulo"),
                 sub = Str(b, "subtitulo"),
                 cena = Str(b, "cena"),
-                trechos = new object[] { new object[] { $"gravar-bloco-{n}", 0, seconds } },
+                // Mídia do acervo escolhida pela IA vira o trecho ("acervo-<id>"); sem ela, o bloco fica pra gravar a tela.
+                trechos = new object[] { new object[] { mediaIds.Contains(Str(b, "midia")) ? $"acervo-{Str(b, "midia")}" : $"gravar-bloco-{n}", 0, seconds } },
             });
         }
         var final = ai.GetProperty("final");
@@ -180,7 +183,7 @@ public sealed class ScriptWriter
     private static string Str(JsonElement e, string prop) =>
         e.TryGetProperty(prop, out var v) && v.ValueKind == JsonValueKind.String ? v.GetString()!.Trim() : string.Empty;
 
-    private string SystemPrompt(CreativeKind kind, BrandProfile? brand, BrandProduct? product)
+    private string SystemPrompt(CreativeKind kind, BrandProfile? brand, BrandProduct? product, IReadOnlyList<MediaAsset> media)
     {
         var (min, max) = ScriptGates.Range(kind);
         var sb = new StringBuilder();
@@ -210,6 +213,14 @@ public sealed class ScriptWriter
             if (product.Features.Count > 0) sb.AppendLine($"Recursos (as cenas mostram estes, usando o produto de verdade): {string.Join("; ", product.Features)}");
             if (product.Differentials.Count > 0) sb.AppendLine($"Diferenciais: {string.Join("; ", product.Differentials)}");
             if (!string.IsNullOrWhiteSpace(product.Offer)) sb.AppendLine($"Oferta atual: {product.Offer}");
+        }
+        if (media.Count > 0)
+        {
+            sb.AppendLine();
+            sb.AppendLine(product?.AppUrl is { Length: > 0 }
+                ? "Acervo da marca: use uma destas mídias no bloco quando ela mostrar a cena melhor que gravar a tela (campo midia = id; vazio pra gravar)."
+                : "Acervo da marca: cada bloco usa uma destas mídias (campo midia = id), a que melhor mostra a cena; não repita a mesma se houver outras.");
+            foreach (var m in media) sb.AppendLine($"- {m.Id:N}: {(m.IsVideo ? "vídeo" : "foto")}: {m.Description ?? m.FileName}");
         }
         if (brand is not null)
         {
@@ -266,8 +277,9 @@ public sealed class ScriptWriter
             },
             "blocos": {
               "type": "array",
-              "items": { "type": "object", "additionalProperties": false, "required": ["titulo", "subtitulo", "fala", "cena"],
-                "properties": { "titulo": { "type": "string" }, "subtitulo": { "type": "string" }, "fala": { "type": "string" }, "cena": { "type": "string" } } }
+              "items": { "type": "object", "additionalProperties": false, "required": ["titulo", "subtitulo", "fala", "cena", "midia"],
+                "properties": { "titulo": { "type": "string" }, "subtitulo": { "type": "string" }, "fala": { "type": "string" }, "cena": { "type": "string" },
+                  "midia": { "type": "string", "description": "id da mídia do acervo pra este bloco, ou vazio" } } }
             },
             "final": { "type": "object", "additionalProperties": false, "required": ["titulo", "cta", "fala"],
               "properties": { "titulo": { "type": "string" }, "cta": { "type": "string" }, "fala": { "type": "string" } } },
