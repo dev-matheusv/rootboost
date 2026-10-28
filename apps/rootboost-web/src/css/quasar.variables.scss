@@ -1,14 +1,16 @@
-// Paleta do RootBoost. Índigo de base, verde de "crescimento" como destaque.
-$primary: #4f46e5;
-$secondary: #334155;
-$accent: #22c55e;
+// Paleta do RootBoost: "Ametista". Mesma estrutura do MedlyCare (base de tom médio, secundária fria e
+// acinzentada, destaque quente, fundo escuro tingido pela base), com roxo no lugar do verde azulado.
+// Branco sobre $primary dá 5,3:1 (AA). Semânticas iguais às do MedlyCare.
+$primary: #7a4ce0;
+$secondary: #565c86;
+$accent: #ff7a59;
 
-$dark: #0f172a;
-$dark-focus: #1e1b4b;
-$dark-page: #0b1020;
+$dark: #17152b;
+$dark-focus: #221c45;
+$dark-page: #100e1f;
 
-$light-focus: #eef2ff;
-$light-page: #f8fafc;
+$light-focus: #f1edff;
+$light-page: #f8f7fc;
 
 $positive: #10b981;
 $negative: #ef4444;

@@ -57,9 +57,9 @@ export default defineConfig((ctx) => {
       config: {
         dark: 'auto',
         brand: {
-          primary: '#4F46E5',
-          secondary: '#334155',
-          accent: '#22C55E',
+          primary: '#7A4CE0',
+          secondary: '#565C86',
+          accent: '#FF7A59',
         },
       },
       iconSet: 'mdi-v7',
