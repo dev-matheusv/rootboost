@@ -84,6 +84,7 @@ import {
 import { api } from 'src/services/api';
 import type { OpsAlert } from 'src/types/api';
 import { badgeText } from 'src/utils/alerts';
+import { OPEN_ALERTS_EVENT } from 'src/utils/overview';
 import AlertsDialog from 'src/components/AlertsDialog.vue';
 import { useAuthStore } from 'src/stores/authStore';
 import { useBrandStore } from 'src/stores/brandStore';
@@ -120,13 +121,20 @@ async function loadAlerts() {
   }
 }
 
+// A Visão geral (e outras telas) abrem os avisos por evento: o diálogo mora aqui no menu.
+const showAlerts = () => (alertsOpen.value = true);
+
 onMounted(() => {
+  window.addEventListener(OPEN_ALERTS_EVENT, showAlerts);
   if (!brand.loaded) void brand.load().catch(() => undefined);
   void loadAlerts();
   alertsTimer = setInterval(() => void loadAlerts(), 2 * 60_000);
 });
 
-onUnmounted(() => clearInterval(alertsTimer));
+onUnmounted(() => {
+  clearInterval(alertsTimer);
+  window.removeEventListener(OPEN_ALERTS_EVENT, showAlerts);
+});
 
 // Cada fase do roadmap acrescenta itens aqui (Campanhas, Criativos, Agenda, IA).
 const items = [
