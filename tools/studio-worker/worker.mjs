@@ -5,18 +5,21 @@
 // Uso:  node worker.mjs            (fica rodando, uma rodada a cada STUDIO_POLL_SECONDS)
 //       node worker.mjs --once     (uma rodada e sai)
 // Config por variável de ambiente ou num worker.env ao lado (ver worker.env.example). A chave nunca vai pro repo.
-import { spawn } from "node:child_process";
+import { execFileSync, spawn } from "node:child_process";
 import { copyFileSync, existsSync, mkdirSync, openAsBlob, readFileSync, writeFileSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
-  applyRecordings, buildArgs, expectedOutputs, isScriptProblem, lastLine, parsePrivateVoices, parseUnmatched, projectName, scenesToRecord,
+  applyLibrary, applyRecordings, buildArgs, libraryScenes, photoClipArgs, expectedOutputs, isScriptProblem, lastLine, parsePrivateVoices, parseUnmatched, projectName, scenesToRecord,
   seedFor, voiceProblem, warningsFrom,
 } from "./lib.mjs";
 import { recordScene } from "./recorder.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 loadEnvFile(join(here, "worker.env"));
+
+const FFMPEG = process.env.FFMPEG_PATH ?? "C:/DMaker/bin/ffmpeg/bin/ffmpeg.exe";
+const FFPROBE = process.env.FFPROBE_PATH ?? FFMPEG.replace(/ffmpeg(\.exe)?$/i, "ffprobe$1");
 
 const cfg = {
   api: (process.env.ROOTBOOST_API ?? "").replace(/\/+$/, ""),
@@ -85,6 +88,23 @@ async function round() {
     job.roteiro = applyRecordings(job.roteiro, recordings);
   }
 
+  // Acervo (RB-16): bloco com foto ou vídeo da marca. Baixa o arquivo; foto vira trecho com aproximação lenta.
+  const library = libraryScenes(job.roteiro);
+  if (library.length) {
+    await progress(job.id, 30, `preparando ${library.length} mídia(s) do acervo`);
+    const clips = [];
+    for (const s of library) {
+      const media = (job.media ?? []).find((m) => m.id === s.id);
+      if (!media) return fail(job.id, `mídia do acervo ${s.id} não veio no job (apagada ou de outra marca)`, false);
+      try {
+        clips.push({ index: s.index, source: `acervo-${s.id}`, duration: await prepareMedia(media, s.seconds) });
+      } catch (e) {
+        return fail(job.id, `mídia do acervo do bloco ${s.index + 1}: ${e.message}`, true);
+      }
+    }
+    job.roteiro = applyLibrary(job.roteiro, clips);
+  }
+
   writeScript(projectDir, job);
   await progress(job.id, 32, `roteiro gravado em projetos/${nome}`);
 
@@ -108,6 +128,28 @@ async function round() {
   for (const o of found) outputs.push({ role: o.role, url: await upload(job.brandKey, o.path) });
   const done = await call("POST", `/worker/jobs/${job.id}/deliver`, { workerId: cfg.workerId, outputs, warnings: warningsFrom(log), seed });
   console.log(`[${now()}] entregue: ${done.status}`);
+}
+
+/** Baixa a mídia e deixa em brutos/acervo-<id>/acervo-<id>.mp4 (o pipeline lê dali). Devolve a duração em segundos. */
+async function prepareMedia(media, seconds) {
+  const source = `acervo-${media.id}`;
+  const dir = `${cfg.base}/brutos/${source}`;
+  mkdirSync(dir, { recursive: true });
+  const res = await fetch(media.url);
+  if (!res.ok) throw new Error(`download ${res.status}`);
+  const raw = `${dir}/original${media.isVideo ? ".video" : ".jpg"}`;
+  writeFileSync(raw, Buffer.from(await res.arrayBuffer()));
+  const out = `${dir}/${source}.mp4`;
+  if (media.isVideo) {
+    // Normaliza (mov do celular, HDR, rotação) e tira o som: a narração é a trilha.
+    execFileSync(FFMPEG, ["-y", "-i", raw, "-an", "-vf", "scale='min(1080,iw)':-2,format=yuv420p", "-r", "30", "-c:v", "libx264", "-preset", "medium",
+      "-crf", "18", "-movflags", "+faststart", out], { stdio: "ignore" });
+  } else {
+    const [w, h] = execFileSync(FFPROBE, ["-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height", "-of", "csv=p=0", raw])
+      .toString().trim().split(",").map(Number);
+    execFileSync(FFMPEG, photoClipArgs(raw, out, w, h, seconds), { stdio: "ignore" });
+  }
+  return Number(execFileSync(FFPROBE, ["-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", out]).toString().trim());
 }
 
 /** Grava os contratos no projeto. Se já existia um roteiro diferente (reel aprovado com o mesmo nome), guarda cópia antes. */

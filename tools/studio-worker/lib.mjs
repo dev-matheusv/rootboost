@@ -136,3 +136,37 @@ export function applyRecordings(roteiro, recordings) {
   }
   return out;
 }
+
+/** Blocos que a IA montou com mídia do acervo (RB-16): [{ index, id, seconds }]. O id vem da API e só aceita hex. */
+export function libraryScenes(roteiro) {
+  return (roteiro?.blocos ?? [])
+    .map((b, i) => ({ index: i, source: b.trechos?.[0]?.[0], seconds: Number(b.trechos?.[0]?.[2]) || 5 }))
+    .filter((b) => typeof b.source === "string" && /^acervo-[0-9a-f]{32}$/.test(b.source))
+    .map((b) => ({ index: b.index, id: b.source.slice(7), seconds: b.seconds }));
+}
+
+/**
+ * Foto vira trecho com aproximação lenta (zoompan), no tamanho da própria foto (largura até 1080, par).
+ * Duração com folga: o pipeline desacelera pra caber na fala, nunca acelera foto.
+ */
+export function photoClipArgs(input, output, width, height, seconds) {
+  const w = Math.min(1080, width - (width % 2)) || 1080;
+  const h = Math.round((w * height) / width / 2) * 2 || 1350;
+  const dur = Math.max(4, Math.ceil(seconds + 2));
+  const frames = dur * 30;
+  const zoom = `min(1+0.10*on/${frames},1.10)`;
+  return ["-y", "-loop", "1", "-i", input, "-vf",
+    `scale=${w * 2}:${h * 2},zoompan=z='${zoom}':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=${frames}:s=${w}x${h}:fps=30,format=yuv420p`,
+    "-t", String(dur), "-c:v", "libx264", "-preset", "medium", "-crf", "18", "-movflags", "+faststart", output];
+}
+
+/** Troca "acervo-<id>" pelo bruto pronto: [fonte, 0, fim, 1]. Vídeo usa no máximo o que tem; bloco sem clipe fica como estava. */
+export function applyLibrary(roteiro, clips) {
+  const out = JSON.parse(JSON.stringify(roteiro));
+  for (const c of clips) {
+    const b = out.blocos?.[c.index];
+    if (!b || !(c.duration > 1)) continue;
+    b.trechos = [[c.source, 0, Math.round((c.duration - 0.1) * 10) / 10, 1]];
+  }
+  return out;
+}

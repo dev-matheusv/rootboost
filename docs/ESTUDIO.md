@@ -57,6 +57,16 @@ avisa. `Ai__Mode=Fake` dá um roteiro fixo pra testar sem custo.
 Enquanto a gravação automática da tela (RB-50) não existe, cada bloco escrito pela IA vem com um trecho
 `gravar-bloco-N` e a duração estimada da fala: é a lista do que gravar.
 
+## Vídeo a partir do acervo (RB-16)
+
+A IA do roteiro recebe a lista do acervo da marca (vídeos e fotos com descrição, até 60) e escolhe, por bloco, a mídia
+que mostra a cena (campo `midia`). O trecho vira `["acervo-<id>", 0, segundos]`; sem mídia fica `gravar-bloco-N`
+(gravação de tela). No claim, a API manda `media: [{ id, url, isVideo }]` só das mídias da própria marca citadas no roteiro.
+O worker baixa cada uma para `brutos/acervo-<id>/acervo-<id>.mp4`: vídeo é normalizado (H.264, 30 fps, sem som, até 1080 de
+largura); foto vira trecho com aproximação lenta (zoompan, 10%) com 2 s de folga, porque o pipeline só desacelera foto pra
+caber na fala. Foto sem descrição não entra na lista (a IA não enxerga a imagem no roteiro, só a descrição).
+Custo: zero de IA além do roteiro; a descrição da foto é feita uma vez no upload (`media-describe`, ~US$ 0,01).
+
 ## Rotas do Console (login do Console)
 
 | Rota | O que faz |
