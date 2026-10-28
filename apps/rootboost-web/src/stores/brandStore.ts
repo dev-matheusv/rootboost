@@ -24,6 +24,11 @@ export const useBrandStore = defineStore('brand', {
     loaded: false,
   }),
 
+  getters: {
+    /** Nome da marca escolhida pra mostrar na tela; a chave enquanto a lista não carregou. */
+    selectedName: (state) => state.brands.find((b) => b.key === state.selected)?.name ?? state.selected,
+  },
+
   actions: {
     async load() {
       const { data } = await api.get<Brand[]>('/admin/brands');

@@ -2,8 +2,9 @@
   <q-page class="q-pa-lg">
     <div class="row items-end q-mb-lg">
       <div class="col">
+        <div class="page-eyebrow">{{ brand.selectedName || $t('nav.allBrands') }}</div>
         <div class="text-h5 sora-bold">{{ $t('pages.brandProfile.title') }}</div>
-        <div class="text-grey-7">{{ profile ? profile.brand.name : $t('pages.brandProfile.subtitle') }}</div>
+        <div class="text-grey-7">{{ $t('pages.brandProfile.subtitle') }}</div>
       </div>
       <q-btn v-if="brand.selected" flat round :icon="mdiRefresh" :loading="loading" @click="load">
         <q-tooltip>{{ $t('common.actions.refresh') }}</q-tooltip>
