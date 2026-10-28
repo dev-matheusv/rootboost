@@ -21,6 +21,7 @@ public interface IMediaAssetStore
     Task<MediaAsset?> GetAsync(Guid id, CancellationToken ct = default);
     Task<IReadOnlyList<MediaAsset>> ListByBrandAsync(string brandKey, int limit, CancellationToken ct = default);
     Task RemoveAsync(MediaAsset asset, CancellationToken ct = default);
+    Task SaveAsync(MediaAsset asset, CancellationToken ct = default);
 }
 
 public sealed class MediaOptions

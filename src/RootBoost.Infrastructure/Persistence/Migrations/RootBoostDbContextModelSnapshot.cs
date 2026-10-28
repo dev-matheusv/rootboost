@@ -409,6 +409,10 @@ namespace RootBoost.Infrastructure.Persistence.Migrations
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
                     b.Property<string>("FileName")
                         .IsRequired()
                         .HasMaxLength(160)
@@ -419,6 +423,10 @@ namespace RootBoost.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("StorageKey")
                         .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.Property<string>("Tags")
                         .HasMaxLength(300)
                         .HasColumnType("character varying(300)");
 

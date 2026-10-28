@@ -24,6 +24,17 @@ public sealed class MediaAsset
     public string StorageKey { get; private set; } = default!;
     public DateTimeOffset CreatedAt { get; private set; }
 
+    /// <summary>O que aparece no arquivo (acervo da marca, RB-16): a IA descreve a foto e a pessoa pode corrigir.</summary>
+    public string? Description { get; private set; }
+    /// <summary>Palavras-chave separadas por vírgula, pra IA escolher a mídia certa de cada cena.</summary>
+    public string? Tags { get; private set; }
+
+    public void Describe(string? description, string? tags)
+    {
+        Description = string.IsNullOrWhiteSpace(description) ? null : description.Trim()[..Math.Min(description.Trim().Length, 500)];
+        Tags = string.IsNullOrWhiteSpace(tags) ? null : tags.Trim()[..Math.Min(tags.Trim().Length, 300)];
+    }
+
     private MediaAsset() { }
 
     public MediaAsset(string brandKey, string fileName, long sizeBytes, DateTimeOffset now)

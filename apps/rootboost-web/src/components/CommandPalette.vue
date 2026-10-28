@@ -53,6 +53,7 @@ const base = computed<Command[]>(() => {
   const act = t('palette.groups.actions');
   return [
     { id: 'publications', group: nav, label: t('nav.publications'), keywords: 'agenda calendario fila posts', run: go('publications') },
+    { id: 'acervo', group: nav, label: t('nav.acervo'), keywords: 'fotos videos criativos arquivos midia', run: go('acervo') },
     { id: 'studio', group: nav, label: t('nav.studio'), keywords: 'video reel roteiro falas render estudio', run: go('studio') },
     { id: 'overview', group: nav, label: t('nav.overview'), keywords: 'inicio painel', run: go('overview') },
     { id: 'campaigns', group: nav, label: t('nav.campaigns'), keywords: 'anuncios ads meta google trafego', run: go('campaigns') },
