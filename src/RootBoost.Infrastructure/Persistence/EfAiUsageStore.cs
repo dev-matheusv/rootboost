@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using RootBoost.Application.Ai;
 
 namespace RootBoost.Infrastructure.Persistence;
@@ -13,4 +14,7 @@ public sealed class EfAiUsageStore : IAiUsageStore
         _db.AiUsage.Add(entry);
         await _db.SaveChangesAsync(ct);
     }
+
+    public async Task<IReadOnlyList<AiUsageEntry>> ListSinceAsync(DateTimeOffset since, CancellationToken ct = default) =>
+        await _db.AiUsage.AsNoTracking().Where(u => u.CreatedAt >= since).ToListAsync(ct);
 }

@@ -151,6 +151,7 @@ export default {
       offline: 'Could not reach the API.',
     },
     overview: {
+      aiCost: 'AI in the last 30 days: {cost} across {n} uses',
       store: 'Store',
       greeting: { morning: 'Good morning, {name}', afternoon: 'Good afternoon, {name}', evening: 'Good evening, {name}' },
       today: {

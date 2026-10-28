@@ -151,6 +151,7 @@ export default {
       offline: 'Não consegui falar com a API.',
     },
     overview: {
+      aiCost: 'IA nos últimos 30 dias: {cost} em {n} usos',
       store: 'Loja',
       greeting: { morning: 'Bom dia, {name}', afternoon: 'Boa tarde, {name}', evening: 'Boa noite, {name}' },
       today: {

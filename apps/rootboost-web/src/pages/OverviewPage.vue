@@ -4,6 +4,7 @@
     <div class="q-mb-lg">
       <div class="page-eyebrow">{{ todayLabel }}</div>
       <div class="text-h5 sora-bold">{{ $t(`pages.overview.greeting.${greeting}`, { name: firstName(auth.userName) }) }}</div>
+      <div v-if="aiCost" class="text-caption text-grey-7 q-mt-xs">{{ aiCost }}</div>
     </div>
 
     <div class="row q-col-gutter-md q-mb-xl">
@@ -180,6 +181,7 @@ const todayLabel = computed(() => new Date().toLocaleDateString(locale.value, { 
 const publications = ref<Publication[]>([]);
 const ads = ref<AdsSummary | null>(null);
 const alerts = ref(0);
+const aiCost = ref('');
 
 const sections = computed(() => queueSections(bundlePosts(publications.value)));
 const needs = computed(() => sections.value.needs.length);
@@ -223,6 +225,15 @@ async function loadToday() {
     key ? api.get<AdsSummary>(`/admin/brands/${key}/ads/summary`, { params: { days: 7 } }) : Promise.resolve({ data: null }),
     api.get<OpsAlert[]>('/admin/alerts'),
   ]);
+  // Custo da IA dos últimos 30 dias, de todas as marcas: pra acompanhar se a plataforma está ficando cara.
+  try {
+    const { data } = await api.get<{ summary: { totalUsd: number; calls: number } }>('/admin/ai/usage', { params: { days: 30 } });
+    aiCost.value = data.summary.calls
+      ? t('pages.overview.aiCost', { cost: formatMoney(data.summary.totalUsd, 'USD'), n: data.summary.calls })
+      : '';
+  } catch {
+    aiCost.value = '';
+  }
   publications.value = pubs.status === 'fulfilled' ? pubs.value.data : [];
   ads.value = adsRes.status === 'fulfilled' ? adsRes.value.data : null;
   alerts.value = alertsRes.status === 'fulfilled' ? alertsRes.value.data.length : 0;

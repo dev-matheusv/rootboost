@@ -162,7 +162,8 @@ export async function recordScene({ brandKey, scene, account, outDir, name, ask,
     let outcome = "desistir";
     for (let step = 0; Date.now() - started < MAX_SECONDS * 1000; step++) {
       elements = await evaluate(cdp, LIST_ELEMENTS);
-      const shot = await cdp.send("Page.captureScreenshot", { format: "jpeg", quality: 55 });
+      // Foto em 1x (540x600) pra IA: um quarto dos pixels da gravação, bem menos tokens por passo (custo).
+      const shot = await cdp.send("Page.captureScreenshot", { format: "jpeg", quality: 55, clip: { x: 0, y: 0, width: VIEW.width, height: VIEW.height, scale: 1 / VIEW.scale } });
       const url = await evaluate(cdp, "location.href");
       const next = await ask({ brandKey, scene, url, elements: elements.map(({ id, role, text }) => ({ id, role, text })), history, step, image: shot.data });
       log(`  passo ${step + 1}: ${next.action} ${next.target ?? ""} (${next.reason})`);
