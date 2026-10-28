@@ -50,3 +50,21 @@ test("voz particular só narra a marca dona", async () => {
   assert.equal(voiceProblem("banco-ana", "clinica-x", priv), null);
   assert.match(voiceProblem(null, "clinica-x", priv), /sem voz/);
 });
+
+test("gravação: travas e troca dos trechos", async () => {
+  const { isDestructive, sameSite, scenesToRecord, applyRecordings } = await import("./lib.mjs");
+  assert.equal(isDestructive("Excluir paciente"), true);
+  assert.equal(isDestructive("Sair"), true);
+  assert.equal(isDestructive("Nova sessão"), false);
+  assert.equal(sameSite("https://app.medlycare.com.br/agenda", "https://medlycare.com.br"), true);
+  assert.equal(sameSite("https://evil.com/?medlycare.com.br", "https://medlycare.com.br"), false);
+  const roteiro = { blocos: [
+    { cena: "abrir a agenda", trechos: [["gravar-bloco-1", 0, 5]] },
+    { cena: "", trechos: [["gravar-bloco-2", 0, 4]] },
+    { cena: "ver prontuário", trechos: [["psico2", 1, 9]] },
+  ] };
+  assert.deepEqual(scenesToRecord(roteiro).map((s) => s.index), [0]);
+  const out = applyRecordings(roteiro, [{ index: 0, source: "x-bloco-1", duration: 12.34 }]);
+  assert.deepEqual(out.blocos[0].trechos, [["x-bloco-1", 0.5, 12.1, 1]]);
+  assert.deepEqual(roteiro.blocos[0].trechos, [["gravar-bloco-1", 0, 5]]); // original intacto
+});

@@ -10,8 +10,10 @@ import { copyFileSync, existsSync, mkdirSync, openAsBlob, readFileSync, writeFil
 import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
-  buildArgs, expectedOutputs, isScriptProblem, lastLine, parsePrivateVoices, parseUnmatched, projectName, seedFor, voiceProblem, warningsFrom,
+  applyRecordings, buildArgs, expectedOutputs, isScriptProblem, lastLine, parsePrivateVoices, parseUnmatched, projectName, scenesToRecord,
+  seedFor, voiceProblem, warningsFrom,
 } from "./lib.mjs";
+import { recordScene } from "./recorder.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 loadEnvFile(join(here, "worker.env"));
@@ -61,8 +63,30 @@ async function round() {
   if (problem) return fail(job.id, problem, false);
 
   const projectDir = `${cfg.base}/projetos/${nome}`;
+
+  // Gravação de tela (RB-50): blocos que a IA escreveu com "cena" e trecho "gravar-bloco-N" são gravados agora.
+  const scenes = scenesToRecord(job.roteiro);
+  if (scenes.length) {
+    const account = loadAccounts()[job.brandKey];
+    if (!account?.url || !account?.usuario || !account?.senha)
+      return fail(job.id, `sem conta de demonstração da marca ${job.brandKey} em tools/studio-worker/contas.json`, false);
+    const recordings = [];
+    for (const [i, s] of scenes.entries()) {
+      const source = `${nome}-bloco-${s.index + 1}`;
+      await progress(job.id, 5 + Math.round((i / scenes.length) * 25), `gravando a tela: ${s.scene}`);
+      try {
+        const r = await recordScene({ brandKey: job.brandKey, scene: s.scene, account, outDir: `${cfg.base}/brutos/${source}`, name: source,
+          ask: async (state) => (await call("POST", "/worker/ai/next-action", state)).data });
+        recordings.push({ index: s.index, source, duration: r.duration });
+      } catch (e) {
+        return fail(job.id, `gravação do bloco ${s.index + 1}: ${e.message}`, true);
+      }
+    }
+    job.roteiro = applyRecordings(job.roteiro, recordings);
+  }
+
   writeScript(projectDir, job);
-  await progress(job.id, 5, `roteiro gravado em projetos/${nome}`);
+  await progress(job.id, 32, `roteiro gravado em projetos/${nome}`);
 
   const vars = { nome, voz: voice, seed, tools: cfg.tools, base: cfg.base };
   const { code, log } = await runPipeline(job.id, cfg.bin, buildArgs(cfg.args, vars));
@@ -153,6 +177,17 @@ async function call(method, path, body) {
   }
   if (res.status >= 400) throw new Error(`${method} ${path}: ${res.status} ${typeof data === "object" ? data?.error ?? "" : data}`);
   return { status: res.status, data };
+}
+
+/** Contas de demonstração por marca, só no PC: { "<marca>": { "url", "usuario", "senha" } }. Nunca vão pra API. */
+function loadAccounts() {
+  const path = join(here, "contas.json");
+  if (!existsSync(path)) return {};
+  try {
+    return JSON.parse(readFileSync(path, "utf8"));
+  } catch {
+    return {};
+  }
 }
 
 function loadEnvFile(path) {

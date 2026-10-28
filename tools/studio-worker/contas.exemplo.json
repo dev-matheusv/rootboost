@@ -1,0 +1,4 @@
+{
+  "_leia": "Copie para contas.json (fica fora do git). Conta de DEMONSTRAÇÃO, com dados fictícios. A senha nunca sai deste PC: o worker digita ele mesmo.",
+  "medlycare": { "url": "https://app.exemplo.com.br/login", "usuario": "demo@exemplo.com.br", "senha": "" }
+}
