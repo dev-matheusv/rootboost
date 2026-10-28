@@ -70,6 +70,16 @@ public class PublishingTests
     }
 
     [Fact]
+    public void Unapprove_returns_to_draft_only_before_publishing()
+    {
+        var p = Approved(TimeSpan.FromHours(1));
+        p.Unapprove(_time.Now);
+        Assert.Equal(PublicationStatus.Draft, p.Status);
+        Assert.Null(p.ApprovedBy);
+        Assert.Throws<InvalidOperationException>(() => p.Unapprove(_time.Now));
+    }
+
+    [Fact]
     public void Editing_the_caption_after_approval_sends_it_back_to_draft()
     {
         var p = Approved(TimeSpan.FromHours(1));
