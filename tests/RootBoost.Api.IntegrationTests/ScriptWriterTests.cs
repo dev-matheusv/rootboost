@@ -315,7 +315,7 @@ public class AcervoApiTests : IClassFixture<FakeAiWebApplicationFactory>
     private static async Task<string> Upload(HttpClient c, string name)
     {
         using var form = new MultipartFormDataContent();
-        form.Add(new ByteArrayContent([0xFF, 0xD8, 0xFF, 0xE0, 1, 2, 3]), "file", name);
+        form.Add(new ByteArrayContent(TestImages.Png(40, 30)), "file", name); // PNG com nome .jpg: o servidor converte mesmo assim
         var res = await c.PostAsync("/admin/brands/medlycare/media", form);
         Assert.Equal(HttpStatusCode.Created, res.StatusCode);
         return (await res.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetString()!;
@@ -350,7 +350,7 @@ public class AcervoVideoTests : IClassFixture<StudioAiWebApplicationFactory>
     {
         var c = _factory.CreateClient();
         using var form = new MultipartFormDataContent();
-        form.Add(new ByteArrayContent([0xFF, 0xD8, 0xFF, 0xE0, 9]), "file", "corte-chanel.jpg");
+        form.Add(new ByteArrayContent(TestImages.Png(40, 30)), "file", "corte-chanel.jpg");
         var up = await (await c.PostAsync("/admin/brands/medlycare/media", form)).Content.ReadFromJsonAsync<JsonElement>();
         var mediaId = up.GetProperty("id").GetString()!.Replace("-", "");
         await c.PostAsync($"/admin/brands/medlycare/media/{up.GetProperty("id").GetString()}/describe", null);
@@ -374,5 +374,33 @@ public class AcervoVideoTests : IClassFixture<StudioAiWebApplicationFactory>
         Assert.Equal(mediaId, media.GetProperty("id").GetString());
         Assert.EndsWith("corte-chanel.jpg", media.GetProperty("url").GetString());
         Assert.False(media.GetProperty("isVideo").GetBoolean());
+    }
+}
+
+/// <summary>Imagens de verdade pros testes (a descrição só aceita o que abre como imagem).</summary>
+static class TestImages
+{
+    public static byte[] Png(int w, int h)
+    {
+        using var bmp = new SkiaSharp.SKBitmap(w, h);
+        bmp.Erase(new SkiaSharp.SKColor(122, 76, 224, 128));
+        using var img = SkiaSharp.SKImage.FromBitmap(bmp);
+        return img.Encode(SkiaSharp.SKEncodedImageFormat.Png, 100).ToArray();
+    }
+}
+
+public class ImageConverterTests
+{
+    private readonly RootBoost.Infrastructure.Media.SkiaImageConverter _converter = new();
+
+    [Fact]
+    public void Any_photo_becomes_a_small_jpeg_and_garbage_is_refused()
+    {
+        var jpeg = _converter.ToJpeg(TestImages.Png(3000, 1000), 1568);
+        Assert.NotNull(jpeg);
+        using var codec = SkiaSharp.SKCodec.Create(new SkiaSharp.SKMemoryStream(jpeg));
+        Assert.Equal(SkiaSharp.SKEncodedImageFormat.Jpeg, codec.EncodedFormat);
+        Assert.Equal((1568, 523), (codec.Info.Width, codec.Info.Height));
+        Assert.Null(_converter.ToJpeg([0xFF, 0xD8, 0xFF, 0xE0, 1, 2, 3], 1568));
     }
 }

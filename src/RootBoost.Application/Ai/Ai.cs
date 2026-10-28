@@ -26,6 +26,9 @@ public sealed record LanguageModelResult(string Json, string Model, long InputTo
 /// <summary>A IA está desligada (Ai:Mode=Off) ou sem chave: a tela mostra isso em vez de falhar.</summary>
 public sealed class AiDisabledException() : InvalidOperationException("IA desligada nesta instalação");
 
+/// <summary>O provedor da IA recusou ou falhou na chamada; a mensagem é segura pra mostrar na tela.</summary>
+public sealed class AiRequestFailedException(string message, Exception? inner = null) : InvalidOperationException(message, inner);
+
 public enum AiMode
 {
     Off,
