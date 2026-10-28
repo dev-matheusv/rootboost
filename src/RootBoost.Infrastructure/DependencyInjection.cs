@@ -48,6 +48,19 @@ public static class DependencyInjection
         services.AddScoped<RootBoost.Application.Push.PushNotifier>();
         services.AddScoped<RootBoost.Application.Push.RemindPendingApprovals>();
         services.AddScoped<RootBoost.Application.Alerts.AlertService>();
+        // IA (decisão de 28/10: Claude agora atrás da porta ILanguageModel, Root AI depois). Ai:Mode=Off por padrão.
+        var ai = new RootBoost.Application.Ai.AiOptions();
+        config.GetSection("Ai").Bind(ai);
+        ai.ApiKey ??= config["Anthropic:ApiKey"] ?? Environment.GetEnvironmentVariable("ANTHROPIC_API_KEY");
+        services.AddSingleton(ai);
+        services.AddSingleton<RootBoost.Application.Ai.ILanguageModel>(ai.Mode switch
+        {
+            RootBoost.Application.Ai.AiMode.Fake => new RootBoost.Infrastructure.Ai.FakeLanguageModel(),
+            RootBoost.Application.Ai.AiMode.Claude when !string.IsNullOrWhiteSpace(ai.ApiKey) => new RootBoost.Infrastructure.Ai.ClaudeLanguageModel(ai),
+            _ => new RootBoost.Infrastructure.Ai.DisabledLanguageModel(),
+        });
+        services.AddScoped<RootBoost.Application.Ai.IAiUsageStore, EfAiUsageStore>();
+        services.AddScoped<RootBoost.Application.Ai.ScriptWriter>();
         // Estúdio (RB-42): fila de jobs de criativo que o worker local puxa. Sem Studio:WorkerKey as rotas do worker ficam fechadas.
         services.AddScoped<RootBoost.Application.Studio.ICreativeJobStore, EfCreativeJobStore>();
         var studio = new RootBoost.Application.Studio.StudioOptions();
