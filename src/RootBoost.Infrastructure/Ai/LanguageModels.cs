@@ -71,18 +71,21 @@ public sealed class FakeLanguageModel : ILanguageModel
         if (request.Purpose == "media-describe")
             return Task.FromResult(new LanguageModelResult(JsonSerializer.Serialize(new { descricao = "Foto de teste do acervo.", tags = new[] { "teste", "acervo" } }), "fake", 0, 0, 0m));
         var ad = request.System.Contains("Anúncio: sem abertura", StringComparison.Ordinal);
+        // Com acervo no prompt, o primeiro bloco usa a primeira mídia listada ("- <id>: foto: ...").
+        var firstMedia = request.System.Split('\n').Select(l => l.Trim()).FirstOrDefault(l => l.StartsWith("- ", StringComparison.Ordinal) && l.Contains(": foto:") || l.StartsWith("- ", StringComparison.Ordinal) && l.Contains(": vídeo:"));
+        var mediaId = firstMedia is null ? "" : firstMedia[2..firstMedia.IndexOf(':')];
         object? opening = ad ? null : new { titulo = "Agenda no papel", subtitulo = "Tudo num lugar só", fala = "Agenda no papel perde paciente sem você perceber." };
         var blocks = ad
             ? new[]
             {
-                new { titulo = "Paciente que falta custa caro", subtitulo = "", fala = "Paciente que falta é horário perdido.", cena = "Abrir a agenda do dia." },
-                new { titulo = "Confirmação pelo WhatsApp", subtitulo = "Um toque pra confirmar", fala = "Na véspera, a confirmação sai pelo WhatsApp com um clique.", cena = "Clicar em confirmar." },
+                new { titulo = "Paciente que falta custa caro", subtitulo = "", fala = "Paciente que falta é horário perdido.", cena = "Abrir a agenda do dia.", midia = mediaId },
+                new { titulo = "Confirmação pelo WhatsApp", subtitulo = "Um toque pra confirmar", fala = "Na véspera, a confirmação sai pelo WhatsApp com um clique.", cena = "Clicar em confirmar.", midia = "" },
             }
             : new[]
             {
-                new { titulo = "Agenda que se repete", subtitulo = "Marca uma vez", fala = "Você marca a sessão uma vez e o sistema repete nas próximas semanas, sem planilha e sem esquecer ninguém.", cena = "Abrir a agenda, criar sessão semanal." },
-                new { titulo = "Evolução pronta", subtitulo = "Texto com nome e data", fala = "Depois do atendimento, a evolução vai direto pro prontuário com o nome do paciente e a data já preenchidos.", cena = "Abrir o prontuário e salvar a evolução." },
-                new { titulo = "Confirmação no WhatsApp", subtitulo = "Quem vem amanhã", fala = "Na véspera, a confirmação vai pelo WhatsApp e você sabe quem vem antes de abrir a agenda.", cena = "Mostrar a lista de confirmações." },
+                new { titulo = "Agenda que se repete", subtitulo = "Marca uma vez", fala = "Você marca a sessão uma vez e o sistema repete nas próximas semanas, sem planilha e sem esquecer ninguém.", cena = "Abrir a agenda, criar sessão semanal.", midia = mediaId },
+                new { titulo = "Evolução pronta", subtitulo = "Texto com nome e data", fala = "Depois do atendimento, a evolução vai direto pro prontuário com o nome do paciente e a data já preenchidos.", cena = "Abrir o prontuário e salvar a evolução.", midia = "" },
+                new { titulo = "Confirmação no WhatsApp", subtitulo = "Quem vem amanhã", fala = "Na véspera, a confirmação vai pelo WhatsApp e você sabe quem vem antes de abrir a agenda.", cena = "Mostrar a lista de confirmações.", midia = "" },
             };
         var json = JsonSerializer.Serialize(new
         {

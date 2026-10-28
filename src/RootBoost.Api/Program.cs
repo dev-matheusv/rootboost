@@ -479,14 +479,14 @@ brandProfile.MapPut("/creative-jobs/{id:guid}/script", async (string key, Guid i
 // A IA escreve roteiro e falas com o perfil, as provas e o playbook (RB-45); passa pelos mesmos portões.
 brandProfile.MapPost("/creative-jobs/{id:guid}/write-script", async (string key, Guid id, WriteScriptInput? input,
     RootBoost.Application.Studio.ICreativeJobStore store, IBrandProfileStore profiles, RootBoost.Application.Ai.ScriptWriter writer,
-    RootBoost.Application.Ai.IBrandProductStore products, TimeProvider time, CancellationToken ct) =>
+    RootBoost.Application.Ai.IBrandProductStore products, RootBoost.Application.Media.IMediaAssetStore assets, TimeProvider time, CancellationToken ct) =>
 {
     var job = await store.GetAsync(id, ct);
     if (job is null || job.BrandKey != key.ToLowerInvariant()) return Results.NotFound();
     try
     {
         var (ok, failed) = await writer.WriteAsync(job, await profiles.GetAsync(job.BrandKey, ct), input?.Instructions, ct,
-            await products.GetAsync(job.BrandKey, ct));
+            await products.GetAsync(job.BrandKey, ct), await assets.ListByBrandAsync(job.BrandKey, 100, ct));
         if (ok is null) return Results.UnprocessableEntity(new { error = "a IA não acertou o roteiro em duas tentativas", errors = failed!.Errors });
         job.SetScript(ok.Script.GetRawText(), ok.Lines.GetRawText(), time.GetUtcNow(),
             ok.Warnings.Select(w => CreativeJob.ScriptWarningPrefix + w).ToList());
@@ -667,12 +667,20 @@ var worker = app.MapGroup("/worker").AddEndpointFilter(async (ctx, next) =>
     return ok ? await next(ctx) : Results.Unauthorized();
 });
 
-worker.MapPost("/jobs/claim", async (WorkerClaimInput input, RootBoost.Application.Studio.ICreativeJobStore store,
-    RootBoost.Application.Studio.StudioOptions options, TimeProvider time, CancellationToken ct) =>
+worker.MapPost("/jobs/claim", async (WorkerClaimInput input, HttpRequest req, RootBoost.Application.Studio.ICreativeJobStore store,
+    RootBoost.Application.Studio.StudioOptions options, RootBoost.Application.Media.IMediaAssetStore assets,
+    RootBoost.Application.Media.MediaOptions mediaOptions, TimeProvider time, CancellationToken ct) =>
 {
     if (string.IsNullOrWhiteSpace(input.WorkerId)) return Results.BadRequest(new { error = "workerId obrigatório" });
     var job = await store.ClaimNextAsync(input.WorkerId, time.GetUtcNow(), options.Lease, ct);
-    return job is null ? Results.NoContent() : Results.Ok(WorkerJobDto.From(job));
+    if (job is null) return Results.NoContent();
+    // Mídias do acervo citadas no roteiro ("acervo-<id>"): o worker baixa pelo link público.
+    var media = new List<WorkerMediaDto>();
+    foreach (System.Text.RegularExpressions.Match m in System.Text.RegularExpressions.Regex.Matches(job.Script ?? "", "acervo-([0-9a-f]{32})"))
+        if (Guid.TryParseExact(m.Groups[1].Value, "N", out var mid) && media.All(x => x.Id != m.Groups[1].Value)
+            && await assets.GetAsync(mid, ct) is { } a && a.BrandKey == job.BrandKey)
+            media.Add(new WorkerMediaDto(m.Groups[1].Value, MediaPublicUrl(mediaOptions, req, a), a.IsVideo));
+    return Results.Ok(WorkerJobDto.From(job) with { Media = media });
 });
 
 worker.MapPost("/jobs/{id:guid}/progress", async (Guid id, WorkerProgressInput input, RootBoost.Application.Studio.ICreativeJobStore store,
@@ -1054,8 +1062,10 @@ record CreativeJobDto(Guid Id, string BrandKey, string Kind, string Theme, strin
 }
 
 /// <summary>O que o worker precisa pra renderizar: contratos, voz, semente e formato. Sem dado de outras marcas.</summary>
+record WorkerMediaDto(string Id, string Url, bool IsVideo);
+
 record WorkerJobDto(Guid Id, string BrandKey, string Kind, string Theme, string? VoiceKey, int? Seed, int Attempts,
-    System.Text.Json.JsonElement? Roteiro, System.Text.Json.JsonElement? Falas)
+    System.Text.Json.JsonElement? Roteiro, System.Text.Json.JsonElement? Falas, IReadOnlyList<WorkerMediaDto>? Media = null)
 {
     public static WorkerJobDto From(CreativeJob j) => new(j.Id, j.BrandKey, j.Kind.ToString(), j.Theme, j.VoiceKey, j.Seed,
         j.Attempts, CreativeJobDto.Parse(j.Script), CreativeJobDto.Parse(j.Lines));

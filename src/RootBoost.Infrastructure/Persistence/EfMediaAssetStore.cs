@@ -31,5 +31,10 @@ public sealed class EfMediaAssetStore : IMediaAssetStore
         await _db.MediaAssets.Where(x => x.Id == asset.Id).ExecuteDeleteAsync(ct);
     }
 
-    public Task SaveAsync(MediaAsset asset, CancellationToken ct = default) => _db.SaveChangesAsync(ct);
+    /// <summary>A leitura é sem rastreamento: marca como alterado antes de salvar (senão a descrição não grava).</summary>
+    public async Task SaveAsync(MediaAsset asset, CancellationToken ct = default)
+    {
+        _db.MediaAssets.Update(asset);
+        await _db.SaveChangesAsync(ct);
+    }
 }
