@@ -81,6 +81,12 @@ voz nem montagem. A cada rodada:
 6. sobe `finais/<nome>-narrado-instagram.mp4` (+ `.jpg` da capa), `<nome>-narrado.mp4` e a grade de revisão,
    e entrega com os papéis `video-instagram`, `cover-instagram`, `video` e `grade`, mais os avisos do log.
 
+Pré-requisitos no PC: o mesmo ambiente do `narrado-calmo.mjs` (DMaker com o extra de voz, `pip install -e .[voice]`,
+que inclui o `audioseal` da marca d'água nas falas; FFmpeg; faster-whisper). O worker chama a cópia viva das
+ferramentas (`STUDIO_TOOLS`), então mudanças do marketing no pipeline valem na hora. Desde 28/10 o cache da voz
+também considera o dicionário de pronúncia da marca (`voz-continua/<voz>/lexico.json`): mudar uma pronúncia
+ressintetiza mesmo com o texto igual.
+
 Como ligar no PC:
 
 ```
