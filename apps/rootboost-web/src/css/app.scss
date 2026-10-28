@@ -27,3 +27,6 @@ body.body--dark { background-color: $dark-page; }
 
 // Número grande dos cartões de indicador.
 .kpi-value { font-family: sora; font-weight: bold; font-size: 1.9rem; line-height: 1.1; }
+
+// Ametista clara no modo escuro: o roxo base fica escuro demais como texto e ícone sobre o fundo noite.
+body.body--dark .text-primary { color: #a98bff !important; }
