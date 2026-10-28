@@ -204,14 +204,39 @@
 
     <!-- Novo job -->
     <q-dialog v-model="newOpen">
-      <q-card style="width: 480px; max-width: 94vw" class="q-pa-sm">
+      <q-card style="width: 560px; max-width: 94vw" class="q-pa-sm">
         <q-card-section class="text-h6">{{ $t('studio.new') }}</q-card-section>
-        <q-card-section class="q-gutter-md">
-          <q-btn-toggle v-model="form.kind" spread no-caps unelevated rounded toggle-color="primary" :options="kindOptions" />
-          <q-input v-model="form.theme" outlined :label="$t('studio.theme')" :hint="$t('studio.themeHint')" maxlength="300" />
-          <q-input v-model="form.voiceKey" outlined :label="$t('studio.voice')" :hint="$t('studio.voiceHint')" maxlength="64" />
-          <q-input v-if="aiEnabled" v-model="form.instructions" outlined autogrow :label="$t('studio.ai.instructions')"
-            :hint="$t('studio.ai.instructionsHint')" />
+        <q-card-section class="column q-gutter-y-md">
+          <!-- 1. O que mostrar: uma frase, como se pedisse pra alguém. -->
+          <div>
+            <div class="text-subtitle2 q-mb-xs">{{ $t('studio.newDialog.what') }}</div>
+            <q-input v-model="form.theme" outlined autogrow autofocus maxlength="300" :placeholder="$t('studio.newDialog.whatPlaceholder')" />
+            <div class="row q-gutter-xs q-mt-xs">
+              <q-chip v-for="ex in examples" :key="ex" dense clickable outline color="primary" size="sm" @click="form.theme = ex">{{ ex }}</q-chip>
+            </div>
+          </div>
+          <!-- 2. Pra que é: três cartões com uma linha explicando cada um. -->
+          <div>
+            <div class="text-subtitle2 q-mb-xs">{{ $t('studio.newDialog.purpose') }}</div>
+            <div class="row q-col-gutter-sm">
+              <div v-for="k in kinds" :key="k.value" class="col-12 col-sm-4">
+                <div class="kind-card card-rounded q-pa-sm cursor-pointer" :class="{ active: form.kind === k.value }" role="radio"
+                  :aria-checked="form.kind === k.value" tabindex="0" @click="form.kind = k.value" @keyup.enter="form.kind = k.value">
+                  <q-icon :name="k.icon" size="22px" color="primary" />
+                  <div class="text-weight-bold q-mt-xs">{{ $t(`studio.kind.${k.value}`) }}</div>
+                  <div class="text-caption text-grey-7">{{ $t(`studio.newDialog.kindHelp.${k.value}`) }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Ajustes finos ficam escondidos: quem não sabe não precisa ver. -->
+          <q-expansion-item dense dense-toggle :label="$t('studio.newDialog.more')" header-class="text-grey-7 q-px-none">
+            <div class="column q-gutter-y-sm q-pt-sm">
+              <q-input v-if="aiEnabled" v-model="form.instructions" outlined dense autogrow :label="$t('studio.ai.instructions')"
+                :hint="$t('studio.ai.instructionsHint')" />
+              <q-input v-model="form.voiceKey" outlined dense :label="$t('studio.voice')" :hint="$t('studio.voiceHint')" maxlength="64" />
+            </div>
+          </q-expansion-item>
         </q-card-section>
         <q-card-actions align="right">
           <q-btn flat no-caps :label="$t('common.actions.cancel')" v-close-popup />
@@ -229,8 +254,7 @@ import { useI18n } from 'vue-i18n';
 import { useQuasar } from 'quasar';
 import { isAxiosError } from 'axios';
 import {
-  mdiPlus, mdiMovieOpenPlayOutline, mdiMicrophoneOutline, mdiCodeJson, mdiPlay, mdiCalendarPlus, mdiCheckCircleOutline,
-  mdiCreationOutline, mdiFormatQuoteOpen, mdiMonitorScreenshot,
+  mdiAccountSearchOutline, mdiBullhornOutline, mdiCalendarPlus, mdiCheckCircleOutline, mdiCodeJson, mdiCreationOutline, mdiFormatQuoteOpen, mdiHeartOutline, mdiMicrophoneOutline, mdiMonitorScreenshot, mdiMovieOpenPlayOutline, mdiPlay, mdiPlus,
 } from '@quasar/extras/mdi-v7';
 import { api } from 'src/services/api';
 import type { CreativeJob, CreativeKind, Publication } from 'src/types/api';
@@ -496,7 +520,12 @@ async function createPosts() {
 const newOpen = ref(false);
 const form = reactive<{ kind: CreativeKind; theme: string; voiceKey: string; instructions: string }>(
   { kind: 'Organic', theme: '', voiceKey: '', instructions: '' });
-const kindOptions = computed(() => (['Organic', 'Ad', 'Prospecting'] as const).map((k) => ({ value: k, label: t(`studio.kind.${k}`) })));
+const kinds: { value: CreativeKind; icon: string }[] = [
+  { value: 'Organic', icon: mdiHeartOutline },
+  { value: 'Ad', icon: mdiBullhornOutline },
+  { value: 'Prospecting', icon: mdiAccountSearchOutline },
+];
+const examples = computed(() => [t('studio.newDialog.ex1'), t('studio.newDialog.ex2'), t('studio.newDialog.ex3')]);
 
 async function createJob() {
   busy.value = true;
@@ -562,4 +591,8 @@ watch(() => brand.selected, () => {
 .step-dot { width: 12px; height: 12px; border-radius: 50%; margin: 0 auto 4px; border: 2px solid currentColor; }
 .step.done { opacity: 0.8; .step-dot { background: $positive; border-color: $positive; } }
 .step.current { opacity: 1; color: $primary; font-weight: 600; .step-dot { background: $primary; box-shadow: 0 0 0 4px rgba($primary, 0.2); } }
+.kind-card { border: 1px solid rgba(0, 0, 0, 0.12); height: 100%; transition: border-color 0.15s, background 0.15s; }
+.kind-card.active { border-color: $primary; background: rgba(122, 76, 224, 0.08); }
+.body--dark .kind-card { border-color: rgba(255, 255, 255, 0.12); }
+.body--dark .kind-card.active { border-color: $primary; background: rgba(122, 76, 224, 0.16); }
 </style>
