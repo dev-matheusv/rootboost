@@ -420,13 +420,19 @@ brandProfile.MapGet("/creative-jobs/{id:guid}", async (string key, Guid id, Root
 
 // Roteiro e falas nos contratos do pacote; recusa com a lista do que não bate (contagem de falas, trechos, travessão).
 brandProfile.MapPut("/creative-jobs/{id:guid}/script", async (string key, Guid id, ScriptInput input,
-    RootBoost.Application.Studio.ICreativeJobStore store, TimeProvider time, CancellationToken ct) =>
+    RootBoost.Application.Studio.ICreativeJobStore store, IBrandProfileStore profiles, IKnowledgeBase knowledge,
+    TimeProvider time, CancellationToken ct) =>
 {
     var job = await store.GetAsync(id, ct);
     if (job is null || job.BrandKey != key.ToLowerInvariant()) return Results.NotFound();
     var errors = RootBoost.Application.Studio.ScriptContract.Validate(input.Roteiro, input.Falas);
     if (errors.Count > 0) return Results.UnprocessableEntity(new { error = "roteiro ou falas fora do contrato", errors });
-    try { job.SetScript(input.Roteiro.GetRawText(), input.Falas.GetRawText(), time.GetUtcNow()); }
+    // Portões do roteiro (RB-44): checklist de copy da marca, duração do formato e número em algarismo.
+    var review = RootBoost.Application.Studio.ScriptGates.Review(job.Kind, input.Roteiro, input.Falas, knowledge,
+        await profiles.GetAsync(job.BrandKey, ct));
+    if (review.Errors.Count > 0) return Results.UnprocessableEntity(new { error = "a checklist de copy bloqueou o roteiro", errors = review.Errors });
+    var warnings = review.Warnings.Select(w => CreativeJob.ScriptWarningPrefix + w).ToList();
+    try { job.SetScript(input.Roteiro.GetRawText(), input.Falas.GetRawText(), time.GetUtcNow(), warnings); }
     catch (Exception ex) when (ex is ArgumentException or InvalidOperationException) { return Results.BadRequest(new { error = ex.Message }); }
     await store.SaveAsync(job, ct);
     return Results.Ok(CreativeJobDto.From(job));

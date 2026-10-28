@@ -85,7 +85,7 @@ public sealed class CreativeJob
     /// Grava roteiro e falas (já validados). Vale até a revisão: mexer no roteiro de um vídeo pronto descarta os
     /// arquivos, porque eles não batem mais com o texto. Durante o render não pode (o worker está usando).
     /// </summary>
-    public void SetScript(string script, string lines, DateTimeOffset now)
+    public void SetScript(string script, string lines, DateTimeOffset now, IReadOnlyList<string>? warnings = null)
     {
         if (Status is CreativeJobStatus.Queued or CreativeJobStatus.Rendering or CreativeJobStatus.Done)
             throw new InvalidOperationException($"roteiro não pode mudar com o job em {Status}");
@@ -95,7 +95,7 @@ public sealed class CreativeJob
         Lines = lines;
         Status = CreativeJobStatus.ScriptReady;
         OutputsJson = "[]";
-        WarningsJson = "[]";
+        WarningsJson = SerializeWarnings(warnings);
         Error = null;
         Progress = 0;
         ProgressNote = null;
@@ -156,7 +156,8 @@ public sealed class CreativeJob
                 throw new ArgumentException($"capa precisa ser JPEG (.jpg): {o.Url}", nameof(outputs));
         }
         OutputsJson = JsonSerializer.Serialize(outputs.Select(o => new CreativeOutput(o.Role.Trim(), o.Url)).ToList(), Json);
-        WarningsJson = JsonSerializer.Serialize((warnings ?? []).Where(w => !string.IsNullOrWhiteSpace(w)).Select(w => Truncate(w, 500)!).ToList(), Json);
+        // Avisos do roteiro (portões ao salvar) continuam; os do worker entram depois, sem repetir.
+        WarningsJson = SerializeWarnings(ScriptWarnings.Concat(warnings ?? []).ToList());
         Seed = seed ?? Seed;
         Status = CreativeJobStatus.Review;
         Progress = 100;
@@ -184,6 +185,16 @@ public sealed class CreativeJob
         Status = CreativeJobStatus.Done;
         UpdatedAt = now;
     }
+
+    /// <summary>Avisos gravados com o roteiro; o worker pode acrescentar os dele na entrega.</summary>
+    private List<string> ScriptWarnings => JsonSerializer.Deserialize<List<string>>(WarningsJson, Json)?
+        .Where(w => w.StartsWith(ScriptWarningPrefix, StringComparison.Ordinal)).ToList() ?? [];
+
+    /// <summary>Marca os avisos que vieram do roteiro, pra entrega do worker não apagar.</summary>
+    public const string ScriptWarningPrefix = "Roteiro: ";
+
+    private static string SerializeWarnings(IEnumerable<string>? warnings) => JsonSerializer.Serialize(
+        (warnings ?? []).Where(w => !string.IsNullOrWhiteSpace(w)).Select(w => Truncate(w, 500)!).Distinct().Take(50).ToList(), Json);
 
     private void EnsureOwner(string workerId)
     {

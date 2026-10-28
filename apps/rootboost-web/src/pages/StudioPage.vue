@@ -104,6 +104,9 @@
             </div>
           </q-expansion-item>
 
+          <template v-if="job.status === 'ScriptReady' || job.status === 'Failed'">
+            <q-banner v-for="w in job.warnings" :key="w" dense rounded class="bg-amber-1 text-brown-9">{{ w }}</q-banner>
+          </template>
           <div v-if="job.status === 'ScriptReady' || job.status === 'Failed'" class="row q-gutter-sm">
             <q-btn unelevated color="accent" text-color="dark" no-caps :icon="mdiPlay" :loading="busy"
               :label="job.status === 'Failed' ? $t('studio.retry') : $t('studio.render')" @click="render" />
