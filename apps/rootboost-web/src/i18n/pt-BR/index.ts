@@ -98,6 +98,24 @@ export default {
     denied: 'O navegador bloqueou as notificações. Libere nas configurações do site.',
     error: 'Não consegui ligar os avisos neste aparelho.',
   },
+  onboarding: {
+    placeholder: 'Escreva aqui. Pode mandar o link do site.',
+    off: 'A IA está desligada. Preencha o cadastro ao lado.',
+    thinking: 'Pensando…',
+    readingSite: 'Lendo o seu site…',
+    form: 'Cadastro do produto',
+    formHint: 'A IA preenche enquanto vocês conversam. Confira e salve; dá pra editar à mão.',
+    saved: 'Salvo',
+    savedHint: 'Cadastro salvo. A IA já usa nos roteiros.',
+    save: 'Salvar cadastro',
+    missing: 'Pra roteiro bom: nome, o que é, pra quem e um recurso.',
+    kinds: { app: 'App ou sistema', site: 'Site', loja: 'Loja', servico: 'Serviço', outro: 'Outro' },
+    f: {
+      name: 'Nome do produto', kind: 'Tipo', summary: 'O que é, em uma frase', audience: 'Pra quem é', url: 'Site ou loja',
+      appUrl: 'Endereço de entrar no sistema', appUrlHint: 'Onde a plataforma vai gravar a tela mostrando o uso.',
+      features: 'Principais recursos ou produtos', listHint: 'Digite e aperte Enter.', differentials: 'Diferenciais', offer: 'Oferta atual',
+    },
+  },
   reelImport: {
     title: 'Importar reel pronto',
     txt: 'Arquivo .txt com os textos dos canais',
@@ -258,7 +276,7 @@ export default {
       title: 'Perfil da marca',
       subtitle: 'Voz, prova e frases reais. A IA só afirma o que está aqui.',
       pickBrand: 'Escolha uma marca no menu para ver o perfil.',
-      tabs: { proof: 'Prova', voice: 'Voz', phrases: 'Frases de clientes', check: 'Testar copy' },
+      tabs: { product: 'Produto', proof: 'Prova', voice: 'Voz', phrases: 'Frases de clientes', check: 'Testar copy' },
       proof: {
         hint: 'O que a marca pode afirmar, sempre com a fonte. Proibido é o que nunca pode ser dito.',
         add: 'Adicionar prova',

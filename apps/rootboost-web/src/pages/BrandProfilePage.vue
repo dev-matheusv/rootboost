@@ -23,6 +23,7 @@
 
     <template v-if="brand.selected && profile">
       <q-tabs v-model="tab" align="left" dense no-caps active-color="primary" indicator-color="primary" class="q-mb-md">
+        <q-tab name="product" :label="$t('pages.brandProfile.tabs.product')" />
         <q-tab name="proof" :label="$t('pages.brandProfile.tabs.proof')" />
         <q-tab name="voice" :label="$t('pages.brandProfile.tabs.voice')" />
         <q-tab name="phrases" :label="$t('pages.brandProfile.tabs.phrases')" />
@@ -31,6 +32,10 @@
 
       <q-tab-panels v-model="tab" class="bg-transparent">
         <!-- Inventário de prova: o que a IA pode afirmar. -->
+        <q-tab-panel name="product" class="q-pa-none">
+          <ProductOnboarding :key="brand.selected" :brand-key="brand.selected" />
+        </q-tab-panel>
+
         <q-tab-panel name="proof" class="q-pa-none">
           <div class="row items-center q-mb-sm">
             <div class="col text-grey-7">{{ $t('pages.brandProfile.proof.hint') }}</div>
@@ -182,6 +187,7 @@
 </template>
 
 <script setup lang="ts">
+import ProductOnboarding from 'src/components/ProductOnboarding.vue';
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useQuasar } from 'quasar';
@@ -201,7 +207,7 @@ const { t } = useI18n();
 const $q = useQuasar();
 const brand = useBrandStore();
 
-const tab = ref('proof');
+const tab = ref('product');
 const profile = ref<BrandProfile | null>(null);
 const loading = ref(false);
 const saving = ref(false);
