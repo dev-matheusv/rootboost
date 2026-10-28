@@ -9,7 +9,9 @@ import { spawn } from "node:child_process";
 import { copyFileSync, existsSync, mkdirSync, openAsBlob, readFileSync, writeFileSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { buildArgs, expectedOutputs, isScriptProblem, lastLine, parseUnmatched, projectName, seedFor, warningsFrom } from "./lib.mjs";
+import {
+  buildArgs, expectedOutputs, isScriptProblem, lastLine, parsePrivateVoices, parseUnmatched, projectName, seedFor, voiceProblem, warningsFrom,
+} from "./lib.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 loadEnvFile(join(here, "worker.env"));
@@ -23,7 +25,10 @@ const cfg = {
   // Executável e argumentos do pipeline. {nome} {voz} {seed} {tools} {base} são trocados por job.
   bin: process.env.STUDIO_PIPELINE_BIN ?? process.execPath,
   args: process.env.STUDIO_PIPELINE_ARGS ?? "{tools}/narrado-calmo.mjs {nome} --voz {voz} --semente {seed}",
-  defaultVoice: process.env.STUDIO_DEFAULT_VOICE ?? "matheus2b",
+  // Voz quando o job não escolhe: só pra marca dona dela (ver privateVoices). Vazio = sem padrão.
+  defaultVoice: process.env.STUDIO_DEFAULT_VOICE ?? "",
+  // Vozes clonadas de pessoas: voz:marca. A do Matheus só narra o MedlyCare.
+  privateVoices: parsePrivateVoices(process.env.STUDIO_PRIVATE_VOICES ?? "matheus2a:medlycare,matheus2b:medlycare,medlyfem:medlycare,medlyfem2:medlycare"),
   pollSeconds: Number(process.env.STUDIO_POLL_SECONDS ?? 60),
   heartbeatSeconds: Number(process.env.STUDIO_HEARTBEAT_SECONDS ?? 30),
 };
@@ -51,11 +56,15 @@ async function round() {
   const seed = seedFor(job);
   console.log(`[${now()}] job ${job.id} (${job.theme}) como ${nome}, semente ${seed}, tentativa ${job.attempts}`);
 
+  const voice = job.voiceKey ?? (cfg.privateVoices.get(cfg.defaultVoice.toLowerCase()) === job.brandKey ? cfg.defaultVoice : null);
+  const problem = voiceProblem(voice, job.brandKey, cfg.privateVoices);
+  if (problem) return fail(job.id, problem, false);
+
   const projectDir = `${cfg.base}/projetos/${nome}`;
   writeScript(projectDir, job);
   await progress(job.id, 5, `roteiro gravado em projetos/${nome}`);
 
-  const vars = { nome, voz: job.voiceKey ?? cfg.defaultVoice, seed, tools: cfg.tools, base: cfg.base };
+  const vars = { nome, voz: voice, seed, tools: cfg.tools, base: cfg.base };
   const { code, log } = await runPipeline(job.id, cfg.bin, buildArgs(cfg.args, vars));
   if (code !== 0) {
     const scriptProblem = isScriptProblem(log);

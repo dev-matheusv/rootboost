@@ -34,6 +34,14 @@ Andamento (28/10): ~~**RB-42**~~ fila de jobs e contratos (feito) · **RB-43** w
 0 palavra sem par (troca a semente) e velocidade máx. 1,25x · ~~**RB-51**~~ tela do Estúdio (feito).
 Pra ligar: `Studio__WorkerKey` no Railway e `worker.env` no PC (`docs/ESTUDIO.md`).
 
+**Visão do Estúdio (Matheus, 28/10): a pessoa pede e a IA faz tudo**, do mesmo jeito que fizemos com o MedlyCare
+(entrar no sistema, seguir o passo a passo, gravar a tela, gerar a voz, legendar, Reels pronto). Edição é opcional.
+Ordem: ~~**RB-45**~~ IA escreve o roteiro (feito 28/10) → **RB-60** cadastro do produto por conversa (site, app, loja,
+público, recursos; lê o site) → **RB-50** gravação de tela automática no app do cliente, seguindo a cena de cada bloco
+→ **RB-59** voz: banco de vozes prontas ou a voz da própria pessoa (roteirinho de 1 min gravado no app Gravador do
+celular, com autorização falada; Android e iPhone explicados) → **RB-16** acervo → **RB-55** chat geral.
+**A voz do Matheus nunca sai do PC dele nem narra outra marca** (trava no worker: `STUDIO_PRIVATE_VOICES`).
+
 ### Onda 3: a IA da plataforma, a Root AI (o cérebro, junto com o DMaker)
 **Decidido (27/10):** a IA do RootFlow vira produto próprio, a **Root AI**, usada no RootFlow, no
 MedlyCare e no RootBoost (RB-17, RB-56). Base: o RAG do RootFlow (documentos da empresa, embeddings,

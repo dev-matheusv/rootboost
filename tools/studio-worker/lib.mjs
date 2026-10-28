@@ -74,3 +74,24 @@ export function lastLine(log, max = 280) {
   const l = lines[lines.length - 1] ?? "";
   return l.length > max ? `${l.slice(0, max - 1)}…` : l;
 }
+
+/**
+ * Vozes particulares (clonadas de uma pessoa) só valem pra marca dona delas. A voz do Matheus fica no PC dele e
+ * só narra o MedlyCare: nunca um vídeo de outro cliente, nem por padrão. Formato: "voz:marca,voz:marca".
+ */
+export function parsePrivateVoices(value) {
+  const map = new Map();
+  for (const pair of String(value ?? "").split(",")) {
+    const [voice, brand] = pair.split(":").map((s) => s?.trim().toLowerCase());
+    if (voice && brand) map.set(voice, brand);
+  }
+  return map;
+}
+
+/** Null quando pode; senão o motivo. Voz vazia sem padrão da marca também não pode (não há voz "neutra" aqui). */
+export function voiceProblem(voice, brandKey, privateVoices) {
+  if (!voice) return "job sem voz e marca sem voz padrão: escolha uma voz no Estúdio";
+  const owner = privateVoices.get(String(voice).toLowerCase());
+  if (owner && owner !== String(brandKey).toLowerCase()) return `a voz ${voice} é particular de ${owner} e não pode narrar ${brandKey}`;
+  return null;
+}
