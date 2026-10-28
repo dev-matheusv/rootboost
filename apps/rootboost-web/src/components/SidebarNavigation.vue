@@ -40,6 +40,13 @@
       </q-list>
 
       <q-list padding class="q-px-sm">
+        <!-- Busca rápida: o mesmo que Ctrl+K, pra quem não lembra do atalho. -->
+        <q-item clickable v-ripple rounded @click="emit('search')">
+          <q-item-section avatar><q-icon :name="mdiMagnify" /></q-item-section>
+          <q-item-section v-if="!isMini">{{ $t('palette.open') }}</q-item-section>
+          <q-item-section v-if="!isMini" side><span class="kbd">Ctrl K</span></q-item-section>
+          <q-tooltip v-if="isMini" anchor="center right" self="center left">{{ $t('palette.open') }} (Ctrl K)</q-tooltip>
+        </q-item>
         <!-- Avisos de operação (RB-58): post que falhou, sync de anúncio, conexão da Meta. -->
         <q-item clickable v-ripple rounded :class="{ 'text-negative': alerts.length > 0 }" @click="alertsOpen = true">
           <q-item-section avatar>
@@ -72,7 +79,7 @@ import { useRoute, useRouter } from 'vue-router';
 import {
   mdiMenu, mdiAccountCircleOutline, mdiViewDashboardOutline, mdiPackageVariantClosed,
   mdiWeatherNight, mdiWeatherSunny, mdiLogout, mdiStorefrontOutline, mdiBullhornOutline, mdiChartBar, mdiCalendarMonthOutline,
-  mdiBellOutline, mdiBellAlertOutline,
+  mdiBellOutline, mdiBellAlertOutline, mdiMagnify,
 } from '@quasar/extras/mdi-v7';
 import { api } from 'src/services/api';
 import type { OpsAlert } from 'src/types/api';
@@ -85,6 +92,7 @@ import ChangePasswordDialog from 'src/components/ChangePasswordDialog.vue';
 defineOptions({ name: 'SidebarNavigation' });
 
 const open = defineModel<boolean>({ default: false });
+const emit = defineEmits<{ search: [] }>();
 const isMini = ref(false);
 const passwordOpen = ref(false);
 const auth = useAuthStore();
@@ -136,5 +144,6 @@ async function logout() {
 </script>
 
 <style lang="scss" scoped>
-.light-active { background: rgba(79, 70, 229, 0.1); }
+.light-active { background: rgba($primary, 0.1); }
+.kbd { font-size: 11px; padding: 1px 6px; border-radius: 6px; border: 1px solid rgba(128, 128, 128, 0.35); }
 </style>

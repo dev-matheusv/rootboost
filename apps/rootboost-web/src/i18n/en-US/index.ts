@@ -22,6 +22,12 @@ export default {
       MetaConnection: 'Meta connection is down',
     },
   },
+  palette: {
+    open: 'Search',
+    placeholder: 'Go to a page, create a post, find a scheduled post…',
+    empty: 'Nothing found.',
+    groups: { nav: 'Go to', actions: 'Actions', posts: 'Posts' },
+  },
   reelImport: {
     title: 'Import finished reel',
     txt: '.txt file with the channel texts',
@@ -159,6 +165,7 @@ export default {
       undone: 'Approval undone. Back to draft.',
       shortcuts: 'Shortcuts: J and K move, A approves, E edits',
       pickPost: 'Pick a post to see how it looks on each channel.',
+      moved: 'Moved to {day}. Same time.',
       status: { Draft: 'Draft', Approved: 'Approved', Publishing: 'Publishing', Published: 'Published', Failed: 'Failed' },
     },
     brandProfile: {
