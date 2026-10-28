@@ -36,7 +36,12 @@
           {{ $t('pages.publications.openPost') }}
         </a>
       </div>
-      <q-banner v-if="current.error" dense rounded class="bg-red-1 text-negative">{{ current.error }}</q-banner>
+      <q-banner v-if="current.error" dense rounded class="bg-red-1 text-negative">
+        {{ current.error }}
+        <template v-if="current.status === 'Failed' && current.approvedBy" #action>
+          <q-btn flat dense no-caps color="negative" :icon="mdiRefresh" :label="$t('pages.publications.retry')" @click="emit('retry', current)" />
+        </template>
+      </q-banner>
       <div class="caption-full text-body2">{{ current.caption }}</div>
 
       <div v-if="current.channel === 'LinkedIn' && current.status === 'Approved'" class="row q-gutter-sm">
@@ -65,7 +70,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { mdiCellphoneScreenshot, mdiCheckAll, mdiPencilOutline } from '@quasar/extras/mdi-v7';
+import { mdiCellphoneScreenshot, mdiCheckAll, mdiPencilOutline, mdiRefresh } from '@quasar/extras/mdi-v7';
 import type { Publication } from 'src/types/api';
 import { canEdit, isVideo, statusColor, type PostBundle } from 'src/utils/publications';
 
@@ -78,6 +83,7 @@ const emit = defineEmits<{
   edit: [p: Publication];
   copy: [p: Publication];
   markPublished: [p: Publication];
+  retry: [p: Publication];
 }>();
 
 const { locale } = useI18n();

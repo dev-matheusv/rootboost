@@ -101,34 +101,49 @@ public sealed class FacebookPagePublisher : ISocialPublisher
         return new PublishedPost(id, postId.Length > 0 ? $"https://www.facebook.com/{postId}" : null);
     }
 
+    /// <summary>
+    /// Reels da Página: depois do envio do arquivo vem o "finish" (publicar), e só então a Meta processa e põe na Página.
+    /// Antes esperávamos o vídeo ficar "ready" pra dar o finish, mas o processamento não começa sem ele: o post
+    /// esgotava as tentativas (28/10, R5 receitas). Agora: finish logo após o envio (sem repetir se a fase de
+    /// publicação já começou) e acompanha um pouco; ainda processando = aceito, a Meta conclui sozinha.
+    /// </summary>
     private async Task<PublishedPost> PublishReelAsync(Publication publication, SocialAccount account, string videoId, CancellationToken ct)
     {
-        for (var poll = 1; ; poll++)
+        var status = await StatusAsync(account, videoId, ct);
+        if (status.PublishStatus == "published") return new PublishedPost(videoId, null);
+        ThrowIfFailed(status);
+
+        if (status.PublishPhase is "" or "not_started")
         {
-            var status = await StatusAsync(account, videoId, ct);
-            if (status.PublishStatus == "published") return new PublishedPost(videoId, null);
-            if (status.VideoStatus == "ready") break;
-            if (status.VideoStatus is "error" or "expired" or "upload_failed")
-                throw new InvalidOperationException($"vídeo do Reels no Facebook em {status.VideoStatus}" +
-                    (status.Error is { Length: > 0 } e ? $": {e}" : ": confira o formato (9:16, 3 a 90 s) e crie de novo"));
-            if (poll >= MaxPolls)
-                throw new InvalidOperationException("o Facebook ainda está processando o vídeo; tenta de novo na próxima rodada");
-            await _delay(PollInterval, ct);
+            using var finish = await GraphApi.SendAsync(_factory.CreateClient("meta"), HttpMethod.Post,
+                $"{_version}/{account.AccountId}/video_reels", account.AccessToken, new Dictionary<string, string>
+                {
+                    ["video_id"] = videoId,
+                    ["upload_phase"] = "finish",
+                    ["video_state"] = "PUBLISHED",
+                    ["description"] = publication.Caption,
+                }, ct);
+            if (!Success(finish)) throw new InvalidOperationException("Facebook não confirmou a publicação do Reels");
         }
 
-        using var finish = await GraphApi.SendAsync(_factory.CreateClient("meta"), HttpMethod.Post,
-            $"{_version}/{account.AccountId}/video_reels", account.AccessToken, new Dictionary<string, string>
-            {
-                ["video_id"] = videoId,
-                ["upload_phase"] = "finish",
-                ["video_state"] = "PUBLISHED",
-                ["description"] = publication.Caption,
-            }, ct);
-        if (!Success(finish)) throw new InvalidOperationException("Facebook não confirmou a publicação do Reels");
+        for (var poll = 1; poll < MaxPolls; poll++)
+        {
+            await _delay(PollInterval, ct);
+            status = await StatusAsync(account, videoId, ct);
+            if (status.PublishStatus == "published") break;
+            ThrowIfFailed(status);
+        }
         return new PublishedPost(videoId, null);
     }
 
-    private sealed record ReelStatus(string VideoStatus, string PublishStatus, string? Error);
+    private static void ThrowIfFailed(ReelStatus status)
+    {
+        if (status.VideoStatus is "error" or "expired" or "upload_failed" || status.PublishStatus == "error" || status.PublishPhase == "error")
+            throw new InvalidOperationException($"vídeo do Reels no Facebook em {(status.VideoStatus is { Length: > 0 } v ? v : "erro")}" +
+                (status.Error is { Length: > 0 } e ? $": {e}" : ": confira o formato (9:16, 3 a 90 s) e crie de novo"));
+    }
+
+    private sealed record ReelStatus(string VideoStatus, string PublishStatus, string PublishPhase, string? Error);
 
     /// <summary><c>status.video_status</c>, <c>status.publishing_phase.publish_status</c> e a mensagem de erro da fase que falhou.</summary>
     private async Task<ReelStatus> StatusAsync(SocialAccount account, string videoId, CancellationToken ct)
@@ -136,10 +151,11 @@ public sealed class FacebookPagePublisher : ISocialPublisher
         using var doc = await GraphApi.SendAsync(_factory.CreateClient("meta"), HttpMethod.Get,
             $"{_version}/{videoId}?fields=status", account.AccessToken, null, ct);
         if (!doc.RootElement.TryGetProperty("status", out var s) || s.ValueKind != JsonValueKind.Object)
-            return new ReelStatus("", "", null);
+            return new ReelStatus("", "", "", null);
 
         var video = Text(s, "video_status");
         var publish = s.TryGetProperty("publishing_phase", out var pp) && pp.ValueKind == JsonValueKind.Object ? Text(pp, "publish_status") : "";
+        var publishPhase = s.TryGetProperty("publishing_phase", out var ph) && ph.ValueKind == JsonValueKind.Object ? Text(ph, "status") : "";
         string? error = null;
         foreach (var phase in new[] { "uploading_phase", "processing_phase", "publishing_phase" })
             if (s.TryGetProperty(phase, out var p) && p.ValueKind == JsonValueKind.Object &&
@@ -148,7 +164,7 @@ public sealed class FacebookPagePublisher : ISocialPublisher
                 error = m;
                 break;
             }
-        return new ReelStatus(video, publish, error);
+        return new ReelStatus(video, publish, publishPhase, error);
     }
 
     private static string Text(JsonElement e, string name) =>
