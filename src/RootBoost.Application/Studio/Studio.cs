@@ -1,4 +1,5 @@
 using System.Text.Json;
+using RootBoost.Application.Abstractions;
 using RootBoost.Domain;
 
 namespace RootBoost.Application.Studio;
@@ -152,4 +153,64 @@ public static class ScriptContract
     }
 
     private static bool HasDash(string s) => s.Contains('—') || s.Contains('–');
+}
+
+/// <summary>Resultado dos portões do roteiro: erros bloqueiam o salvamento, avisos vão pra revisão.</summary>
+public sealed record ScriptReview(IReadOnlyList<string> Errors, IReadOnlyList<string> Warnings);
+
+/// <summary>
+/// Portões do roteiro (RB-44, etapa 9 do pacote), antes de gastar render:
+/// checklist de copy da marca nas falas e nos textos de tela (o que bloquearia a legenda bloqueia aqui também),
+/// duração estimada pela faixa do formato (~2,4 palavras por segundo) e número escrito em algarismo
+/// (a voz tropeça; o roteiro pede por extenso).
+/// </summary>
+public static class ScriptGates
+{
+    public const double WordsPerSecond = 2.4;
+
+    /// <summary>Faixa de duração por formato, em segundos (pacote do marketing, etapa 1).</summary>
+    public static (int Min, int Max) Range(CreativeKind kind) => kind switch
+    {
+        CreativeKind.Ad => (13, 16),
+        CreativeKind.Prospecting => (60, 120),
+        _ => (25, 40),
+    };
+
+    public static ScriptReview Review(CreativeKind kind, JsonElement script, JsonElement lines,
+        RootBoost.Application.Abstractions.IKnowledgeBase knowledge, BrandProfile? brand)
+    {
+        var errors = new List<string>();
+        var warnings = new List<string>();
+        var falas = lines.EnumerateArray().Select(l => l.GetString() ?? string.Empty).ToList();
+
+        var screenText = ScreenTexts(script);
+        var check = RootBoost.Application.Copy.CopyChecklist.Check(
+            new RootBoost.Application.Copy.CopyPiece(string.Join("\n", falas.Concat(screenText))), knowledge, brand);
+        foreach (var f in check.Findings.Where(f => f.Status == RootBoost.Application.Copy.CheckStatus.Fail))
+            (f.Blocking ? errors : warnings).Add(f.Fix is null ? f.Message : $"{f.Message} ({f.Fix})");
+
+        var words = falas.Sum(f => f.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).Length);
+        var seconds = (int)Math.Round(words / WordsPerSecond);
+        var (min, max) = Range(kind);
+        if (seconds < min || seconds > max)
+            warnings.Add($"duração estimada de {seconds} s fora da faixa do formato ({min} a {max} s)");
+
+        for (var i = 0; i < falas.Count; i++)
+            if (falas[i].Any(char.IsDigit))
+                warnings.Add($"fala {i + 1} tem número em algarismo: escreva por extenso pra voz não tropeçar");
+
+        return new ScriptReview(errors, warnings);
+    }
+
+    private static IEnumerable<string> ScreenTexts(JsonElement script)
+    {
+        foreach (var name in new[] { "abertura", "fecho" })
+            if (script.TryGetProperty(name, out var pair) && pair.ValueKind == JsonValueKind.Array)
+                foreach (var x in pair.EnumerateArray())
+                    if (x.ValueKind == JsonValueKind.String) yield return x.GetString()!;
+        if (script.TryGetProperty("blocos", out var blocos) && blocos.ValueKind == JsonValueKind.Array)
+            foreach (var b in blocos.EnumerateArray())
+                foreach (var prop in new[] { "titulo", "sub" })
+                    if (b.TryGetProperty(prop, out var v) && v.ValueKind == JsonValueKind.String) yield return v.GetString()!;
+    }
 }

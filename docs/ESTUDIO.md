@@ -65,7 +65,35 @@ Liga com a variável `Studio__WorkerKey`. Sem ela, `/worker/*` responde 404.
 | `POST /worker/jobs/{id}/fail` `{ workerId, error, retry }` | 200; com `retry` volta pra fila até 3 tentativas |
 | `POST /worker/media/{brandKey}` (multipart `file`) | 201 com `url` pública do bucket, pra usar na entrega |
 
+## Worker local (RB-43): `tools/studio-worker/`
+
+Orquestra o pipeline que já funciona (`narrado-calmo.mjs`, com `falar-continuo.py` e `alinhar.py`), sem reescrever
+voz nem montagem. A cada rodada:
+
+1. pega o próximo job (`claim`);
+2. grava `roteiro.json` e `falas.json` em `projetos/<nome>/` (se já existia um roteiro diferente, guarda cópia
+   `.antes-<data>`);
+3. roda o pipeline sem shell, mandando a última linha do log como progresso a cada 30 s (renova o prazo);
+4. **portão de palavras sem par** (etapa 5 do pacote): lê a linha "N sem par no Whisper"; acima de 0 devolve pra
+   fila e a próxima tentativa usa a **semente seguinte** (até 3); sem a linha, falha pra um humano olhar;
+5. **portão de velocidade** do `narrado-calmo` ("portao: trecho acima de 1,25x"): falha sem nova tentativa,
+   porque outra semente não resolve (precisa mexer nos trechos do roteiro);
+6. sobe `finais/<nome>-narrado-instagram.mp4` (+ `.jpg` da capa), `<nome>-narrado.mp4` e a grade de revisão,
+   e entrega com os papéis `video-instagram`, `cover-instagram`, `video` e `grade`, mais os avisos do log.
+
+Como ligar no PC:
+
+```
+cd tools/studio-worker
+copy worker.env.example worker.env   # preencher ROOTBOOST_WORKER_KEY (a mesma do Railway)
+node worker.mjs                      # fica rodando; --once faz uma rodada só
+```
+
+No Railway: criar `Studio__WorkerKey` com um valor longo e aleatório (só o Matheus define; nunca no repo nem no chat).
+
+`fake-pipeline.mjs` simula o pipeline (`FAKE_UNMATCHED`, `FAKE_FAIL=portao`) pra testar o worker sem DMaker.
+
 ## Próximos cards
 
-RB-43 worker (porta `falar-continuo.py`, `alinhar.py` e a montagem do `narrado-continuo.mjs`) → RB-44 portões
-(0 palavra sem par, fator de velocidade, duração) → RB-51 tela do estúdio no Console.
+RB-44 portões que faltam (duração por formato, checklist de copy nas falas) → RB-47 regressão com os reels
+aprovados → RB-50 gravação de tela do produto do cliente → RB-45 roteiro pela IA.

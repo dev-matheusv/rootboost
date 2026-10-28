@@ -1,4 +1,4 @@
-# Plano de desenvolvimento (reavaliado em 27/10/2026)
+# Plano de desenvolvimento (reavaliado em 27/10/2026, atualizado em 28/10)
 
 Norte (RB-53): **o RootBoost faz o processo inteiro e o cliente só aprova.** Toda prioridade abaixo
 é medida por quanto trabalho manual ela tira do cliente, sem abrir mão de qualidade e segurança.
@@ -28,6 +28,12 @@ cliente → **RB-47** regressão com os reels aprovados → **RB-51** tela do es
 que propõe. Worker no PC do Matheus agora; **render na nuvem** é o passo seguinte (cliente não pode
 depender de máquina local).
 
+Andamento (28/10): ~~**RB-42**~~ fila de jobs e contratos (feito) · **RB-43** worker parte 1 feita
+(`tools/studio-worker` orquestra o `narrado-calmo.mjs`; falta tirar as constantes do MedlyCare do pipeline)
+· **RB-44** parte feita: no roteiro, checklist de copy, duração por formato e número em algarismo; no worker,
+0 palavra sem par (troca a semente) e velocidade máx. 1,25x · ~~**RB-51**~~ tela do Estúdio (feito).
+Pra ligar: `Studio__WorkerKey` no Railway e `worker.env` no PC (`docs/ESTUDIO.md`).
+
 ### Onda 3: a IA da plataforma, a Root AI (o cérebro, junto com o DMaker)
 **Decidido (27/10):** a IA do RootFlow vira produto próprio, a **Root AI**, usada no RootFlow, no
 MedlyCare e no RootBoost (RB-17, RB-56). Base: o RAG do RootFlow (documentos da empresa, embeddings,
@@ -47,7 +53,7 @@ reversíveis, registro e desfazer). Publicar conteúdo novo sempre com aprovaç�
 aprendizado → **RB-25** insights orgânicos. Google Ads depois.
 
 ### Onda 5: experiência e avisos
-**RB-30/RB-14** PWA e visual no molde do MedlyCare (roxo próprio) → **RB-37** notificação de pendência
+~~**RB-30/RB-14**~~ PWA e visual no molde do MedlyCare (roxo Ametista; Publicações com Fila, Semana e Mês, arrastar, Ctrl+K, Visão geral com "hoje", PWA sem cache: feito 28/10) → **RB-37** notificação de pendência
 (push da PWA primeiro) → **RB-32** aprovação pelo WhatsApp (extensão do Chrome agora, API oficial com
 retorno) → **RB-26** "esqueci a senha" por e-mail.
 
