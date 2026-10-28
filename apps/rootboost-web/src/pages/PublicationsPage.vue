@@ -123,7 +123,7 @@
           <div ref="previewEl" class="preview-col">
             <PublicationPreview :bundle="selectedBundle" :selected-id="selectedId" :brand-key="brand.selected" :busy="approving"
               @select="(id: string) => (selectedId = id)" @approve="approveBundle" @edit="openEdit" @copy="copyCaption"
-              @mark-published="markPublished" />
+              @mark-published="markPublished" @retry="retry" />
           </div>
         </div>
       </div>
@@ -654,6 +654,17 @@ async function approveBundle(b: PostBundle) {
     });
   }
   await load();
+}
+
+/** Post que falhou volta pra fila e sai na próxima rodada (a aprovação continua valendo). */
+async function retry(p: Publication) {
+  try {
+    await api.post(`${base.value}/${p.id}/retry`);
+    $q.notify({ type: 'positive', message: t('pages.publications.retried') });
+    await load();
+  } catch (e) {
+    $q.notify({ type: 'negative', message: apiError(e) });
+  }
 }
 
 async function undo(ids: string[]) {

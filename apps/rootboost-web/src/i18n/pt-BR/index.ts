@@ -283,6 +283,8 @@ export default {
       shortcuts: 'Atalhos: J e K navegam, A aprova, E edita',
       pickPost: 'Escolha um post para ver como ele fica em cada canal.',
       moved: 'Movido para {day}. Mesmo horário.',
+      retry: 'Tentar de novo',
+      retried: 'Volta pra fila e sai na próxima rodada.',
       status: { Draft: 'Rascunho', Approved: 'Aprovado', Publishing: 'Publicando', Published: 'Publicado', Failed: 'Falhou' },
     },
     brandProfile: {
