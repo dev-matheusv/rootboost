@@ -138,3 +138,23 @@ public class DemoBrandTests : IClassFixture<StudioAiWebApplicationFactory>
         Assert.Empty((await c.GetFromJsonAsync<JsonElement>($"/admin/brands/{BrandKeys.Demo}/creative-jobs")).EnumerateArray());
     }
 }
+
+public class RawUploadTests : IClassFixture<StudioAiWebApplicationFactory>
+{
+    private readonly StudioAiWebApplicationFactory _factory;
+    public RawUploadTests(StudioAiWebApplicationFactory factory) => _factory = factory;
+
+    [Fact]
+    public async Task Batch_raw_recording_stays_a_clip_with_its_description()
+    {
+        var w = _factory.CreateClient();
+        w.DefaultRequestHeaders.Add("X-Worker-Key", "chave-gravacao");
+        using var form = new MultipartFormDataContent();
+        form.Add(new ByteArrayContent([0, 0, 0, 24, 0x66, 0x74, 0x79, 0x70]), "file", "arrastar.mp4");
+        form.Add(new StringContent("true"), "raw");
+        form.Add(new StringContent("Arrasta uma consulta para outro horario."), "description");
+        var up = await (await w.PostAsync("/worker/media/medlycare", form)).Content.ReadFromJsonAsync<JsonElement>();
+        Assert.False(up.GetProperty("finished").GetBoolean());
+        Assert.Equal("Arrasta uma consulta para outro horario.", up.GetProperty("description").GetString());
+    }
+}

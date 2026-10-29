@@ -206,3 +206,20 @@ export function applyLibrary(roteiro, clips) {
   }
   return out;
 }
+
+/**
+ * Lista de brutos do chat de marketing → [{ name, description }]. "- nome (10 s): texto" ou "- a e b (15 s cada): texto"
+ * (os dois com a mesma descrição). Para em "NAO SUBIR"; linha com "(CONFERIR" só entra com includeToCheck.
+ */
+export function parseRawList(text, { includeToCheck = false } = {}) {
+  const out = [];
+  for (const line of String(text).split(/\r?\n/)) {
+    if (/^\s*N[AÃ]O SUBIR/i.test(line)) break;
+    const m = line.match(/^-\s+([a-z0-9][a-z0-9 -]*?)\s+\([^)]*\):\s*(.+)$/i);
+    if (!m) continue;
+    if (/\(CONFERIR/i.test(m[2]) && !includeToCheck) continue;
+    const description = m[2].replace(/\s*\(CONFERIR[^)]*\)\s*/gi, " ").trim();
+    for (const name of m[1].split(/\s+e\s+/)) if (/^[a-z0-9-]+$/i.test(name.trim())) out.push({ name: name.trim(), description });
+  }
+  return out;
+}
