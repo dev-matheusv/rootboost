@@ -113,7 +113,7 @@ public sealed class ScriptWriter
         BrandProduct? product = null, IReadOnlyList<MediaAsset>? library = null)
     {
         // Acervo (RB-16): fotos e vídeos com descrição que a IA pode pôr nas cenas. Sem descrição, foto não entra (a IA não vê).
-        var media = (library ?? []).Where(m => m.IsVideo || !string.IsNullOrWhiteSpace(m.Description)).Take(60).ToList();
+        var media = (library ?? []).Where(m => !m.Finished && (m.IsVideo || !string.IsNullOrWhiteSpace(m.Description))).Take(60).ToList();
         var system = SystemPrompt(job.Kind, brand, product, media);
         var user = UserPrompt(job, instructions);
         decimal cost = 0;
@@ -199,7 +199,10 @@ public sealed class ScriptWriter
             ? "- Anúncio: sem abertura; o título do primeiro bloco é o gancho, curto e forte."
             : "- Abertura com a dor do público (título curto e subtítulo), depois blocos de um recurso cada, de 5 a 12 segundos.");
         sb.AppendLine("- Cada bloco tem título curto no topo da tela, subtítulo, a fala daquele trecho e a cena: o que a tela mostra, passo a passo, pra quem for gravar.");
-        sb.AppendLine("- Conversa, não locução. A voz fala como quem fez o produto, não como cliente.");
+        sb.AppendLine("- Conversa, não locução. A voz fala com quem assiste (você), como quem conhece o produto por dentro. Nada de primeira pessoa contando a própria rotina (\"eu fiz\", \"eu uso\").");
+        sb.AppendLine("- Português correto: imperativo de você (teste, veja, comece), nunca \"testa\", \"vê\", \"começa\".");
+        sb.AppendLine("- A fala de cada bloco descreve o que a cena daquele bloco mostra. Bloco com mídia do acervo fala do que está na mídia; não narre o que a tela não mostra.");
+        sb.AppendLine("- Só cite recursos que estão na lista de recursos do produto; nada de recurso suposto.");
         sb.AppendLine("- A fala final é a frase do cartão final; o CTA vai embaixo. Final próprio deste vídeo, nada genérico.");
         sb.AppendLine("- Números por extenso na fala (\"às quatro da tarde\"). Nada de travessão nem meia-risca em nenhum texto.");
         sb.AppendLine("- Só afirme o que está nas provas da marca. Sem escassez falsa, depoimento inventado, número sem fonte, promessa de resultado ou condição de saúde da pessoa.");

@@ -196,6 +196,8 @@ export default {
     empty: 'Nothing here yet. Upload photos of your work, videos and creatives you already have.',
     describeHint: 'What is in it? (AI fills this for photos)',
     tags: 'keywords',
+    finished: 'Finished reel',
+    finishedHint: 'Already finished video (with title and captions): kept for posts, never used as a clip in another video.',
     describe: 'Describe with AI',
     delete: 'Delete',
     deleteConfirm: 'The file leaves the library. A post still using it blocks deleting.',

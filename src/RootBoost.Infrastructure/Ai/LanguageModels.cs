@@ -85,6 +85,7 @@ public sealed class FakeLanguageModel : ILanguageModel
             return Task.FromResult(new LanguageModelResult(JsonSerializer.Serialize(new
             {
                 descricao = "Foto de teste do acervo.", tags = new[] { "teste", "acervo" },
+                foco = new { x = 0.1, y = 0.2, largura = 0.8, altura = 0.5 },
                 // Arquivo com "cpf" no pedido do teste vira dado real numa área (exercita o borrado sem IA de verdade).
                 dadosPessoais = request.User.Contains("cpf", StringComparison.OrdinalIgnoreCase)
                     ? new { tipo = "real", quais = new[] { "CPF" }, areas = new object[] { new { x = 0.1, y = 0.1, largura = 0.5, altura = 0.2 } } }
