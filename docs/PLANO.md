@@ -56,7 +56,7 @@ fora dos trechos, foto recortada no foco 4:5, regras de texto).
 1. ~~Revisão da voz antes de montar~~ (feito 29/10).
 2. ~~Voz em cartões com amostra~~ (feito 29/10: filtros em chips, onda animada, "Gravar minha voz" como cartão); molde de escolhas em
    cartões e chips no sistema todo, sempre com "escrever do meu jeito".
-3. ~~Marca de demonstração em produção~~ (feito 29/10: "Clínica Vitta Demo" `vitta-demo`, selo, nunca publica, restaurar). Falta: usuários (selo, trava de nunca publicar, restaurar), papéis dono/equipe/agência,
+3. ~~Marca de demonstração em produção~~ (feito 29/10: "Clínica Vitta Demo" `vitta-demo`, selo, nunca publica, restaurar). Falta: usuários por papel (dono, equipe, agência) e
    clínica demo no MedlyCare de produção pra gravação na nuvem.
 4. Fila com prioridade (data mais perto, refação na frente), justiça entre marcas, vários workers (render na nuvem).
 5. **Worker editor profissional:** layout título/foto/legenda num bloco só (pipeline), print largo em 2 ou 3 partes,
