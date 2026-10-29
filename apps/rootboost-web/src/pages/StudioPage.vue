@@ -61,6 +61,13 @@
               </div>
             </div>
             <q-chip :color="jobColor(job.status)" text-color="white">{{ $t(`studio.status.${job.status}`) }}</q-chip>
+            <q-btn v-if="job.status === 'Review' || job.status === 'Failed'" flat dense no-caps color="primary" :icon="mdiArrowULeftTop"
+              :label="$t('studio.reject')" :loading="busy" @click="rejectJob">
+              <q-tooltip>{{ $t('studio.rejectHint') }}</q-tooltip>
+            </q-btn>
+            <q-btn v-if="job.status !== 'Rendering'" flat round dense color="negative" :icon="mdiDeleteOutline" @click="deleteJob">
+              <q-tooltip>{{ $t('studio.delete') }}</q-tooltip>
+            </q-btn>
           </div>
 
           <!-- Etapas -->
@@ -300,7 +307,7 @@ import { useI18n } from 'vue-i18n';
 import { useQuasar } from 'quasar';
 import { isAxiosError } from 'axios';
 import {
-  mdiAccountSearchOutline, mdiAccountVoice, mdiBullhornOutline, mdiCalendarPlus, mdiCheckCircleOutline, mdiCodeJson, mdiCreationOutline, mdiDesktopClassic, mdiFormatQuoteOpen, mdiHeartOutline, mdiImageMultipleOutline, mdiMicrophoneOutline, mdiMonitorScreenshot, mdiMovieOpenPlayOutline, mdiPlay, mdiPlus, mdiRefresh,
+  mdiAccountSearchOutline, mdiAccountVoice, mdiArrowULeftTop, mdiBullhornOutline, mdiCalendarPlus, mdiCheckCircleOutline, mdiCodeJson, mdiCreationOutline, mdiDeleteOutline, mdiDesktopClassic, mdiFormatQuoteOpen, mdiHeartOutline, mdiImageMultipleOutline, mdiMicrophoneOutline, mdiMonitorScreenshot, mdiMovieOpenPlayOutline, mdiPlay, mdiPlus, mdiRefresh,
 } from '@quasar/extras/mdi-v7';
 import { api } from 'src/services/api';
 import VoicePicker from 'src/components/VoicePicker.vue';
@@ -573,6 +580,32 @@ async function createPosts() {
   } finally {
     busy.value = false;
   }
+}
+
+// --- Reprovar e apagar ---
+async function rejectJob() {
+  if (!job.value) return;
+  busy.value = true;
+  try {
+    replace((await api.post<CreativeJob>(`${base.value}/${job.value.id}/reject`)).data);
+  } catch (e) {
+    $q.notify({ type: 'negative', message: apiError(e) });
+  } finally {
+    busy.value = false;
+  }
+}
+
+function deleteJob() {
+  const j = job.value;
+  if (!j) return;
+  $q.dialog({ title: t('studio.delete'), message: t('studio.deleteConfirm'), cancel: true }).onOk(() => {
+    void api.delete(`${base.value}/${j.id}`)
+      .then(() => {
+        jobs.value = jobs.value.filter((x) => x.id !== j.id);
+        selectedId.value = jobs.value[0]?.id ?? null;
+      })
+      .catch((e: unknown) => $q.notify({ type: 'negative', message: apiError(e) }));
+  });
 }
 
 // --- Revisão da voz ---

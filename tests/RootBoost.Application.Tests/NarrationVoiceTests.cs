@@ -83,3 +83,27 @@ public class DemoBrandKeyTests
         Assert.False(BrandKeys.IsDemo("demo-real"));
     }
 }
+
+public class RejectJobTests
+{
+    private static readonly DateTimeOffset Now = new(2026, 10, 29, 12, 0, 0, TimeSpan.Zero);
+
+    [Fact]
+    public void Rejected_video_goes_back_to_the_script_keeping_the_chosen_voice()
+    {
+        var job = new CreativeJob("medlycare", CreativeKind.Organic, "Teste", null, Now);
+        job.SetScript("{}", "[]", Now);
+        job.QueueRender(Now);
+        job.Claim("pc", Now, TimeSpan.FromMinutes(15));
+        job.DeliverVoice("pc", [new VoiceTake(1, "a", 0)], Now);
+        job.ChooseVoice(1, Now);
+        job.Claim("pc", Now, TimeSpan.FromMinutes(15));
+        Assert.False(job.CanBeDeleted); // worker gerando
+        job.Deliver("pc", [new CreativeOutput("video", "https://x.test/v.mp4")], null, 1, Now);
+        job.Reject(Now);
+        Assert.Equal(CreativeJobStatus.ScriptReady, job.Status);
+        Assert.Empty(job.Outputs);
+        Assert.True(job.VoiceApproved);
+        Assert.True(job.CanBeDeleted);
+    }
+}

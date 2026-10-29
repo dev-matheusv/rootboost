@@ -234,6 +234,25 @@ public sealed class CreativeJob
         UpdatedAt = now;
     }
 
+    /// <summary>
+    /// Vídeo reprovado na revisão: volta pro roteiro (mesmo texto) pra ajustar e mandar de novo. A voz escolhida fica,
+    /// então a próxima rodada não precisa ouvir de novo se o texto não mudar.
+    /// </summary>
+    public void Reject(DateTimeOffset now)
+    {
+        if (Status is not (CreativeJobStatus.Review or CreativeJobStatus.Failed))
+            throw new InvalidOperationException($"só vídeo em revisão (ou que falhou) volta pro roteiro (status atual: {Status})");
+        Status = CreativeJobStatus.ScriptReady;
+        OutputsJson = "[]";
+        Progress = 0;
+        ProgressNote = null;
+        Error = null;
+        UpdatedAt = now;
+    }
+
+    /// <summary>Apagar só fora do worker: com ele renderizando, o arquivo ainda está sendo feito.</summary>
+    public bool CanBeDeleted => Status != CreativeJobStatus.Rendering;
+
     /// <summary>Os rascunhos de publicação foram criados a partir dos arquivos: o job termina aqui.</summary>
     public void MarkDone(DateTimeOffset now)
     {
