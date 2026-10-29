@@ -73,7 +73,11 @@ Enquanto a gravação automática da tela (RB-50) não existe, cada bloco escrit
 2. **Voz primeiro** (`narrado-calmo --so-voz`): sintetiza e alinha; lê `sem_par` em `voz-continua/<voz>-p32-s<semente>/alinhamento.json`.
    Palavra sem par troca a semente na hora (até 3) sem montar nada.
 3. Só com a voz aprovada: gravação de tela, mídia do acervo e montagem (o narrado-calmo reaproveita a voz do cache).
-Próximo passo (pedido): gerar 2 sementes e parar em "Revisão da voz" no Console antes de montar.
+**Revisão da voz (feito 29/10):** sem voz escolhida, o worker gera 2 versões limpas (até 4 sementes), sobe em
+`POST /worker/jobs/{id}/voice` (áudio privado em `studio/<marca>/<job>/voz-<semente>.m4a`) e o job fica em
+`VoiceReview` sem prender o worker. A pessoa ouve no Estúdio (etapa "Voz"), escolhe (`voice/choose`, a semente vira a
+do job e `VoiceApproved`) ou pede outras duas (`voice/redo`). Com a voz escolhida o worker só confere o cache, grava a
+tela e monta. Mudar o roteiro descarta a escolha. Aviso no celular quando a voz fica pronta pra ouvir.
 
 ## Vídeo a partir do acervo (RB-16)
 

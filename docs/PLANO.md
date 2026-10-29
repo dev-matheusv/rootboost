@@ -53,7 +53,7 @@ voz primeiro~~ (pré-checagem barata, portão de palavra sem par antes de montar
 fora dos trechos, foto recortada no foco 4:5, regras de texto).
 
 **Fila de pedidos do Matheus (29/10, arquivos em "RootBoost - troca/Do Marketing"):**
-1. Revisão da voz antes de montar: 2 sementes, a pessoa escolhe ouvindo no Console, só então grava e monta.
+1. ~~Revisão da voz antes de montar~~ (feito 29/10).
 2. Voz em cartões com amostra (filtros em chips, onda animada, "Gravar minha voz" como cartão); molde de escolhas em
    cartões e chips no sistema todo, sempre com "escrever do meu jeito".
 3. Marca e usuários de demonstração em produção (selo, trava de nunca publicar, restaurar), papéis dono/equipe/agência,
