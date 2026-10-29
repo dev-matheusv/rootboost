@@ -91,6 +91,17 @@ public class PublishingTests
     }
 
     [Fact]
+    public async Task Demo_brand_never_publishes_even_approved_and_due()
+    {
+        var p = new Publication(BrandKeys.Demo, SocialChannel.Instagram, "https://cdn.exemplo.com/a.jpg", "Demo", _time.Now, _time.Now);
+        p.Approve("dono@exemplo.com", _time.Now);
+        _store.Items.Add(p);
+        var result = await Job().RunAsync();
+        Assert.Equal(0, result.Published);
+        Assert.Equal(PublicationStatus.Approved, p.Status);
+    }
+
+    [Fact]
     public void Unapprove_returns_to_draft_only_before_publishing()
     {
         var p = Approved(TimeSpan.FromHours(1));

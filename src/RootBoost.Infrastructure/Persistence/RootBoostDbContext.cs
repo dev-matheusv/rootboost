@@ -80,7 +80,9 @@ public sealed class RootBoostDbContext : DbContext
         var seededAt = new DateTimeOffset(2026, 10, 23, 0, 0, 0, TimeSpan.Zero);
         brand.HasData(
             new Brand(BrandKeys.Store, "Loja RootBoost", "en-US", seededAt),
-            new Brand(BrandKeys.MedlyCare, "MedlyCare", "pt-BR", seededAt));
+            new Brand(BrandKeys.MedlyCare, "MedlyCare", "pt-BR", seededAt),
+            // Demonstração em produção (29/10): testar como o cliente usa, com dado fictício, sem nunca publicar.
+            new Brand(BrandKeys.Demo, "Clínica Vitta Demo", "pt-BR", new DateTimeOffset(2026, 10, 29, 0, 0, 0, TimeSpan.Zero)));
 
         var pub = b.Entity<Publication>();
         pub.HasKey(x => x.Id);
