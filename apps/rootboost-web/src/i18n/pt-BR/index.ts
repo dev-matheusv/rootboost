@@ -202,7 +202,7 @@ export default {
   },
   privacy: {
     status: { None: 'Sem dado pessoal', Fictional: 'Fictício', Uncertain: 'Na dúvida', Real: 'Dado real' },
-    badge: { Fictional: 'Dado fictício', Uncertain: 'Contém dado pessoal (dúvida)', Real: 'Contém dado pessoal' },
+    badge: { Fictional: 'Dado fictício', Uncertain: 'Contém dado sensível (dúvida)', Real: 'Contém dado sensível' },
     needsBlur: 'Tem dado pessoal e ainda não foi borrado. Clique em Ajustar borrado e marque as áreas.',
     adjust: 'Ajustar borrado',
     editorTitle: 'Onde borrar',
@@ -215,6 +215,7 @@ export default {
   acervo: {
     title: 'Acervo',
     subtitle: 'Fotos, vídeos e criativos da marca. A IA usa pra montar os vídeos e posts.',
+    privacyTip: 'Use dados fictícios nos prints e na conta de demonstração (nome inventado, CPF 999.000.001-00). Nome pode aparecer; CPF, telefone, e-mail, endereço e afins a IA borra quando encontra.',
     pickBrand: 'Escolha uma marca no menu para ver o acervo.',
     upload: 'Subir fotos e vídeos',
     empty: 'Nada aqui ainda. Suba fotos do seu trabalho, vídeos e criativos que você já tem.',

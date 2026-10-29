@@ -12,6 +12,11 @@
       </q-file>
     </div>
 
+    <!-- Conscientização (29/10): conteúdo de marketing usa dado fictício; a IA só borra o sensível que achar. -->
+    <q-banner v-if="brand.selected" rounded dense class="tip q-mb-md text-caption">
+      <template #avatar><q-icon :name="mdiShieldAccountOutline" color="primary" /></template>
+      {{ $t('acervo.privacyTip') }}
+    </q-banner>
     <q-banner v-if="!brand.selected" rounded class="bg-blue-1 text-primary">{{ $t('acervo.pickBrand') }}</q-banner>
     <div v-else-if="!loading && !items.length" class="empty card-rounded q-pa-xl text-center text-grey-7">
       <q-icon :name="mdiImageMultipleOutline" size="44px" class="q-mb-sm" />
@@ -184,5 +189,6 @@ watch(() => brand.selected, () => void load());
 .item, .empty { border: 1px solid rgba(0, 0, 0, 0.08); background: #fff; overflow: hidden; height: 100%; }
 .body--dark .item, .body--dark .empty { border-color: rgba(255, 255, 255, 0.08); background: $dark; }
 .empty { border-style: dashed; }
+.tip { background: rgba(122, 76, 224, 0.08); }
 .thumb { width: 100%; aspect-ratio: 4 / 5; object-fit: cover; display: block; background: #05040b; }
 </style>

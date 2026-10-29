@@ -44,11 +44,13 @@ public sealed class MediaDescriber
         var system = $"Você descreve fotos do acervo da marca {brand?.Name} pra escolher qual usar em cada cena de um vídeo curto. " +
             "Diga em português, numa frase objetiva, o que aparece (pessoas, lugar, produto, ação, antes e depois). Nada de travessão. " +
             "Tags: de 3 a 8 palavras-chave curtas.\n" +
-            "Dado pessoal: procure nome de pessoa, CPF, RG, telefone, e-mail, endereço, data de nascimento, número de prontuário, " +
-            "assinatura e rosto de cliente ou paciente. Para cada um, dê a área (x, y, largura, altura em fração de 0 a 1 da imagem, " +
-            "a partir do canto superior esquerdo), com folga pra cobrir o texto todo. Classifique: nenhum (não há), ficticio (só dados " +
-            $"de demonstração conhecidos da marca: {brand?.FictionalMarkers ?? "nenhum informado"}), real (dado de pessoa de verdade) " +
-            "ou incerto (na dúvida). Nome de empresa, logotipo e nome do profissional dono da marca não contam como dado pessoal.\n" +
+            // Só identificador sensível (decisão do Matheus, 29/10): nome e rosto não são borrados, senão a peça perde a informação.
+            "Dado sensível: procure só CPF, RG, CNH, cartão do SUS ou de convênio, número de prontuário, telefone, e-mail, endereço " +
+            "completo e data de nascimento. Nome de pessoa e rosto NÃO contam (não marque). Para cada dado sensível, dê a área " +
+            "(x, y, largura, altura em fração de 0 a 1 da imagem, a partir do canto superior esquerdo), com folga pra cobrir o " +
+            "número todo. Classifique: nenhum (não há), ficticio (só dados de demonstração conhecidos da marca: " +
+            $"{brand?.FictionalMarkers ?? "nenhum informado"}; número em sequência ou repetido também é fictício), real (dado de " +
+            "pessoa de verdade) ou incerto (na dúvida).\n" +
             "Foco: a área principal da foto (o que interessa mostrar, ex.: o documento, o resultado, o rosto do antes e depois), " +
             "em fração de 0 a 1, pra aproximar nela num vídeo vertical. Em print de tela, o foco cobre o bloco com conteúdo e as " +
             "linhas inteiras (nunca corte palavra nem botão no meio) e deixa de fora barra lateral e espaço vazio. " +
