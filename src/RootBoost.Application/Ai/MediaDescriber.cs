@@ -50,7 +50,10 @@ public sealed class MediaDescriber
             $"de demonstração conhecidos da marca: {brand?.FictionalMarkers ?? "nenhum informado"}), real (dado de pessoa de verdade) " +
             "ou incerto (na dúvida). Nome de empresa, logotipo e nome do profissional dono da marca não contam como dado pessoal.\n" +
             "Foco: a área principal da foto (o que interessa mostrar, ex.: o documento, o resultado, o rosto do antes e depois), " +
-            "em fração de 0 a 1, pra aproximar nela num vídeo vertical. Foto inteira útil: x 0, y 0, largura 1, altura 1.";
+            "em fração de 0 a 1, pra aproximar nela num vídeo vertical. Em print de tela, o foco cobre o bloco com conteúdo e as " +
+            "linhas inteiras (nunca corte palavra nem botão no meio) e deixa de fora barra lateral e espaço vazio. " +
+            "Foto inteira útil: x 0, y 0, largura 1, altura 1. " +
+            "Na descrição, diga se é print de tela e se a tela está vazia ou quase vazia (lista sem itens, formulário em branco).";
         var result = await _model.GenerateJsonAsync(new LanguageModelRequest(system, $"Descreva esta foto (arquivo {asset.FileName}).", Schema, "media-describe",
             asset.BrandKey, Convert.ToBase64String(jpeg)), ct);
         await _usage.AddAsync(new AiUsageEntry(Guid.NewGuid(), asset.BrandKey, "media-describe", result.Model, result.InputTokens,
