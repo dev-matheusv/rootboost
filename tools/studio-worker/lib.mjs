@@ -163,18 +163,37 @@ export function focusCrop(width, height, focus, aspect = 0.8) {
   return { x, y, w: cw, h: ch };
 }
 
+/** Área do foco com folga (sem forçar proporção), dentro da imagem. Base do modo "caber" pra print de tela. */
+export function focusBox(width, height, focus, pad = 0.06) {
+  const f = focus && focus.w > 0 && focus.h > 0 ? focus : { x: 0, y: 0, w: 1, h: 1 };
+  const x0 = Math.max(0, (f.x - pad / 2) * width), y0 = Math.max(0, (f.y - pad / 2) * height);
+  const x1 = Math.min(width, (f.x + f.w + pad / 2) * width), y1 = Math.min(height, (f.y + f.h + pad / 2) * height);
+  const even = (n) => Math.max(2, Math.floor(n / 2) * 2);
+  return { x: Math.floor(x0), y: Math.floor(y0), w: Math.min(even(x1 - x0), width - Math.floor(x0)), h: Math.min(even(y1 - y0), height - Math.floor(y0)) };
+}
+
 /**
- * Foto vira trecho 1080x1350 (4:5) recortado no foco, com aproximação lenta (zoompan até 8%). Duração com folga: o
- * pipeline desacelera pra caber na fala, nunca acelera foto.
+ * Foto vira trecho 1080x1350 (4:5) com aproximação lenta (zoompan até 6%). Duas formas:
+ * - foco alto (retrato, rosto, antes e depois): recorta 4:5 no foco e enche a tela;
+ * - foco largo (print de tela, documento): NUNCA corta texto. A área do foco inteira cabe na largura, e o resto do
+ *   quadro é a própria imagem desfocada no fundo (relato de 29/10: o recorte comia "Dias de Afastamento").
+ * Duração com folga: o pipeline desacelera pra caber na fala, nunca acelera foto.
  */
 export function photoClipArgs(input, output, width, height, seconds, focus) {
-  const c = focusCrop(width, height, focus);
   const dur = Math.max(4, Math.ceil(seconds + 2));
   const frames = dur * 30;
-  const zoom = `min(1+0.08*on/${frames},1.08)`;
-  return ["-y", "-loop", "1", "-i", input, "-vf",
-    `crop=${c.w}:${c.h}:${c.x}:${c.y},scale=2160:2700,zoompan=z='${zoom}':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=${frames}:s=1080x1350:fps=30,format=yuv420p`,
-    "-t", String(dur), "-c:v", "libx264", "-preset", "medium", "-crf", "18", "-movflags", "+faststart", output];
+  const zoom = `min(1+0.06*on/${frames},1.06)`;
+  const pan = `zoompan=z='${zoom}':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=${frames}:s=1080x1350:fps=30,format=yuv420p`;
+  const out = ["-t", String(dur), "-c:v", "libx264", "-preset", "medium", "-crf", "18", "-movflags", "+faststart", output];
+  const b = focusBox(width, height, focus);
+  if (b.w / b.h <= 0.8) {
+    const c = focusCrop(width, height, focus);
+    return ["-y", "-loop", "1", "-i", input, "-vf", `crop=${c.w}:${c.h}:${c.x}:${c.y},scale=2160:2700,${pan}`, ...out];
+  }
+  return ["-y", "-loop", "1", "-i", input, "-filter_complex",
+    `[0:v]crop=${b.w}:${b.h}:${b.x}:${b.y},split[a][b];` +
+    `[a]scale=1080:1350:force_original_aspect_ratio=increase,crop=1080:1350,boxblur=24:2,eq=brightness=-0.08[bg];` +
+    `[b]scale=1032:-2[fg];[bg][fg]overlay=(W-w)/2:(H-h)/2,scale=2160:2700,${pan}`, ...out];
 }
 
 /** Troca "acervo-<id>" pelo bruto pronto: [fonte, 0, fim, 1]. Vídeo usa no máximo o que tem; bloco sem clipe fica como estava. */
