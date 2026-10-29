@@ -46,6 +46,35 @@ celular, com autorização falada; Android e iPhone explicados) → **RB-16** ac
 + formulário ao lado + salvar com um toque) aplicado a: perfil e voz da marca, provas, escolha de voz (RB-59), contas de
 anúncio e regra de parada, agenda e horários, publicação nos canais. ~~**RB-60**~~ feito (28/10).
 
+**Andamento 29/10 (no ar):** ~~RB-59~~ voz própria (gravar no celular com autorização falada) e banco de vozes, com
+trava de marca · ~~proteção de dado pessoal~~ (marcar, borrar, travar roteiro/render, MedlyCare só fictício, gravação
+para em dado real) · ~~estado da fila~~ (posição, previsão pela média real, aviso "nenhum computador ligado") · ~~worker
+voz primeiro~~ (pré-checagem barata, portão de palavra sem par antes de montar) · ~~qualidade do acervo~~ (reel pronto
+fora dos trechos, foto recortada no foco 4:5, regras de texto).
+
+**Fila de pedidos do Matheus (29/10, arquivos em "RootBoost - troca/Do Marketing"):**
+1. Revisão da voz antes de montar: 2 sementes, a pessoa escolhe ouvindo no Console, só então grava e monta.
+2. Voz em cartões com amostra (filtros em chips, onda animada, "Gravar minha voz" como cartão); molde de escolhas em
+   cartões e chips no sistema todo, sempre com "escrever do meu jeito".
+3. Marca e usuários de demonstração em produção (selo, trava de nunca publicar, restaurar), papéis dono/equipe/agência,
+   clínica demo no MedlyCare de produção pra gravação na nuvem.
+4. Fila com prioridade (data mais perto, refação na frente), justiça entre marcas, vários workers (render na nuvem).
+5. **Worker editor profissional:** layout título/foto/legenda num bloco só (pipeline), print largo em 2 ou 3 partes,
+   revisão automática pela grade de quadros antes de entregar (ilegível, fala x tela, dado real, legenda dupla, regras
+   da marca) com correção sozinha; a imagem é sempre a real (muda a apresentação, nunca o conteúdo; Higgsfield só em
+   volta da imagem real).
+6. **Fontes do cliente:** site (RB-60), loja por API autorizada, plataforma por gravação com conta demo, Meta já
+   conectada (posts, insights, comentários), Google Perfil da Empresa, CNPJ público, conversa. Só fato com fonte; sem
+   fonte, a IA pergunta.
+7. **Voz que vende:** testar `instruct` do DMaker nas vozes, roteiro escrito pro ouvido (gancho, prova, benefício, CTA,
+   entonação por bloco), medir retenção por abertura e voz.
+8. **Persuasão verdadeira** como portão do roteiro e do anúncio (dor, prova real, redução de risco, ancoragem; urgência
+   só real; nada de dark pattern, depoimento inventado ou promessa de saúde).
+9. **Aprendizado de volta:** reprovação vira regra em `knowledge/`, pronúncia vai pro léxico do DMaker, performance pesa.
+10. Custos (arquivo de 29/10): estimativa por reel R$ 1,40 a 2,00 otimizado; gravação de tela no Opus é 70% do custo
+    (Haiku já configurado nela); trocar estimativa pelo real do `AiUsage`; **Vercel Hobby não serve pra uso comercial**
+    (Pro ao vender); decidir provedor do render na nuvem.
+
 ### Onda 3: a IA da plataforma, a Root AI (o cérebro, junto com o DMaker)
 **Decidido (27/10):** a IA do RootFlow vira produto próprio, a **Root AI**, usada no RootFlow, no
 MedlyCare e no RootBoost (RB-17, RB-56). Base: o RAG do RootFlow (documentos da empresa, embeddings,
