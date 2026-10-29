@@ -64,6 +64,12 @@ public static partial class BrandKeys
     /// <summary>Cliente zero da plataforma de marketing.</summary>
     public const string MedlyCare = "medlycare";
 
+    /// <summary>Marca de demonstração em produção (dados fictícios): testa tudo como o cliente, nunca publica nas redes.</summary>
+    public const string Demo = "vitta-demo";
+
+    /// <summary>Chave terminada em "-demo" é demonstração: a publicação nas redes é travada pra ela.</summary>
+    public static bool IsDemo(string? key) => key?.EndsWith("-demo", StringComparison.Ordinal) == true;
+
     /// <summary>Chave em minúsculas, números e hífen (vai em URL, filtro e config).</summary>
     public static string Validate(string key)
     {

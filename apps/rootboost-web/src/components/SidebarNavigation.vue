@@ -28,6 +28,14 @@
           :label="$t('nav.brand')" @update:model-value="(key: string) => brand.select(key)">
           <template #prepend><q-icon :name="mdiStorefrontOutline" size="xs" /></template>
         </q-select>
+        <!-- Demonstração: selo visível e restaurar. Nada desta marca publica nas redes. -->
+        <div v-if="isDemo" class="demo row items-center no-wrap q-mt-xs q-px-sm q-py-xs">
+          <q-icon :name="mdiTestTube" size="16px" class="q-mr-xs" />
+          <div class="col text-caption">{{ $t('demo.badge') }}</div>
+          <q-btn flat dense round size="sm" :icon="mdiRestore" :loading="resetting" @click="resetDemo">
+            <q-tooltip>{{ $t('demo.reset') }}</q-tooltip>
+          </q-btn>
+        </div>
       </div>
 
       <q-list padding class="col q-px-sm q-gutter-y-xs" style="overflow-y: auto">
@@ -78,9 +86,10 @@ import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 import {
-  mdiAccountCircleOutline, mdiBellAlertOutline, mdiBellOutline, mdiBullhornOutline, mdiCalendarMonthOutline, mdiChartBar, mdiImageMultipleOutline, mdiLogout, mdiMagnify, mdiMenu, mdiMicrophoneOutline, mdiMovieOpenPlayOutline, mdiPackageVariantClosed, mdiStorefrontOutline, mdiViewDashboardOutline, mdiWeatherNight, mdiWeatherSunny,
+  mdiAccountCircleOutline, mdiBellAlertOutline, mdiBellOutline, mdiBullhornOutline, mdiCalendarMonthOutline, mdiChartBar, mdiImageMultipleOutline, mdiLogout, mdiMagnify, mdiMenu, mdiMicrophoneOutline, mdiMovieOpenPlayOutline, mdiPackageVariantClosed, mdiRestore, mdiStorefrontOutline, mdiTestTube, mdiViewDashboardOutline, mdiWeatherNight, mdiWeatherSunny,
 } from '@quasar/extras/mdi-v7';
 import { api } from 'src/services/api';
+import { useQuasar } from 'quasar';
 import type { OpsAlert } from 'src/types/api';
 import { badgeText } from 'src/utils/alerts';
 import { OPEN_ALERTS_EVENT } from 'src/utils/overview';
@@ -157,9 +166,24 @@ async function logout() {
   auth.logout();
   await router.replace({ name: 'login' });
 }
+
+// --- Marca de demonstração (chave "-demo"): selo e restaurar ---
+const $q = useQuasar();
+const isDemo = computed(() => brand.selected.endsWith('-demo'));
+const resetting = ref(false);
+function resetDemo() {
+  $q.dialog({ title: t('demo.reset'), message: t('demo.resetConfirm'), cancel: true }).onOk(() => {
+    resetting.value = true;
+    void api.post(`/admin/brands/${brand.selected}/demo/reset`)
+      .then(() => { $q.notify({ type: 'positive', message: t('demo.resetDone') }); window.location.reload(); })
+      .catch(() => $q.notify({ type: 'negative', message: t('common.error') }))
+      .finally(() => (resetting.value = false));
+  });
+}
 </script>
 
 <style lang="scss" scoped>
 .light-active { background: rgba($primary, 0.1); }
 .kbd { font-size: 11px; padding: 1px 6px; border-radius: 6px; border: 1px solid rgba(128, 128, 128, 0.35); }
+.demo { border-radius: 8px; background: rgba(255, 122, 89, 0.15); color: #ff7a59; }
 </style>

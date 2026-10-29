@@ -117,3 +117,24 @@ public class FinishedVideoTests : IClassFixture<StudioAiWebApplicationFactory>
         Assert.False(raw.GetProperty("finished").GetBoolean());
     }
 }
+
+public class DemoBrandTests : IClassFixture<StudioAiWebApplicationFactory>
+{
+    private readonly StudioAiWebApplicationFactory _factory;
+    public DemoBrandTests(StudioAiWebApplicationFactory factory) => _factory = factory;
+
+    [Fact]
+    public async Task Demo_brand_can_be_reset_and_a_real_brand_never()
+    {
+        var c = _factory.CreateClient();
+        using var form = new MultipartFormDataContent();
+        form.Add(new ByteArrayContent(TestImages.Png(40, 30)), "file", "demo.png");
+        Assert.Equal(HttpStatusCode.Created, (await c.PostAsync($"/admin/brands/{BrandKeys.Demo}/media", form)).StatusCode);
+        await c.PostAsJsonAsync($"/admin/brands/{BrandKeys.Demo}/creative-jobs", new { kind = "organic", theme = "Demo" });
+
+        Assert.Equal(HttpStatusCode.BadRequest, (await c.PostAsync("/admin/brands/medlycare/demo/reset", null)).StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, (await c.PostAsync($"/admin/brands/{BrandKeys.Demo}/demo/reset", null)).StatusCode);
+        Assert.Empty((await c.GetFromJsonAsync<JsonElement>($"/admin/brands/{BrandKeys.Demo}/media")).EnumerateArray());
+        Assert.Empty((await c.GetFromJsonAsync<JsonElement>($"/admin/brands/{BrandKeys.Demo}/creative-jobs")).EnumerateArray());
+    }
+}

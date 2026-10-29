@@ -27,6 +27,13 @@ public interface IStudioStatusStore
     Task<int?> AverageRenderSecondsAsync(CancellationToken ct = default);
 }
 
+/// <summary>Volta a marca de demonstração ao começo: apaga posts, vídeos, acervo e vozes dela (nunca de marca real).</summary>
+public interface IDemoReset
+{
+    /// <returns>Chaves do armazenamento que eram da marca (o chamador apaga os arquivos).</returns>
+    Task<IReadOnlyList<string>> ResetAsync(string brandKey, CancellationToken ct = default);
+}
+
 public interface ICreativeJobStore
 {
     Task AddAsync(CreativeJob job, CancellationToken ct = default);

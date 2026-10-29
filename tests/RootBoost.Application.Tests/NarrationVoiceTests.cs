@@ -72,3 +72,14 @@ public class VoiceReviewDomainTests
         Assert.False(job.VoiceApproved);
     }
 }
+
+public class DemoBrandKeyTests
+{
+    [Fact]
+    public void Only_keys_ending_in_demo_are_demo()
+    {
+        Assert.True(BrandKeys.IsDemo(BrandKeys.Demo));
+        Assert.False(BrandKeys.IsDemo(BrandKeys.MedlyCare));
+        Assert.False(BrandKeys.IsDemo("demo-real"));
+    }
+}

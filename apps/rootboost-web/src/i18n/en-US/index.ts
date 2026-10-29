@@ -150,6 +150,12 @@ export default {
       features: 'Main features or products', listHint: 'Type and press Enter.', differentials: 'Differentials', offer: 'Current offer',
     },
   },
+  demo: {
+    badge: 'Demo: nothing is posted to social networks',
+    reset: 'Reset demo',
+    resetConfirm: 'Deletes posts, videos, library and voices of this demo brand. Real brands are never touched.',
+    resetDone: 'Demo reset.',
+  },
   voicePicker: {
     default: 'Default voice',
     defaultHint: 'The voice the studio uses when you do not pick one.',

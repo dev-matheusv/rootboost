@@ -197,6 +197,15 @@ namespace RootBoost.Infrastructure.Persistence.Migrations
                             Name = "MedlyCare",
                             Privacy = "Blur",
                             VoiceJson = "{}"
+                        },
+                        new
+                        {
+                            Key = "vitta-demo",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 10, 29, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            DefaultLanguage = "pt-BR",
+                            Name = "Clínica Vitta Demo",
+                            Privacy = "Blur",
+                            VoiceJson = "{}"
                         });
                 });
 
