@@ -168,6 +168,18 @@ export default {
     pitch: { 'low pitch': 'Low', 'moderate pitch': 'Medium', 'high pitch': 'High' },
     create: 'Create voice',
   },
+  privacy: {
+    status: { None: 'No personal data', Fictional: 'Fictional', Uncertain: 'Not sure', Real: 'Real data' },
+    badge: { Fictional: 'Fictional data', Uncertain: 'Has personal data (not sure)', Real: 'Has personal data' },
+    needsBlur: 'Has personal data that is not blurred yet. Click Adjust blur and mark the areas.',
+    adjust: 'Adjust blur',
+    editorTitle: 'What to blur',
+    editorHint: 'Drag on the photo to mark what to hide (name, ID, face). The X removes an area. Videos and posts always use the blurred version.',
+    save: 'Save and blur',
+    blockedFictionalOnly: 'Not used: this brand only uses fictional data',
+    blockedUnchecked: 'Not used until the AI checks it (Describe with AI)',
+    blockedNoBlur: 'Not used until blurred',
+  },
   acervo: {
     title: 'Library',
     subtitle: 'Brand photos, videos and creatives. The AI uses them to build videos and posts.',

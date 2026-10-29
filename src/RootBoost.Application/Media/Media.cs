@@ -23,6 +23,9 @@ public interface IImageConverter
 {
     /// <summary>Nulo quando o arquivo não é uma imagem legível.</summary>
     byte[]? ToJpeg(byte[] image, int maxSide);
+
+    /// <summary>Mesma conversão, com as áreas (fração da imagem já de pé) borradas sem volta. Nulo quando não é imagem.</summary>
+    byte[]? Redact(byte[] image, IReadOnlyList<RedactionBox> boxes, int maxSide);
 }
 
 public interface IMediaAssetStore

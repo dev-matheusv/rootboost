@@ -8,9 +8,12 @@ public sealed record ScreenElement(string Id, string Role, string Text);
 
 /// <param name="Image">Foto da tela em JPEG (base64), já reduzida pelo worker.</param>
 public sealed record ScreenState(string BrandKey, string Scene, string Url, IReadOnlyList<ScreenElement> Elements,
-    IReadOnlyList<string> History, int Step, string ImageJpegBase64);
+    IReadOnlyList<string> History, int Step, string ImageJpegBase64, string? FictionalMarkers = null);
 
-/// <summary>Próximo passo da gravação. <see cref="Action"/>: clicar, digitar, rolar, esperar, login, pronto, desistir.</summary>
+/// <summary>
+/// Próximo passo da gravação. <see cref="Action"/>: clicar, digitar, rolar, esperar, login, pronto, desistir, ou
+/// "dado-pessoal" (a tela mostrou dado de pessoa real: a gravação para e não tenta de novo).
+/// </summary>
 public sealed record ScreenAction(string Action, string? Target, string? Text, string Reason);
 
 /// <summary>
@@ -42,6 +45,7 @@ public sealed class ScreenAgent
         user.AppendLine($"Página atual: {state.Url}");
         user.AppendLine($"Passo {state.Step + 1} de no máximo {MaxSteps}.");
         if (state.History.Count > 0) user.AppendLine("Passos já feitos: " + string.Join(" | ", state.History.TakeLast(8)));
+        user.AppendLine($"Dados de demonstração conhecidos da marca (fictícios): {state.FictionalMarkers ?? "nenhum informado"}");
         user.AppendLine("Elementos da página (id: tipo: texto):");
         foreach (var e in state.Elements.Take(150)) user.AppendLine($"{e.Id}: {e.Role}: {Clip(e.Text, 80)}");
 
@@ -56,6 +60,10 @@ public sealed class ScreenAgent
         var target = r.TryGetProperty("alvo", out var t) ? t.GetString() : null;
         var text = r.TryGetProperty("texto", out var x) ? x.GetString() : null;
         var reason = r.TryGetProperty("motivo", out var m) ? m.GetString() ?? string.Empty : string.Empty;
+
+        // Dado de pessoa real na tela: nada desta gravação pode virar vídeo (proteção de dado pessoal, 29/10).
+        if (r.TryGetProperty("dadoPessoalReal", out var pd) && pd.ValueKind == JsonValueKind.True)
+            return new ScreenAction("dado-pessoal", null, null, string.IsNullOrWhiteSpace(reason) ? "a tela mostrou dado pessoal real" : reason);
 
         if (!Actions.Contains(action)) return new ScreenAction("esperar", null, null, "passo desconhecido");
         if (action is "clicar" or "digitar" && !state.Elements.Any(e => e.Id == target))
@@ -73,18 +81,22 @@ public sealed class ScreenAgent
         entra sozinho, nunca digite senha), pronto (a cena já foi mostrada inteira) ou desistir (não dá pra mostrar a cena).
         Nunca exclua, cancele, pague, envie mensagem de verdade, mude configuração ou saia do sistema. Prefira o caminho
         mais curto e visível. O motivo é uma frase curta em português.
+        Dado pessoal: marque dadoPessoalReal = true se a tela mostrar nome, CPF, telefone, e-mail, endereço ou dado de saúde
+        de uma pessoa que não pareça de demonstração (compare com os dados fictícios conhecidos da marca). Na dúvida, true,
+        e o motivo diz o que apareceu.
         """;
 
     public static readonly JsonElement Schema = JsonDocument.Parse("""
         {
           "type": "object",
           "additionalProperties": false,
-          "required": ["acao", "alvo", "texto", "motivo"],
+          "required": ["acao", "alvo", "texto", "motivo", "dadoPessoalReal"],
           "properties": {
             "acao": { "type": "string", "enum": ["clicar", "digitar", "rolar", "esperar", "login", "pronto", "desistir"] },
             "alvo": { "type": "string" },
             "texto": { "type": "string" },
-            "motivo": { "type": "string" }
+            "motivo": { "type": "string" },
+            "dadoPessoalReal": { "type": "boolean" }
           }
         }
         """).RootElement.Clone();

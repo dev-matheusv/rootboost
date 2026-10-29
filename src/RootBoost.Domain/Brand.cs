@@ -16,6 +16,17 @@ public sealed class Brand
     /// <summary>Voz da marca, guardada como JSON (público, tom, trocas de palavra, termos proibidos, objeções).</summary>
     public string VoiceJson { get; private set; } = "{}";
 
+    /// <summary>Dado pessoal em peça (acervo e gravação de tela): borrar o real, ou só fictício.</summary>
+    public PersonalDataPolicy Privacy { get; private set; } = PersonalDataPolicy.Blur;
+    /// <summary>Dados de demonstração conhecidos da marca, pra IA reconhecer como fictícios (ex.: "Clínica Vitta, CPF 999.000.00x").</summary>
+    public string? FictionalMarkers { get; private set; }
+
+    public void SetPrivacy(PersonalDataPolicy policy, string? fictionalMarkers)
+    {
+        Privacy = policy;
+        FictionalMarkers = string.IsNullOrWhiteSpace(fictionalMarkers) ? null : fictionalMarkers.Trim()[..Math.Min(fictionalMarkers.Trim().Length, 500)];
+    }
+
     private Brand() { }
 
     public Brand(string key, string name, string defaultLanguage, DateTimeOffset createdAt)

@@ -71,11 +71,14 @@ app.MapGet("/media/{id:guid}/{name}", async (Guid id, string name, HttpContext c
 {
     var asset = await assets.GetAsync(id, ct);
     if (asset is null) return Results.NotFound();
-    var stored = await storage.GetAsync(asset.StorageKey, ct);
+    // Dado pessoal real ou na dúvida: o link público só entrega a versão borrada (ou nada, até alguém borrar).
+    var key = asset.HidesOriginal ? asset.RedactedStorageKey : asset.StorageKey;
+    if (key is null) return Results.NotFound();
+    var stored = await storage.GetAsync(key, ct);
     if (stored is null) return Results.NotFound();
     ctx.Response.ContentLength = stored.Length;
-    ctx.Response.Headers.CacheControl = "public, max-age=86400";
-    return Results.Stream(stored.Content, asset.ContentType);
+    ctx.Response.Headers.CacheControl = asset.HidesOriginal ? "no-store" : "public, max-age=86400";
+    return Results.Stream(stored.Content, asset.HidesOriginal ? "image/jpeg" : asset.ContentType);
 });
 
 // --- Landing view beacon (public): conta 1 visita por produto pra medir conversão. Sem PII. ---
@@ -368,7 +371,9 @@ static string MediaPublicUrl(RootBoost.Application.Media.MediaOptions options, H
 static object MediaDto(RootBoost.Application.Media.MediaOptions options, HttpRequest req, MediaAsset a) => new
 {
     id = a.Id, brandKey = a.BrandKey, fileName = a.FileName, contentType = a.ContentType, sizeBytes = a.SizeBytes,
-    isVideo = a.IsVideo, createdAt = a.CreatedAt, url = MediaPublicUrl(options, req, a), description = a.Description, tags = a.Tags
+    isVideo = a.IsVideo, createdAt = a.CreatedAt, url = MediaPublicUrl(options, req, a), description = a.Description, tags = a.Tags,
+    personalData = a.PersonalData.ToString(), personalDataKinds = a.PersonalDataKinds, redactionBoxes = a.RedactionBoxes,
+    redacted = a.RedactedStorageKey is not null, hidesOriginal = a.HidesOriginal,
 };
 
 brandProfile.MapPost("/media", async (string key, IFormFile file, HttpRequest req, IBrandStore brands,
@@ -395,7 +400,7 @@ brandProfile.MapPost("/media/{id:guid}/describe", async (string key, Guid id, Ht
     var brand = (await brands.ListAsync(ct)).FirstOrDefault(b => b.Key == asset.BrandKey);
     try
     {
-        if (!await describer.DescribeAsync(asset, brand?.Name, ct))
+        if (!await describer.DescribeAsync(asset, brand, ct))
             return Results.BadRequest(new { error = "não consegui abrir essa foto (use JPG, PNG ou WebP de até 40 MB)" });
     }
     catch (RootBoost.Application.Ai.AiDisabledException ex) { return Results.Conflict(new { error = ex.Message }); }
@@ -403,6 +408,42 @@ brandProfile.MapPost("/media/{id:guid}/describe", async (string key, Guid id, Ht
     await assets.SaveAsync(asset, ct);
     return Results.Ok(MediaDto(options, req, asset));
 });
+
+// Original de item com dado pessoal: só com login (o link público entrega a versão borrada).
+brandProfile.MapGet("/media/{id:guid}/original", async (string key, Guid id, RootBoost.Application.Media.IMediaAssetStore assets,
+    RootBoost.Application.Media.IMediaStorage storage, CancellationToken ct) =>
+{
+    var asset = await assets.GetAsync(id, ct);
+    if (asset is null || asset.BrandKey != key.ToLowerInvariant()) return Results.NotFound();
+    var stored = await storage.GetAsync(asset.StorageKey, ct);
+    return stored is null ? Results.NotFound() : Results.Stream(stored.Content, asset.ContentType);
+});
+
+// A pessoa ajusta onde borrar (ou diz o que é: fictício, real, sem dado); a versão borrada é refeita na hora.
+brandProfile.MapPut("/media/{id:guid}/redaction", async (string key, Guid id, RedactionInput input, HttpRequest req,
+    RootBoost.Application.Media.IMediaAssetStore assets, RootBoost.Application.Ai.MediaDescriber describer,
+    RootBoost.Application.Media.MediaOptions options, CancellationToken ct) =>
+{
+    var asset = await assets.GetAsync(id, ct);
+    if (asset is null || asset.BrandKey != key.ToLowerInvariant()) return Results.NotFound();
+    if (asset.IsVideo) return Results.BadRequest(new { error = "borrado automático só em foto" });
+    var status = asset.PersonalData;
+    if (input.Status is { } raw && (!Enum.TryParse(raw, true, out status) || status == PersonalDataStatus.Unchecked))
+        return Results.BadRequest(new { error = "use None, Fictional, Real ou Uncertain" });
+    var boxes = (input.Boxes ?? []).Select(b => new RedactionBox(b.X, b.Y, b.W, b.H)).ToList();
+    // Marcou área num item "sem dado": passa a ser dúvida (a pessoa viu algo que a IA não viu).
+    if (input.Status is null && boxes.Count > 0 && status is PersonalDataStatus.None or PersonalDataStatus.Unchecked) status = PersonalDataStatus.Uncertain;
+    try { asset.MarkPersonalData(status, asset.PersonalDataKinds, boxes); }
+    catch (ArgumentException ex) { return Results.BadRequest(new { error = ex.Message }); }
+    await describer.RedactAsync(asset, null, ct);
+    await assets.SaveAsync(asset, ct);
+    return Results.Ok(MediaDto(options, req, asset));
+});
+
+brandProfile.MapGet("/privacy", async (string key, IBrandStore brands, CancellationToken ct) =>
+    (await brands.ListAsync(ct)).FirstOrDefault(b => b.Key == key.ToLowerInvariant()) is { } b
+        ? Results.Ok(new { policy = b.Privacy.ToString(), fictionalMarkers = b.FictionalMarkers })
+        : Results.NotFound());
 
 brandProfile.MapPut("/media/{id:guid}/description", async (string key, Guid id, MediaDescriptionInput input, HttpRequest req,
     RootBoost.Application.Media.IMediaAssetStore assets, RootBoost.Application.Media.MediaOptions options, CancellationToken ct) =>
@@ -574,8 +615,11 @@ brandProfile.MapPost("/creative-jobs/{id:guid}/write-script", async (string key,
     if (job is null || job.BrandKey != key.ToLowerInvariant()) return Results.NotFound();
     try
     {
-        var (ok, failed) = await writer.WriteAsync(job, await profiles.GetAsync(job.BrandKey, ct), input?.Instructions, ct,
-            await products.GetAsync(job.BrandKey, ct), await assets.ListByBrandAsync(job.BrandKey, 100, ct));
+        var profile = await profiles.GetAsync(job.BrandKey, ct);
+        var policy = profile?.Brand.Privacy ?? PersonalDataPolicy.Blur;
+        // Mídia com dado pessoal sem borrar (ou real, em marca só fictício) nem aparece pra IA.
+        var library = (await assets.ListByBrandAsync(job.BrandKey, 100, ct)).Where(m => m.BlockedReason(policy) is null).ToList();
+        var (ok, failed) = await writer.WriteAsync(job, profile, input?.Instructions, ct, await products.GetAsync(job.BrandKey, ct), library);
         if (ok is null) return Results.UnprocessableEntity(new { error = "a IA não acertou o roteiro em duas tentativas", errors = failed!.Errors });
         job.SetScript(ok.Script.GetRawText(), ok.Lines.GetRawText(), time.GetUtcNow(),
             ok.Warnings.Select(w => CreativeJob.ScriptWarningPrefix + w).ToList());
@@ -642,10 +686,16 @@ brandProfile.MapGet("/ai/status", (RootBoost.Application.Ai.AiOptions ai) =>
         (ai.Mode == RootBoost.Application.Ai.AiMode.Claude && !string.IsNullOrWhiteSpace(ai.ApiKey)) }));
 
 brandProfile.MapPost("/creative-jobs/{id:guid}/render", async (string key, Guid id,
-    RootBoost.Application.Studio.ICreativeJobStore store, TimeProvider time, CancellationToken ct) =>
+    RootBoost.Application.Studio.ICreativeJobStore store, RootBoost.Application.Media.IMediaAssetStore assets, IBrandStore brands,
+    TimeProvider time, CancellationToken ct) =>
 {
     var job = await store.GetAsync(id, ct);
     if (job is null || job.BrandKey != key.ToLowerInvariant()) return Results.NotFound();
+    // Trava de dado pessoal: mídia do acervo que não pode entrar impede o render, com o motivo.
+    var policy = (await brands.ListAsync(ct)).FirstOrDefault(b => b.Key == job.BrandKey)?.Privacy ?? PersonalDataPolicy.Blur;
+    foreach (System.Text.RegularExpressions.Match m in System.Text.RegularExpressions.Regex.Matches(job.Script ?? "", "acervo-([0-9a-f]{32})"))
+        if (Guid.TryParseExact(m.Groups[1].Value, "N", out var mid) && await assets.GetAsync(mid, ct) is { } a && a.BlockedReason(policy) is { } why)
+            return Results.BadRequest(new { error = $"a mídia {a.FileName} {why}; borre no Acervo ou troque a cena" });
     try { job.QueueRender(time.GetUtcNow()); }
     catch (InvalidOperationException ex) { return Results.BadRequest(new { error = ex.Message }); }
     await store.SaveAsync(job, ct);
@@ -756,18 +806,19 @@ var worker = app.MapGroup("/worker").AddEndpointFilter(async (ctx, next) =>
     return ok ? await next(ctx) : Results.Unauthorized();
 });
 
-worker.MapPost("/jobs/claim", async (WorkerClaimInput input, HttpRequest req, RootBoost.Application.Studio.ICreativeJobStore store,
+worker.MapPost("/jobs/claim", async (WorkerClaimInput input, HttpRequest req, RootBoost.Application.Studio.ICreativeJobStore store, IBrandStore brands,
     RootBoost.Application.Studio.StudioOptions options, RootBoost.Application.Media.IMediaAssetStore assets,
     RootBoost.Application.Media.MediaOptions mediaOptions, RootBoost.Application.Studio.INarrationVoiceStore voices, TimeProvider time, CancellationToken ct) =>
 {
     if (string.IsNullOrWhiteSpace(input.WorkerId)) return Results.BadRequest(new { error = "workerId obrigatório" });
     var job = await store.ClaimNextAsync(input.WorkerId, time.GetUtcNow(), options.Lease, ct);
     if (job is null) return Results.NoContent();
-    // Mídias do acervo citadas no roteiro ("acervo-<id>"): o worker baixa pelo link público.
+    // Mídias do acervo citadas no roteiro ("acervo-<id>"): o worker baixa pelo link público (que entrega a versão borrada).
+    var privacy = (await brands.ListAsync(ct)).FirstOrDefault(b => b.Key == job.BrandKey)?.Privacy ?? PersonalDataPolicy.Blur;
     var media = new List<WorkerMediaDto>();
     foreach (System.Text.RegularExpressions.Match m in System.Text.RegularExpressions.Regex.Matches(job.Script ?? "", "acervo-([0-9a-f]{32})"))
         if (Guid.TryParseExact(m.Groups[1].Value, "N", out var mid) && media.All(x => x.Id != m.Groups[1].Value)
-            && await assets.GetAsync(mid, ct) is { } a && a.BrandKey == job.BrandKey)
+            && await assets.GetAsync(mid, ct) is { } a && a.BrandKey == job.BrandKey && a.BlockedReason(privacy) is null)
             media.Add(new WorkerMediaDto(m.Groups[1].Value, MediaPublicUrl(mediaOptions, req, a), a.IsVideo));
     // Voz da plataforma com semente escolhida pela pessoa: vira a semente padrão do job (o worker soma as tentativas).
     var seed = job.Seed;
@@ -885,7 +936,7 @@ worker.MapGet("/voices/keys", async (RootBoost.Application.Studio.INarrationVoic
     return Results.Ok(keys);
 });
 
-worker.MapPost("/ai/next-action", async (ScreenStateInput input, RootBoost.Application.Ai.ScreenAgent agent, CancellationToken ct) =>
+worker.MapPost("/ai/next-action", async (ScreenStateInput input, RootBoost.Application.Ai.ScreenAgent agent, IBrandStore brands, CancellationToken ct) =>
 {
     if (string.IsNullOrWhiteSpace(input.Scene) || string.IsNullOrWhiteSpace(input.Image) || input.Image.Length > 2_000_000)
         return Results.BadRequest(new { error = "cena e foto (JPEG base64, até ~1,5 MB) são obrigatórias" });
@@ -893,7 +944,8 @@ worker.MapPost("/ai/next-action", async (ScreenStateInput input, RootBoost.Appli
     {
         var state = new RootBoost.Application.Ai.ScreenState(input.BrandKey ?? string.Empty, input.Scene, input.Url ?? string.Empty,
             (input.Elements ?? []).Select(e => new RootBoost.Application.Ai.ScreenElement(e.Id ?? string.Empty, e.Role ?? string.Empty, e.Text ?? string.Empty)).ToList(),
-            input.History ?? [], Math.Max(0, input.Step), input.Image);
+            input.History ?? [], Math.Max(0, input.Step), input.Image,
+            (await brands.ListAsync(ct)).FirstOrDefault(b => b.Key == input.BrandKey?.ToLowerInvariant())?.FictionalMarkers);
         return Results.Ok(await agent.NextAsync(state, ct));
     }
     catch (RootBoost.Application.Ai.AiDisabledException ex) { return Results.Conflict(new { error = ex.Message }); }
@@ -1187,6 +1239,8 @@ record PushDeviceInput(string Endpoint, PushKeys Keys);
 record PushRemoveInput(string Endpoint);
 record WriteScriptInput(string? Instructions);
 record MediaDescriptionInput(string? Description, string? Tags);
+record RedactionBoxInput(double X, double Y, double W, double H);
+record RedactionInput(string? Status, List<RedactionBoxInput>? Boxes);
 record VoiceDesignInput(string? Name, string? Gender, string? Age, string? Pitch);
 record VoiceChooseInput(int Seed);
 
