@@ -54,6 +54,7 @@ export default {
     theme: 'Tema',
     themeHint: 'Recurso, especialidade ou dor. Ex.: psicologia, agenda e evolução.',
     voice: 'Voz',
+    voiceCode: 'Código da voz (avançado)',
     voiceHint: 'Opcional. Vazio usa a voz padrão da marca.',
     queue: {
       noWorker: 'Nenhum computador ligado para gerar o vídeo agora.',
@@ -148,6 +149,13 @@ export default {
       appUrl: 'Endereço de entrar no sistema', appUrlHint: 'Onde a plataforma vai gravar a tela mostrando o uso.',
       features: 'Principais recursos ou produtos', listHint: 'Digite e aperte Enter.', differentials: 'Diferenciais', offer: 'Oferta atual',
     },
+  },
+  voicePicker: {
+    default: 'Voz padrão',
+    defaultHint: 'A voz que o estúdio usa quando você não escolhe.',
+    play: 'Ouvir amostra',
+    brandVoice: 'Voz da marca',
+    bank: 'Banco',
   },
   voices: {
     title: 'Vozes',

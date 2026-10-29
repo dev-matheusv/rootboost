@@ -268,16 +268,16 @@
             </div>
           </div>
           <!-- 3. Quem narra: as vozes prontas da marca (página Vozes). Vazio usa a voz padrão do estúdio. -->
-          <div v-if="voiceOptions.length > 1">
+          <div v-if="brand.selected">
             <div class="text-subtitle2 q-mb-xs">{{ $t('studio.newDialog.voice') }}</div>
-            <q-select v-model="form.voiceKey" outlined dense emit-value map-options :options="voiceOptions" />
+            <VoicePicker v-model="form.voiceKey" :voices="readyVoices" :brand-key="brand.selected" />
           </div>
           <!-- Ajustes finos ficam escondidos: quem não sabe não precisa ver. -->
           <q-expansion-item dense dense-toggle :label="$t('studio.newDialog.more')" header-class="text-grey-7 q-px-none">
             <div class="column q-gutter-y-sm q-pt-sm">
               <q-input v-if="aiEnabled" v-model="form.instructions" outlined dense autogrow :label="$t('studio.ai.instructions')"
                 :hint="$t('studio.ai.instructionsHint')" />
-              <q-input v-if="voiceOptions.length <= 1" v-model="form.voiceKey" outlined dense :label="$t('studio.voice')" :hint="$t('studio.voiceHint')" maxlength="64" />
+              <q-input v-model="form.voiceKey" outlined dense :label="$t('studio.voiceCode')" :hint="$t('studio.voiceHint')" maxlength="64" />
             </div>
           </q-expansion-item>
         </q-card-section>
@@ -300,6 +300,8 @@ import {
   mdiAccountSearchOutline, mdiAccountVoice, mdiBullhornOutline, mdiCalendarPlus, mdiCheckCircleOutline, mdiCodeJson, mdiCreationOutline, mdiDesktopClassic, mdiFormatQuoteOpen, mdiHeartOutline, mdiImageMultipleOutline, mdiMicrophoneOutline, mdiMonitorScreenshot, mdiMovieOpenPlayOutline, mdiPlay, mdiPlus, mdiRefresh,
 } from '@quasar/extras/mdi-v7';
 import { api } from 'src/services/api';
+import VoicePicker from 'src/components/VoicePicker.vue';
+import type { PickableVoice } from 'src/types/api';
 import type { CreativeJob, CreativeKind, Publication } from 'src/types/api';
 import { useBrandStore } from 'src/stores/brandStore';
 import {
@@ -336,14 +338,13 @@ const instructions = ref('');
 const hooks = ref<string[]>([]);
 
 // Vozes prontas da marca pro "Quem narra?" do Novo vídeo.
-const voiceOptions = ref<{ label: string; value: string }[]>([]);
+const readyVoices = ref<PickableVoice[]>([]);
 async function loadVoices() {
   try {
-    const { data } = await api.get<{ key: string; name: string; status: string }[]>(`/admin/brands/${brand.selected}/voices`);
-    const ready = data.filter((v) => v.status === 'Ready').map((v) => ({ label: v.name, value: v.key }));
-    voiceOptions.value = [{ label: t('studio.newDialog.defaultVoice'), value: '' }, ...ready];
+    const { data } = await api.get<(PickableVoice & { status: string })[]>(`/admin/brands/${brand.selected}/voices`);
+    readyVoices.value = data.filter((v) => v.status === 'Ready');
   } catch {
-    voiceOptions.value = [];
+    readyVoices.value = [];
   }
 }
 
