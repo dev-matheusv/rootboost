@@ -168,6 +168,15 @@ export async function recordScene({ brandKey, scene, account, outDir, name, ask,
       const next = await ask({ brandKey, scene, url, elements: elements.map(({ id, role, text }) => ({ id, role, text })), history, step, image: shot.data });
       log(`  passo ${step + 1}: ${next.action} ${next.target ?? ""} (${next.reason})`);
       if (next.action === "pronto" || next.action === "desistir") { outcome = next.action; break; }
+      if (next.action === "dado-pessoal") {
+        // Dado de pessoa real na tela: apaga os quadros já gravados e para sem tentar de novo.
+        recording = false;
+        await cdp.send("Page.stopScreencast");
+        rmSync(join(outDir, "quadros"), { recursive: true, force: true });
+        const err = new Error(`a tela mostrou dado pessoal real (${next.reason}); grave com a conta de demonstração`);
+        err.personalData = true;
+        throw err;
+      }
       const el = elements.find((e) => e.id === next.target);
       if (next.action === "clicar" && el) {
         if (isDestructive(el.text)) { history.push(`recusado: ${el.text} (botão proibido)`); continue; }

@@ -57,6 +57,8 @@ public sealed class RootBoostDbContext : DbContext
         brand.Property(x => x.DefaultLanguage).HasMaxLength(8).IsRequired();
         brand.Property(x => x.VoiceJson).IsRequired().HasDefaultValue("{}");
         brand.Property(x => x.VoiceJson).HasColumnType("jsonb");
+        brand.Property(x => x.Privacy).HasConversion<string>().HasMaxLength(16).HasDefaultValue(PersonalDataPolicy.Blur);
+        brand.Property(x => x.FictionalMarkers).HasMaxLength(500);
         brand.Ignore(x => x.Voice);
 
         var proof = b.Entity<ProofItem>();
@@ -231,6 +233,11 @@ public sealed class RootBoostDbContext : DbContext
         media.Property(x => x.StorageKey).HasMaxLength(300).IsRequired();
         media.Property(x => x.Description).HasMaxLength(500);
         media.Property(x => x.Tags).HasMaxLength(300);
+        media.Property(x => x.PersonalData).HasConversion<string>().HasMaxLength(16).HasDefaultValue(PersonalDataStatus.Unchecked);
+        media.Property(x => x.PersonalDataKinds).HasMaxLength(200);
+        media.Property(x => x.RedactionBoxesJson).HasColumnType("jsonb").IsRequired().HasDefaultValue("[]");
+        media.Property(x => x.RedactedStorageKey).HasMaxLength(300);
+        media.Ignore(x => x.RedactionBoxes);
         media.Property(x => x.CreatedAt).HasConversion(Utc);
         media.HasIndex(x => new { x.BrandKey, x.CreatedAt });
 

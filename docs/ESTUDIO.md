@@ -67,6 +67,22 @@ largura); foto vira trecho com aproximação lenta (zoompan, 10%) com 2 s de fol
 caber na fala. Foto sem descrição não entra na lista (a IA não enxerga a imagem no roteiro, só a descrição).
 Custo: zero de IA além do roteiro; a descrição da foto é feita uma vez no upload (`media-describe`, ~US$ 0,01). Qualquer foto (JPG, PNG, WebP, até 40 MB, de pé conforme o EXIF) é convertida no servidor pra JPEG de até 1568 px antes de ir pra IA (SkiaSharp, MIT): o limite de 5 MB da API vale pra imagem em base64, e foto de celular passava disso. Erro do provedor vira 502 com mensagem clara e o motivo vai pro log.
 
+## Dado pessoal no acervo e na gravação (29/10)
+
+- **Descrever com a IA** também marca dado pessoal (nome, CPF, RG, telefone, e-mail, endereço, nascimento, prontuário,
+  assinatura, rosto de cliente): `nenhum`, `ficticio` (bate com os dados de demonstração da marca), `real` ou `incerto`,
+  com as áreas em fração da imagem. O item ganha o selo "Contém dado pessoal".
+- **Versão borrada automática** (mosaico grosso + desfoque, sem volta) em `<chave>-borrada.jpg`. A pessoa ajusta em
+  "Ajustar borrado" (arrasta na foto, vê o original com login). Real ou dúvida: o **link público só entrega a borrada**
+  (sem ela, 404) e o original só sai com login (`/media/{id}/original`).
+- **Trava**: a IA do roteiro não vê mídia bloqueada; o render recusa roteiro com ela e diz o motivo; o worker só recebe
+  mídia liberada. Foto ainda não checada (descrita antes disto) fica fora até passar pela IA.
+- **Regra por marca** (`Brands.Privacy`): `Blur` (padrão: real entra só borrado) ou `FictionalOnly` (real não entra
+  nem borrado). MedlyCare = `FictionalOnly`, com os dados fictícios conhecidos em `Brands.FictionalMarkers`.
+- **Gravação de tela**: a IA de cada passo também diz se a tela mostra dado de pessoa real; se sim, a gravação para,
+  os quadros são apagados e o job falha sem tentar de novo ("grave com a conta de demonstração").
+- Limite: vídeo do acervo não é checado (a IA não assiste vídeo); vale a descrição da pessoa.
+
 ## Vozes da marca (RB-59)
 
 Página **Vozes** no Console: a pessoa grava a própria voz (no celular ou no computador, pelo navegador) ou cria uma voz do

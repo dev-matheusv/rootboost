@@ -248,6 +248,15 @@ public class ScreenAgentTests : IClassFixture<StudioAiWebApplicationFactory>
         new("medlycare", "Abrir a agenda e criar sessão semanal", "https://app.exemplo.com", elements, [], step, "AAAA");
 
     [Fact]
+    public async Task Real_personal_data_on_screen_stops_the_recording()
+    {
+        var agent = new ScreenAgent(new FakeLanguageModel(), new Usage(), TimeProvider.System);
+        var step = await agent.NextAsync(State(0, new ScreenElement("e1", "linha", "Carla Souza CPF 123.456.789-00")));
+        Assert.Equal("dado-pessoal", step.Action);
+        Assert.Contains("CPF", step.Reason);
+    }
+
+    [Fact]
     public async Task Next_step_points_to_a_real_element_and_is_logged()
     {
         var usage = new Usage();
@@ -402,5 +411,21 @@ public class ImageConverterTests
         Assert.Equal(SkiaSharp.SKEncodedImageFormat.Jpeg, codec.EncodedFormat);
         Assert.Equal((1568, 523), (codec.Info.Width, codec.Info.Height));
         Assert.Null(_converter.ToJpeg([0xFF, 0xD8, 0xFF, 0xE0, 1, 2, 3], 1568));
+    }
+
+    [Fact]
+    public void Blur_wipes_the_marked_area_and_leaves_the_rest()
+    {
+        // Listras pretas e brancas de 2 px (parece texto miúdo): borradas viram cinza liso; fora da área, continuam.
+        using var bmp = new SkiaSharp.SKBitmap(400, 200);
+        for (var x = 0; x < 400; x++)
+            for (var y = 0; y < 200; y++)
+                bmp.SetPixel(x, y, (x / 2) % 2 == 0 ? SkiaSharp.SKColors.Black : SkiaSharp.SKColors.White);
+        using var png = SkiaSharp.SKImage.FromBitmap(bmp).Encode(SkiaSharp.SKEncodedImageFormat.Png, 100);
+        var jpeg = _converter.Redact(png.ToArray(), [new RootBoost.Domain.RedactionBox(0, 0, 0.5, 1)], 2048);
+        using var outBmp = SkiaSharp.SKBitmap.Decode(jpeg);
+        static int Contrast(SkiaSharp.SKBitmap b, int x0) => Enumerable.Range(x0, 20).Max(x => Math.Abs(b.GetPixel(x, 100).Red - b.GetPixel(x + 1, 100).Red));
+        Assert.True(Contrast(outBmp, 60) < 40, "área borrada ainda tem contraste de texto");
+        Assert.True(Contrast(outBmp, 300) > 150, "fora da área a imagem tem que continuar igual");
     }
 }
