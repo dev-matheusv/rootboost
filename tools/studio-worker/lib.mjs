@@ -192,7 +192,7 @@ export function photoClipArgs(input, output, width, height, seconds, focus) {
   }
   return ["-y", "-loop", "1", "-i", input, "-filter_complex",
     `[0:v]crop=${b.w}:${b.h}:${b.x}:${b.y},split[a][b];` +
-    `[a]scale=1080:1350:force_original_aspect_ratio=increase,crop=1080:1350,boxblur=24:2,eq=brightness=-0.08[bg];` +
+    `[a]scale=1080:1350:force_original_aspect_ratio=increase,crop=1080:1350,scale=108:135,boxblur=10:3,scale=1080:1350,eq=brightness=0.04:saturation=0.8[bg];` +
     `[b]scale=1032:-2[fg];[bg][fg]overlay=(W-w)/2:(H-h)/2,scale=2160:2700,${pan}`, ...out];
 }
 

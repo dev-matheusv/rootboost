@@ -6,7 +6,7 @@
 //       node worker.mjs --once     (uma rodada e sai)
 // Config por variável de ambiente ou num worker.env ao lado (ver worker.env.example). A chave nunca vai pro repo.
 import { execFileSync, spawn } from "node:child_process";
-import { copyFileSync, existsSync, mkdirSync, openAsBlob, readFileSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, openAsBlob, readFileSync, statSync, writeFileSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -49,7 +49,18 @@ if (!cfg.api || !cfg.key) {
 }
 
 const once = process.argv.includes("--once");
+// Código do worker mudou no disco (git pull): reinicia sozinho entre um job e outro. Antes, um worker ligado de manhã
+// seguia com o código velho o dia todo (29/10: fotos saíram com o recorte antigo depois da correção).
+const CODE = ["worker.mjs", "lib.mjs", "recorder.mjs"].map((f) => join(here, f));
+const codeStamp = () => CODE.map((f) => (existsSync(f) ? statSync(f).mtimeMs : 0)).join("|");
+const startedWith = codeStamp();
 do {
+  if (!once && codeStamp() !== startedWith) {
+    console.log(`[${now()}] código do worker atualizado: reiniciando`);
+    // O novo processo assume no mesmo terminal; este só espera ele terminar (Ctrl+C encerra os dois).
+    const child = spawn(process.execPath, process.argv.slice(1), { stdio: "inherit" });
+    await new Promise((resolve) => child.on("exit", (code) => resolve(process.exit(code ?? 0))));
+  }
   try {
     // Sinal de vida a cada rodada: o Console avisa "nenhum computador ligado" quando ele some.
     await call("POST", "/worker/heartbeat", { workerId: cfg.workerId, note: "livre" }).catch(() => {});
