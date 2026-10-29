@@ -81,9 +81,9 @@ public sealed class ScreenAgent
         entra sozinho, nunca digite senha), pronto (a cena já foi mostrada inteira) ou desistir (não dá pra mostrar a cena).
         Nunca exclua, cancele, pague, envie mensagem de verdade, mude configuração ou saia do sistema. Prefira o caminho
         mais curto e visível. O motivo é uma frase curta em português.
-        Dado pessoal: marque dadoPessoalReal = true se a tela mostrar nome, CPF, telefone, e-mail, endereço ou dado de saúde
-        de uma pessoa que não pareça de demonstração (compare com os dados fictícios conhecidos da marca). Na dúvida, true,
-        e o motivo diz o que apareceu.
+        Dado sensível: marque dadoPessoalReal = true só se a tela mostrar CPF, RG, cartão do SUS ou convênio, telefone,
+        e-mail, endereço completo ou data de nascimento que não pareçam de demonstração (compare com os dados fictícios
+        conhecidos da marca). Nome de pessoa sozinho não conta. Na dúvida, true, e o motivo diz o que apareceu.
         """;
 
     public static readonly JsonElement Schema = JsonDocument.Parse("""

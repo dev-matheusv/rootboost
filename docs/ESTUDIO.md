@@ -93,8 +93,8 @@ Custo: zero de IA além do roteiro; a descrição da foto é feita uma vez no up
 
 ## Dado pessoal no acervo e na gravação (29/10)
 
-- **Descrever com a IA** também marca dado pessoal (nome, CPF, RG, telefone, e-mail, endereço, nascimento, prontuário,
-  assinatura, rosto de cliente): `nenhum`, `ficticio` (bate com os dados de demonstração da marca), `real` ou `incerto`,
+- **Descrever com a IA** também marca dado sensível (só identificador: CPF, RG, CNH, cartão SUS ou convênio, prontuário,
+  telefone, e-mail, endereço completo, nascimento; nome e rosto não contam, decisão do Matheus 29/10): `nenhum`, `ficticio` (bate com os dados de demonstração da marca), `real` ou `incerto`,
   com as áreas em fração da imagem. O item ganha o selo "Contém dado pessoal".
 - **Versão borrada automática** (mosaico grosso + desfoque, sem volta) em `<chave>-borrada.jpg`. A pessoa ajusta em
   "Ajustar borrado" (arrasta na foto, vê o original com login). Real ou dúvida: o **link público só entrega a borrada**

@@ -202,7 +202,7 @@ export default {
   },
   privacy: {
     status: { None: 'No personal data', Fictional: 'Fictional', Uncertain: 'Not sure', Real: 'Real data' },
-    badge: { Fictional: 'Fictional data', Uncertain: 'Has personal data (not sure)', Real: 'Has personal data' },
+    badge: { Fictional: 'Fictional data', Uncertain: 'Has sensitive data (not sure)', Real: 'Has sensitive data' },
     needsBlur: 'Has personal data that is not blurred yet. Click Adjust blur and mark the areas.',
     adjust: 'Adjust blur',
     editorTitle: 'What to blur',
@@ -215,6 +215,7 @@ export default {
   acervo: {
     title: 'Library',
     subtitle: 'Brand photos, videos and creatives. The AI uses them to build videos and posts.',
+    privacyTip: 'Use fictional data in screenshots and in the demo account (made-up name, fake ID). Names can show; the AI blurs IDs, phone, e-mail, address and the like when it finds them.',
     pickBrand: 'Pick a brand in the menu to see the library.',
     upload: 'Upload photos and videos',
     empty: 'Nothing here yet. Upload photos of your work, videos and creatives you already have.',
