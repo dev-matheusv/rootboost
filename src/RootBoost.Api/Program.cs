@@ -588,6 +588,39 @@ brandProfile.MapPost("/creative-jobs", async (string key, CreativeJobInput input
     catch (ArgumentException ex) { return Results.BadRequest(new { error = ex.Message }); }
 });
 
+// Revisão da voz: ouvir (com login), escolher ou pedir outras duas.
+brandProfile.MapGet("/creative-jobs/{id:guid}/voice/{seed:int}", async (string key, Guid id, int seed,
+    RootBoost.Application.Studio.ICreativeJobStore store, RootBoost.Application.Media.IMediaStorage storage, CancellationToken ct) =>
+{
+    var job = await store.GetAsync(id, ct);
+    var take = job is null || job.BrandKey != key.ToLowerInvariant() ? null : job.VoiceTakes.FirstOrDefault(t => t.Seed == seed);
+    if (take is null) return Results.NotFound();
+    var obj = await storage.GetAsync(take.StorageKey, ct);
+    return obj is null ? Results.NotFound() : Results.Stream(obj.Content, "audio/mp4");
+});
+
+brandProfile.MapPost("/creative-jobs/{id:guid}/voice/choose", async (string key, Guid id, VoiceChooseInput input,
+    RootBoost.Application.Studio.ICreativeJobStore store, TimeProvider time, CancellationToken ct) =>
+{
+    var job = await store.GetAsync(id, ct);
+    if (job is null || job.BrandKey != key.ToLowerInvariant()) return Results.NotFound();
+    try { job.ChooseVoice(input.Seed, time.GetUtcNow()); }
+    catch (Exception ex) when (ex is ArgumentException or InvalidOperationException) { return Results.BadRequest(new { error = ex.Message }); }
+    await store.SaveAsync(job, ct);
+    return Results.Ok(CreativeJobDto.From(job));
+});
+
+brandProfile.MapPost("/creative-jobs/{id:guid}/voice/redo", async (string key, Guid id,
+    RootBoost.Application.Studio.ICreativeJobStore store, TimeProvider time, CancellationToken ct) =>
+{
+    var job = await store.GetAsync(id, ct);
+    if (job is null || job.BrandKey != key.ToLowerInvariant()) return Results.NotFound();
+    try { job.RedoVoice(time.GetUtcNow()); }
+    catch (InvalidOperationException ex) { return Results.BadRequest(new { error = ex.Message }); }
+    await store.SaveAsync(job, ct);
+    return Results.Ok(CreativeJobDto.From(job));
+});
+
 // Retrato do estúdio pra marca: computadores ligados, posição de cada job dela na fila e o tempo médio de um render.
 brandProfile.MapGet("/studio/status", async (string key, RootBoost.Application.Studio.IStudioStatusStore status,
     RootBoost.Application.Studio.ICreativeJobStore jobs, TimeProvider time, CancellationToken ct) =>
@@ -897,6 +930,33 @@ worker.MapPost("/jobs/{id:guid}/deliver", async (Guid id, WorkerDeliverInput inp
         "Vídeo pronto pra revisar", job.Theme, "/studio", $"job:{job.Id:N}"), ct);
     return Results.Ok(CreativeJobDto.From(job));
 });
+
+// Revisão da voz (29/10): o worker sobe as versões (take-<semente>, com unmatched-<semente>) e o job espera a escolha.
+worker.MapPost("/jobs/{id:guid}/voice", async (Guid id, HttpRequest req, RootBoost.Application.Studio.ICreativeJobStore store,
+    RootBoost.Application.Media.IMediaStorage storage, RootBoost.Application.Push.PushNotifier notifier, TimeProvider time, CancellationToken ct) =>
+{
+    var form = await req.ReadFormAsync(ct);
+    var workerId = form["workerId"].ToString();
+    var job = await store.GetAsync(id, ct);
+    if (job is null) return Results.NotFound();
+    if (job.Status != CreativeJobStatus.Rendering || job.WorkerId != workerId) return Results.Conflict(new { error = "este job não está com este worker" });
+    var takes = new List<VoiceTake>();
+    foreach (var f in form.Files)
+    {
+        if (!f.Name.StartsWith("take-", StringComparison.Ordinal) || !int.TryParse(f.Name[5..], out var seed) || seed is < 1 or > 9999) continue;
+        if (f.Length > VoiceAudio.MaxBytes || Path.GetExtension(f.FileName).ToLowerInvariant() != ".m4a")
+            return Results.BadRequest(new { error = $"versão de voz inválida: {f.FileName}" });
+        var key = $"studio/{job.BrandKey}/{job.Id:N}/voz-{seed}.m4a";
+        await using (var stream = f.OpenReadStream()) await storage.PutAsync(key, stream, f.Length, "audio/mp4", ct);
+        _ = int.TryParse(form[$"unmatched-{seed}"].ToString(), out var unmatched);
+        takes.Add(new VoiceTake(seed, key, Math.Max(0, unmatched)));
+    }
+    try { job.DeliverVoice(workerId, takes, time.GetUtcNow()); }
+    catch (ArgumentException ex) { return Results.BadRequest(new { error = ex.Message }); }
+    await store.SaveAsync(job, ct);
+    await notifier.SendAsync(new RootBoost.Application.Push.PushMessage("Voz pronta pra ouvir", job.Theme, "/studio", $"voz:{job.Id:N}"), ct);
+    return Results.Ok(CreativeJobDto.From(job));
+}).DisableAntiforgery().WithMetadata(new Microsoft.AspNetCore.Mvc.RequestSizeLimitAttribute(4 * VoiceAudio.MaxBytes));
 
 worker.MapPost("/jobs/{id:guid}/fail", async (Guid id, WorkerFailInput input, RootBoost.Application.Studio.ICreativeJobStore store,
     RootBoost.Application.Push.PushNotifier notifier, TimeProvider time, CancellationToken ct) =>
@@ -1350,11 +1410,11 @@ record WorkerFailInput(string WorkerId, string? Error, bool Retry);
 record CreativeJobDto(Guid Id, string BrandKey, string Kind, string Theme, string? VoiceKey, string Status,
     System.Text.Json.JsonElement? Roteiro, System.Text.Json.JsonElement? Falas, int? Seed, IReadOnlyList<string> Warnings,
     IReadOnlyList<CreativeOutput> Outputs, int Attempts, int Progress, string? ProgressNote, string? Error,
-    DateTimeOffset CreatedAt, DateTimeOffset UpdatedAt)
+    DateTimeOffset CreatedAt, DateTimeOffset UpdatedAt, bool VoiceApproved, IReadOnlyList<VoiceTakeDto> VoiceTakes)
 {
     public static CreativeJobDto From(CreativeJob j) => new(j.Id, j.BrandKey, j.Kind.ToString(), j.Theme, j.VoiceKey,
         j.Status.ToString(), Parse(j.Script), Parse(j.Lines), j.Seed, j.Warnings, j.Outputs, j.Attempts, j.Progress,
-        j.ProgressNote, j.Error, j.CreatedAt, j.UpdatedAt);
+        j.ProgressNote, j.Error, j.CreatedAt, j.UpdatedAt, j.VoiceApproved, j.VoiceTakes.Select(t => new VoiceTakeDto(t.Seed, t.Unmatched)).ToList());
 
     public static System.Text.Json.JsonElement? Parse(string? json) =>
         json is null ? null : System.Text.Json.JsonDocument.Parse(json).RootElement.Clone();
@@ -1363,11 +1423,14 @@ record CreativeJobDto(Guid Id, string BrandKey, string Kind, string Theme, strin
 /// <summary>O que o worker precisa pra renderizar: contratos, voz, semente e formato. Sem dado de outras marcas.</summary>
 record WorkerMediaDto(string Id, string Url, bool IsVideo, RedactionBox? Focus = null);
 
+record VoiceTakeDto(int Seed, int Unmatched);
+
 record WorkerJobDto(Guid Id, string BrandKey, string Kind, string Theme, string? VoiceKey, int? Seed, int Attempts,
-    System.Text.Json.JsonElement? Roteiro, System.Text.Json.JsonElement? Falas, IReadOnlyList<WorkerMediaDto>? Media = null)
+    System.Text.Json.JsonElement? Roteiro, System.Text.Json.JsonElement? Falas, IReadOnlyList<WorkerMediaDto>? Media = null,
+    bool VoiceApproved = false)
 {
     public static WorkerJobDto From(CreativeJob j) => new(j.Id, j.BrandKey, j.Kind.ToString(), j.Theme, j.VoiceKey, j.Seed,
-        j.Attempts, CreativeJobDto.Parse(j.Script), CreativeJobDto.Parse(j.Lines));
+        j.Attempts, CreativeJobDto.Parse(j.Script), CreativeJobDto.Parse(j.Lines), VoiceApproved: j.VoiceApproved);
 }
 
 record PublicationInput(string Channel, string MediaUrl, string Caption, DateTimeOffset ScheduledFor);

@@ -34,7 +34,9 @@ describe('estúdio', () => {
   it('etapa da barra', () => {
     expect(jobStep('ScriptReady')).toBe(0);
     expect(jobStep('Rendering')).toBe(2);
-    expect(jobStep('Done')).toBe(4);
+    expect(jobStep('VoiceReview')).toBe(2);
+    expect(jobStep('Rendering', true)).toBe(3);
+    expect(jobStep('Done')).toBe(5);
   });
 });
 

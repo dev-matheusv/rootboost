@@ -197,7 +197,7 @@ export interface Publication {
 
 /** Estúdio (RB-42/RB-51): job de criativo que o worker local renderiza. */
 export type CreativeKind = 'Organic' | 'Ad' | 'Prospecting';
-export type CreativeJobStatus = 'Draft' | 'ScriptReady' | 'Queued' | 'Rendering' | 'Review' | 'Done' | 'Failed';
+export type CreativeJobStatus = 'Draft' | 'ScriptReady' | 'Queued' | 'Rendering' | 'VoiceReview' | 'Review' | 'Done' | 'Failed';
 
 export interface CreativeOutput {
   role: string;
@@ -211,6 +211,9 @@ export interface CreativeJob {
   theme: string;
   voiceKey: string | null;
   status: CreativeJobStatus;
+  /** Voz escolhida pelo ouvido (Revisão da voz); sem ela o worker só gera as versões e para. */
+  voiceApproved: boolean;
+  voiceTakes: { seed: number; unmatched: number }[];
   roteiro: unknown;
   falas: unknown;
   seed: number | null;

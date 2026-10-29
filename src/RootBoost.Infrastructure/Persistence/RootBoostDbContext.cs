@@ -157,6 +157,8 @@ public sealed class RootBoostDbContext : DbContext
         job.Property(x => x.LeaseUntil).HasConversion(v => v.HasValue ? v.Value.ToUniversalTime() : v, v => v);
         job.Ignore(x => x.Warnings);
         job.Ignore(x => x.Outputs);
+        job.Property(x => x.VoiceTakesJson).HasColumnType("jsonb").IsRequired().HasDefaultValue("[]");
+        job.Ignore(x => x.VoiceTakes);
         job.HasIndex(x => new { x.Status, x.CreatedAt });
         job.HasIndex(x => new { x.BrandKey, x.CreatedAt });
 

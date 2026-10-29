@@ -49,13 +49,15 @@ export function parseJson(text: string): { value: unknown; error: string | null 
 }
 
 /** Etapa na barra do topo: roteiro, fila, render, revisão, posts. */
-export function jobStep(s: CreativeJobStatus): number {
-  // Falhou: o worker já tinha pegado, então a etapa que falhou é o render (a tela pinta de vermelho).
-  return { Draft: 0, ScriptReady: 0, Failed: 2, Queued: 1, Rendering: 2, Review: 3, Done: 4 }[s];
+/** Etapas: roteiro, fila, voz, render, revisão, posts. Fila/render dependem de a voz já ter sido escolhida. */
+export function jobStep(s: CreativeJobStatus, voiceApproved = false): number {
+  if (s === 'Queued') return voiceApproved ? 3 : 1;
+  if (s === 'Rendering' || s === 'Failed') return voiceApproved ? 3 : 2;
+  return { Draft: 0, ScriptReady: 0, VoiceReview: 2, Review: 4, Done: 5 }[s];
 }
 
 export function jobColor(s: CreativeJobStatus): string {
-  return { Draft: 'grey-6', ScriptReady: 'secondary', Queued: 'info', Rendering: 'primary', Review: 'warning', Done: 'positive', Failed: 'negative' }[s];
+  return { Draft: 'grey-6', ScriptReady: 'secondary', Queued: 'info', Rendering: 'primary', VoiceReview: 'accent', Review: 'warning', Done: 'positive', Failed: 'negative' }[s];
 }
 
 /** Job em andamento no worker: a tela atualiza sozinha enquanto houver algum. */

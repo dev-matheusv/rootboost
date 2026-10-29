@@ -66,7 +66,8 @@ async function round() {
   if (res.status === 204) return;
   const job = res.data;
   const nome = projectName(job.roteiro, job.id);
-  let seed = seedFor(job);
+  // Voz já escolhida no Console: a semente é a dela, sem somar tentativas.
+  let seed = job.voiceApproved && Number.isInteger(job.seed) ? job.seed : seedFor(job);
   console.log(`[${now()}] job ${job.id} (${job.theme}) como ${nome}, semente ${seed}, tentativa ${job.attempts}`);
 
   const voice = job.voiceKey ?? (cfg.privateVoices.get(cfg.defaultVoice.toLowerCase()) === job.brandKey ? cfg.defaultVoice : null);
@@ -91,20 +92,44 @@ async function round() {
     if (!(job.media ?? []).some((m) => m.id === s.id))
       return fail(job.id, `mídia do acervo ${s.id} não veio no job: foi apagada do Acervo ou é de outra marca`, false);
 
-  // 2. Voz primeiro: só a fala, com o portão de palavras sem par. Semente ruim troca na hora (até 3), sem montar nada.
+  // 2. Voz primeiro: só a fala, com o portão de palavras sem par, sem montar nada.
   writeScript(projectDir, job);
   const voiceArgs = (sd) => [...buildArgs(cfg.args, { nome, voz: voice, seed: sd, tools: cfg.tools, base: cfg.base }), "--so-voz"];
-  let voiceOk = false;
-  for (let tries = 0; tries < 3; tries++, seed++) {
-    await progress(job.id, 3, `gerando a voz (semente ${seed})`);
-    const { code, log } = await runPipeline(job.id, cfg.bin, voiceArgs(seed));
-    if (code !== 0) return fail(job.id, `voz saiu com código ${code}: ${lastLine(log)}`, !isScriptProblem(log));
-    const unmatched = readUnmatched(projectDir, voice, seed) ?? parseUnmatched(log);
-    if (unmatched === null) return fail(job.id, "não achei a contagem de palavras sem par da voz", false);
-    if (unmatched === 0) { voiceOk = true; break; }
-    console.log(`[${now()}] semente ${seed}: ${unmatched} palavra(s) sem par, tentando a próxima`);
+  const voiceDir = (sd) => `${projectDir}/voz-continua/${voice}-p32-s${sd}`;
+  async function makeVoice(sd, note) {
+    await progress(job.id, 3, note);
+    const { code, log } = await runPipeline(job.id, cfg.bin, voiceArgs(sd));
+    if (code !== 0) return { error: `voz saiu com código ${code}: ${lastLine(log)}`, retry: !isScriptProblem(log) };
+    const unmatched = readUnmatched(projectDir, voice, sd) ?? parseUnmatched(log);
+    return unmatched === null ? { error: "não achei a contagem de palavras sem par da voz", retry: false } : { unmatched };
   }
-  if (!voiceOk) return fail(job.id, `a voz saiu com palavra sem par em 3 sementes seguidas (até a ${seed - 1}); revise o texto das falas`, false);
+
+  if (!job.voiceApproved) {
+    // Revisão da voz (29/10): duas versões limpas (até 4 sementes), a pessoa ouve no Console e escolhe; o job para aqui.
+    const form = new FormData();
+    form.append("workerId", cfg.workerId);
+    let takes = 0;
+    for (let tries = 0; takes < 2 && tries < 4; tries++, seed++) {
+      const r = await makeVoice(seed, `gerando a voz, versão ${takes + 1} de 2 (semente ${seed})`);
+      if (r.error) return fail(job.id, r.error, r.retry);
+      if (r.unmatched > 0) { console.log(`[${now()}] semente ${seed}: ${r.unmatched} palavra(s) sem par, pulando`); continue; }
+      const m4a = `${voiceDir(seed)}/revisao.m4a`;
+      execFileSync(FFMPEG, ["-y", "-i", `${voiceDir(seed)}/tratado.wav`, "-c:a", "aac", "-b:a", "128k", m4a], { stdio: "ignore" });
+      form.append(`take-${seed}`, await openAsBlob(m4a), `voz-${seed}.m4a`);
+      form.append(`unmatched-${seed}`, "0");
+      takes++;
+    }
+    if (!takes) return fail(job.id, `a voz saiu com palavra sem par em 4 sementes seguidas (até a ${seed - 1}); revise o texto das falas`, false);
+    const res = await fetch(`${cfg.api}/worker/jobs/${job.id}/voice`, { method: "POST", headers: { "X-Worker-Key": cfg.key }, body: form });
+    if (!res.ok) return fail(job.id, `entrega das versões da voz: ${res.status} ${await res.text()}`, true);
+    console.log(`[${now()}] ${takes} versão(ões) da voz entregues; esperando a escolha no Console`);
+    return;
+  }
+
+  // Voz escolhida: confere o cache (rápido) e segue com essa semente, sem trocar.
+  const chosen = await makeVoice(seed, `conferindo a voz escolhida (semente ${seed})`);
+  if (chosen.error) return fail(job.id, chosen.error, chosen.retry);
+  if (chosen.unmatched > 0) return fail(job.id, `a voz escolhida (semente ${seed}) saiu com palavra sem par; peça outras versões`, false);
 
   // 3. Gravação de tela (RB-50): blocos que a IA escreveu com "cena" e trecho "gravar-bloco-N" são gravados agora.
   if (scenes.length) {

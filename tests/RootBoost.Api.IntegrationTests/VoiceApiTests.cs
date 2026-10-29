@@ -148,3 +148,66 @@ public class StudioStatusTests : IClassFixture<StudioAiWebApplicationFactory>
         Assert.True(status.GetProperty("workersOnline").GetInt32() >= 1);
     }
 }
+
+public class VoiceReviewTests : IClassFixture<StudioAiWebApplicationFactory>
+{
+    private readonly StudioAiWebApplicationFactory _factory;
+    public VoiceReviewTests(StudioAiWebApplicationFactory factory) => _factory = factory;
+
+    [Fact]
+    public async Task Worker_delivers_two_voices_the_person_picks_one_and_the_job_goes_back_approved()
+    {
+        var c = _factory.CreateClient();
+        var w = _factory.CreateClient();
+        w.DefaultRequestHeaders.Add("X-Worker-Key", "chave-gravacao");
+        var job = await (await c.PostAsJsonAsync("/admin/brands/medlycare/creative-jobs", new { kind = "organic", theme = "Revisão da voz" })).Content.ReadFromJsonAsync<JsonElement>();
+        var id = job.GetProperty("id").GetString()!;
+        await c.PutAsJsonAsync($"/admin/brands/medlycare/creative-jobs/{id}/script", new
+        {
+            roteiro = new
+            {
+                nome = "teste-revisao-voz",
+                abertura = new[] { "Agenda sem papel", "Tudo num lugar" },
+                blocos = new object[]
+                {
+                    new { titulo = "Sessão toda semana", sub = "Marca uma vez", trechos = new object[] { new object[] { "psico1", 1, 4.3, 2 } } },
+                    new { titulo = "Evolução em minutos", sub = "Texto pronto", trechos = new object[] { new object[] { "psico2", 0.8, 14 } } },
+                },
+            },
+            falas = new[] { "Psicólogo com agenda no papel perde sessão.", "Você marca uma vez.", "A evolução vai pronta.", "Três meses grátis." },
+        });
+        await c.PostAsync($"/admin/brands/medlycare/creative-jobs/{id}/render", null);
+
+        async Task<JsonElement> ClaimMine()
+        {
+            for (var i = 0; i < 20; i++)
+            {
+                var r = await w.PostAsJsonAsync("/worker/jobs/claim", new { workerId = "pc" });
+                if (r.StatusCode == HttpStatusCode.NoContent) continue;
+                var j = await r.Content.ReadFromJsonAsync<JsonElement>();
+                if (j.GetProperty("id").GetString() == id) return j;
+            }
+            throw new Xunit.Sdk.XunitException("job não veio pro worker");
+        }
+
+        Assert.False((await ClaimMine()).GetProperty("voiceApproved").GetBoolean());
+        using var takes = new MultipartFormDataContent();
+        takes.Add(new StringContent("pc"), "workerId");
+        takes.Add(new ByteArrayContent([1, 1]), "take-1", "voz-1.m4a");
+        takes.Add(new StringContent("0"), "unmatched-1");
+        takes.Add(new ByteArrayContent([2, 2]), "take-3", "voz-3.m4a");
+        takes.Add(new StringContent("0"), "unmatched-3");
+        var review = await (await w.PostAsync($"/worker/jobs/{id}/voice", takes)).Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("VoiceReview", review.GetProperty("status").GetString());
+        Assert.Equal(2, review.GetProperty("voiceTakes").GetArrayLength());
+
+        Assert.Equal([2, 2], await c.GetByteArrayAsync($"/admin/brands/medlycare/creative-jobs/{id}/voice/3"));
+        Assert.Equal(HttpStatusCode.BadRequest, (await c.PostAsJsonAsync($"/admin/brands/medlycare/creative-jobs/{id}/voice/choose", new { seed = 2 })).StatusCode);
+        var chosen = await (await c.PostAsJsonAsync($"/admin/brands/medlycare/creative-jobs/{id}/voice/choose", new { seed = 3 })).Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("Queued", chosen.GetProperty("status").GetString());
+
+        var again = await ClaimMine();
+        Assert.True(again.GetProperty("voiceApproved").GetBoolean());
+        Assert.Equal(3, again.GetProperty("seed").GetInt32());
+    }
+}
