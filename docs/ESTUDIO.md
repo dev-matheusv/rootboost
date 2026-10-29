@@ -57,6 +57,15 @@ avisa. `Ai__Mode=Fake` dá um roteiro fixo pra testar sem custo.
 Enquanto a gravação automática da tela (RB-50) não existe, cada bloco escrito pela IA vem com um trecho
 `gravar-bloco-N` e a duração estimada da fala: é a lista do que gravar.
 
+## Ordem do worker: falhar cedo e barato (29/10)
+
+1. **Pré-checagem** (segundos): conta de demonstração e app da gravação respondendo; mídias do acervo no job (a API já
+   falha no claim se alguma foto foi barrada pela proteção de dado pessoal).
+2. **Voz primeiro** (`narrado-calmo --so-voz`): sintetiza e alinha; lê `sem_par` em `voz-continua/<voz>-p32-s<semente>/alinhamento.json`.
+   Palavra sem par troca a semente na hora (até 3) sem montar nada.
+3. Só com a voz aprovada: gravação de tela, mídia do acervo e montagem (o narrado-calmo reaproveita a voz do cache).
+Próximo passo (pedido): gerar 2 sementes e parar em "Revisão da voz" no Console antes de montar.
+
 ## Vídeo a partir do acervo (RB-16)
 
 A IA do roteiro recebe a lista do acervo da marca (vídeos e fotos com descrição, até 60) e escolhe, por bloco, a mídia

@@ -62,6 +62,7 @@ export default {
       position: 'Queued: {pos} of {total}',
       eta: 'about {min} min',
     },
+    openAcervo: 'Open the Library',
     newDialog: {
       what: 'What should the video show?',
       whatPlaceholder: 'Write it as you would ask someone. E.g. how the calendar reminds the client the day before',

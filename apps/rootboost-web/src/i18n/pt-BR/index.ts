@@ -62,6 +62,7 @@ export default {
       position: 'Na fila: {pos} de {total}',
       eta: 'cerca de {min} min',
     },
+    openAcervo: 'Abrir o Acervo',
     newDialog: {
       what: 'O que o vídeo deve mostrar?',
       whatPlaceholder: 'Escreva como pediria pra alguém. Ex.: como a agenda avisa o paciente na véspera',

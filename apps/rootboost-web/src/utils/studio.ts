@@ -50,7 +50,8 @@ export function parseJson(text: string): { value: unknown; error: string | null 
 
 /** Etapa na barra do topo: roteiro, fila, render, revisão, posts. */
 export function jobStep(s: CreativeJobStatus): number {
-  return { Draft: 0, ScriptReady: 0, Failed: 1, Queued: 1, Rendering: 2, Review: 3, Done: 4 }[s];
+  // Falhou: o worker já tinha pegado, então a etapa que falhou é o render (a tela pinta de vermelho).
+  return { Draft: 0, ScriptReady: 0, Failed: 2, Queued: 1, Rendering: 2, Review: 3, Done: 4 }[s];
 }
 
 export function jobColor(s: CreativeJobStatus): string {

@@ -66,7 +66,7 @@ async function round() {
   if (res.status === 204) return;
   const job = res.data;
   const nome = projectName(job.roteiro, job.id);
-  const seed = seedFor(job);
+  let seed = seedFor(job);
   console.log(`[${now()}] job ${job.id} (${job.theme}) como ${nome}, semente ${seed}, tentativa ${job.attempts}`);
 
   const voice = job.voiceKey ?? (cfg.privateVoices.get(cfg.defaultVoice.toLowerCase()) === job.brandKey ? cfg.defaultVoice : null);
@@ -78,12 +78,36 @@ async function round() {
 
   const projectDir = `${cfg.base}/projetos/${nome}`;
 
-  // Gravação de tela (RB-50): blocos que a IA escreveu com "cena" e trecho "gravar-bloco-N" são gravados agora.
+  // 1. Pré-checagem barata: tudo que pode falhar sem gastar voz nem render (pedido do Matheus, 29/10).
   const scenes = scenesToRecord(job.roteiro);
+  const account = scenes.length ? loadAccounts()[job.brandKey] : null;
   if (scenes.length) {
-    const account = loadAccounts()[job.brandKey];
     if (!account?.url || !account?.usuario || !account?.senha)
       return fail(job.id, `sem conta de demonstração da marca ${job.brandKey} em tools/studio-worker/contas.json`, false);
+    const up = await fetch(account.url, { signal: AbortSignal.timeout(10_000) }).then((r) => r.status < 500).catch(() => false);
+    if (!up) return fail(job.id, `o sistema da gravação não respondeu (${account.url}); ligue o app e mande renderizar de novo`, false);
+  }
+  for (const s of libraryScenes(job.roteiro))
+    if (!(job.media ?? []).some((m) => m.id === s.id))
+      return fail(job.id, `mídia do acervo ${s.id} não veio no job: foi apagada do Acervo ou é de outra marca`, false);
+
+  // 2. Voz primeiro: só a fala, com o portão de palavras sem par. Semente ruim troca na hora (até 3), sem montar nada.
+  writeScript(projectDir, job);
+  const voiceArgs = (sd) => [...buildArgs(cfg.args, { nome, voz: voice, seed: sd, tools: cfg.tools, base: cfg.base }), "--so-voz"];
+  let voiceOk = false;
+  for (let tries = 0; tries < 3; tries++, seed++) {
+    await progress(job.id, 3, `gerando a voz (semente ${seed})`);
+    const { code, log } = await runPipeline(job.id, cfg.bin, voiceArgs(seed));
+    if (code !== 0) return fail(job.id, `voz saiu com código ${code}: ${lastLine(log)}`, !isScriptProblem(log));
+    const unmatched = readUnmatched(projectDir, voice, seed) ?? parseUnmatched(log);
+    if (unmatched === null) return fail(job.id, "não achei a contagem de palavras sem par da voz", false);
+    if (unmatched === 0) { voiceOk = true; break; }
+    console.log(`[${now()}] semente ${seed}: ${unmatched} palavra(s) sem par, tentando a próxima`);
+  }
+  if (!voiceOk) return fail(job.id, `a voz saiu com palavra sem par em 3 sementes seguidas (até a ${seed - 1}); revise o texto das falas`, false);
+
+  // 3. Gravação de tela (RB-50): blocos que a IA escreveu com "cena" e trecho "gravar-bloco-N" são gravados agora.
+  if (scenes.length) {
     const recordings = [];
     for (const [i, s] of scenes.entries()) {
       const source = `${nome}-bloco-${s.index + 1}`;
@@ -105,8 +129,7 @@ async function round() {
     await progress(job.id, 30, `preparando ${library.length} mídia(s) do acervo`);
     const clips = [];
     for (const s of library) {
-      const media = (job.media ?? []).find((m) => m.id === s.id);
-      if (!media) return fail(job.id, `mídia do acervo ${s.id} não veio no job (apagada ou de outra marca)`, false);
+      const media = job.media.find((m) => m.id === s.id);
       try {
         clips.push({ index: s.index, source: `acervo-${s.id}`, duration: await prepareMedia(media, s.seconds) });
       } catch (e) {
@@ -116,9 +139,10 @@ async function round() {
     job.roteiro = applyLibrary(job.roteiro, clips);
   }
 
-  writeScript(projectDir, job);
+  writeScript(projectDir, job, false); // mesma rodada: só trocou os trechos, não guarda cópia
   await progress(job.id, 32, `roteiro gravado em projetos/${nome}`);
 
+  // 4. Montagem: o narrado-calmo reaproveita a voz e o alinhamento da semente aprovada (mesmo texto, léxico e semente).
   const vars = { nome, voz: voice, seed, tools: cfg.tools, base: cfg.base };
   const { code, log } = await runPipeline(job.id, cfg.bin, buildArgs(cfg.args, vars));
   if (code !== 0) {
@@ -127,7 +151,7 @@ async function round() {
   }
 
   // Portão (etapa 5 do pacote): palavra sem par = a síntese pode ter engolido texto. Outra semente costuma resolver.
-  const unmatched = parseUnmatched(log);
+  const unmatched = readUnmatched(projectDir, voice, seed) ?? parseUnmatched(log);
   if (unmatched === null) return fail(job.id, "não achei a contagem de palavras sem par no log do pipeline", false);
   if (unmatched > 0) return fail(job.id, `${unmatched} palavra(s) sem par no alinhamento com a semente ${seed}`, true);
 
@@ -221,13 +245,23 @@ async function prepareMedia(media, seconds) {
   return Number(execFileSync(FFPROBE, ["-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", out]).toString().trim());
 }
 
+/** Palavras sem par gravadas pelo alinhamento da voz (o log não repete a contagem quando a voz vem do cache). */
+function readUnmatched(projectDir, voice, seed) {
+  try {
+    const n = JSON.parse(readFileSync(`${projectDir}/voz-continua/${voice}-p32-s${seed}/alinhamento.json`, "utf8")).sem_par;
+    return Number.isInteger(n) ? n : null;
+  } catch {
+    return null;
+  }
+}
+
 /** Grava os contratos no projeto. Se já existia um roteiro diferente (reel aprovado com o mesmo nome), guarda cópia antes. */
-function writeScript(projectDir, job) {
+function writeScript(projectDir, job, backup = true) {
   mkdirSync(projectDir, { recursive: true });
   for (const [file, value] of [["roteiro.json", job.roteiro], ["falas.json", job.falas]]) {
     const path = `${projectDir}/${file}`;
     const text = JSON.stringify(value, null, 1);
-    if (existsSync(path) && readFileSync(path, "utf8") !== text) copyFileSync(path, `${path}.antes-${Date.now()}`);
+    if (backup && existsSync(path) && readFileSync(path, "utf8") !== text) copyFileSync(path, `${path}.antes-${Date.now()}`);
     writeFileSync(path, text);
   }
 }
