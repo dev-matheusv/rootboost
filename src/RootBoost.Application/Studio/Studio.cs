@@ -16,6 +16,17 @@ public interface INarrationVoiceStore
     Task SaveAsync(NarrationVoice voice, CancellationToken ct = default);
 }
 
+/// <summary>Sinais de vida dos workers e o retrato da fila (posição e tempo médio) pro Console.</summary>
+public interface IStudioStatusStore
+{
+    Task BeatAsync(string workerId, string? activity, DateTimeOffset now, CancellationToken ct = default);
+    Task<IReadOnlyList<WorkerHeartbeat>> ListWorkersAsync(CancellationToken ct = default);
+    /// <summary>Ids dos jobs na fila, na ordem em que o worker vai pegar (todas as marcas).</summary>
+    Task<IReadOnlyList<Guid>> QueueAsync(CancellationToken ct = default);
+    /// <summary>Média dos últimos renders entregues, em segundos (nulo sem histórico).</summary>
+    Task<int?> AverageRenderSecondsAsync(CancellationToken ct = default);
+}
+
 public interface ICreativeJobStore
 {
     Task AddAsync(CreativeJob job, CancellationToken ct = default);

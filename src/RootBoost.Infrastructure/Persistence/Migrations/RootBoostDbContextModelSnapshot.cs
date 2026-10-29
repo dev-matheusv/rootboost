@@ -332,6 +332,12 @@ namespace RootBoost.Infrastructure.Persistence.Migrations
                         .HasMaxLength(300)
                         .HasColumnType("character varying(300)");
 
+                    b.Property<int?>("RenderSeconds")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset?>("RenderStartedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("Script")
                         .HasColumnType("jsonb");
 
@@ -862,6 +868,24 @@ namespace RootBoost.Infrastructure.Persistence.Migrations
                         .IsUnique();
 
                     b.ToTable("PushDevices");
+                });
+
+            modelBuilder.Entity("RootBoost.Domain.WorkerHeartbeat", b =>
+                {
+                    b.Property<string>("WorkerId")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Activity")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.Property<DateTimeOffset>("LastSeenAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("WorkerId");
+
+                    b.ToTable("WorkerHeartbeats");
                 });
 
             modelBuilder.Entity("RootBoost.Infrastructure.Persistence.LandingViewDaily", b =>

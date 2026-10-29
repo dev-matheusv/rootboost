@@ -55,6 +55,13 @@ export default {
     themeHint: 'Feature, specialty or pain point.',
     voice: 'Voice',
     voiceHint: 'Optional. Empty uses the brand default voice.',
+    queue: {
+      noWorker: 'No computer is on to render videos right now.',
+      noWorkerHint: 'Queued videos start on their own as soon as the worker is on.',
+      lastSeen: 'Last signal: {when}.',
+      position: 'Queued: {pos} of {total}',
+      eta: 'about {min} min',
+    },
     newDialog: {
       what: 'What should the video show?',
       whatPlaceholder: 'Write it as you would ask someone. E.g. how the calendar reminds the client the day before',

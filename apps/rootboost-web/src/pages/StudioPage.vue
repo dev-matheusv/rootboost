@@ -11,7 +11,17 @@
 
     <q-banner v-if="!brand.selected" rounded class="bg-blue-1 text-primary">{{ $t('studio.pickBrand') }}</q-banner>
 
-    <div v-else class="row q-col-gutter-lg">
+    <!-- Nenhum computador ligado: o job não fica parado na fila sem explicação. -->
+    <q-banner v-if="brand.selected && studio && studio.workersOnline === 0 && jobs.some((j) => j.status === 'Queued' || j.status === 'Rendering')"
+      rounded class="bg-orange-1 text-orange-10 q-mb-md">
+      <template #avatar><q-icon :name="mdiDesktopClassic" color="orange-8" /></template>
+      <div class="text-weight-bold">{{ $t('studio.queue.noWorker') }}</div>
+      <div class="text-caption">
+        {{ $t('studio.queue.noWorkerHint') }}<span v-if="studio.lastSeenAt"> {{ $t('studio.queue.lastSeen', { when: fmt(studio.lastSeenAt) }) }}</span>
+      </div>
+    </q-banner>
+
+    <div v-if="brand.selected" class="row q-col-gutter-lg">
       <!-- Lista de jobs -->
       <div class="col-12 col-md-4">
         <div v-if="loading && !jobs.length" class="column q-gutter-sm">
@@ -32,6 +42,8 @@
               <q-chip dense :color="jobColor(j.status)" text-color="white">{{ $t(`studio.status.${j.status}`) }}</q-chip>
             </div>
             <q-linear-progress v-if="j.status === 'Rendering'" :value="j.progress / 100" color="primary" rounded class="q-mt-xs" />
+            <div v-if="j.status === 'Rendering' && j.progressNote" class="text-caption text-grey-7 ellipsis q-mt-xs">{{ j.progressNote }}</div>
+            <div v-if="j.status === 'Queued' && queueText(j)" class="text-caption text-grey-7 q-mt-xs">{{ queueText(j) }}</div>
           </div>
         </div>
       </div>
@@ -259,7 +271,7 @@ import { useI18n } from 'vue-i18n';
 import { useQuasar } from 'quasar';
 import { isAxiosError } from 'axios';
 import {
-  mdiAccountSearchOutline, mdiBullhornOutline, mdiCalendarPlus, mdiCheckCircleOutline, mdiCodeJson, mdiCreationOutline, mdiFormatQuoteOpen, mdiHeartOutline, mdiMicrophoneOutline, mdiMonitorScreenshot, mdiMovieOpenPlayOutline, mdiPlay, mdiPlus,
+  mdiAccountSearchOutline, mdiBullhornOutline, mdiCalendarPlus, mdiCheckCircleOutline, mdiCodeJson, mdiCreationOutline, mdiDesktopClassic, mdiFormatQuoteOpen, mdiHeartOutline, mdiMicrophoneOutline, mdiMonitorScreenshot, mdiMovieOpenPlayOutline, mdiPlay, mdiPlus,
 } from '@quasar/extras/mdi-v7';
 import { api } from 'src/services/api';
 import type { CreativeJob, CreativeKind, Publication } from 'src/types/api';
@@ -533,6 +545,28 @@ async function createPosts() {
   }
 }
 
+// --- Fila e computadores ligados ---
+interface StudioStatus { workersOnline: number; lastSeenAt: string | null; averageRenderSeconds: number | null; queueSize: number; positions: Record<string, number> }
+const studio = ref<StudioStatus | null>(null);
+
+async function loadStatus() {
+  if (!brand.selected) return;
+  try {
+    studio.value = (await api.get<StudioStatus>(`/admin/brands/${brand.selected}/studio/status`)).data;
+  } catch {
+    studio.value = null;
+  }
+}
+
+/** "Na fila: 2 de 3 · cerca de 40 min" (a previsão usa a média real dos últimos renders). */
+function queueText(j: CreativeJob): string | null {
+  const pos = studio.value?.positions[j.id];
+  if (!pos || !studio.value) return null;
+  const avg = studio.value.averageRenderSeconds;
+  const eta = avg ? Math.max(1, Math.round((pos * avg) / 60)) : null;
+  return t('studio.queue.position', { pos, total: studio.value.queueSize }) + (eta ? ` · ${t('studio.queue.eta', { min: eta })}` : '');
+}
+
 // --- Novo job ---
 const newOpen = ref(false);
 const form = reactive<{ kind: CreativeKind; theme: string; voiceKey: string; instructions: string }>(
@@ -573,8 +607,12 @@ onMounted(() => {
   void load();
   void loadAiStatus();
   void loadVoices();
+  void loadStatus();
   timer = setInterval(() => {
-    if (jobs.value.some((j) => isActive(j.status))) void load();
+    if (jobs.value.some((j) => isActive(j.status))) {
+      void load();
+      void loadStatus();
+    }
   }, 10_000);
 });
 onBeforeUnmount(() => clearInterval(timer));
@@ -584,6 +622,7 @@ watch(() => brand.selected, () => {
   void load();
   void loadAiStatus();
   void loadVoices();
+  void loadStatus();
 });
 </script>
 
