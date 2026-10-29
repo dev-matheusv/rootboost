@@ -54,6 +54,7 @@ export default {
     theme: 'Theme',
     themeHint: 'Feature, specialty or pain point.',
     voice: 'Voice',
+    voiceCode: 'Voice code (advanced)',
     voiceHint: 'Optional. Empty uses the brand default voice.',
     queue: {
       noWorker: 'No computer is on to render videos right now.',
@@ -148,6 +149,13 @@ export default {
       appUrl: 'Sign in address', appUrlHint: 'Where the platform records the screen showing it in use.',
       features: 'Main features or products', listHint: 'Type and press Enter.', differentials: 'Differentials', offer: 'Current offer',
     },
+  },
+  voicePicker: {
+    default: 'Default voice',
+    defaultHint: 'The voice the studio uses when you do not pick one.',
+    play: 'Play sample',
+    brandVoice: 'Brand voice',
+    bank: 'Bank',
   },
   voices: {
     title: 'Voices',
