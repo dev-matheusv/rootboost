@@ -1,4 +1,7 @@
 {
   "ignoreCommand": "git diff --quiet HEAD^ HEAD -- .",
+  "git": {
+    "deploymentEnabled": { "main": true, "develop": false, "feat/**": false, "fix/**": false, "docs/**": false, "chore/**": false }
+  },
   "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
 }
