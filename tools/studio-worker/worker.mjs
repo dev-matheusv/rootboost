@@ -108,19 +108,27 @@ async function round() {
     // Revisão da voz (29/10): duas versões limpas (até 4 sementes), a pessoa ouve no Console e escolhe; o job para aqui.
     const form = new FormData();
     form.append("workerId", cfg.workerId);
-    let takes = 0;
-    for (let tries = 0; takes < 2 && tries < 4; tries++, seed++) {
-      const r = await makeVoice(seed, `gerando a voz, versão ${takes + 1} de 2 (semente ${seed})`);
+    // Versão limpa primeiro; se a mesma palavra nunca casa no Whisper (ex.: termo técnico), até 3 palavras a conferir
+    // vão pra pessoa ouvir, com o aviso. Quem decide é o ouvido, não o alinhamento.
+    const MAX_TO_CHECK = 3;
+    const candidates = [];
+    for (let tries = 0; candidates.filter((c) => c.unmatched === 0).length < 2 && tries < 4; tries++, seed++) {
+      const r = await makeVoice(seed, `gerando a voz, versão ${Math.min(candidates.length + 1, 2)} de 2 (semente ${seed})`);
       if (r.error) return fail(job.id, r.error, r.retry);
-      if (r.unmatched > 0) { console.log(`[${now()}] semente ${seed}: ${r.unmatched} palavra(s) sem par, pulando`); continue; }
-      const m4a = `${voiceDir(seed)}/revisao.m4a`;
-      execFileSync(FFMPEG, ["-y", "-i", `${voiceDir(seed)}/tratado.wav`, "-c:a", "aac", "-b:a", "128k", m4a], { stdio: "ignore" });
-      form.append(`take-${seed}`, await openAsBlob(m4a), `voz-${seed}.m4a`);
-      form.append(`unmatched-${seed}`, "0");
+      if (r.unmatched > MAX_TO_CHECK) { console.log(`[${now()}] semente ${seed}: ${r.unmatched} palavra(s) sem par, pulando`); continue; }
+      candidates.push({ seed, unmatched: r.unmatched });
+    }
+    const chosenTakes = candidates.sort((a, b) => a.unmatched - b.unmatched).slice(0, 2);
+    let takes = 0;
+    for (const c of chosenTakes) {
+      const m4a = `${voiceDir(c.seed)}/revisao.m4a`;
+      execFileSync(FFMPEG, ["-y", "-i", `${voiceDir(c.seed)}/tratado.wav`, "-c:a", "aac", "-b:a", "128k", m4a], { stdio: "ignore" });
+      form.append(`take-${c.seed}`, await openAsBlob(m4a), `voz-${c.seed}.m4a`);
+      form.append(`unmatched-${c.seed}`, String(c.unmatched));
       takes++;
     }
-    if (!takes) return fail(job.id, `a voz saiu com palavra sem par em 4 sementes seguidas (até a ${seed - 1}); revise o texto das falas`, false);
-    const res = await fetch(`${cfg.api}/worker/jobs/${job.id}/voice`, { method: "POST", headers: { "X-Worker-Key": cfg.key }, body: form });
+    if (!takes) return fail(job.id, `a voz saiu com mais de ${MAX_TO_CHECK} palavras sem par em 4 sementes (até a ${seed - 1}); revise o texto das falas ou a pronúncia`, false);
+    const res = await apiFetch(`${cfg.api}/worker/jobs/${job.id}/voice`, { method: "POST", headers: { "X-Worker-Key": cfg.key }, body: form });
     if (!res.ok) return fail(job.id, `entrega das versões da voz: ${res.status} ${await res.text()}`, true);
     console.log(`[${now()}] ${takes} versão(ões) da voz entregues; esperando a escolha no Console`);
     return;
@@ -129,7 +137,7 @@ async function round() {
   // Voz escolhida: confere o cache (rápido) e segue com essa semente, sem trocar.
   const chosen = await makeVoice(seed, `conferindo a voz escolhida (semente ${seed})`);
   if (chosen.error) return fail(job.id, chosen.error, chosen.retry);
-  if (chosen.unmatched > 0) return fail(job.id, `a voz escolhida (semente ${seed}) saiu com palavra sem par; peça outras versões`, false);
+  if (chosen.unmatched > 3) return fail(job.id, `a voz escolhida (semente ${seed}) mudou no cache; peça outras versões`, false);
 
   // 3. Gravação de tela (RB-50): blocos que a IA escreveu com "cena" e trecho "gravar-bloco-N" são gravados agora.
   if (scenes.length) {
@@ -178,7 +186,8 @@ async function round() {
   // Portão (etapa 5 do pacote): palavra sem par = a síntese pode ter engolido texto. Outra semente costuma resolver.
   const unmatched = readUnmatched(projectDir, voice, seed) ?? parseUnmatched(log);
   if (unmatched === null) return fail(job.id, "não achei a contagem de palavras sem par no log do pipeline", false);
-  if (unmatched > 0) return fail(job.id, `${unmatched} palavra(s) sem par no alinhamento com a semente ${seed}`, true);
+  // Voz aprovada pelo ouvido: palavra sem par já foi ouvida e aceita; vira só aviso.
+  if (unmatched > 0 && !job.voiceApproved) return fail(job.id, `${unmatched} palavra(s) sem par no alinhamento com a semente ${seed}`, true);
 
   const { found, missing } = expectedOutputs(`${cfg.base}/finais`, projectDir, nome, existsSync);
   if (missing.length) return fail(job.id, `arquivo esperado não apareceu: ${missing.join(", ")}`, false);
@@ -206,7 +215,7 @@ async function voiceRound() {
   try {
     let created;
     if (v.kind === "Clone") {
-      const ref = await fetch(`${cfg.api}/worker/voices/${v.id}/reference?workerId=${encodeURIComponent(cfg.workerId)}`, { headers: { "X-Worker-Key": cfg.key } });
+      const ref = await apiFetch(`${cfg.api}/worker/voices/${v.id}/reference?workerId=${encodeURIComponent(cfg.workerId)}`, { headers: { "X-Worker-Key": cfg.key } });
       if (!ref.ok) throw new Error(`gravação não veio: ${ref.status}`);
       const ext = ({ "audio/webm": ".webm", "audio/ogg": ".ogg", "audio/mp4": ".m4a", "audio/mpeg": ".mp3", "audio/wav": ".wav" })[ref.headers.get("content-type")?.split(";")[0] ?? ""] ?? ".webm";
       const file = `${dir}/referencia${ext}`;
@@ -227,7 +236,7 @@ async function voiceRound() {
       execFileSync(FFMPEG, ["-y", "-i", wav, "-c:a", "aac", "-b:a", "96k", m4a], { stdio: "ignore" });
       form.append(`sample-${seed}`, await openAsBlob(m4a), `amostra-${seed}.m4a`);
     }
-    const done = await fetch(`${cfg.api}/worker/voices/${v.id}/complete`, { method: "POST", headers: { "X-Worker-Key": cfg.key }, body: form });
+    const done = await apiFetch(`${cfg.api}/worker/voices/${v.id}/complete`, { method: "POST", headers: { "X-Worker-Key": cfg.key }, body: form });
     if (!done.ok) throw new Error(`entrega das amostras: ${done.status} ${await done.text()}`);
     console.log(`[${now()}] voz ${v.key} pronta`);
   } catch (e) {
@@ -317,7 +326,7 @@ function runPipeline(jobId, bin, args) {
 async function upload(brandKey, path) {
   const form = new FormData();
   form.append("file", await openAsBlob(path), basename(path));
-  const res = await fetch(`${cfg.api}/worker/media/${encodeURIComponent(brandKey)}`, { method: "POST", headers: { "X-Worker-Key": cfg.key }, body: form });
+  const res = await apiFetch(`${cfg.api}/worker/media/${encodeURIComponent(brandKey)}`, { method: "POST", headers: { "X-Worker-Key": cfg.key }, body: form });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(`upload de ${basename(path)} falhou: ${res.status} ${data.error ?? ""}`);
   return data.url;
@@ -332,8 +341,24 @@ async function fail(jobId, error, retry) {
   await call("POST", `/worker/jobs/${jobId}/fail`, { workerId: cfg.workerId, error, retry });
 }
 
+/**
+ * fetch pra API com nova tentativa quando a conexão cai ("fetch failed"): o worker passa minutos travado em voz e
+ * render e a conexão parada é fechada no caminho; a primeira chamada depois disso falhava sem ter chegado ao servidor.
+ */
+async function apiFetch(url, options) {
+  for (let i = 1; ; i++) {
+    try {
+      return await fetch(url, options);
+    } catch (e) {
+      if (i >= 3 || !(e instanceof TypeError)) throw e;
+      console.error(`[${now()}] conexão caiu (${e.cause?.code ?? e.message}), tentando de novo`);
+      await sleep(2000 * i);
+    }
+  }
+}
+
 async function call(method, path, body) {
-  const res = await fetch(cfg.api + path, {
+  const res = await apiFetch(cfg.api + path, {
     method,
     headers: { "Content-Type": "application/json", "X-Worker-Key": cfg.key },
     body: body ? JSON.stringify(body) : undefined,

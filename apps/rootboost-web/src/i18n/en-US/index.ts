@@ -69,6 +69,7 @@ export default {
       hint: 'Two takes of the same lines. Pick the most natural one by ear; only then the screen is recorded and the video assembled.',
       version: 'Take {n}',
       listen: 'Listen',
+      toCheck: '{n} word to check | {n} words to check',
       use: 'Use this one',
       redo: 'None is good: make two more',
       chosen: 'Voice chosen. The video goes back to the queue to be assembled.',

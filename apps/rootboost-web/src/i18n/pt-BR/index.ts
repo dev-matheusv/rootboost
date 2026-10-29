@@ -69,6 +69,7 @@ export default {
       hint: 'Duas versões da mesma fala. Escolha a mais natural pelo ouvido; só então a tela é gravada e o vídeo montado.',
       version: 'Versão {n}',
       listen: 'Ouvir',
+      toCheck: '{n} palavra pra conferir | {n} palavras pra conferir',
       use: 'Usar esta',
       redo: 'Nenhuma ficou boa: gerar outras duas',
       chosen: 'Voz escolhida. O vídeo volta pra fila pra ser montado.',

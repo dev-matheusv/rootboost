@@ -88,7 +88,10 @@
             </div>
             <div class="text-caption text-grey-7">{{ $t('studio.voiceReview.hint') }}</div>
             <div v-for="(take, i) in job.voiceTakes" :key="take.seed" class="row items-center no-wrap q-gutter-x-sm">
-              <div class="text-weight-medium" style="min-width: 76px">{{ $t('studio.voiceReview.version', { n: i + 1 }) }}</div>
+              <div style="min-width: 76px">
+                <div class="text-weight-medium">{{ $t('studio.voiceReview.version', { n: i + 1 }) }}</div>
+                <div v-if="take.unmatched" class="text-caption text-warning">{{ $t('studio.voiceReview.toCheck', take.unmatched) }}</div>
+              </div>
               <audio v-if="takeUrls[`${job.id}-${take.seed}`]" :src="takeUrls[`${job.id}-${take.seed}`]" controls class="col" />
               <q-btn v-else flat dense no-caps color="primary" :icon="mdiPlay" :label="$t('studio.voiceReview.listen')" class="col"
                 @click="loadTake(job.id, take.seed)" />
