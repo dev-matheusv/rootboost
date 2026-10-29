@@ -226,7 +226,11 @@ public sealed class ScriptWriter
             sb.AppendLine(product?.AppUrl is { Length: > 0 }
                 ? "Acervo da marca: use uma destas mídias no bloco quando ela mostrar a cena melhor que gravar a tela (campo midia = id; vazio pra gravar)."
                 : "Acervo da marca: cada bloco usa uma destas mídias (campo midia = id), a que melhor mostra a cena; não repita a mesma se houver outras.");
-            foreach (var m in media) sb.AppendLine($"- {m.Id:N}: {(m.IsVideo ? "vídeo" : "foto")}: {m.Description ?? m.FileName}");
+            sb.AppendLine("Não use mídia de tela vazia (lista sem itens, formulário em branco) nem a que fica quase toda borrada; " +
+                "pra mostrar o sistema funcionando, prefira a gravação de tela (midia vazia) quando o produto tem app.");
+            foreach (var m in media)
+                sb.AppendLine($"- {m.Id:N}: {(m.IsVideo ? "vídeo" : "foto")}: {m.Description ?? m.FileName}" +
+                    (m.RedactedStorageKey is not null ? $" (com {m.PersonalDataKinds ?? "dado pessoal"} borrado)" : ""));
         }
         if (brand is not null)
         {

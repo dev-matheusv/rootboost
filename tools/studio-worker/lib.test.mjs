@@ -80,7 +80,10 @@ test("acervo: blocos com mídia, foto vira trecho e troca dos trechos", async ()
   assert.deepEqual(libraryScenes(roteiro), [{ index: 0, id, seconds: 6 }]);
   const args = photoClipArgs("in.jpg", "out.mp4", 3000, 4000, 6);
   assert.equal(args[args.indexOf("-t") + 1], "8");
-  assert.match(args[args.indexOf("-vf") + 1], /s=1080x1350/);
+  assert.match(args[args.indexOf("-vf") + 1], /s=1080x1350/); // retrato: recorta
+  // Print largo: não corta, cabe inteiro na largura com fundo desfocado.
+  const wide = photoClipArgs("in.jpg", "out.mp4", 1920, 1080, 6, { x: 0.1, y: 0.2, w: 0.8, h: 0.5 });
+  assert.match(wide[wide.indexOf("-filter_complex") + 1], /boxblur.*overlay/);
   const out = applyLibrary(roteiro, [{ index: 0, source: `acervo-${id}`, duration: 8 }]);
   assert.deepEqual(out.blocos[0].trechos, [[`acervo-${id}`, 0, 7.9, 1]]);
   assert.deepEqual(roteiro.blocos[0].trechos, [[`acervo-${id}`, 0, 6]]);

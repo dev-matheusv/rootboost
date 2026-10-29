@@ -61,8 +61,10 @@ Enquanto a gravação automática da tela (RB-50) não existe, cada bloco escrit
 
 - **Vídeo pronto não vira trecho:** `MediaAssets.Finished`. Entrega do worker já nasce pronta; no Acervo, chave "Reel
   pronto" nos vídeos. A IA do roteiro não vê vídeo pronto (sairia com título e legenda em dobro).
-- **Foto enche a tela:** a descrição da IA marca o `foco` (área que interessa). O worker recorta 4:5 em volta do foco
-  (8% de folga) e gera 1080x1350 com aproximação lenta, em vez de encolher o print inteiro no meio do 9:16.
+- **Foto enche a tela sem cortar texto:** a descrição da IA marca o `foco` (linhas inteiras, sem área vazia). Foco
+  alto (retrato, antes e depois): recorta 4:5 e enche. Foco largo (print de tela, documento): cabe inteiro na largura,
+  com a própria imagem desfocada no fundo; nunca corta palavra (relato de 29/10: o recorte comia "Dias de Afastamento").
+- A IA do roteiro evita mídia de tela vazia ou quase toda borrada e prefere gravação de tela pra mostrar o sistema.
 - **Texto:** fala pra você (sem "eu fiz"), imperativo correto ("teste"), fala do que a cena mostra, só recursos cadastrados.
 - Ainda no pipeline (narrado-calmo): título, foto e legenda num bloco só; revisão automática pela grade de quadros.
 
