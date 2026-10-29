@@ -21,6 +21,11 @@ loadEnvFile(join(here, "worker.env"));
 const FFMPEG = process.env.FFMPEG_PATH ?? "C:/DMaker/bin/ffmpeg/bin/ffmpeg.exe";
 const FFPROBE = process.env.FFPROBE_PATH ?? FFMPEG.replace(/ffmpeg(\.exe)?$/i, "ffprobe$1");
 
+const DMAKER = process.env.DMAKER_PATH ?? "C:/DMaker/.venv/Scripts/dmaker.exe";
+const PY = process.env.DMAKER_PYTHON ?? "C:/DMaker/.venv/Scripts/python.exe";
+// Frase das amostras de voz: curta, neutra, com pergunta e pausa (mostra a entonação).
+const SAMPLE_TEXT = "Oi! Esta é uma amostra da voz para os vídeos da marca. Dá pra ouvir com calma, e se gostar, é só escolher esta.";
+
 const cfg = {
   api: (process.env.ROOTBOOST_API ?? "").replace(/\/+$/, ""),
   key: process.env.ROOTBOOST_WORKER_KEY ?? "",
@@ -46,6 +51,7 @@ if (!cfg.api || !cfg.key) {
 const once = process.argv.includes("--once");
 do {
   try {
+    await voiceRound();
     await round();
   } catch (e) {
     console.error(`[${now()}] rodada falhou:`, e.message);
@@ -62,7 +68,10 @@ async function round() {
   console.log(`[${now()}] job ${job.id} (${job.theme}) como ${nome}, semente ${seed}, tentativa ${job.attempts}`);
 
   const voice = job.voiceKey ?? (cfg.privateVoices.get(cfg.defaultVoice.toLowerCase()) === job.brandKey ? cfg.defaultVoice : null);
-  const problem = voiceProblem(voice, job.brandKey, cfg.privateVoices);
+  // Vozes cadastradas na plataforma também são particulares da marca dona (somadas às do worker.env).
+  const owners = new Map(cfg.privateVoices);
+  for (const v of (await call("GET", "/worker/voices/keys")).data ?? []) owners.set(String(v.key).toLowerCase(), String(v.brandKey).toLowerCase());
+  const problem = voiceProblem(voice, job.brandKey, owners);
   if (problem) return fail(job.id, problem, false);
 
   const projectDir = `${cfg.base}/projetos/${nome}`;
@@ -128,6 +137,63 @@ async function round() {
   for (const o of found) outputs.push({ role: o.role, url: await upload(job.brandKey, o.path) });
   const done = await call("POST", `/worker/jobs/${job.id}/deliver`, { workerId: cfg.workerId, outputs, warnings: warningsFrom(log), seed });
   console.log(`[${now()}] entregue: ${done.status}`);
+}
+
+/**
+ * Voz da marca (RB-59): pega a próxima da fila, cria no DMaker com a marca dona gravada no perfil e gera duas amostras
+ * (sementes 1 e 2) pra pessoa ouvir e escolher. A gravação vem pela API com a chave do worker, nunca por link público.
+ */
+async function voiceRound() {
+  const res = await call("POST", "/worker/voices/claim", { workerId: cfg.workerId });
+  if (res.status === 204) return;
+  const v = res.data;
+  if (!/^[a-z0-9-]{3,64}$/.test(v.key ?? "")) return voiceFail(v.id, `id de voz inválido: ${v.key}`, false);
+  console.log(`[${now()}] voz ${v.key} (${v.kind}) da marca ${v.brandKey}, tentativa ${v.attempts}`);
+  const dir = `${cfg.base}/vozes/${v.key}`;
+  mkdirSync(dir, { recursive: true });
+  try {
+    let created;
+    if (v.kind === "Clone") {
+      const ref = await fetch(`${cfg.api}/worker/voices/${v.id}/reference?workerId=${encodeURIComponent(cfg.workerId)}`, { headers: { "X-Worker-Key": cfg.key } });
+      if (!ref.ok) throw new Error(`gravação não veio: ${ref.status}`);
+      const ext = ({ "audio/webm": ".webm", "audio/ogg": ".ogg", "audio/mp4": ".m4a", "audio/mpeg": ".mp3", "audio/wav": ".wav" })[ref.headers.get("content-type")?.split(";")[0] ?? ""] ?? ".webm";
+      const file = `${dir}/referencia${ext}`;
+      writeFileSync(file, Buffer.from(await ref.arrayBuffer()));
+      // Sem --text: a gravação tem a autorização + a leitura (mais de 20 s); o DMaker transcreve e escolhe os 15 s com mais fala.
+      created = dmaker(["voice", "clone", v.key, file, "--brand", v.brandKey]);
+    } else {
+      created = dmaker(["voice", "design", v.key, "--instruct", v.instruct, "--brand", v.brandKey]);
+    }
+    if (!created.ok && !/Já existe a voz/.test(created.out)) throw new Error(lastLine(created.out) || "dmaker voice falhou");
+
+    writeFileSync(`${dir}/amostra.txt`, SAMPLE_TEXT);
+    const form = new FormData();
+    form.append("workerId", cfg.workerId);
+    for (const seed of [1, 2]) {
+      const wav = `${dir}/amostra-${seed}.wav`, m4a = `${dir}/amostra-${seed}.m4a`;
+      execFileSync(PY, ["-X", "utf8", `${cfg.tools}/falar-continuo.py`, v.key, `${dir}/amostra.txt`, wav, "32", String(seed)], { stdio: "ignore" });
+      execFileSync(FFMPEG, ["-y", "-i", wav, "-c:a", "aac", "-b:a", "96k", m4a], { stdio: "ignore" });
+      form.append(`sample-${seed}`, await openAsBlob(m4a), `amostra-${seed}.m4a`);
+    }
+    const done = await fetch(`${cfg.api}/worker/voices/${v.id}/complete`, { method: "POST", headers: { "X-Worker-Key": cfg.key }, body: form });
+    if (!done.ok) throw new Error(`entrega das amostras: ${done.status} ${await done.text()}`);
+    console.log(`[${now()}] voz ${v.key} pronta`);
+  } catch (e) {
+    return voiceFail(v.id, e.message, true);
+  }
+}
+
+function dmaker(args) {
+  try {
+    return { ok: true, out: execFileSync(DMAKER, args, { encoding: "utf8", env: { ...process.env, PYTHONIOENCODING: "utf-8" } }) };
+  } catch (e) {
+    return { ok: false, out: `${e.stdout ?? ""}${e.stderr ?? ""}` };
+  }
+}
+
+async function voiceFail(id, error, retry) {
+  console.error(`[${now()}] voz falhou${retry ? " (volta pra fila)" : ""}: ${error}`);
+  await call("POST", `/worker/voices/${id}/fail`, { workerId: cfg.workerId, error, retry });
 }
 
 /** Baixa a mídia e deixa em brutos/acervo-<id>/acervo-<id>.mp4 (o pipeline lê dali). Devolve a duração em segundos. */

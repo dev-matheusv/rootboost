@@ -67,6 +67,19 @@ largura); foto vira trecho com aproximação lenta (zoompan, 10%) com 2 s de fol
 caber na fala. Foto sem descrição não entra na lista (a IA não enxerga a imagem no roteiro, só a descrição).
 Custo: zero de IA além do roteiro; a descrição da foto é feita uma vez no upload (`media-describe`, ~US$ 0,01). Qualquer foto (JPG, PNG, WebP, até 40 MB, de pé conforme o EXIF) é convertida no servidor pra JPEG de até 1568 px antes de ir pra IA (SkiaSharp, MIT): o limite de 5 MB da API vale pra imagem em base64, e foto de celular passava disso. Erro do provedor vira 502 com mensagem clara e o motivo vai pro log.
 
+## Vozes da marca (RB-59)
+
+Página **Vozes** no Console: a pessoa grava a própria voz (no celular ou no computador, pelo navegador) ou cria uma voz do
+banco (gênero, idade e tom). A gravação começa com a **autorização falada** ("Eu, Fulana, autorizo a Marca a criar e usar
+uma voz com IA a partir desta gravação, somente nos vídeos e posts da marca") e segue com um texto de leitura (~30 s no
+total). Quem autorizou, quando e o texto ficam em `NarrationVoices`. Gravação e amostras ficam **privadas** no bucket
+(`voices/<marca>/...`): só saem pela API com login (Console) ou com a chave do worker. Fila igual à do estúdio:
+o worker pega (`/worker/voices/claim`), baixa a gravação, roda `dmaker voice clone <key> <arquivo> --brand <marca>` (ou
+`voice design --instruct`), gera duas amostras com `falar-continuo.py` (sementes 1 e 2) e entrega. A pessoa ouve e
+escolhe; a semente escolhida vira a padrão dos jobs com essa voz. **Trava de marca:** job com voz de outra marca é
+recusado na API, e o worker soma as vozes da plataforma às particulares do `worker.env` antes de narrar. O id da voz
+leva a marca (`<marca>-<nome>-xxxx`). Custo: zero de IA paga (DMaker local).
+
 ## Rotas do Console (login do Console)
 
 | Rota | O que faz |

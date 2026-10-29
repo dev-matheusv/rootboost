@@ -54,6 +54,7 @@ const base = computed<Command[]>(() => {
   return [
     { id: 'publications', group: nav, label: t('nav.publications'), keywords: 'agenda calendario fila posts', run: go('publications') },
     { id: 'acervo', group: nav, label: t('nav.acervo'), keywords: 'fotos videos criativos arquivos midia', run: go('acervo') },
+    { id: 'vozes', group: nav, label: t('nav.vozes'), keywords: 'voz gravar narracao clonar banco', run: go('vozes') },
     { id: 'studio', group: nav, label: t('nav.studio'), keywords: 'video reel roteiro falas render estudio', run: go('studio') },
     { id: 'overview', group: nav, label: t('nav.overview'), keywords: 'inicio painel', run: go('overview') },
     { id: 'campaigns', group: nav, label: t('nav.campaigns'), keywords: 'anuncios ads meta google trafego', run: go('campaigns') },
