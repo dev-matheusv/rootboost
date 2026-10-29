@@ -117,8 +117,7 @@ async function round() {
 
   if (!job.voiceApproved) {
     // Revisão da voz (29/10): duas versões limpas (até 4 sementes), a pessoa ouve no Console e escolhe; o job para aqui.
-    const form = new FormData();
-    form.append("workerId", cfg.workerId);
+    const parts = [["workerId", cfg.workerId]];
     // Versão limpa primeiro; se a mesma palavra nunca casa no Whisper (ex.: termo técnico), até 3 palavras a conferir
     // vão pra pessoa ouvir, com o aviso. Quem decide é o ouvido, não o alinhamento.
     const MAX_TO_CHECK = 3;
@@ -134,12 +133,11 @@ async function round() {
     for (const c of chosenTakes) {
       const m4a = `${voiceDir(c.seed)}/revisao.m4a`;
       execFileSync(FFMPEG, ["-y", "-i", `${voiceDir(c.seed)}/tratado.wav`, "-c:a", "aac", "-b:a", "128k", m4a], { stdio: "ignore" });
-      form.append(`take-${c.seed}`, await openAsBlob(m4a), `voz-${c.seed}.m4a`);
-      form.append(`unmatched-${c.seed}`, String(c.unmatched));
+      parts.push([`take-${c.seed}`, { path: m4a, filename: `voz-${c.seed}.m4a` }], [`unmatched-${c.seed}`, String(c.unmatched)]);
       takes++;
     }
     if (!takes) return fail(job.id, `a voz saiu com mais de ${MAX_TO_CHECK} palavras sem par em 4 sementes (até a ${seed - 1}); revise o texto das falas ou a pronúncia`, false);
-    const res = await apiFetch(`${cfg.api}/worker/jobs/${job.id}/voice`, { method: "POST", headers: { "X-Worker-Key": cfg.key }, body: form });
+    const res = await apiFetch(`${cfg.api}/worker/jobs/${job.id}/voice`, async () => ({ method: "POST", headers: { "X-Worker-Key": cfg.key }, body: await buildForm(parts) }));
     if (!res.ok) return fail(job.id, `entrega das versões da voz: ${res.status} ${await res.text()}`, true);
     console.log(`[${now()}] ${takes} versão(ões) da voz entregues; esperando a escolha no Console`);
     return;
@@ -239,15 +237,14 @@ async function voiceRound() {
     if (!created.ok && !/Já existe a voz/.test(created.out)) throw new Error(lastLine(created.out) || "dmaker voice falhou");
 
     writeFileSync(`${dir}/amostra.txt`, SAMPLE_TEXT);
-    const form = new FormData();
-    form.append("workerId", cfg.workerId);
+    const parts = [["workerId", cfg.workerId]];
     for (const seed of [1, 2]) {
       const wav = `${dir}/amostra-${seed}.wav`, m4a = `${dir}/amostra-${seed}.m4a`;
       execFileSync(PY, ["-X", "utf8", `${cfg.tools}/falar-continuo.py`, v.key, `${dir}/amostra.txt`, wav, "32", String(seed)], { stdio: "ignore" });
       execFileSync(FFMPEG, ["-y", "-i", wav, "-c:a", "aac", "-b:a", "96k", m4a], { stdio: "ignore" });
-      form.append(`sample-${seed}`, await openAsBlob(m4a), `amostra-${seed}.m4a`);
+      parts.push([`sample-${seed}`, { path: m4a, filename: `amostra-${seed}.m4a` }]);
     }
-    const done = await apiFetch(`${cfg.api}/worker/voices/${v.id}/complete`, { method: "POST", headers: { "X-Worker-Key": cfg.key }, body: form });
+    const done = await apiFetch(`${cfg.api}/worker/voices/${v.id}/complete`, async () => ({ method: "POST", headers: { "X-Worker-Key": cfg.key }, body: await buildForm(parts) }));
     if (!done.ok) throw new Error(`entrega das amostras: ${done.status} ${await done.text()}`);
     console.log(`[${now()}] voz ${v.key} pronta`);
   } catch (e) {
@@ -335,9 +332,8 @@ function runPipeline(jobId, bin, args) {
 }
 
 async function upload(brandKey, path) {
-  const form = new FormData();
-  form.append("file", await openAsBlob(path), basename(path));
-  const res = await apiFetch(`${cfg.api}/worker/media/${encodeURIComponent(brandKey)}`, { method: "POST", headers: { "X-Worker-Key": cfg.key }, body: form });
+  const res = await apiFetch(`${cfg.api}/worker/media/${encodeURIComponent(brandKey)}`,
+    async () => ({ method: "POST", headers: { "X-Worker-Key": cfg.key }, body: await buildForm([["file", { path, filename: basename(path) }]]) }));
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(`upload de ${basename(path)} falhou: ${res.status} ${data.error ?? ""}`);
   return data.url;
@@ -359,9 +355,11 @@ async function fail(jobId, error, retry) {
 async function apiFetch(url, options) {
   for (let i = 1; ; i++) {
     try {
-      return await fetch(url, options);
+      // Corpo com arquivo é montado de novo a cada tentativa: o FormData da tentativa que caiu já foi consumido
+      // (29/10: as 3 tentativas falhavam reaproveitando o mesmo formulário).
+      return await fetch(url, typeof options === "function" ? await options() : options);
     } catch (e) {
-      if (i >= 3 || !(e instanceof TypeError)) throw e;
+      if (i >= 4 || !(e instanceof TypeError)) throw new Error(`${e.message}${e.cause?.code ? ` (${e.cause.code})` : ""}`);
       console.error(`[${now()}] conexão caiu (${e.cause?.code ?? e.message}), tentando de novo`);
       await sleep(2000 * i);
     }
@@ -383,6 +381,15 @@ async function call(method, path, body) {
   }
   if (res.status >= 400) throw new Error(`${method} ${path}: ${res.status} ${typeof data === "object" ? data?.error ?? "" : data}`);
   return { status: res.status, data };
+}
+
+/** FormData a partir de [nome, texto] ou [nome, { path, filename }]; arquivo lido na hora (cada tentativa, um novo). */
+async function buildForm(parts) {
+  const form = new FormData();
+  for (const [name, value] of parts)
+    if (typeof value === "string") form.append(name, value);
+    else form.append(name, await openAsBlob(value.path), value.filename);
+  return form;
 }
 
 /** Contas de demonstração por marca, só no PC: { "<marca>": { "url", "usuario", "senha" } }. Nunca vão pra API. */
