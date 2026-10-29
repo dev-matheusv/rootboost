@@ -1,39 +1,32 @@
 <template>
   <q-layout>
     <q-page-container>
-      <q-page class="row justify-center items-center q-pa-lg">
-        <q-card flat class="full-width card-rounded login-card" :class="$q.dark.isActive ? 'card-bordered-dark' : 'card-bordered-light'">
-          <div class="row">
-            <div :class="['col-12 col-md-5 flex flex-center brand-panel', $q.dark.isActive ? 'dark-focus' : 'light-focus']">
-              <div class="text-center q-pa-xl">
-                <img src="/favicon.svg" alt="RootBoost" width="120" height="120" />
-                <div class="text-h3 sora-bold q-mt-md">RootBoost</div>
-                <div class="text-subtitle2 q-mt-xs text-grey-7">{{ $t('app.tagline') }}</div>
-              </div>
-            </div>
-            <div class="col-12 col-md-7 flex flex-center">
-              <div class="q-pa-xl" style="width: 100%; max-width: 440px">
-                <div class="text-h5 sora text-center q-mb-lg">{{ $t('pages.login.title') }}</div>
-                <q-form class="q-gutter-md" @submit.prevent="submit">
-                  <q-input v-model="email" type="email" autocomplete="username" :label="$t('form.email')" outlined>
-                    <template #prepend><q-icon :name="mdiEmailOutline" color="primary" /></template>
-                  </q-input>
-                  <q-input v-model="password" :type="showPassword ? 'text' : 'password'" autocomplete="current-password"
-                    :label="$t('form.password')" outlined>
-                    <template #prepend><q-icon :name="mdiLockOutline" color="primary" /></template>
-                    <template #append>
-                      <q-btn flat round dense :icon="showPassword ? mdiEye : mdiEyeOffOutline" @click="showPassword = !showPassword" />
-                    </template>
-                  </q-input>
-                  <q-banner v-if="failureMessage" rounded dense class="bg-red-1 text-negative">
-                    {{ failureMessage }}
-                  </q-banner>
-                  <q-btn type="submit" class="full-width" size="lg" unelevated rounded color="primary"
-                    :loading="auth.isLoading" :label="$t('common.actions.login')" />
-                </q-form>
-              </div>
-            </div>
+      <!-- Um cartão só, centrado, igual em qualquer largura (o de duas colunas vazava no celular e em janela estreita). -->
+      <q-page class="login-page row justify-center items-center q-pa-md">
+        <q-card flat class="login-card card-rounded q-pa-lg" :class="$q.dark.isActive ? 'card-bordered-dark' : 'card-bordered-light'">
+          <div class="column items-center q-mb-lg">
+            <img src="/favicon.svg" alt="" width="64" height="64" />
+            <div class="text-h5 sora-bold q-mt-sm">RootBoost</div>
+            <div class="text-caption text-grey-6">{{ $t('app.tagline') }}</div>
           </div>
+          <div class="text-subtitle1 text-weight-medium q-mb-md">{{ $t('pages.login.title') }}</div>
+          <q-form class="column q-gutter-y-md" @submit.prevent="submit">
+            <q-input v-model="email" type="email" autocomplete="username" :label="$t('form.email')" outlined>
+              <template #prepend><q-icon :name="mdiEmailOutline" color="primary" /></template>
+            </q-input>
+            <q-input v-model="password" :type="showPassword ? 'text' : 'password'" autocomplete="current-password"
+              :label="$t('form.password')" outlined>
+              <template #prepend><q-icon :name="mdiLockOutline" color="primary" /></template>
+              <template #append>
+                <q-btn flat round dense :icon="showPassword ? mdiEye : mdiEyeOffOutline" @click="showPassword = !showPassword" />
+              </template>
+            </q-input>
+            <q-banner v-if="failureMessage" rounded dense class="bg-red-1 text-negative">
+              {{ failureMessage }}
+            </q-banner>
+            <q-btn type="submit" class="full-width" size="lg" unelevated rounded color="primary" no-caps
+              :loading="auth.isLoading" :label="$t('common.actions.login')" />
+          </q-form>
         </q-card>
       </q-page>
     </q-page-container>
@@ -73,6 +66,13 @@ async function submit() {
 </script>
 
 <style lang="scss" scoped>
-.login-card { max-width: 980px; overflow: hidden; }
-.brand-panel { border-radius: 15px 15px 80px 15px; }
+.login-page { min-height: 100vh; background: radial-gradient(1200px 600px at 20% -10%, rgba(122, 76, 224, 0.28), transparent 60%),
+  radial-gradient(900px 500px at 110% 110%, rgba(255, 122, 89, 0.14), transparent 60%); }
+.login-card { width: 100%; max-width: 420px; }
+/* Preenchimento automático do navegador pintava o campo de azul-claro em cima do tema escuro. */
+:deep(input:-webkit-autofill), :deep(input:-webkit-autofill:hover), :deep(input:-webkit-autofill:focus) {
+  -webkit-text-fill-color: currentColor;
+  -webkit-box-shadow: 0 0 0 1000px transparent inset;
+  transition: background-color 9999s ease-out 0s;
+}
 </style>
