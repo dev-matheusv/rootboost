@@ -33,6 +33,7 @@ public sealed class RootBoostDbContext : DbContext
     /// <summary>Avisos de operação pro humano (post que falhou, sync de anúncio, conexão da Meta). RB-58.</summary>
     public DbSet<OpsAlert> OpsAlerts => Set<OpsAlert>();
     public DbSet<CreativeJob> CreativeJobs => Set<CreativeJob>();
+    public DbSet<NarrationVoice> NarrationVoices => Set<NarrationVoice>();
     public DbSet<PushDevice> PushDevices => Set<PushDevice>();
     public DbSet<BrandProduct> BrandProducts => Set<BrandProduct>();
     public DbSet<RootBoost.Application.Ai.AiUsageEntry> AiUsage => Set<RootBoost.Application.Ai.AiUsageEntry>();
@@ -155,6 +156,31 @@ public sealed class RootBoostDbContext : DbContext
         job.Ignore(x => x.Outputs);
         job.HasIndex(x => new { x.Status, x.CreatedAt });
         job.HasIndex(x => new { x.BrandKey, x.CreatedAt });
+
+        // Vozes das marcas (RB-59): clone com consentimento ou voz do banco; fila do worker como a do estúdio.
+        var voice = b.Entity<NarrationVoice>();
+        voice.HasKey(x => x.Id);
+        voice.Property(x => x.BrandKey).HasMaxLength(64).IsRequired();
+        voice.Property(x => x.Key).HasMaxLength(64).IsRequired();
+        voice.HasIndex(x => x.Key).IsUnique();
+        voice.Property(x => x.Name).HasMaxLength(60).IsRequired();
+        voice.Property(x => x.Kind).HasConversion<string>().HasMaxLength(16);
+        voice.Property(x => x.Status).HasConversion<string>().HasMaxLength(16);
+        voice.Property(x => x.ReferenceStorageKey).HasMaxLength(300);
+        voice.Property(x => x.ReferenceText).HasMaxLength(1000);
+        voice.Property(x => x.Instruct).HasMaxLength(200);
+        voice.Property(x => x.ConsentBy).HasMaxLength(120);
+        voice.Property(x => x.ConsentText).HasMaxLength(600);
+        voice.Property(x => x.ConsentAt).HasConversion(v => v.HasValue ? v.Value.ToUniversalTime() : v, v => v);
+        voice.Property(x => x.SamplesJson).HasColumnType("jsonb").IsRequired();
+        voice.Property(x => x.WorkerId).HasMaxLength(100);
+        voice.Property(x => x.Error).HasMaxLength(1000);
+        voice.Property(x => x.CreatedAt).HasConversion(Utc);
+        voice.Property(x => x.UpdatedAt).HasConversion(Utc);
+        voice.Property(x => x.LeaseUntil).HasConversion(v => v.HasValue ? v.Value.ToUniversalTime() : v, v => v);
+        voice.Ignore(x => x.Samples);
+        voice.HasIndex(x => new { x.Status, x.CreatedAt });
+        voice.HasIndex(x => new { x.BrandKey, x.CreatedAt });
 
         // Aparelhos inscritos no push da PWA (RB-37). Um registro por endereço do navegador.
         var device = b.Entity<PushDevice>();

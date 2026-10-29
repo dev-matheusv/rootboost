@@ -229,12 +229,17 @@
               </div>
             </div>
           </div>
+          <!-- 3. Quem narra: as vozes prontas da marca (página Vozes). Vazio usa a voz padrão do estúdio. -->
+          <div v-if="voiceOptions.length > 1">
+            <div class="text-subtitle2 q-mb-xs">{{ $t('studio.newDialog.voice') }}</div>
+            <q-select v-model="form.voiceKey" outlined dense emit-value map-options :options="voiceOptions" />
+          </div>
           <!-- Ajustes finos ficam escondidos: quem não sabe não precisa ver. -->
           <q-expansion-item dense dense-toggle :label="$t('studio.newDialog.more')" header-class="text-grey-7 q-px-none">
             <div class="column q-gutter-y-sm q-pt-sm">
               <q-input v-if="aiEnabled" v-model="form.instructions" outlined dense autogrow :label="$t('studio.ai.instructions')"
                 :hint="$t('studio.ai.instructionsHint')" />
-              <q-input v-model="form.voiceKey" outlined dense :label="$t('studio.voice')" :hint="$t('studio.voiceHint')" maxlength="64" />
+              <q-input v-if="voiceOptions.length <= 1" v-model="form.voiceKey" outlined dense :label="$t('studio.voice')" :hint="$t('studio.voiceHint')" maxlength="64" />
             </div>
           </q-expansion-item>
         </q-card-section>
@@ -291,6 +296,18 @@ const aiEnabled = ref(false);
 const writing = ref(false);
 const instructions = ref('');
 const hooks = ref<string[]>([]);
+
+// Vozes prontas da marca pro "Quem narra?" do Novo vídeo.
+const voiceOptions = ref<{ label: string; value: string }[]>([]);
+async function loadVoices() {
+  try {
+    const { data } = await api.get<{ key: string; name: string; status: string }[]>(`/admin/brands/${brand.selected}/voices`);
+    const ready = data.filter((v) => v.status === 'Ready').map((v) => ({ label: v.name, value: v.key }));
+    voiceOptions.value = [{ label: t('studio.newDialog.defaultVoice'), value: '' }, ...ready];
+  } catch {
+    voiceOptions.value = [];
+  }
+}
 
 async function loadAiStatus() {
   try {
@@ -555,6 +572,7 @@ let timer: ReturnType<typeof setInterval> | undefined;
 onMounted(() => {
   void load();
   void loadAiStatus();
+  void loadVoices();
   timer = setInterval(() => {
     if (jobs.value.some((j) => isActive(j.status))) void load();
   }, 10_000);
@@ -565,6 +583,7 @@ watch(() => brand.selected, () => {
   selectedId.value = null;
   void load();
   void loadAiStatus();
+  void loadVoices();
 });
 </script>
 

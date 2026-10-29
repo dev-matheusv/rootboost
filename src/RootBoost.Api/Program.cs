@@ -414,6 +414,90 @@ brandProfile.MapPut("/media/{id:guid}/description", async (string key, Guid id, 
     return Results.Ok(MediaDto(options, req, asset));
 });
 
+// Vozes da marca (RB-59): gravar a própria voz (com autorização falada) ou escolher uma do banco; o worker cria no
+// DMaker e devolve duas amostras pra ouvir. Gravação e amostras ficam privadas: só saem por aqui, com login.
+brandProfile.MapGet("/voices/script", async (string key, string? person, IBrandStore brands, CancellationToken ct) =>
+{
+    var brand = (await brands.ListAsync(ct)).FirstOrDefault(b => b.Key == key.ToLowerInvariant());
+    if (brand is null) return Results.NotFound();
+    var who = string.IsNullOrWhiteSpace(person) ? "(seu nome)" : person.Trim();
+    return Results.Ok(new { consent = NarrationVoice.ConsentFor(who, brand.Name), reading = NarrationVoice.ReadingText });
+});
+
+brandProfile.MapGet("/voices", async (string key, RootBoost.Application.Studio.INarrationVoiceStore voices, CancellationToken ct) =>
+    Results.Ok((await voices.ListByBrandAsync(key.ToLowerInvariant(), ct)).Select(NarrationVoiceDto.From)));
+
+brandProfile.MapPost("/voices/clone", async (string key, [Microsoft.AspNetCore.Mvc.FromForm] VoiceCloneForm form, IBrandStore brands,
+    RootBoost.Application.Studio.INarrationVoiceStore voices, RootBoost.Application.Media.IMediaStorage storage, TimeProvider time, CancellationToken ct) =>
+{
+    var brand = (await brands.ListAsync(ct)).FirstOrDefault(b => b.Key == key.ToLowerInvariant());
+    if (brand is null) return Results.NotFound();
+    if (form.File is null || form.File.Length == 0) return Results.BadRequest(new { error = "gravação vazia" });
+    if (form.File.Length > VoiceAudio.MaxBytes) return Results.BadRequest(new { error = "gravação maior que 15 MB" });
+    var ext = Path.GetExtension(form.File.FileName).ToLowerInvariant();
+    if (!VoiceAudio.Types.TryGetValue(ext, out var contentType)) return Results.BadRequest(new { error = "use áudio webm, ogg, m4a, mp4, mp3 ou wav" });
+    if (!form.Consent) return Results.BadRequest(new { error = "a autorização é obrigatória" });
+    try
+    {
+        var storageKey = $"voices/{brand.Key}/{Guid.NewGuid():N}/referencia{ext}";
+        var voice = NarrationVoice.Clone(brand.Key, form.Name ?? "", storageKey, NarrationVoice.ReadingText, form.Person ?? "",
+            NarrationVoice.ConsentFor(form.Person ?? "", brand.Name), time.GetUtcNow());
+        await using (var stream = form.File.OpenReadStream())
+            await storage.PutAsync(storageKey, stream, form.File.Length, contentType, ct);
+        await voices.AddAsync(voice, ct);
+        return Results.Created($"/admin/brands/{brand.Key}/voices/{voice.Id}", NarrationVoiceDto.From(voice));
+    }
+    catch (ArgumentException ex) { return Results.BadRequest(new { error = ex.Message }); }
+}).DisableAntiforgery().WithMetadata(new Microsoft.AspNetCore.Mvc.RequestSizeLimitAttribute(VoiceAudio.MaxBytes + 1024 * 1024));
+
+brandProfile.MapPost("/voices/design", async (string key, VoiceDesignInput input, IBrandStore brands,
+    RootBoost.Application.Studio.INarrationVoiceStore voices, TimeProvider time, CancellationToken ct) =>
+{
+    var brandKey = key.ToLowerInvariant();
+    if (!(await brands.ListAsync(ct)).Any(b => b.Key == brandKey)) return Results.NotFound();
+    try
+    {
+        var voice = NarrationVoice.Design(brandKey, input.Name ?? "", input.Gender ?? "", input.Age ?? "", input.Pitch ?? "", time.GetUtcNow());
+        await voices.AddAsync(voice, ct);
+        return Results.Created($"/admin/brands/{brandKey}/voices/{voice.Id}", NarrationVoiceDto.From(voice));
+    }
+    catch (ArgumentException ex) { return Results.BadRequest(new { error = ex.Message }); }
+});
+
+brandProfile.MapGet("/voices/{id:guid}/samples/{seed:int}", async (string key, Guid id, int seed,
+    RootBoost.Application.Studio.INarrationVoiceStore voices, RootBoost.Application.Media.IMediaStorage storage, CancellationToken ct) =>
+{
+    var voice = await voices.GetAsync(id, ct);
+    var sample = voice is null || voice.BrandKey != key.ToLowerInvariant() ? null : voice.Samples.FirstOrDefault(x => x.Seed == seed);
+    if (sample is null) return Results.NotFound();
+    var obj = await storage.GetAsync(sample.StorageKey, ct);
+    return obj is null ? Results.NotFound() : Results.Stream(obj.Content, obj.ContentType);
+});
+
+brandProfile.MapPost("/voices/{id:guid}/choose", async (string key, Guid id, VoiceChooseInput input,
+    RootBoost.Application.Studio.INarrationVoiceStore voices, TimeProvider time, CancellationToken ct) =>
+{
+    var voice = await voices.GetAsync(id, ct);
+    if (voice is null || voice.BrandKey != key.ToLowerInvariant()) return Results.NotFound();
+    try { voice.Choose(input.Seed, time.GetUtcNow()); }
+    catch (Exception ex) when (ex is ArgumentException or InvalidOperationException) { return Results.BadRequest(new { error = ex.Message }); }
+    await voices.SaveAsync(voice, ct);
+    return Results.Ok(NarrationVoiceDto.From(voice));
+});
+
+brandProfile.MapDelete("/voices/{id:guid}", async (string key, Guid id, RootBoost.Application.Studio.INarrationVoiceStore voices,
+    RootBoost.Application.Media.IMediaStorage storage, CancellationToken ct) =>
+{
+    var voice = await voices.GetAsync(id, ct);
+    if (voice is null || voice.BrandKey != key.ToLowerInvariant()) return Results.NotFound();
+    if (voice.Status == NarrationVoiceStatus.Processing) return Results.Conflict(new { error = "o worker está criando esta voz; espere terminar" });
+    // Apaga gravação e amostras daqui. A voz no DMaker do PC some na próxima rodada do worker (ele confere a lista).
+    foreach (var k in voice.Samples.Select(x => x.StorageKey).Append(voice.ReferenceStorageKey).OfType<string>())
+        await storage.DeleteAsync(k, ct);
+    await voices.RemoveAsync(voice, ct);
+    return Results.NoContent();
+});
+
 brandProfile.MapGet("/media", async (string key, HttpRequest req, RootBoost.Application.Media.IMediaAssetStore assets,
     RootBoost.Application.Media.MediaOptions options, CancellationToken ct) =>
     Results.Ok((await assets.ListByBrandAsync(key.ToLowerInvariant(), 200, ct)).Select(a => MediaDto(options, req, a))));
@@ -434,7 +518,7 @@ brandProfile.MapDelete("/media/{id:guid}", async (string key, Guid id, RootBoost
 
 // --- Estúdio (RB-42): jobs de criativo. O Console cria e libera; o worker local (PC com DMaker) puxa e entrega. ---
 brandProfile.MapPost("/creative-jobs", async (string key, CreativeJobInput input, IBrandStore brands,
-    RootBoost.Application.Studio.ICreativeJobStore store, TimeProvider time, CancellationToken ct) =>
+    RootBoost.Application.Studio.ICreativeJobStore store, RootBoost.Application.Studio.INarrationVoiceStore voices, TimeProvider time, CancellationToken ct) =>
 {
     var brandKey = key.ToLowerInvariant();
     if (!(await brands.ListAsync(ct)).Any(b => b.Key == brandKey)) return Results.NotFound();
@@ -442,6 +526,9 @@ brandProfile.MapPost("/creative-jobs", async (string key, CreativeJobInput input
         return Results.BadRequest(new { error = $"formato inválido: '{input.Kind}' (use Organic, Ad ou Prospecting)" });
     try
     {
+        // Voz cadastrada na plataforma só narra a própria marca (voz de pessoa nunca vai pra outro cliente).
+        if (!string.IsNullOrWhiteSpace(input.VoiceKey) && await voices.FindByKeyAsync(input.VoiceKey.Trim(), ct) is { } v && v.BrandKey != brandKey)
+            return Results.BadRequest(new { error = "esta voz é de outra marca" });
         var job = new CreativeJob(brandKey, kind, input.Theme, input.VoiceKey, time.GetUtcNow());
         await store.AddAsync(job, ct);
         return Results.Created($"/admin/brands/{brandKey}/creative-jobs/{job.Id}", CreativeJobDto.From(job));
@@ -671,7 +758,7 @@ var worker = app.MapGroup("/worker").AddEndpointFilter(async (ctx, next) =>
 
 worker.MapPost("/jobs/claim", async (WorkerClaimInput input, HttpRequest req, RootBoost.Application.Studio.ICreativeJobStore store,
     RootBoost.Application.Studio.StudioOptions options, RootBoost.Application.Media.IMediaAssetStore assets,
-    RootBoost.Application.Media.MediaOptions mediaOptions, TimeProvider time, CancellationToken ct) =>
+    RootBoost.Application.Media.MediaOptions mediaOptions, RootBoost.Application.Studio.INarrationVoiceStore voices, TimeProvider time, CancellationToken ct) =>
 {
     if (string.IsNullOrWhiteSpace(input.WorkerId)) return Results.BadRequest(new { error = "workerId obrigatório" });
     var job = await store.ClaimNextAsync(input.WorkerId, time.GetUtcNow(), options.Lease, ct);
@@ -682,7 +769,11 @@ worker.MapPost("/jobs/claim", async (WorkerClaimInput input, HttpRequest req, Ro
         if (Guid.TryParseExact(m.Groups[1].Value, "N", out var mid) && media.All(x => x.Id != m.Groups[1].Value)
             && await assets.GetAsync(mid, ct) is { } a && a.BrandKey == job.BrandKey)
             media.Add(new WorkerMediaDto(m.Groups[1].Value, MediaPublicUrl(mediaOptions, req, a), a.IsVideo));
-    return Results.Ok(WorkerJobDto.From(job) with { Media = media });
+    // Voz da plataforma com semente escolhida pela pessoa: vira a semente padrão do job (o worker soma as tentativas).
+    var seed = job.Seed;
+    if (seed is null && job.VoiceKey is { } vk && await voices.FindByKeyAsync(vk, ct) is { BrandKey: var vb, ChosenSeed: { } chosen } && vb == job.BrandKey)
+        seed = chosen;
+    return Results.Ok(WorkerJobDto.From(job) with { Media = media, Seed = seed });
 });
 
 worker.MapPost("/jobs/{id:guid}/progress", async (Guid id, WorkerProgressInput input, RootBoost.Application.Studio.ICreativeJobStore store,
@@ -727,6 +818,73 @@ worker.MapPost("/jobs/{id:guid}/fail", async (Guid id, WorkerFailInput input, Ro
 });
 
 // Gravação de tela (RB-50): o worker manda a foto e os elementos; a IA devolve o próximo passo. A chave fica aqui.
+// Vozes (RB-59): o worker pega a próxima, baixa a gravação por aqui (nunca por link público), cria no DMaker e
+// devolve as amostras.
+worker.MapPost("/voices/claim", async (WorkerClaimInput input, RootBoost.Application.Studio.INarrationVoiceStore voices,
+    RootBoost.Application.Studio.StudioOptions options, TimeProvider time, CancellationToken ct) =>
+{
+    if (string.IsNullOrWhiteSpace(input.WorkerId)) return Results.BadRequest(new { error = "workerId obrigatório" });
+    var v = await voices.ClaimNextAsync(input.WorkerId, time.GetUtcNow(), options.Lease, ct);
+    return v is null ? Results.NoContent() : Results.Ok(new
+    {
+        v.Id, v.BrandKey, v.Key, v.Name, Kind = v.Kind.ToString(), v.Instruct, v.ReferenceText, v.Attempts,
+        HasReference = v.ReferenceStorageKey is not null,
+    });
+});
+
+worker.MapGet("/voices/{id:guid}/reference", async (Guid id, string workerId, RootBoost.Application.Studio.INarrationVoiceStore voices,
+    RootBoost.Application.Media.IMediaStorage storage, CancellationToken ct) =>
+{
+    var v = await voices.GetAsync(id, ct);
+    if (v is null || v.Status != NarrationVoiceStatus.Processing || v.WorkerId != workerId || v.ReferenceStorageKey is null) return Results.NotFound();
+    var obj = await storage.GetAsync(v.ReferenceStorageKey, ct);
+    return obj is null ? Results.NotFound() : Results.Stream(obj.Content, obj.ContentType, Path.GetFileName(v.ReferenceStorageKey));
+});
+
+worker.MapPost("/voices/{id:guid}/complete", async (Guid id, HttpRequest req, RootBoost.Application.Studio.INarrationVoiceStore voices,
+    RootBoost.Application.Media.IMediaStorage storage, TimeProvider time, CancellationToken ct) =>
+{
+    var form = await req.ReadFormAsync(ct);
+    var workerId = form["workerId"].ToString();
+    var v = await voices.GetAsync(id, ct);
+    if (v is null) return Results.NotFound();
+    if (v.Status != NarrationVoiceStatus.Processing || v.WorkerId != workerId) return Results.Conflict(new { error = "esta voz não está com este worker" });
+    var samples = new List<VoiceSample>();
+    foreach (var f in form.Files)
+    {
+        if (!f.Name.StartsWith("sample-", StringComparison.Ordinal) || !int.TryParse(f.Name[7..], out var seed) || seed is < 1 or > 9999) continue;
+        var ext = Path.GetExtension(f.FileName).ToLowerInvariant();
+        if (!VoiceAudio.Types.TryGetValue(ext, out var type) || f.Length > VoiceAudio.MaxBytes) return Results.BadRequest(new { error = $"amostra inválida: {f.FileName}" });
+        var sk = $"voices/{v.BrandKey}/{v.Id:N}/amostra-{seed}{ext}";
+        await using (var stream = f.OpenReadStream()) await storage.PutAsync(sk, stream, f.Length, type, ct);
+        samples.Add(new VoiceSample(seed, sk));
+    }
+    try { v.Complete(workerId, samples, time.GetUtcNow()); }
+    catch (ArgumentException ex) { return Results.BadRequest(new { error = ex.Message }); }
+    await voices.SaveAsync(v, ct);
+    return Results.Ok(NarrationVoiceDto.From(v));
+}).DisableAntiforgery().WithMetadata(new Microsoft.AspNetCore.Mvc.RequestSizeLimitAttribute(3 * VoiceAudio.MaxBytes));
+
+worker.MapPost("/voices/{id:guid}/fail", async (Guid id, WorkerFailInput input, RootBoost.Application.Studio.INarrationVoiceStore voices,
+    TimeProvider time, CancellationToken ct) =>
+{
+    var v = await voices.GetAsync(id, ct);
+    if (v is null) return Results.NotFound();
+    try { v.Fail(input.WorkerId ?? "", input.Error ?? "", input.Retry, time.GetUtcNow()); }
+    catch (InvalidOperationException ex) { return Results.Conflict(new { error = ex.Message }); }
+    await voices.SaveAsync(v, ct);
+    return Results.NoContent();
+});
+
+// Vozes que existem na plataforma, com a marca dona e a semente escolhida: o worker usa pra travar a marca e a semente.
+worker.MapGet("/voices/keys", async (RootBoost.Application.Studio.INarrationVoiceStore voices, IBrandStore brands, CancellationToken ct) =>
+{
+    var keys = new List<object>();
+    foreach (var b in await brands.ListAsync(ct))
+        keys.AddRange((await voices.ListByBrandAsync(b.Key, ct)).Select(v => new { v.Key, v.BrandKey, v.ChosenSeed, Status = v.Status.ToString() }));
+    return Results.Ok(keys);
+});
+
 worker.MapPost("/ai/next-action", async (ScreenStateInput input, RootBoost.Application.Ai.ScreenAgent agent, CancellationToken ct) =>
 {
     if (string.IsNullOrWhiteSpace(input.Scene) || string.IsNullOrWhiteSpace(input.Image) || input.Image.Length > 2_000_000)
@@ -1029,6 +1187,33 @@ record PushDeviceInput(string Endpoint, PushKeys Keys);
 record PushRemoveInput(string Endpoint);
 record WriteScriptInput(string? Instructions);
 record MediaDescriptionInput(string? Description, string? Tags);
+record VoiceDesignInput(string? Name, string? Gender, string? Age, string? Pitch);
+record VoiceChooseInput(int Seed);
+
+sealed class VoiceCloneForm
+{
+    public IFormFile? File { get; set; }
+    public string? Name { get; set; }
+    public string? Person { get; set; }
+    public bool Consent { get; set; }
+}
+
+static class VoiceAudio
+{
+    public const long MaxBytes = 15 * 1024 * 1024;
+    public static readonly Dictionary<string, string> Types = new()
+    {
+        [".webm"] = "audio/webm", [".ogg"] = "audio/ogg", [".m4a"] = "audio/mp4", [".mp4"] = "audio/mp4",
+        [".mp3"] = "audio/mpeg", [".wav"] = "audio/wav",
+    };
+}
+
+record NarrationVoiceDto(Guid Id, string Key, string Name, string Kind, string Status, IReadOnlyList<int> Samples, int? ChosenSeed,
+    string? Error, string? ConsentBy, DateTimeOffset? ConsentAt, DateTimeOffset CreatedAt)
+{
+    public static NarrationVoiceDto From(NarrationVoice v) => new(v.Id, v.Key, v.Name, v.Kind.ToString(), v.Status.ToString(),
+        v.Samples.Select(x => x.Seed).ToList(), v.ChosenSeed, v.Error, v.ConsentBy, v.ConsentAt, v.CreatedAt);
+}
 record ScreenElementInput(string? Id, string? Role, string? Text);
 record ScreenStateInput(string? BrandKey, string Scene, string? Url, List<ScreenElementInput>? Elements, List<string>? History, int Step, string Image);
 record ProductInput(string Name, string Kind, string? Url, string? AppUrl, string? Summary, string? Audience,
