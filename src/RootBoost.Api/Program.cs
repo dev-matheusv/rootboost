@@ -905,9 +905,15 @@ worker.MapPost("/jobs/claim", async (WorkerClaimInput input, HttpRequest req, Ro
     }
     // Voz da plataforma com semente escolhida pela pessoa: vira a semente padrão do job (o worker soma as tentativas).
     var seed = job.Seed;
-    if (seed is null && job.VoiceKey is { } vk && await voices.FindByKeyAsync(vk, ct) is { BrandKey: var vb, ChosenSeed: { } chosen } && vb == job.BrandKey)
+    // Sem voz escolhida no vídeo: a voz pronta da marca (a com semente escolhida primeiro). Sem nenhuma, o worker usa a
+    // padrão dele, que só vale pra marca dona.
+    var voiceKey = job.VoiceKey;
+    if (voiceKey is null && (await voices.ListByBrandAsync(job.BrandKey, ct)).Where(v => v.Status == NarrationVoiceStatus.Ready)
+            .OrderByDescending(v => v.ChosenSeed.HasValue).FirstOrDefault() is { } brandVoice)
+        voiceKey = brandVoice.Key;
+    if (seed is null && voiceKey is { } vk && await voices.FindByKeyAsync(vk, ct) is { BrandKey: var vb, ChosenSeed: { } chosen } && vb == job.BrandKey)
         seed = chosen;
-    return Results.Ok(WorkerJobDto.From(job) with { Media = media, Seed = seed });
+    return Results.Ok(WorkerJobDto.From(job) with { Media = media, Seed = seed, VoiceKey = voiceKey });
 });
 
 worker.MapPost("/jobs/{id:guid}/progress", async (Guid id, WorkerProgressInput input, RootBoost.Application.Studio.ICreativeJobStore store,
