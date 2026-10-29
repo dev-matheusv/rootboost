@@ -1090,11 +1090,12 @@ worker.MapPost("/media/{brandKey}", async (string brandKey, IFormFile file, Http
     {
         await using var stream = file.OpenReadStream();
         var asset = await upload.HandleAsync(key, file.FileName, file.Length, stream, ct);
-        if (asset.IsVideo)
-        {
-            asset.MarkFinished(true); // entrega do estúdio: reel pronto, nunca trecho de outro vídeo
-            await assets.SaveAsync(asset, ct);
-        }
+        // Entrega do estúdio é reel pronto (nunca trecho). "raw=true" é o lote de gravações brutas do PC
+        // (tools/studio-worker/subir-acervo.mjs): fica como bruto, com a descrição que a IA usa pra escolher a cena.
+        var raw = req.HasFormContentType && req.Form["raw"] == "true";
+        if (asset.IsVideo) asset.MarkFinished(!raw);
+        if (raw) asset.Describe(req.Form["description"].ToString(), req.Form["tags"].ToString());
+        if (asset.IsVideo || raw) await assets.SaveAsync(asset, ct);
         return Results.Created(MediaPublicUrl(options, req, asset), MediaDto(options, req, asset));
     }
     catch (ArgumentException ex) { return Results.BadRequest(new { error = ex.Message }); }
