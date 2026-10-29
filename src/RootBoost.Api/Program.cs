@@ -373,7 +373,7 @@ static object MediaDto(RootBoost.Application.Media.MediaOptions options, HttpReq
     id = a.Id, brandKey = a.BrandKey, fileName = a.FileName, contentType = a.ContentType, sizeBytes = a.SizeBytes,
     isVideo = a.IsVideo, createdAt = a.CreatedAt, url = MediaPublicUrl(options, req, a), description = a.Description, tags = a.Tags,
     personalData = a.PersonalData.ToString(), personalDataKinds = a.PersonalDataKinds, redactionBoxes = a.RedactionBoxes,
-    redacted = a.RedactedStorageKey is not null, hidesOriginal = a.HidesOriginal,
+    redacted = a.RedactedStorageKey is not null, hidesOriginal = a.HidesOriginal, finished = a.Finished, focus = a.Focus,
 };
 
 brandProfile.MapPost("/media", async (string key, IFormFile file, HttpRequest req, IBrandStore brands,
@@ -436,6 +436,17 @@ brandProfile.MapPut("/media/{id:guid}/redaction", async (string key, Guid id, Re
     try { asset.MarkPersonalData(status, asset.PersonalDataKinds, boxes); }
     catch (ArgumentException ex) { return Results.BadRequest(new { error = ex.Message }); }
     await describer.RedactAsync(asset, null, ct);
+    await assets.SaveAsync(asset, ct);
+    return Results.Ok(MediaDto(options, req, asset));
+});
+
+// Vídeo pronto (reel finalizado) ou bruto: pronto fica fora dos trechos dos roteiros.
+brandProfile.MapPut("/media/{id:guid}/finished", async (string key, Guid id, MediaFinishedInput input, HttpRequest req,
+    RootBoost.Application.Media.IMediaAssetStore assets, RootBoost.Application.Media.MediaOptions options, CancellationToken ct) =>
+{
+    var asset = await assets.GetAsync(id, ct);
+    if (asset is null || asset.BrandKey != key.ToLowerInvariant()) return Results.NotFound();
+    asset.MarkFinished(input.Finished);
     await assets.SaveAsync(asset, ct);
     return Results.Ok(MediaDto(options, req, asset));
 });
@@ -637,7 +648,7 @@ brandProfile.MapPost("/creative-jobs/{id:guid}/write-script", async (string key,
         var profile = await profiles.GetAsync(job.BrandKey, ct);
         var policy = profile?.Brand.Privacy ?? PersonalDataPolicy.Blur;
         // Mídia com dado pessoal sem borrar (ou real, em marca só fictício) nem aparece pra IA.
-        var library = (await assets.ListByBrandAsync(job.BrandKey, 100, ct)).Where(m => m.BlockedReason(policy) is null).ToList();
+        var library = (await assets.ListByBrandAsync(job.BrandKey, 100, ct)).Where(m => m.BlockedReason(policy) is null && !m.Finished).ToList();
         var (ok, failed) = await writer.WriteAsync(job, profile, input?.Instructions, ct, await products.GetAsync(job.BrandKey, ct), library);
         if (ok is null) return Results.UnprocessableEntity(new { error = "a IA não acertou o roteiro em duas tentativas", errors = failed!.Errors });
         job.SetScript(ok.Script.GetRawText(), ok.Lines.GetRawText(), time.GetUtcNow(),
@@ -847,7 +858,7 @@ worker.MapPost("/jobs/claim", async (WorkerClaimInput input, HttpRequest req, Ro
             await store.SaveAsync(job, ct);
             return Results.NoContent();
         }
-        media.Add(new WorkerMediaDto(m.Groups[1].Value, MediaPublicUrl(mediaOptions, req, a), a.IsVideo));
+        media.Add(new WorkerMediaDto(m.Groups[1].Value, MediaPublicUrl(mediaOptions, req, a), a.IsVideo, a.Focus));
     }
     // Voz da plataforma com semente escolhida pela pessoa: vira a semente padrão do job (o worker soma as tentativas).
     var seed = job.Seed;
@@ -995,7 +1006,7 @@ worker.MapPost("/ai/next-action", async (ScreenStateInput input, RootBoost.Appli
 
 // O worker sobe vídeo, capa e grade pelo mesmo bucket do Console e recebe o link público pra entregar no job.
 worker.MapPost("/media/{brandKey}", async (string brandKey, IFormFile file, HttpRequest req, IBrandStore brands,
-    RootBoost.Application.Media.UploadMedia upload, RootBoost.Application.Media.MediaOptions options, CancellationToken ct) =>
+    RootBoost.Application.Media.UploadMedia upload, RootBoost.Application.Media.IMediaAssetStore assets, RootBoost.Application.Media.MediaOptions options, CancellationToken ct) =>
 {
     var key = brandKey.ToLowerInvariant();
     if (!(await brands.ListAsync(ct)).Any(b => b.Key == key)) return Results.NotFound();
@@ -1003,6 +1014,11 @@ worker.MapPost("/media/{brandKey}", async (string brandKey, IFormFile file, Http
     {
         await using var stream = file.OpenReadStream();
         var asset = await upload.HandleAsync(key, file.FileName, file.Length, stream, ct);
+        if (asset.IsVideo)
+        {
+            asset.MarkFinished(true); // entrega do estúdio: reel pronto, nunca trecho de outro vídeo
+            await assets.SaveAsync(asset, ct);
+        }
         return Results.Created(MediaPublicUrl(options, req, asset), MediaDto(options, req, asset));
     }
     catch (ArgumentException ex) { return Results.BadRequest(new { error = ex.Message }); }
@@ -1282,6 +1298,7 @@ record WriteScriptInput(string? Instructions);
 record MediaDescriptionInput(string? Description, string? Tags);
 record RedactionBoxInput(double X, double Y, double W, double H);
 record RedactionInput(string? Status, List<RedactionBoxInput>? Boxes);
+record MediaFinishedInput(bool Finished);
 record VoiceDesignInput(string? Name, string? Gender, string? Age, string? Pitch);
 record VoiceChooseInput(int Seed);
 
@@ -1344,7 +1361,7 @@ record CreativeJobDto(Guid Id, string BrandKey, string Kind, string Theme, strin
 }
 
 /// <summary>O que o worker precisa pra renderizar: contratos, voz, semente e formato. Sem dado de outras marcas.</summary>
-record WorkerMediaDto(string Id, string Url, bool IsVideo);
+record WorkerMediaDto(string Id, string Url, bool IsVideo, RedactionBox? Focus = null);
 
 record WorkerJobDto(Guid Id, string BrandKey, string Kind, string Theme, string? VoiceKey, int? Seed, int Attempts,
     System.Text.Json.JsonElement? Roteiro, System.Text.Json.JsonElement? Falas, IReadOnlyList<WorkerMediaDto>? Media = null)

@@ -39,6 +39,9 @@
             <div class="row items-center no-wrap">
               <q-btn v-if="!m.isVideo && aiEnabled" flat dense no-caps size="sm" color="primary" :icon="mdiCreationOutline"
                 :label="$t('acervo.describe')" :loading="busy === m.id" @click="describe(m)" />
+              <q-toggle v-if="m.isVideo" :model-value="m.finished" dense size="sm" :label="$t('acervo.finished')" @update:model-value="setFinished(m, $event)">
+                <q-tooltip>{{ $t('acervo.finishedHint') }}</q-tooltip>
+              </q-toggle>
               <q-btn v-if="!m.isVideo" flat dense no-caps size="sm" color="primary" :icon="mdiBlurLinear" :label="$t('privacy.adjust')"
                 @click="editing = m" />
               <q-space />
@@ -72,7 +75,7 @@ defineOptions({ name: 'AcervoPage' });
 interface Media {
   id: string; url: string; isVideo: boolean; fileName: string; description: string | null; tags: string | null;
   personalData: 'Unchecked' | 'None' | 'Fictional' | 'Real' | 'Uncertain'; personalDataKinds: string | null;
-  redactionBoxes: { x: number; y: number; w: number; h: number }[]; redacted: boolean; hidesOriginal: boolean;
+  redactionBoxes: { x: number; y: number; w: number; h: number }[]; redacted: boolean; hidesOriginal: boolean; finished: boolean;
 }
 
 const { t } = useI18n();
@@ -145,6 +148,14 @@ async function describe(m: Media) {
     $q.notify({ type: 'negative', message: apiError(e) });
   } finally {
     busy.value = null;
+  }
+}
+
+async function setFinished(m: Media, finished: boolean) {
+  try {
+    Object.assign(m, (await api.put<Media>(`${base()}/${m.id}/finished`, { finished })).data);
+  } catch (e) {
+    $q.notify({ type: 'negative', message: apiError(e) });
   }
 }
 

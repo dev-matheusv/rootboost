@@ -48,7 +48,9 @@ public sealed class MediaDescriber
             "assinatura e rosto de cliente ou paciente. Para cada um, dê a área (x, y, largura, altura em fração de 0 a 1 da imagem, " +
             "a partir do canto superior esquerdo), com folga pra cobrir o texto todo. Classifique: nenhum (não há), ficticio (só dados " +
             $"de demonstração conhecidos da marca: {brand?.FictionalMarkers ?? "nenhum informado"}), real (dado de pessoa de verdade) " +
-            "ou incerto (na dúvida). Nome de empresa, logotipo e nome do profissional dono da marca não contam como dado pessoal.";
+            "ou incerto (na dúvida). Nome de empresa, logotipo e nome do profissional dono da marca não contam como dado pessoal.\n" +
+            "Foco: a área principal da foto (o que interessa mostrar, ex.: o documento, o resultado, o rosto do antes e depois), " +
+            "em fração de 0 a 1, pra aproximar nela num vídeo vertical. Foto inteira útil: x 0, y 0, largura 1, altura 1.";
         var result = await _model.GenerateJsonAsync(new LanguageModelRequest(system, $"Descreva esta foto (arquivo {asset.FileName}).", Schema, "media-describe",
             asset.BrandKey, Convert.ToBase64String(jpeg)), ct);
         await _usage.AddAsync(new AiUsageEntry(Guid.NewGuid(), asset.BrandKey, "media-describe", result.Model, result.InputTokens,
@@ -71,6 +73,8 @@ public sealed class MediaDescriber
             .Select(a => Clamp(new RedactionBox(a.GetProperty("x").GetDouble(), a.GetProperty("y").GetDouble(), a.GetProperty("largura").GetDouble(), a.GetProperty("altura").GetDouble())))
             .Where(b => b.IsValid).Take(30).ToList();
         asset.MarkPersonalData(status, kinds, boxes);
+        var f = doc.RootElement.GetProperty("foco");
+        asset.SetFocus(Clamp(new RedactionBox(f.GetProperty("x").GetDouble(), f.GetProperty("y").GetDouble(), f.GetProperty("largura").GetDouble(), f.GetProperty("altura").GetDouble())));
         await RedactAsync(asset, original, ct);
         return true;
     }
@@ -105,10 +109,12 @@ public sealed class MediaDescriber
     }
 
     public static readonly JsonElement Schema = JsonDocument.Parse("""
-        { "type": "object", "additionalProperties": false, "required": ["descricao", "tags", "dadosPessoais"],
+        { "type": "object", "additionalProperties": false, "required": ["descricao", "tags", "dadosPessoais", "foco"],
           "properties": {
             "descricao": { "type": "string" },
             "tags": { "type": "array", "items": { "type": "string" } },
+            "foco": { "type": "object", "additionalProperties": false, "required": ["x", "y", "largura", "altura"],
+              "properties": { "x": { "type": "number" }, "y": { "type": "number" }, "largura": { "type": "number" }, "altura": { "type": "number" } } },
             "dadosPessoais": { "type": "object", "additionalProperties": false, "required": ["tipo", "quais", "areas"],
               "properties": {
                 "tipo": { "type": "string", "enum": ["nenhum", "ficticio", "real", "incerto"] },

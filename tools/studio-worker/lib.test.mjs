@@ -80,8 +80,21 @@ test("acervo: blocos com mídia, foto vira trecho e troca dos trechos", async ()
   assert.deepEqual(libraryScenes(roteiro), [{ index: 0, id, seconds: 6 }]);
   const args = photoClipArgs("in.jpg", "out.mp4", 3000, 4000, 6);
   assert.equal(args[args.indexOf("-t") + 1], "8");
-  assert.match(args[args.indexOf("-vf") + 1], /s=1080x1440/);
+  assert.match(args[args.indexOf("-vf") + 1], /s=1080x1350/);
   const out = applyLibrary(roteiro, [{ index: 0, source: `acervo-${id}`, duration: 8 }]);
   assert.deepEqual(out.blocos[0].trechos, [[`acervo-${id}`, 0, 7.9, 1]]);
   assert.deepEqual(roteiro.blocos[0].trechos, [[`acervo-${id}`, 0, 6]]);
+});
+
+test("acervo: recorte 4:5 no foco enche a tela, sem sair da foto", async () => {
+  const { focusCrop } = await import("./lib.mjs");
+  // Print largo (1920x1080) com foco no documento à direita: corta a parte certa, 4:5, dentro da imagem.
+  const c = focusCrop(1920, 1080, { x: 0.6, y: 0.1, w: 0.3, h: 0.8 });
+  assert.ok(Math.abs(c.w / c.h - 0.8) < 0.01, `${c.w}x${c.h}`);
+  assert.ok(c.y >= 0 && c.y + c.h <= 1080);
+  assert.ok(c.x + c.w <= 1920 && c.x > 900, `x=${c.x}`);
+  // Sem foco: foto inteira cabendo em 4:5.
+  const whole = focusCrop(1000, 2000, null);
+  assert.deepEqual([whole.w, whole.h], [1000, 1250]);
+  assert.ok(whole.y + whole.h <= 2000);
 });

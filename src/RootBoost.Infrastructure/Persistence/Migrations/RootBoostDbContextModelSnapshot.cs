@@ -437,6 +437,13 @@ namespace RootBoost.Infrastructure.Persistence.Migrations
                         .HasMaxLength(160)
                         .HasColumnType("character varying(160)");
 
+                    b.Property<bool>("Finished")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("FocusJson")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
                     b.Property<string>("PersonalData")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
