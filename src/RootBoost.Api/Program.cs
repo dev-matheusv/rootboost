@@ -577,6 +577,25 @@ brandProfile.MapPost("/creative-jobs", async (string key, CreativeJobInput input
     catch (ArgumentException ex) { return Results.BadRequest(new { error = ex.Message }); }
 });
 
+// Retrato do estúdio pra marca: computadores ligados, posição de cada job dela na fila e o tempo médio de um render.
+brandProfile.MapGet("/studio/status", async (string key, RootBoost.Application.Studio.IStudioStatusStore status,
+    RootBoost.Application.Studio.ICreativeJobStore jobs, TimeProvider time, CancellationToken ct) =>
+{
+    var now = time.GetUtcNow();
+    var workers = await status.ListWorkersAsync(ct);
+    var queue = await status.QueueAsync(ct);
+    var mine = (await jobs.ListByBrandAsync(key.ToLowerInvariant(), ct)).Where(j => j.Status == CreativeJobStatus.Queued).Select(j => j.Id).ToHashSet();
+    return Results.Ok(new
+    {
+        // 3 min: o worker bate a cada rodada (60 s) e o progresso a cada 30 s; folga pra um passo lento.
+        workersOnline = workers.Count(w => now - w.LastSeenAt < TimeSpan.FromMinutes(3)),
+        lastSeenAt = workers.FirstOrDefault()?.LastSeenAt,
+        averageRenderSeconds = await status.AverageRenderSecondsAsync(ct),
+        queueSize = queue.Count,
+        positions = queue.Select((id, i) => (id, i)).Where(x => mine.Contains(x.id)).ToDictionary(x => x.id.ToString(), x => x.i + 1),
+    });
+});
+
 brandProfile.MapGet("/creative-jobs", async (string key, RootBoost.Application.Studio.ICreativeJobStore store, CancellationToken ct) =>
     Results.Ok((await store.ListByBrandAsync(key.ToLowerInvariant(), ct)).Select(CreativeJobDto.From)));
 
@@ -828,8 +847,9 @@ worker.MapPost("/jobs/claim", async (WorkerClaimInput input, HttpRequest req, Ro
 });
 
 worker.MapPost("/jobs/{id:guid}/progress", async (Guid id, WorkerProgressInput input, RootBoost.Application.Studio.ICreativeJobStore store,
-    RootBoost.Application.Studio.StudioOptions options, TimeProvider time, CancellationToken ct) =>
+    RootBoost.Application.Studio.StudioOptions options, RootBoost.Application.Studio.IStudioStatusStore status, TimeProvider time, CancellationToken ct) =>
 {
+    if (!string.IsNullOrWhiteSpace(input.WorkerId) && input.WorkerId.Length <= 100) await status.BeatAsync(input.WorkerId, input.Note, time.GetUtcNow(), ct);
     var job = await store.GetAsync(id, ct);
     if (job is null) return Results.NotFound();
     try { job.ReportProgress(input.WorkerId, input.Percent, input.Note, time.GetUtcNow(), options.Lease); }
@@ -858,17 +878,27 @@ worker.MapPost("/jobs/{id:guid}/deliver", async (Guid id, WorkerDeliverInput inp
 });
 
 worker.MapPost("/jobs/{id:guid}/fail", async (Guid id, WorkerFailInput input, RootBoost.Application.Studio.ICreativeJobStore store,
-    TimeProvider time, CancellationToken ct) =>
+    RootBoost.Application.Push.PushNotifier notifier, TimeProvider time, CancellationToken ct) =>
 {
     var job = await store.GetAsync(id, ct);
     if (job is null) return Results.NotFound();
     try { job.Fail(input.WorkerId, input.Error ?? string.Empty, input.Retry, time.GetUtcNow()); }
     catch (Exception ex) when (ex is ArgumentException or InvalidOperationException) { return Results.Conflict(new { error = ex.Message }); }
     await store.SaveAsync(job, ct);
+    // Falhou de vez (sem nova tentativa): avisa no celular com o motivo.
+    if (job.Status == CreativeJobStatus.Failed)
+        await notifier.SendAsync(new RootBoost.Application.Push.PushMessage("Vídeo não saiu", $"{job.Theme}: {job.Error}", "/studio", $"job:{job.Id:N}"), ct);
     return Results.Ok(CreativeJobDto.From(job));
 });
 
-// Gravação de tela (RB-50): o worker manda a foto e os elementos; a IA devolve o próximo passo. A chave fica aqui.
+// Sinal de vida: o worker bate a cada rodada (e cada progresso conta como batida).
+worker.MapPost("/heartbeat", async (WorkerProgressInput input, RootBoost.Application.Studio.IStudioStatusStore status, TimeProvider time, CancellationToken ct) =>
+{
+    if (string.IsNullOrWhiteSpace(input.WorkerId) || input.WorkerId.Length > 100) return Results.BadRequest(new { error = "workerId obrigatório" });
+    await status.BeatAsync(input.WorkerId, input.Note, time.GetUtcNow(), ct);
+    return Results.NoContent();
+});
+
 // Vozes (RB-59): o worker pega a próxima, baixa a gravação por aqui (nunca por link público), cria no DMaker e
 // devolve as amostras.
 worker.MapPost("/voices/claim", async (WorkerClaimInput input, RootBoost.Application.Studio.INarrationVoiceStore voices,
@@ -936,6 +966,7 @@ worker.MapGet("/voices/keys", async (RootBoost.Application.Studio.INarrationVoic
     return Results.Ok(keys);
 });
 
+// Gravação de tela (RB-50): o worker manda a foto e os elementos; a IA devolve o próximo passo. A chave fica aqui.
 worker.MapPost("/ai/next-action", async (ScreenStateInput input, RootBoost.Application.Ai.ScreenAgent agent, IBrandStore brands, CancellationToken ct) =>
 {
     if (string.IsNullOrWhiteSpace(input.Scene) || string.IsNullOrWhiteSpace(input.Image) || input.Image.Length > 2_000_000)

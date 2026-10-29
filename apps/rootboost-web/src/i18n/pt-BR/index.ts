@@ -55,6 +55,13 @@ export default {
     themeHint: 'Recurso, especialidade ou dor. Ex.: psicologia, agenda e evolução.',
     voice: 'Voz',
     voiceHint: 'Opcional. Vazio usa a voz padrão da marca.',
+    queue: {
+      noWorker: 'Nenhum computador ligado para gerar o vídeo agora.',
+      noWorkerHint: 'Os vídeos na fila começam sozinhos assim que o worker ligar.',
+      lastSeen: 'Último sinal: {when}.',
+      position: 'Na fila: {pos} de {total}',
+      eta: 'cerca de {min} min',
+    },
     newDialog: {
       what: 'O que o vídeo deve mostrar?',
       whatPlaceholder: 'Escreva como pediria pra alguém. Ex.: como a agenda avisa o paciente na véspera',

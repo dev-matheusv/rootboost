@@ -51,6 +51,8 @@ if (!cfg.api || !cfg.key) {
 const once = process.argv.includes("--once");
 do {
   try {
+    // Sinal de vida a cada rodada: o Console avisa "nenhum computador ligado" quando ele some.
+    await call("POST", "/worker/heartbeat", { workerId: cfg.workerId, note: "livre" }).catch(() => {});
     await voiceRound();
     await round();
   } catch (e) {
@@ -149,6 +151,7 @@ async function voiceRound() {
   const v = res.data;
   if (!/^[a-z0-9-]{3,64}$/.test(v.key ?? "")) return voiceFail(v.id, `id de voz inválido: ${v.key}`, false);
   console.log(`[${now()}] voz ${v.key} (${v.kind}) da marca ${v.brandKey}, tentativa ${v.attempts}`);
+  await call("POST", "/worker/heartbeat", { workerId: cfg.workerId, note: `criando a voz ${v.name}` }).catch(() => {});
   const dir = `${cfg.base}/vozes/${v.key}`;
   mkdirSync(dir, { recursive: true });
   try {

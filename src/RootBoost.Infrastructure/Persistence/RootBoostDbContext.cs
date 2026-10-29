@@ -34,6 +34,7 @@ public sealed class RootBoostDbContext : DbContext
     public DbSet<OpsAlert> OpsAlerts => Set<OpsAlert>();
     public DbSet<CreativeJob> CreativeJobs => Set<CreativeJob>();
     public DbSet<NarrationVoice> NarrationVoices => Set<NarrationVoice>();
+    public DbSet<WorkerHeartbeat> WorkerHeartbeats => Set<WorkerHeartbeat>();
     public DbSet<PushDevice> PushDevices => Set<PushDevice>();
     public DbSet<BrandProduct> BrandProducts => Set<BrandProduct>();
     public DbSet<RootBoost.Application.Ai.AiUsageEntry> AiUsage => Set<RootBoost.Application.Ai.AiUsageEntry>();
@@ -158,6 +159,13 @@ public sealed class RootBoostDbContext : DbContext
         job.Ignore(x => x.Outputs);
         job.HasIndex(x => new { x.Status, x.CreatedAt });
         job.HasIndex(x => new { x.BrandKey, x.CreatedAt });
+
+        // Sinal de vida dos workers do estúdio (uma linha por computador).
+        var beat = b.Entity<WorkerHeartbeat>();
+        beat.HasKey(x => x.WorkerId);
+        beat.Property(x => x.WorkerId).HasMaxLength(100);
+        beat.Property(x => x.Activity).HasMaxLength(300);
+        beat.Property(x => x.LastSeenAt).HasConversion(Utc);
 
         // Vozes das marcas (RB-59): clone com consentimento ou voz do banco; fila do worker como a do estúdio.
         var voice = b.Entity<NarrationVoice>();
