@@ -4,6 +4,18 @@ using RootBoost.Domain;
 
 namespace RootBoost.Application.Studio;
 
+/// <summary>Vozes das marcas (RB-59): mesma fila com dono e prazo do estúdio, pega uma por vez pelo worker.</summary>
+public interface INarrationVoiceStore
+{
+    Task AddAsync(NarrationVoice voice, CancellationToken ct = default);
+    Task<NarrationVoice?> GetAsync(Guid id, CancellationToken ct = default);
+    Task<NarrationVoice?> FindByKeyAsync(string key, CancellationToken ct = default);
+    Task<IReadOnlyList<NarrationVoice>> ListByBrandAsync(string brandKey, CancellationToken ct = default);
+    Task<NarrationVoice?> ClaimNextAsync(string workerId, DateTimeOffset now, TimeSpan lease, CancellationToken ct = default);
+    Task RemoveAsync(NarrationVoice voice, CancellationToken ct = default);
+    Task SaveAsync(NarrationVoice voice, CancellationToken ct = default);
+}
+
 public interface ICreativeJobStore
 {
     Task AddAsync(CreativeJob job, CancellationToken ct = default);
