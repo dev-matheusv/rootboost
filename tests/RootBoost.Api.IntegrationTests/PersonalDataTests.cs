@@ -70,6 +70,21 @@ public class PersonalDataTests : IClassFixture<StudioAiWebApplicationFactory>
         Assert.Equal(HttpStatusCode.BadRequest, render.StatusCode);
         Assert.Contains("só usa dado fictício", await render.Content.ReadAsStringAsync());
 
+        // Job que já estava na fila quando a foto foi barrada: falha ao ser pego, com o motivo (não roda sem a foto).
+        await c.PutAsJsonAsync($"/admin/brands/medlycare/media/{id}/redaction", new { status = "None", boxes = Array.Empty<object>() });
+        Assert.Equal(HttpStatusCode.OK, (await c.PostAsync($"/admin/brands/medlycare/creative-jobs/{jobId}/render", null)).StatusCode);
+        await c.PutAsJsonAsync($"/admin/brands/medlycare/media/{id}/redaction", new { status = "Real", boxes = Array.Empty<object>() });
+        var w = _factory.CreateClient();
+        w.DefaultRequestHeaders.Add("X-Worker-Key", "chave-gravacao");
+        for (var i = 0; i < 20; i++)
+        {
+            var claim = await w.PostAsJsonAsync("/worker/jobs/claim", new { workerId = "pc" });
+            if (claim.StatusCode == HttpStatusCode.NoContent) break;
+        }
+        var failed = await c.GetFromJsonAsync<JsonElement>($"/admin/brands/medlycare/creative-jobs/{jobId}");
+        Assert.Equal("Failed", failed.GetProperty("status").GetString());
+        Assert.Contains("proteção de dado pessoal", failed.GetProperty("error").GetString());
+
         // E a IA nem vê o item no próximo roteiro.
         var again = await (await c.PostAsJsonAsync($"/admin/brands/medlycare/creative-jobs/{jobId}/write-script", new { })).Content.ReadFromJsonAsync<JsonElement>();
         Assert.DoesNotContain($"acervo-{id.Replace("-", "")}", again.GetRawText());

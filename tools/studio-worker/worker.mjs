@@ -106,7 +106,7 @@ async function round() {
     const clips = [];
     for (const s of library) {
       const media = (job.media ?? []).find((m) => m.id === s.id);
-      if (!media) return fail(job.id, `mídia do acervo ${s.id} não veio no job (apagada ou de outra marca)`, false);
+      if (!media) return fail(job.id, `mídia do acervo ${s.id} não veio no job: foi apagada do Acervo ou é de outra marca`, false);
       try {
         clips.push({ index: s.index, source: `acervo-${s.id}`, duration: await prepareMedia(media, s.seconds) });
       } catch (e) {

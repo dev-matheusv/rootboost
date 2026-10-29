@@ -836,9 +836,19 @@ worker.MapPost("/jobs/claim", async (WorkerClaimInput input, HttpRequest req, Ro
     var privacy = (await brands.ListAsync(ct)).FirstOrDefault(b => b.Key == job.BrandKey)?.Privacy ?? PersonalDataPolicy.Blur;
     var media = new List<WorkerMediaDto>();
     foreach (System.Text.RegularExpressions.Match m in System.Text.RegularExpressions.Regex.Matches(job.Script ?? "", "acervo-([0-9a-f]{32})"))
-        if (Guid.TryParseExact(m.Groups[1].Value, "N", out var mid) && media.All(x => x.Id != m.Groups[1].Value)
-            && await assets.GetAsync(mid, ct) is { } a && a.BrandKey == job.BrandKey && a.BlockedReason(privacy) is null)
-            media.Add(new WorkerMediaDto(m.Groups[1].Value, MediaPublicUrl(mediaOptions, req, a), a.IsVideo));
+    {
+        if (!Guid.TryParseExact(m.Groups[1].Value, "N", out var mid) || media.Any(x => x.Id == m.Groups[1].Value)) continue;
+        if (await assets.GetAsync(mid, ct) is not { } a || a.BrandKey != job.BrandKey) continue; // apagada: o worker acusa
+        // Barrada pela proteção de dado pessoal (inclusive numa nova tentativa): falha já, com o motivo e o caminho.
+        if (a.BlockedReason(privacy) is { } why)
+        {
+            job.Fail(input.WorkerId, $"a foto {a.FileName} está bloqueada pela proteção de dado pessoal ({why}). " +
+                "Resolva no Acervo e peça outra versão do roteiro.", retry: false, time.GetUtcNow());
+            await store.SaveAsync(job, ct);
+            return Results.NoContent();
+        }
+        media.Add(new WorkerMediaDto(m.Groups[1].Value, MediaPublicUrl(mediaOptions, req, a), a.IsVideo));
+    }
     // Voz da plataforma com semente escolhida pela pessoa: vira a semente padrão do job (o worker soma as tentativas).
     var seed = job.Seed;
     if (seed is null && job.VoiceKey is { } vk && await voices.FindByKeyAsync(vk, ct) is { BrandKey: var vb, ChosenSeed: { } chosen } && vb == job.BrandKey)

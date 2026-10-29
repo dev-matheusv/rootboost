@@ -65,13 +65,20 @@
 
           <!-- Etapas -->
           <div class="steps row no-wrap">
-            <div v-for="(s, i) in steps" :key="s" class="step col text-center" :class="{ done: i < step, current: i === step }">
+            <div v-for="(s, i) in steps" :key="s" class="step col text-center"
+              :class="{ done: i < step, current: i === step && job.status !== 'Failed', failed: i === step && job.status === 'Failed' }">
               <div class="step-dot" />
               <div class="text-caption">{{ $t(`studio.steps.${s}`) }}</div>
             </div>
           </div>
 
-          <q-banner v-if="job.error" rounded class="bg-red-1 text-negative">{{ job.error }}</q-banner>
+          <q-banner v-if="job.error" rounded class="bg-red-1 text-negative">
+            {{ job.error }}
+            <!-- Mídia barrada pela proteção de dado pessoal: o caminho é o Acervo. -->
+            <template v-if="job.error.includes('Acervo')" #action>
+              <q-btn flat no-caps color="negative" :icon="mdiImageMultipleOutline" :label="$t('studio.openAcervo')" to="/acervo" />
+            </template>
+          </q-banner>
 
           <!-- Render em andamento -->
           <div v-if="job.status === 'Queued' || job.status === 'Rendering'" class="column q-gutter-y-xs">
@@ -271,7 +278,7 @@ import { useI18n } from 'vue-i18n';
 import { useQuasar } from 'quasar';
 import { isAxiosError } from 'axios';
 import {
-  mdiAccountSearchOutline, mdiBullhornOutline, mdiCalendarPlus, mdiCheckCircleOutline, mdiCodeJson, mdiCreationOutline, mdiDesktopClassic, mdiFormatQuoteOpen, mdiHeartOutline, mdiMicrophoneOutline, mdiMonitorScreenshot, mdiMovieOpenPlayOutline, mdiPlay, mdiPlus,
+  mdiAccountSearchOutline, mdiBullhornOutline, mdiCalendarPlus, mdiCheckCircleOutline, mdiCodeJson, mdiCreationOutline, mdiDesktopClassic, mdiFormatQuoteOpen, mdiHeartOutline, mdiImageMultipleOutline, mdiMicrophoneOutline, mdiMonitorScreenshot, mdiMovieOpenPlayOutline, mdiPlay, mdiPlus,
 } from '@quasar/extras/mdi-v7';
 import { api } from 'src/services/api';
 import type { CreativeJob, CreativeKind, Publication } from 'src/types/api';
@@ -648,6 +655,7 @@ watch(() => brand.selected, () => {
 .step { position: relative; opacity: 0.5; }
 .step-dot { width: 12px; height: 12px; border-radius: 50%; margin: 0 auto 4px; border: 2px solid currentColor; }
 .step.done { opacity: 0.8; .step-dot { background: $positive; border-color: $positive; } }
+.step.failed { opacity: 1; color: $negative; font-weight: 600; .step-dot { background: $negative; border-color: $negative; } }
 .step.current { opacity: 1; color: $primary; font-weight: 600; .step-dot { background: $primary; box-shadow: 0 0 0 4px rgba($primary, 0.2); } }
 .kind-card { border: 1px solid rgba(0, 0, 0, 0.12); height: 100%; transition: border-color 0.15s, background 0.15s; }
 .kind-card.active { border-color: $primary; background: rgba(122, 76, 224, 0.08); }
