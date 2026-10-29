@@ -90,3 +90,30 @@ public class PersonalDataTests : IClassFixture<StudioAiWebApplicationFactory>
         Assert.DoesNotContain($"acervo-{id.Replace("-", "")}", again.GetRawText());
     }
 }
+
+public class FinishedVideoTests : IClassFixture<StudioAiWebApplicationFactory>
+{
+    private readonly StudioAiWebApplicationFactory _factory;
+    public FinishedVideoTests(StudioAiWebApplicationFactory factory) => _factory = factory;
+
+    [Fact]
+    public async Task Studio_delivery_is_a_finished_video_and_never_a_clip()
+    {
+        var w = _factory.CreateClient();
+        w.DefaultRequestHeaders.Add("X-Worker-Key", "chave-gravacao");
+        using var form = new MultipartFormDataContent();
+        form.Add(new ByteArrayContent([0, 0, 0, 24, 0x66, 0x74, 0x79, 0x70]), "file", "reel-receitas.mp4");
+        var up = await (await w.PostAsync("/worker/media/medlycare", form)).Content.ReadFromJsonAsync<JsonElement>();
+        Assert.True(up.GetProperty("finished").GetBoolean());
+
+        var c = _factory.CreateClient();
+        var id = up.GetProperty("id").GetString();
+        var job = await (await c.PostAsJsonAsync("/admin/brands/medlycare/creative-jobs", new { kind = "organic", theme = "Receitas" })).Content.ReadFromJsonAsync<JsonElement>();
+        var written = await (await c.PostAsJsonAsync($"/admin/brands/medlycare/creative-jobs/{job.GetProperty("id").GetString()}/write-script", new { }))
+            .Content.ReadFromJsonAsync<JsonElement>();
+        Assert.DoesNotContain($"acervo-{id!.Replace("-", "")}", written.GetRawText());
+
+        var raw = await (await c.PutAsJsonAsync($"/admin/brands/medlycare/media/{id}/finished", new { finished = false })).Content.ReadFromJsonAsync<JsonElement>();
+        Assert.False(raw.GetProperty("finished").GetBoolean());
+    }
+}

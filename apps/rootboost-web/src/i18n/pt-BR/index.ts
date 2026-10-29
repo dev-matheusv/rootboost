@@ -196,6 +196,8 @@ export default {
     empty: 'Nada aqui ainda. Suba fotos do seu trabalho, vídeos e criativos que você já tem.',
     describeHint: 'O que aparece? (a IA preenche nas fotos)',
     tags: 'palavras-chave',
+    finished: 'Reel pronto',
+    finishedHint: 'Vídeo já finalizado (com título e legenda): fica pra post e não vira trecho de outro vídeo.',
     describe: 'Descrever com a IA',
     delete: 'Apagar',
     deleteConfirm: 'O arquivo sai do acervo. Post que ainda usa ele impede apagar.',

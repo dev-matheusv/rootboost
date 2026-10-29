@@ -57,6 +57,15 @@ avisa. `Ai__Mode=Fake` dá um roteiro fixo pra testar sem custo.
 Enquanto a gravação automática da tela (RB-50) não existe, cada bloco escrito pela IA vem com um trecho
 `gravar-bloco-N` e a duração estimada da fala: é a lista do que gravar.
 
+## Qualidade do vídeo a partir do acervo (29/10)
+
+- **Vídeo pronto não vira trecho:** `MediaAssets.Finished`. Entrega do worker já nasce pronta; no Acervo, chave "Reel
+  pronto" nos vídeos. A IA do roteiro não vê vídeo pronto (sairia com título e legenda em dobro).
+- **Foto enche a tela:** a descrição da IA marca o `foco` (área que interessa). O worker recorta 4:5 em volta do foco
+  (8% de folga) e gera 1080x1350 com aproximação lenta, em vez de encolher o print inteiro no meio do 9:16.
+- **Texto:** fala pra você (sem "eu fiz"), imperativo correto ("teste"), fala do que a cena mostra, só recursos cadastrados.
+- Ainda no pipeline (narrado-calmo): título, foto e legenda num bloco só; revisão automática pela grade de quadros.
+
 ## Ordem do worker: falhar cedo e barato (29/10)
 
 1. **Pré-checagem** (segundos): conta de demonstração e app da gravação respondendo; mídias do acervo no job (a API já

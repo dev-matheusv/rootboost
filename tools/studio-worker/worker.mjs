@@ -240,7 +240,7 @@ async function prepareMedia(media, seconds) {
   } else {
     const [w, h] = execFileSync(FFPROBE, ["-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height", "-of", "csv=p=0", raw])
       .toString().trim().split(",").map(Number);
-    execFileSync(FFMPEG, photoClipArgs(raw, out, w, h, seconds), { stdio: "ignore" });
+    execFileSync(FFMPEG, photoClipArgs(raw, out, w, h, seconds, media.focus), { stdio: "ignore" });
   }
   return Number(execFileSync(FFPROBE, ["-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", out]).toString().trim());
 }

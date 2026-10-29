@@ -146,17 +146,34 @@ export function libraryScenes(roteiro) {
 }
 
 /**
- * Foto vira trecho com aproximação lenta (zoompan), no tamanho da própria foto (largura até 1080, par).
- * Duração com folga: o pipeline desacelera pra caber na fala, nunca acelera foto.
+ * Recorte 4:5 em volta do foco que a IA marcou na descrição (fração da imagem), com 8% de folga: a foto enche a largura
+ * do 9:16 em vez de entrar pequena no meio. Print largo vira a parte que interessa. Sem foco, centro da foto.
  */
-export function photoClipArgs(input, output, width, height, seconds) {
-  const w = Math.min(1080, width - (width % 2)) || 1080;
-  const h = Math.round((w * height) / width / 2) * 2 || 1350;
+export function focusCrop(width, height, focus, aspect = 0.8) {
+  const f = focus && focus.w > 0 && focus.h > 0 ? focus : { x: 0, y: 0, w: 1, h: 1 };
+  let cw = f.w * width * 1.08, ch = f.h * height * 1.08;
+  if (cw / ch > aspect) ch = cw / aspect; else cw = ch * aspect;
+  if (cw > width) { cw = width; ch = cw / aspect; }
+  if (ch > height) { ch = height; cw = ch * aspect; }
+  const even = (n) => Math.max(2, Math.floor(n / 2) * 2);
+  cw = even(cw); ch = even(ch);
+  const clamp = (v, max) => Math.min(Math.max(0, v), Math.max(0, max));
+  const x = Math.floor(clamp((f.x + f.w / 2) * width - cw / 2, width - cw));
+  const y = Math.floor(clamp((f.y + f.h / 2) * height - ch / 2, height - ch));
+  return { x, y, w: cw, h: ch };
+}
+
+/**
+ * Foto vira trecho 1080x1350 (4:5) recortado no foco, com aproximação lenta (zoompan até 8%). Duração com folga: o
+ * pipeline desacelera pra caber na fala, nunca acelera foto.
+ */
+export function photoClipArgs(input, output, width, height, seconds, focus) {
+  const c = focusCrop(width, height, focus);
   const dur = Math.max(4, Math.ceil(seconds + 2));
   const frames = dur * 30;
-  const zoom = `min(1+0.10*on/${frames},1.10)`;
+  const zoom = `min(1+0.08*on/${frames},1.08)`;
   return ["-y", "-loop", "1", "-i", input, "-vf",
-    `scale=${w * 2}:${h * 2},zoompan=z='${zoom}':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=${frames}:s=${w}x${h}:fps=30,format=yuv420p`,
+    `crop=${c.w}:${c.h}:${c.x}:${c.y},scale=2160:2700,zoompan=z='${zoom}':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=${frames}:s=1080x1350:fps=30,format=yuv420p`,
     "-t", String(dur), "-c:v", "libx264", "-preset", "medium", "-crf", "18", "-movflags", "+faststart", output];
 }
 

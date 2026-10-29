@@ -36,6 +36,20 @@ public sealed class MediaAsset
         Tags = string.IsNullOrWhiteSpace(tags) ? null : tags.Trim()[..Math.Min(tags.Trim().Length, 300)];
     }
 
+    /// <summary>
+    /// Vídeo já finalizado (reel pronto, com título e legenda): fica no acervo pra post, mas nunca vira trecho de outro
+    /// vídeo (sairia com título e legenda em dobro). Entrega do worker já nasce assim.
+    /// </summary>
+    public bool Finished { get; private set; }
+    /// <summary>Onde está o assunto da foto (fração da imagem): o worker aproxima ali pra encher a tela do 9:16.</summary>
+    public string? FocusJson { get; private set; }
+
+    public void MarkFinished(bool finished) => Finished = finished;
+
+    public RedactionBox? Focus => string.IsNullOrWhiteSpace(FocusJson) ? null : RedactionBox.Read($"[{FocusJson}]").FirstOrDefault();
+
+    public void SetFocus(RedactionBox? focus) => FocusJson = focus is { IsValid: true } ? RedactionBox.Write([focus])[1..^1] : null;
+
     /// <summary>Dado pessoal visto pela IA na foto (nome, CPF, rosto de paciente...) e onde está.</summary>
     public PersonalDataStatus PersonalData { get; private set; } = PersonalDataStatus.Unchecked;
     public string? PersonalDataKinds { get; private set; }
