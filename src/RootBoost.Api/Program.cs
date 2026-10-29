@@ -598,6 +598,30 @@ brandProfile.MapPost("/creative-jobs", async (string key, CreativeJobInput input
     catch (ArgumentException ex) { return Results.BadRequest(new { error = ex.Message }); }
 });
 
+// Reprovar (volta pro roteiro) e apagar o vídeo. Apagar leva junto as versões da voz; os arquivos entregues continuam
+// no Acervo como "Reel pronto" (podem estar em post agendado).
+brandProfile.MapPost("/creative-jobs/{id:guid}/reject", async (string key, Guid id,
+    RootBoost.Application.Studio.ICreativeJobStore store, TimeProvider time, CancellationToken ct) =>
+{
+    var job = await store.GetAsync(id, ct);
+    if (job is null || job.BrandKey != key.ToLowerInvariant()) return Results.NotFound();
+    try { job.Reject(time.GetUtcNow()); }
+    catch (InvalidOperationException ex) { return Results.BadRequest(new { error = ex.Message }); }
+    await store.SaveAsync(job, ct);
+    return Results.Ok(CreativeJobDto.From(job));
+});
+
+brandProfile.MapDelete("/creative-jobs/{id:guid}", async (string key, Guid id, RootBoost.Application.Studio.ICreativeJobStore store,
+    RootBoost.Application.Media.IMediaStorage storage, CancellationToken ct) =>
+{
+    var job = await store.GetAsync(id, ct);
+    if (job is null || job.BrandKey != key.ToLowerInvariant()) return Results.NotFound();
+    if (!job.CanBeDeleted) return Results.Conflict(new { error = "o computador está gerando este vídeo agora; espere terminar ou falhar" });
+    foreach (var t in job.VoiceTakes) await storage.DeleteAsync(t.StorageKey, ct);
+    await store.RemoveAsync(job, ct);
+    return Results.NoContent();
+});
+
 // Revisão da voz: ouvir (com login), escolher ou pedir outras duas.
 brandProfile.MapGet("/creative-jobs/{id:guid}/voice/{seed:int}", async (string key, Guid id, int seed,
     RootBoost.Application.Studio.ICreativeJobStore store, RootBoost.Application.Media.IMediaStorage storage, CancellationToken ct) =>

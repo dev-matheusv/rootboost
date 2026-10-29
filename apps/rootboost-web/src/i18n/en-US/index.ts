@@ -74,6 +74,10 @@ export default {
       redo: 'None is good: make two more',
       chosen: 'Voice chosen. The video goes back to the queue to be assembled.',
     },
+    reject: 'Reject and redo',
+    rejectHint: 'Back to the script with the same text and voice; adjust and render again.',
+    delete: 'Delete video',
+    deleteConfirm: 'The video leaves the Studio. Files already used in posts stay in the Library.',
     newDialog: {
       what: 'What should the video show?',
       whatPlaceholder: 'Write it as you would ask someone. E.g. how the calendar reminds the client the day before',
