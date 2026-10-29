@@ -47,6 +47,7 @@ public interface ICreativeJobStore
     Task<CreativeJob?> ClaimNextAsync(string workerId, DateTimeOffset now, TimeSpan lease, CancellationToken ct = default);
 
     Task SaveAsync(CreativeJob job, CancellationToken ct = default);
+    Task RemoveAsync(CreativeJob job, CancellationToken ct = default);
 }
 
 /// <summary>Configuração do estúdio. Sem <see cref="WorkerKey"/> as rotas do worker ficam desligadas.</summary>

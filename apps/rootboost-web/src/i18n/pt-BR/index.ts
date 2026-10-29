@@ -74,6 +74,10 @@ export default {
       redo: 'Nenhuma ficou boa: gerar outras duas',
       chosen: 'Voz escolhida. O vídeo volta pra fila pra ser montado.',
     },
+    reject: 'Reprovar e refazer',
+    rejectHint: 'Volta pro roteiro com o mesmo texto e a mesma voz; ajuste e mande renderizar de novo.',
+    delete: 'Apagar vídeo',
+    deleteConfirm: 'O vídeo sai do Estúdio. Arquivos que já viraram post continuam no Acervo.',
     newDialog: {
       what: 'O que o vídeo deve mostrar?',
       whatPlaceholder: 'Escreva como pediria pra alguém. Ex.: como a agenda avisa o paciente na véspera',

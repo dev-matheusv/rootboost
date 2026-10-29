@@ -46,4 +46,10 @@ public sealed class EfCreativeJobStore : ICreativeJobStore
     }
 
     public Task SaveAsync(CreativeJob job, CancellationToken ct = default) => _db.SaveChangesAsync(ct);
+
+    public async Task RemoveAsync(CreativeJob job, CancellationToken ct = default)
+    {
+        _db.CreativeJobs.Remove(job);
+        await _db.SaveChangesAsync(ct);
+    }
 }
