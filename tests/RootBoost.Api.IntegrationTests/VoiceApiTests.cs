@@ -108,3 +108,43 @@ public class VoiceApiTests : IClassFixture<StudioAiWebApplicationFactory>
         Assert.Equal(HttpStatusCode.BadRequest, bad.StatusCode);
     }
 }
+
+public class StudioStatusTests : IClassFixture<StudioAiWebApplicationFactory>
+{
+    private readonly StudioAiWebApplicationFactory _factory;
+    public StudioStatusTests(StudioAiWebApplicationFactory factory) => _factory = factory;
+
+    [Fact]
+    public async Task Worker_heartbeat_shows_up_and_queued_jobs_get_a_position()
+    {
+        var c = _factory.CreateClient();
+        var w = _factory.CreateClient();
+        w.DefaultRequestHeaders.Add("X-Worker-Key", "chave-gravacao");
+
+        var job = await (await c.PostAsJsonAsync("/admin/brands/medlycare/creative-jobs", new { kind = "organic", theme = "Fila" })).Content.ReadFromJsonAsync<JsonElement>();
+        var id = job.GetProperty("id").GetString()!;
+        await c.PutAsJsonAsync($"/admin/brands/medlycare/creative-jobs/{id}/script", new
+        {
+            roteiro = new
+            {
+                nome = "teste-fila",
+                abertura = new[] { "Agenda sem papel", "Tudo num lugar" },
+                blocos = new object[]
+                {
+                    new { titulo = "Sessão toda semana", sub = "Marca uma vez", trechos = new object[] { new object[] { "psico1", 1, 4.3, 2 } } },
+                    new { titulo = "Evolução em minutos", sub = "Texto pronto", trechos = new object[] { new object[] { "psico2", 0.8, 14 } } },
+                },
+            },
+            falas = new[] { "Psicólogo com agenda no papel perde sessão.", "Você marca uma vez.", "A evolução vai pronta.", "Três meses grátis." },
+        });
+        await c.PostAsync($"/admin/brands/medlycare/creative-jobs/{id}/render", null);
+
+        var status = await c.GetFromJsonAsync<JsonElement>("/admin/brands/medlycare/studio/status");
+        Assert.True(status.GetProperty("positions").GetProperty(id).GetInt32() >= 1);
+
+        Assert.Equal(HttpStatusCode.NoContent, (await w.PostAsJsonAsync("/worker/heartbeat", new { workerId = "pc-teste", note = "livre" })).StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, (await w.PostAsJsonAsync("/worker/heartbeat", new { workerId = "pc-teste", note = "livre de novo" })).StatusCode);
+        status = await c.GetFromJsonAsync<JsonElement>("/admin/brands/medlycare/studio/status");
+        Assert.True(status.GetProperty("workersOnline").GetInt32() >= 1);
+    }
+}

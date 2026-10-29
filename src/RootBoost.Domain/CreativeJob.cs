@@ -59,6 +59,9 @@ public sealed class CreativeJob
     public string? Error { get; private set; }
     public DateTimeOffset CreatedAt { get; private set; }
     public DateTimeOffset UpdatedAt { get; private set; }
+    /// <summary>Quando o worker pegou o job da última vez e quanto levou até entregar: base da previsão de tempo.</summary>
+    public DateTimeOffset? RenderStartedAt { get; private set; }
+    public int? RenderSeconds { get; private set; }
 
     public IReadOnlyList<string> Warnings => JsonSerializer.Deserialize<List<string>>(WarningsJson, Json) ?? [];
     public IReadOnlyList<CreativeOutput> Outputs => JsonSerializer.Deserialize<List<CreativeOutput>>(OutputsJson, Json) ?? [];
@@ -128,6 +131,7 @@ public sealed class CreativeJob
         Attempts++;
         Progress = 0;
         ProgressNote = null;
+        RenderStartedAt = now;
         UpdatedAt = now;
     }
 
@@ -159,6 +163,7 @@ public sealed class CreativeJob
         // Avisos do roteiro (portões ao salvar) continuam; os do worker entram depois, sem repetir.
         WarningsJson = SerializeWarnings(ScriptWarnings.Concat(warnings ?? []).ToList());
         Seed = seed ?? Seed;
+        if (RenderStartedAt is { } started) RenderSeconds = (int)Math.Max(0, (now - started).TotalSeconds);
         Status = CreativeJobStatus.Review;
         Progress = 100;
         WorkerId = null;
