@@ -90,7 +90,7 @@ export function parsePrivateVoices(value) {
 
 /** Null quando pode; senão o motivo. Voz vazia sem padrão da marca também não pode (não há voz "neutra" aqui). */
 export function voiceProblem(voice, brandKey, privateVoices) {
-  if (!voice) return "job sem voz e marca sem voz padrão: escolha uma voz no Estúdio";
+  if (!voice) return "esta marca ainda não tem voz pronta: crie uma na página Vozes (gravar a sua ou escolher do banco) e mande renderizar de novo";
   const owner = privateVoices.get(String(voice).toLowerCase());
   if (owner && owner !== String(brandKey).toLowerCase()) return `a voz ${voice} é particular de ${owner} e não pode narrar ${brandKey}`;
   return null;

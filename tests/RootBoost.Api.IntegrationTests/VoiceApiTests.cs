@@ -211,3 +211,57 @@ public class VoiceReviewTests : IClassFixture<StudioAiWebApplicationFactory>
         Assert.Equal(3, again.GetProperty("seed").GetInt32());
     }
 }
+
+public class BrandDefaultVoiceTests : IClassFixture<StudioAiWebApplicationFactory>
+{
+    private readonly StudioAiWebApplicationFactory _factory;
+    public BrandDefaultVoiceTests(StudioAiWebApplicationFactory factory) => _factory = factory;
+
+    [Fact]
+    public async Task Job_without_voice_uses_the_brand_ready_voice()
+    {
+        var c = _factory.CreateClient();
+        var w = _factory.CreateClient();
+        w.DefaultRequestHeaders.Add("X-Worker-Key", "chave-gravacao");
+        var voice = await (await c.PostAsJsonAsync($"/admin/brands/{BrandKeys.Demo}/voices/design",
+            new { name = "Ana", gender = "female", age = "middle-aged", pitch = "low pitch" })).Content.ReadFromJsonAsync<JsonElement>();
+        var voiceId = voice.GetProperty("id").GetString();
+        for (var i = 0; i < 10; i++)
+        {
+            var claim = await w.PostAsJsonAsync("/worker/voices/claim", new { workerId = "pc" });
+            if (claim.StatusCode == HttpStatusCode.NoContent) break;
+            var got = await claim.Content.ReadFromJsonAsync<JsonElement>();
+            using var samples = new MultipartFormDataContent();
+            samples.Add(new StringContent("pc"), "workerId");
+            samples.Add(new ByteArrayContent([1]), "sample-1", "amostra-1.m4a");
+            await w.PostAsync($"/worker/voices/{got.GetProperty("id").GetString()}/complete", samples);
+        }
+        var job = await (await c.PostAsJsonAsync($"/admin/brands/{BrandKeys.Demo}/creative-jobs", new { kind = "organic", theme = "Sem voz" })).Content.ReadFromJsonAsync<JsonElement>();
+        var id = job.GetProperty("id").GetString();
+        await c.PutAsJsonAsync($"/admin/brands/{BrandKeys.Demo}/creative-jobs/{id}/script", new
+        {
+            roteiro = new
+            {
+                nome = "teste-sem-voz",
+                abertura = new[] { "Agenda sem papel", "Tudo num lugar" },
+                blocos = new object[]
+                {
+                    new { titulo = "Sessão toda semana", sub = "Marca uma vez", trechos = new object[] { new object[] { "psico1", 1, 4.3, 2 } } },
+                    new { titulo = "Evolução em minutos", sub = "Texto pronto", trechos = new object[] { new object[] { "psico2", 0.8, 14 } } },
+                },
+            },
+            falas = new[] { "Psicólogo com agenda no papel perde sessão.", "Você marca uma vez.", "A evolução vai pronta.", "Três meses grátis." },
+        });
+        await c.PostAsync($"/admin/brands/{BrandKeys.Demo}/creative-jobs/{id}/render", null);
+        JsonElement mine = default;
+        for (var i = 0; i < 20; i++)
+        {
+            var r = await w.PostAsJsonAsync("/worker/jobs/claim", new { workerId = "pc" });
+            if (r.StatusCode == HttpStatusCode.NoContent) continue;
+            mine = await r.Content.ReadFromJsonAsync<JsonElement>();
+            if (mine.GetProperty("id").GetString() == id) break;
+        }
+        Assert.Equal(voice.GetProperty("key").GetString(), mine.GetProperty("voiceKey").GetString());
+        Assert.NotNull(voiceId);
+    }
+}

@@ -48,7 +48,7 @@ test("voz particular só narra a marca dona", async () => {
   assert.equal(voiceProblem("matheus2b", "medlycare", priv), null);
   assert.match(voiceProblem("matheus2b", "clinica-x", priv), /particular de medlycare/);
   assert.equal(voiceProblem("banco-ana", "clinica-x", priv), null);
-  assert.match(voiceProblem(null, "clinica-x", priv), /sem voz/);
+  assert.match(voiceProblem(null, "clinica-x", priv), /ainda não tem voz pronta/);
 });
 
 test("gravação: travas e troca dos trechos", async () => {
