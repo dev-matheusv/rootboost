@@ -114,7 +114,9 @@ public sealed class PublishDuePublications
     {
         int published = 0, failed = 0, retrying = 0;
         // Canal sem publicador (hoje o LinkedIn) é MANUAL: o job não tenta nem falha; o humano publica e marca.
-        foreach (var publication in (await _store.ListDueAsync(_time.GetUtcNow(), StuckAfter, ct)).Where(p => _publishers.ContainsKey(p.Channel)))
+        // Marca de demonstração nunca publica nas redes: o post fica aprovado, só pra testar o fluxo.
+        foreach (var publication in (await _store.ListDueAsync(_time.GetUtcNow(), StuckAfter, ct))
+                     .Where(p => _publishers.ContainsKey(p.Channel) && !BrandKeys.IsDemo(p.BrandKey)))
         {
             var outcome = await PublishOneAsync(publication, ct);
             if (outcome == PublicationStatus.Published) published++;

@@ -451,6 +451,16 @@ brandProfile.MapPut("/media/{id:guid}/finished", async (string key, Guid id, Med
     return Results.Ok(MediaDto(options, req, asset));
 });
 
+// Restaurar a demonstração: só marca "-demo"; apaga posts, vídeos, acervo e vozes dela e os arquivos.
+brandProfile.MapPost("/demo/reset", async (string key, RootBoost.Application.Studio.IDemoReset reset,
+    RootBoost.Application.Media.IMediaStorage storage, CancellationToken ct) =>
+{
+    var brandKey = key.ToLowerInvariant();
+    if (!BrandKeys.IsDemo(brandKey)) return Results.BadRequest(new { error = "só a marca de demonstração pode ser restaurada" });
+    foreach (var k in await reset.ResetAsync(brandKey, ct)) await storage.DeleteAsync(k, ct);
+    return Results.NoContent();
+});
+
 brandProfile.MapGet("/privacy", async (string key, IBrandStore brands, CancellationToken ct) =>
     (await brands.ListAsync(ct)).FirstOrDefault(b => b.Key == key.ToLowerInvariant()) is { } b
         ? Results.Ok(new { policy = b.Privacy.ToString(), fictionalMarkers = b.FictionalMarkers })

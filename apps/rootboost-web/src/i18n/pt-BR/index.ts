@@ -150,6 +150,12 @@ export default {
       features: 'Principais recursos ou produtos', listHint: 'Digite e aperte Enter.', differentials: 'Diferenciais', offer: 'Oferta atual',
     },
   },
+  demo: {
+    badge: 'Demonstração: nada publica nas redes',
+    reset: 'Restaurar demonstração',
+    resetConfirm: 'Apaga os posts, vídeos, acervo e vozes desta marca de demonstração. Marca real nunca é afetada.',
+    resetDone: 'Demonstração restaurada.',
+  },
   voicePicker: {
     default: 'Voz padrão',
     defaultHint: 'A voz que o estúdio usa quando você não escolhe.',
