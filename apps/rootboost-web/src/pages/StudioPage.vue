@@ -80,6 +80,25 @@
             </template>
           </q-banner>
 
+          <!-- Revisão da voz: duas versões, a pessoa escolhe pelo ouvido antes de gravar e montar. -->
+          <div v-if="job.status === 'VoiceReview'" class="voice-review card-rounded q-pa-md column q-gutter-y-sm">
+            <div class="row items-center q-gutter-x-sm">
+              <q-icon :name="mdiAccountVoice" color="primary" size="22px" />
+              <div class="text-subtitle1 text-weight-bold">{{ $t('studio.voiceReview.title') }}</div>
+            </div>
+            <div class="text-caption text-grey-7">{{ $t('studio.voiceReview.hint') }}</div>
+            <div v-for="(take, i) in job.voiceTakes" :key="take.seed" class="row items-center no-wrap q-gutter-x-sm">
+              <div class="text-weight-medium" style="min-width: 76px">{{ $t('studio.voiceReview.version', { n: i + 1 }) }}</div>
+              <audio v-if="takeUrls[`${job.id}-${take.seed}`]" :src="takeUrls[`${job.id}-${take.seed}`]" controls class="col" />
+              <q-btn v-else flat dense no-caps color="primary" :icon="mdiPlay" :label="$t('studio.voiceReview.listen')" class="col"
+                @click="loadTake(job.id, take.seed)" />
+              <q-btn unelevated dense no-caps color="primary" :label="$t('studio.voiceReview.use')" :loading="busy" @click="chooseVoice(take.seed)" />
+            </div>
+            <div>
+              <q-btn flat dense no-caps color="primary" :icon="mdiRefresh" :label="$t('studio.voiceReview.redo')" :loading="busy" @click="redoVoice" />
+            </div>
+          </div>
+
           <!-- Render em andamento -->
           <div v-if="job.status === 'Queued' || job.status === 'Rendering'" class="column q-gutter-y-xs">
             <div class="text-subtitle2">{{ job.status === 'Queued' ? $t('studio.waitingWorker') : $t('studio.rendering', { n: job.progress }) }}</div>
@@ -278,7 +297,7 @@ import { useI18n } from 'vue-i18n';
 import { useQuasar } from 'quasar';
 import { isAxiosError } from 'axios';
 import {
-  mdiAccountSearchOutline, mdiBullhornOutline, mdiCalendarPlus, mdiCheckCircleOutline, mdiCodeJson, mdiCreationOutline, mdiDesktopClassic, mdiFormatQuoteOpen, mdiHeartOutline, mdiImageMultipleOutline, mdiMicrophoneOutline, mdiMonitorScreenshot, mdiMovieOpenPlayOutline, mdiPlay, mdiPlus,
+  mdiAccountSearchOutline, mdiAccountVoice, mdiBullhornOutline, mdiCalendarPlus, mdiCheckCircleOutline, mdiCodeJson, mdiCreationOutline, mdiDesktopClassic, mdiFormatQuoteOpen, mdiHeartOutline, mdiImageMultipleOutline, mdiMicrophoneOutline, mdiMonitorScreenshot, mdiMovieOpenPlayOutline, mdiPlay, mdiPlus, mdiRefresh,
 } from '@quasar/extras/mdi-v7';
 import { api } from 'src/services/api';
 import type { CreativeJob, CreativeKind, Publication } from 'src/types/api';
@@ -303,11 +322,11 @@ const selectedId = ref<string | null>(null);
 const job = computed(() => jobs.value.find((j) => j.id === selectedId.value) ?? null);
 const base = computed(() => `/admin/brands/${brand.selected}/creative-jobs`);
 
-const steps = ['script', 'queue', 'render', 'review', 'posts'] as const;
-const step = computed(() => (job.value ? jobStep(job.value.status) : 0));
+const steps = ['script', 'queue', 'voice', 'render', 'review', 'posts'] as const;
+const step = computed(() => (job.value ? jobStep(job.value.status, job.value.voiceApproved) : 0));
 const segments = computed(() => (job.value ? scriptSegments(job.value.roteiro, job.value.falas) : []));
 const seconds = computed(() => estimateSeconds(job.value?.falas));
-const canEditScript = computed(() => !!job.value && ['Draft', 'ScriptReady', 'Review', 'Failed'].includes(job.value.status));
+const canEditScript = computed(() => !!job.value && ['Draft', 'ScriptReady', 'VoiceReview', 'Review', 'Failed'].includes(job.value.status));
 const scriptOpen = ref(true);
 
 // --- IA (RB-45) ---
@@ -552,6 +571,44 @@ async function createPosts() {
   }
 }
 
+// --- Revisão da voz ---
+const takeUrls = reactive<Record<string, string>>({});
+
+/** A voz vem com login (arquivo privado): baixa e toca daqui. */
+async function loadTake(jobId: string, seed: number) {
+  try {
+    const { data } = await api.get<Blob>(`${base.value}/${jobId}/voice/${seed}`, { responseType: 'blob' });
+    takeUrls[`${jobId}-${seed}`] = URL.createObjectURL(data);
+  } catch (e) {
+    $q.notify({ type: 'negative', message: apiError(e) });
+  }
+}
+
+async function chooseVoice(seed: number) {
+  if (!job.value) return;
+  busy.value = true;
+  try {
+    replace((await api.post<CreativeJob>(`${base.value}/${job.value.id}/voice/choose`, { seed })).data);
+    $q.notify({ type: 'positive', message: t('studio.voiceReview.chosen') });
+  } catch (e) {
+    $q.notify({ type: 'negative', message: apiError(e) });
+  } finally {
+    busy.value = false;
+  }
+}
+
+async function redoVoice() {
+  if (!job.value) return;
+  busy.value = true;
+  try {
+    replace((await api.post<CreativeJob>(`${base.value}/${job.value.id}/voice/redo`)).data);
+  } catch (e) {
+    $q.notify({ type: 'negative', message: apiError(e) });
+  } finally {
+    busy.value = false;
+  }
+}
+
 // --- Fila e computadores ligados ---
 interface StudioStatus { workersOnline: number; lastSeenAt: string | null; averageRenderSeconds: number | null; queueSize: number; positions: Record<string, number> }
 const studio = ref<StudioStatus | null>(null);
@@ -655,6 +712,8 @@ watch(() => brand.selected, () => {
 .step { position: relative; opacity: 0.5; }
 .step-dot { width: 12px; height: 12px; border-radius: 50%; margin: 0 auto 4px; border: 2px solid currentColor; }
 .step.done { opacity: 0.8; .step-dot { background: $positive; border-color: $positive; } }
+.voice-review { border: 1px solid rgba(122, 76, 224, 0.35); background: rgba(122, 76, 224, 0.06); }
+.voice-review audio { height: 36px; min-width: 0; }
 .step.failed { opacity: 1; color: $negative; font-weight: 600; .step-dot { background: $negative; border-color: $negative; } }
 .step.current { opacity: 1; color: $primary; font-weight: 600; .step-dot { background: $primary; box-shadow: 0 0 0 4px rgba($primary, 0.2); } }
 .kind-card { border: 1px solid rgba(0, 0, 0, 0.12); height: 100%; transition: border-color 0.15s, background 0.15s; }

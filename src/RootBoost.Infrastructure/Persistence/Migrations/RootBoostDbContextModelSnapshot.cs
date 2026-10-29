@@ -357,9 +357,18 @@ namespace RootBoost.Infrastructure.Persistence.Migrations
                     b.Property<DateTimeOffset>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<bool>("VoiceApproved")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("VoiceKey")
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)");
+
+                    b.Property<string>("VoiceTakesJson")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("jsonb")
+                        .HasDefaultValue("[]");
 
                     b.Property<string>("WarningsJson")
                         .IsRequired()

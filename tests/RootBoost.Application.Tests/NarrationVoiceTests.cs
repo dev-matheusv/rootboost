@@ -42,3 +42,33 @@ public class NarrationVoiceTests
         Assert.Throws<ArgumentException>(() => NarrationVoice.Design("medlycare", "Ana", "female; rm -rf", "middle-aged", "low pitch", Now));
     }
 }
+
+public class VoiceReviewDomainTests
+{
+    private static readonly DateTimeOffset Now = new(2026, 10, 29, 12, 0, 0, TimeSpan.Zero);
+
+    [Fact]
+    public void New_script_throws_away_the_chosen_voice_and_redo_moves_to_new_seeds()
+    {
+        var job = new CreativeJob("medlycare", CreativeKind.Organic, "Teste", null, Now);
+        job.SetScript("{}", "[]", Now);
+        job.QueueRender(Now);
+        job.Claim("pc", Now, TimeSpan.FromMinutes(15));
+        job.DeliverVoice("pc", [new VoiceTake(1, "a", 0), new VoiceTake(2, "b", 0)], Now);
+        Assert.Equal(CreativeJobStatus.VoiceReview, job.Status);
+        Assert.Null(job.WorkerId); // não prende o worker esperando gente
+
+        job.RedoVoice(Now);
+        Assert.Equal(3, job.Seed);
+        Assert.Empty(job.VoiceTakes);
+        job.Claim("pc", Now, TimeSpan.FromMinutes(15));
+        job.DeliverVoice("pc", [new VoiceTake(3, "c", 0)], Now);
+        job.ChooseVoice(3, Now);
+        Assert.True(job.VoiceApproved);
+
+        job.Claim("pc", Now, TimeSpan.FromMinutes(15));
+        job.Fail("pc", "app fora", retry: false, Now);
+        job.SetScript("{\"x\":1}", "[]", Now);
+        Assert.False(job.VoiceApproved);
+    }
+}

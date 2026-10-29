@@ -20,10 +20,15 @@ public enum CreativeJobStatus
     ScriptReady,
     Queued,
     Rendering,
+    /// <summary>A voz saiu em duas versões: a pessoa ouve e escolhe antes de gravar a tela e montar (29/10).</summary>
+    VoiceReview,
     Review,
     Done,
     Failed,
 }
+
+/// <summary>Versão da voz pra ouvir: semente, onde está o áudio (privado) e palavras sem par do alinhamento.</summary>
+public sealed record VoiceTake(int Seed, string StorageKey, int Unmatched);
 
 /// <summary>Arquivo entregue pelo worker. O papel diz onde ele vai (ex.: "video-instagram", "video", "cover-instagram").</summary>
 public sealed record CreativeOutput(string Role, string Url);
@@ -62,6 +67,11 @@ public sealed class CreativeJob
     /// <summary>Quando o worker pegou o job da última vez e quanto levou até entregar: base da previsão de tempo.</summary>
     public DateTimeOffset? RenderStartedAt { get; private set; }
     public int? RenderSeconds { get; private set; }
+    /// <summary>Versões da voz geradas pro "Revisão da voz" e se a pessoa já escolheu (aí o worker monta com ela).</summary>
+    public string VoiceTakesJson { get; private set; } = "[]";
+    public bool VoiceApproved { get; private set; }
+
+    public IReadOnlyList<VoiceTake> VoiceTakes => JsonSerializer.Deserialize<List<VoiceTake>>(VoiceTakesJson, Json) ?? [];
 
     public IReadOnlyList<string> Warnings => JsonSerializer.Deserialize<List<string>>(WarningsJson, Json) ?? [];
     public IReadOnlyList<CreativeOutput> Outputs => JsonSerializer.Deserialize<List<CreativeOutput>>(OutputsJson, Json) ?? [];
@@ -98,6 +108,8 @@ public sealed class CreativeJob
         Lines = lines;
         Status = CreativeJobStatus.ScriptReady;
         OutputsJson = "[]";
+        VoiceTakesJson = "[]";
+        VoiceApproved = false; // texto novo, voz nova: ouvir de novo antes de montar
         WarningsJson = SerializeWarnings(warnings);
         Error = null;
         Progress = 0;
@@ -115,6 +127,45 @@ public sealed class CreativeJob
         Error = null;
         Progress = 0;
         ProgressNote = null;
+        UpdatedAt = now;
+    }
+
+    /// <summary>Worker entregou as versões da voz: o job espera a pessoa escolher (sem prazo, sem worker preso).</summary>
+    public void DeliverVoice(string workerId, IReadOnlyList<VoiceTake> takes, DateTimeOffset now)
+    {
+        EnsureOwner(workerId);
+        if (takes.Count == 0) throw new ArgumentException("nenhuma versão da voz", nameof(takes));
+        VoiceTakesJson = JsonSerializer.Serialize(takes, Json);
+        Status = CreativeJobStatus.VoiceReview;
+        Progress = 0;
+        ProgressNote = null;
+        WorkerId = null;
+        LeaseUntil = null;
+        Error = null;
+        UpdatedAt = now;
+    }
+
+    /// <summary>A pessoa escolheu a versão pelo ouvido: volta pra fila e o worker monta com essa semente.</summary>
+    public void ChooseVoice(int seed, DateTimeOffset now)
+    {
+        if (Status != CreativeJobStatus.VoiceReview) throw new InvalidOperationException("o job não está esperando a escolha da voz");
+        if (VoiceTakes.All(t => t.Seed != seed)) throw new ArgumentException("versão de voz inexistente", nameof(seed));
+        Seed = seed;
+        VoiceApproved = true;
+        Status = CreativeJobStatus.Queued;
+        Attempts = 0;
+        UpdatedAt = now;
+    }
+
+    /// <summary>Nenhuma versão agradou: gera outras duas, com sementes novas.</summary>
+    public void RedoVoice(DateTimeOffset now)
+    {
+        if (Status != CreativeJobStatus.VoiceReview) throw new InvalidOperationException("o job não está esperando a escolha da voz");
+        Seed = VoiceTakes.Max(t => t.Seed) + 1;
+        VoiceTakesJson = "[]";
+        VoiceApproved = false;
+        Status = CreativeJobStatus.Queued;
+        Attempts = 0;
         UpdatedAt = now;
     }
 
