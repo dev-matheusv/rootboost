@@ -101,3 +101,17 @@ test("acervo: recorte 4:5 no foco enche a tela, sem sair da foto", async () => {
   assert.deepEqual([whole.w, whole.h], [1000, 1250]);
   assert.ok(whole.y + whole.h <= 2000);
 });
+
+test("lista de brutos do marketing vira itens", async () => {
+  const { parseRawList } = await import("./lib.mjs");
+  const text = [
+    "AGENDA",
+    "- arrastar (10 s): Arrasta uma consulta para outro horario.",
+    "- previsaotopo e previsaobaixo (15 s cada): O financeiro mostra a previsao.",
+    "- soap (19 s): Escolha do formato. (CONFERIR assistindo: nao foi usado em reel)",
+    "NAO SUBIR",
+    "- previsao (1080x1800): inteira.",
+  ].join("\n");
+  assert.deepEqual(parseRawList(text).map((i) => i.name), ["arrastar", "previsaotopo", "previsaobaixo"]);
+  assert.equal(parseRawList(text, { includeToCheck: true })[3].description, "Escolha do formato.");
+});
