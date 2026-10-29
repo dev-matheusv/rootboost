@@ -36,6 +36,46 @@ public sealed class MediaAsset
         Tags = string.IsNullOrWhiteSpace(tags) ? null : tags.Trim()[..Math.Min(tags.Trim().Length, 300)];
     }
 
+    /// <summary>Dado pessoal visto pela IA na foto (nome, CPF, rosto de paciente...) e onde está.</summary>
+    public PersonalDataStatus PersonalData { get; private set; } = PersonalDataStatus.Unchecked;
+    public string? PersonalDataKinds { get; private set; }
+    public string RedactionBoxesJson { get; private set; } = "[]";
+    /// <summary>Versão borrada (JPEG) no armazenamento; é ela que vai pra peça e pro link público.</summary>
+    public string? RedactedStorageKey { get; private set; }
+
+    public IReadOnlyList<RedactionBox> RedactionBoxes => RedactionBox.Read(RedactionBoxesJson);
+
+    /// <summary>Real ou na dúvida: o original não sai pro público nem pra peça, só a versão borrada.</summary>
+    public bool HidesOriginal => PersonalData is PersonalDataStatus.Real or PersonalDataStatus.Uncertain;
+
+    public void MarkPersonalData(PersonalDataStatus status, string? kinds, IReadOnlyList<RedactionBox> boxes)
+    {
+        PersonalData = status;
+        PersonalDataKinds = string.IsNullOrWhiteSpace(kinds) ? null : kinds.Trim()[..Math.Min(kinds.Trim().Length, 200)];
+        SetRedactionBoxes(boxes);
+    }
+
+    public void SetRedactionBoxes(IReadOnlyList<RedactionBox> boxes)
+    {
+        if (boxes.Count > 30 || boxes.Any(b => !b.IsValid)) throw new ArgumentException("áreas de borrado inválidas", nameof(boxes));
+        RedactionBoxesJson = RedactionBox.Write(boxes);
+        RedactedStorageKey = null; // áreas mudaram: a versão borrada precisa ser refeita
+    }
+
+    public void SetRedacted(string storageKey) => RedactedStorageKey = storageKey;
+
+    public string RedactedKeyFor() => $"{StorageKey[..StorageKey.LastIndexOf('.')]}-borrada.jpg";
+
+    /// <summary>Pode entrar num roteiro desta marca? Real em marca "só fictício" nunca; real ou dúvida só com a versão borrada.</summary>
+    public string? BlockedReason(PersonalDataPolicy policy) => PersonalData switch
+    {
+        PersonalDataStatus.Real when policy == PersonalDataPolicy.FictionalOnly => "tem dado pessoal real, e esta marca só usa dado fictício",
+        PersonalDataStatus.Real or PersonalDataStatus.Uncertain when RedactedStorageKey is null => "tem dado pessoal sem borrar",
+        // Foto ainda não checada (ex.: descrita antes desta proteção): na dúvida, fica fora até passar pela IA.
+        PersonalDataStatus.Unchecked when !IsVideo => "ainda não foi checada (clique em Descrever com a IA)",
+        _ => null,
+    };
+
     private MediaAsset() { }
 
     public MediaAsset(string brandKey, string fileName, long sizeBytes, DateTimeOffset now)

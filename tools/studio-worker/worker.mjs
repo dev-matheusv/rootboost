@@ -91,7 +91,7 @@ async function round() {
           ask: async (state) => (await call("POST", "/worker/ai/next-action", state)).data });
         recordings.push({ index: s.index, source, duration: r.duration });
       } catch (e) {
-        return fail(job.id, `gravação do bloco ${s.index + 1}: ${e.message}`, true);
+        return fail(job.id, `gravação do bloco ${s.index + 1}: ${e.message}`, !e.personalData);
       }
     }
     job.roteiro = applyRecordings(job.roteiro, recordings);

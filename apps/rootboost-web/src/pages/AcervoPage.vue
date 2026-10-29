@@ -21,14 +21,26 @@
       <div v-for="m in items" :key="m.id" class="col-12 col-sm-6 col-md-4 col-lg-3">
         <div class="item card-rounded column no-wrap">
           <video v-if="m.isVideo" :src="m.url" preload="metadata" controls playsinline class="thumb" />
+          <div v-else-if="m.hidesOriginal && !m.redacted" class="thumb column flex-center text-center q-pa-md text-grey-5">
+            <q-icon :name="mdiShieldAlertOutline" size="36px" color="warning" />
+            <div class="text-caption q-mt-sm">{{ $t('privacy.needsBlur') }}</div>
+          </div>
           <img v-else :src="m.url" alt="" class="thumb" loading="lazy" />
           <div class="q-pa-sm column q-gutter-y-xs">
+            <div v-if="m.personalData !== 'None' && (m.personalData !== 'Unchecked' || blockedReason(m))" class="row items-center q-gutter-xs">
+              <q-chip v-if="m.personalData !== 'Unchecked'" dense size="sm" :color="m.personalData === 'Fictional' ? 'blue-grey-6' : 'warning'" text-color="white" :icon="mdiShieldAccountOutline">
+                {{ $t(`privacy.badge.${m.personalData}`) }}<span v-if="m.personalDataKinds">: {{ m.personalDataKinds }}</span>
+              </q-chip>
+              <q-chip v-if="blockedReason(m)" dense size="sm" color="negative" text-color="white">{{ blockedReason(m) }}</q-chip>
+            </div>
             <q-input v-model="m.description" dense borderless autogrow :placeholder="$t('acervo.describeHint')"
               @blur="saveDescription(m)" />
             <q-input v-model="m.tags" dense borderless :placeholder="$t('acervo.tags')" class="text-caption" @blur="saveDescription(m)" />
             <div class="row items-center no-wrap">
               <q-btn v-if="!m.isVideo && aiEnabled" flat dense no-caps size="sm" color="primary" :icon="mdiCreationOutline"
                 :label="$t('acervo.describe')" :loading="busy === m.id" @click="describe(m)" />
+              <q-btn v-if="!m.isVideo" flat dense no-caps size="sm" color="primary" :icon="mdiBlurLinear" :label="$t('privacy.adjust')"
+                @click="editing = m" />
               <q-space />
               <q-btn flat round dense size="sm" :icon="mdiDeleteOutline" color="negative" @click="remove(m)">
                 <q-tooltip>{{ $t('acervo.delete') }}</q-tooltip>
@@ -38,6 +50,8 @@
         </div>
       </div>
     </div>
+    <RedactionEditor :model-value="!!editing" :media="editing" :base="base()" @update:model-value="(v) => { if (!v) editing = null }"
+      @saved="(d) => editing && Object.assign(editing, d)" />
   </q-page>
 </template>
 
@@ -46,13 +60,20 @@ import { onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useQuasar } from 'quasar';
 import { isAxiosError } from 'axios';
-import { mdiCloudUploadOutline, mdiCreationOutline, mdiDeleteOutline, mdiImageMultipleOutline } from '@quasar/extras/mdi-v7';
+import {
+  mdiBlurLinear, mdiCloudUploadOutline, mdiCreationOutline, mdiDeleteOutline, mdiImageMultipleOutline, mdiShieldAccountOutline, mdiShieldAlertOutline,
+} from '@quasar/extras/mdi-v7';
 import { api } from 'src/services/api';
+import RedactionEditor from 'src/components/RedactionEditor.vue';
 import { useBrandStore } from 'src/stores/brandStore';
 
 defineOptions({ name: 'AcervoPage' });
 
-interface Media { id: string; url: string; isVideo: boolean; fileName: string; description: string | null; tags: string | null }
+interface Media {
+  id: string; url: string; isVideo: boolean; fileName: string; description: string | null; tags: string | null;
+  personalData: 'Unchecked' | 'None' | 'Fictional' | 'Real' | 'Uncertain'; personalDataKinds: string | null;
+  redactionBoxes: { x: number; y: number; w: number; h: number }[]; redacted: boolean; hidesOriginal: boolean;
+}
 
 const { t } = useI18n();
 const $q = useQuasar();
@@ -62,6 +83,16 @@ const loading = ref(false);
 const uploading = ref(false);
 const busy = ref<string | null>(null);
 const aiEnabled = ref(false);
+const policy = ref<'Blur' | 'FictionalOnly'>('Blur');
+const editing = ref<Media | null>(null);
+
+/** Mesma regra do servidor: real em marca "só fictício" nunca entra; real ou dúvida só com a versão borrada. */
+function blockedReason(m: Media): string | null {
+  if (m.personalData === 'Real' && policy.value === 'FictionalOnly') return t('privacy.blockedFictionalOnly');
+  if ((m.personalData === 'Real' || m.personalData === 'Uncertain') && !m.redacted) return t('privacy.blockedNoBlur');
+  if (m.personalData === 'Unchecked' && !m.isVideo) return t('privacy.blockedUnchecked');
+  return null;
+}
 const base = () => `/admin/brands/${brand.selected}/media`;
 
 function apiError(e: unknown): string {
@@ -73,9 +104,11 @@ async function load() {
   if (!brand.selected) return;
   loading.value = true;
   try {
-    const [media, ai] = await Promise.all([api.get<Media[]>(base()), api.get<{ enabled: boolean }>(`/admin/brands/${brand.selected}/ai/status`)]);
+    const [media, ai, privacy] = await Promise.all([api.get<Media[]>(base()), api.get<{ enabled: boolean }>(`/admin/brands/${brand.selected}/ai/status`),
+      api.get<{ policy: 'Blur' | 'FictionalOnly' }>(`/admin/brands/${brand.selected}/privacy`)]);
     items.value = media.data;
     aiEnabled.value = ai.data.enabled;
+    policy.value = privacy.data.policy;
   } catch {
     $q.notify({ type: 'negative', message: t('common.error') });
   } finally {
@@ -107,7 +140,7 @@ async function describe(m: Media) {
   busy.value = m.id;
   try {
     const { data } = await api.post<Media>(`${base()}/${m.id}/describe`);
-    Object.assign(m, { description: data.description, tags: data.tags });
+    Object.assign(m, data);
   } catch (e) {
     $q.notify({ type: 'negative', message: apiError(e) });
   } finally {

@@ -153,10 +153,21 @@ namespace RootBoost.Infrastructure.Persistence.Migrations
                         .HasMaxLength(8)
                         .HasColumnType("character varying(8)");
 
+                    b.Property<string>("FictionalMarkers")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(120)
                         .HasColumnType("character varying(120)");
+
+                    b.Property<string>("Privacy")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasDefaultValue("Blur");
 
                     b.Property<string>("VoiceJson")
                         .IsRequired()
@@ -175,6 +186,7 @@ namespace RootBoost.Infrastructure.Persistence.Migrations
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 10, 23, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             DefaultLanguage = "en-US",
                             Name = "Loja RootBoost",
+                            Privacy = "Blur",
                             VoiceJson = "{}"
                         },
                         new
@@ -183,6 +195,7 @@ namespace RootBoost.Infrastructure.Persistence.Migrations
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 10, 23, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             DefaultLanguage = "pt-BR",
                             Name = "MedlyCare",
+                            Privacy = "Blur",
                             VoiceJson = "{}"
                         });
                 });
@@ -417,6 +430,27 @@ namespace RootBoost.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasMaxLength(160)
                         .HasColumnType("character varying(160)");
+
+                    b.Property<string>("PersonalData")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasDefaultValue("Unchecked");
+
+                    b.Property<string>("PersonalDataKinds")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("RedactedStorageKey")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.Property<string>("RedactionBoxesJson")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("jsonb")
+                        .HasDefaultValue("[]");
 
                     b.Property<long>("SizeBytes")
                         .HasColumnType("bigint");

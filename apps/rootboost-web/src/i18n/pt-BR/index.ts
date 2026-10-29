@@ -168,6 +168,18 @@ export default {
     pitch: { 'low pitch': 'Grave', 'moderate pitch': 'Média', 'high pitch': 'Aguda' },
     create: 'Criar voz',
   },
+  privacy: {
+    status: { None: 'Sem dado pessoal', Fictional: 'Fictício', Uncertain: 'Na dúvida', Real: 'Dado real' },
+    badge: { Fictional: 'Dado fictício', Uncertain: 'Contém dado pessoal (dúvida)', Real: 'Contém dado pessoal' },
+    needsBlur: 'Tem dado pessoal e ainda não foi borrado. Clique em Ajustar borrado e marque as áreas.',
+    adjust: 'Ajustar borrado',
+    editorTitle: 'Onde borrar',
+    editorHint: 'Arraste na foto pra marcar o que esconder (nome, CPF, rosto). O X tira uma área. Os vídeos e posts usam sempre a versão borrada.',
+    save: 'Salvar e borrar',
+    blockedFictionalOnly: 'Não entra: esta marca só usa dado fictício',
+    blockedUnchecked: 'Não entra até a IA checar (Descrever com a IA)',
+    blockedNoBlur: 'Não entra até borrar',
+  },
   acervo: {
     title: 'Acervo',
     subtitle: 'Fotos, vídeos e criativos da marca. A IA usa pra montar os vídeos e posts.',

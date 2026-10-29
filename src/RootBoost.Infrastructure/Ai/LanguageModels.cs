@@ -82,7 +82,14 @@ public sealed class FakeLanguageModel : ILanguageModel
         if (request.Purpose == "onboarding-chat") return Task.FromResult(Interview(request));
         if (request.Purpose == "screen-recording") return Task.FromResult(Screen(request));
         if (request.Purpose == "media-describe")
-            return Task.FromResult(new LanguageModelResult(JsonSerializer.Serialize(new { descricao = "Foto de teste do acervo.", tags = new[] { "teste", "acervo" } }), "fake", 0, 0, 0m));
+            return Task.FromResult(new LanguageModelResult(JsonSerializer.Serialize(new
+            {
+                descricao = "Foto de teste do acervo.", tags = new[] { "teste", "acervo" },
+                // Arquivo com "cpf" no pedido do teste vira dado real numa área (exercita o borrado sem IA de verdade).
+                dadosPessoais = request.User.Contains("cpf", StringComparison.OrdinalIgnoreCase)
+                    ? new { tipo = "real", quais = new[] { "CPF" }, areas = new object[] { new { x = 0.1, y = 0.1, largura = 0.5, altura = 0.2 } } }
+                    : new { tipo = "nenhum", quais = Array.Empty<string>(), areas = Array.Empty<object>() },
+            }), "fake", 0, 0, 0m));
         var ad = request.System.Contains("Anúncio: sem abertura", StringComparison.Ordinal);
         // Com acervo no prompt, o primeiro bloco usa a primeira mídia listada ("- <id>: foto: ...").
         var firstMedia = request.System.Split('\n').Select(l => l.Trim()).FirstOrDefault(l => l.StartsWith("- ", StringComparison.Ordinal) && l.Contains(": foto:") || l.StartsWith("- ", StringComparison.Ordinal) && l.Contains(": vídeo:"));
@@ -116,7 +123,13 @@ public sealed class FakeLanguageModel : ILanguageModel
     {
         var done = request.User.Contains("Passo 3 ", StringComparison.Ordinal) || request.User.Contains("Passo 4 ", StringComparison.Ordinal);
         var first = request.User.Split('\n').FirstOrDefault(l => l.StartsWith("e1:", StringComparison.Ordinal)) is null ? "" : "e1";
-        var json = JsonSerializer.Serialize(new { acao = done ? "pronto" : "clicar", alvo = done ? "" : first, texto = "", motivo = done ? "cena mostrada" : "abrir a agenda" });
+        // Elemento com "CPF 123" na página de teste: simula paciente real na tela.
+        var realData = request.User.Contains("CPF 123", StringComparison.Ordinal);
+        var json = JsonSerializer.Serialize(new
+        {
+            acao = done ? "pronto" : "clicar", alvo = done ? "" : first, texto = "", motivo = realData ? "nome e CPF de paciente na lista" : done ? "cena mostrada" : "abrir a agenda",
+            dadoPessoalReal = realData,
+        });
         return new LanguageModelResult(json, "fake", 0, 0, 0m);
     }
 
