@@ -1381,10 +1381,10 @@ static class VoiceAudio
 }
 
 record NarrationVoiceDto(Guid Id, string Key, string Name, string Kind, string Status, IReadOnlyList<int> Samples, int? ChosenSeed,
-    string? Error, string? ConsentBy, DateTimeOffset? ConsentAt, DateTimeOffset CreatedAt)
+    string? Error, string? ConsentBy, DateTimeOffset? ConsentAt, DateTimeOffset CreatedAt, string? Instruct)
 {
     public static NarrationVoiceDto From(NarrationVoice v) => new(v.Id, v.Key, v.Name, v.Kind.ToString(), v.Status.ToString(),
-        v.Samples.Select(x => x.Seed).ToList(), v.ChosenSeed, v.Error, v.ConsentBy, v.ConsentAt, v.CreatedAt);
+        v.Samples.Select(x => x.Seed).ToList(), v.ChosenSeed, v.Error, v.ConsentBy, v.ConsentAt, v.CreatedAt, v.Instruct);
 }
 record ScreenElementInput(string? Id, string? Role, string? Text);
 record ScreenStateInput(string? BrandKey, string Scene, string? Url, List<ScreenElementInput>? Elements, List<string>? History, int Step, string Image);

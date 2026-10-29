@@ -226,3 +226,6 @@ export interface CreativeJob {
   createdAt: string;
   updatedAt: string;
 }
+
+/** Voz pronta da marca pro "Quem narra?" (página Vozes, RB-59). */
+export interface PickableVoice { id: string; key: string; name: string; kind: 'Clone' | 'Design'; instruct: string | null; samples: number[]; chosenSeed: number | null }
