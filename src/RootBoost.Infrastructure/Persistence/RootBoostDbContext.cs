@@ -147,6 +147,7 @@ public sealed class RootBoostDbContext : DbContext
         job.Property(x => x.Status).HasConversion<string>().HasMaxLength(16);
         job.Property(x => x.Theme).HasMaxLength(300).IsRequired();
         job.Property(x => x.VoiceKey).HasMaxLength(64);
+        job.Property(x => x.Format).HasConversion<string>().HasMaxLength(16).HasDefaultValue(VideoFormat.Auto);
         job.Property(x => x.Script).HasColumnType("jsonb");
         job.Property(x => x.Lines).HasColumnType("jsonb");
         job.Property(x => x.WarningsJson).HasColumnType("jsonb").IsRequired();

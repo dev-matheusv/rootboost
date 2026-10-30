@@ -68,6 +68,22 @@ Enquanto a gravação automática da tela (RB-50) não existe, cada bloco escrit
 - **Texto:** fala pra você (sem "eu fiz"), imperativo correto ("teste"), fala do que a cena mostra, só recursos cadastrados.
 - Ainda no pipeline (narrado-calmo): título, foto e legenda num bloco só; revisão automática pela grade de quadros.
 
+## Formato do vídeo (30/10)
+
+`CreativeJob.Format`: **Auto** (a IA decide e grava `roteiro.formato`), **Explainer** (narração e legenda em toda cena,
+o caminho do narrado-calmo) ou **Personal** (viagem, resultado, antes e depois). No pessoal, cada bloco tem `audio`:
+`musica` (sem fala; `duracao` 2 a 8 s), `original` (vídeo do acervo em que a pessoa fala; o DMaker isola a voz) ou
+`narracao` (voz da marca, sintetizada pelo DMaker). Abertura e fecho viram cartões sem narração. O roteiro também traz
+`musica.clima` (palavras em inglês pra busca de música).
+
+O worker monta o pessoal direto no DMaker (`buildPersonalSpec` → `dmaker render`), sem etapa de voz: mídia em tela
+cheia cortada no foco, transição e movimento da IA, título por cena, legenda automática só se alguém fala. Vídeo do
+acervo baixa com o som. Marca sem kit ganha um neutro (nunca o visual de outra marca).
+
+**Música:** ainda não entra no arquivo. Caminhos: Instagram Audio API (anexa música licenciada ao publicar o Reels,
+grátis, só Instagram); pro arquivo (Facebook e outros) falta escolher a fonte (o Openverse não responde a partir do PC;
+Jamendo responde mas precisa de chave e conferir a licença; geração por IA quando o render for pra nuvem com GPU).
+
 ## Índice de momentos (30/10)
 
 Vídeo do acervo guarda `MomentsJson` (início, fim e o que a tela mostra). A IA do roteiro vê os momentos e escolhe um por

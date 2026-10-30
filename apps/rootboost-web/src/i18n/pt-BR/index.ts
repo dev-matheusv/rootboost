@@ -29,6 +29,8 @@ export default {
     groups: { nav: 'Ir para', actions: 'Ações', posts: 'Posts' },
   },
   studio: {
+    format: { Auto: 'A IA decide', Explainer: 'Explicação', Personal: 'Pessoal ou resultado' },
+    audio: { narracao: 'Narração', musica: 'Música', original: 'Fala do vídeo' },
     advanced: 'Avançado: usar os arquivos roteiro.json e falas.json',
     ai: {
       editIdeas: 'Ideias de edição (um toque refaz com ela)',
@@ -82,6 +84,8 @@ export default {
     delete: 'Apagar vídeo',
     deleteConfirm: 'O vídeo sai do Estúdio. Arquivos que já viraram post continuam no Acervo.',
     newDialog: {
+      format: 'Formato do vídeo',
+      formatHelp: { Auto: 'Pelo pedido e pelo acervo, a IA escolhe e mostra.', Explainer: 'Mostra um sistema ou ensina: narração e legenda em tudo.', Personal: 'Viagem, antes e depois, rotina: música, a sua fala do vídeo, legenda só quando alguém fala.' },
       what: 'O que o vídeo deve mostrar?',
       whatPlaceholder: 'Escreva como pediria pra alguém. Ex.: como a agenda avisa o paciente na véspera',
       ex1: 'Antes e depois de um atendimento',

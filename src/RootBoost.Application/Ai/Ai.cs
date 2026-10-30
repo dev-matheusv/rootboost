@@ -115,7 +115,7 @@ public sealed class ScriptWriter
     {
         // Acervo (RB-16): fotos e vídeos com descrição que a IA pode pôr nas cenas. Sem descrição, foto não entra (a IA não vê).
         var media = (library ?? []).Where(m => !m.Finished && (m.IsVideo || !string.IsNullOrWhiteSpace(m.Description))).Take(60).ToList();
-        var system = SystemPrompt(job.Kind, brand, product, media);
+        var system = SystemPrompt(job.Kind, brand, product, media, job.Format);
         var user = UserPrompt(job, instructions);
         decimal cost = 0;
         IReadOnlyList<string> errors = [];
@@ -129,7 +129,7 @@ public sealed class ScriptWriter
                 result.InputTokens, result.OutputTokens, result.CostUsd, _time.GetUtcNow()), ct);
 
             using var doc = JsonDocument.Parse(result.Json);
-            var (script, lines, hooks) = ToContracts(doc.RootElement, media.ToDictionary(m => m.Id.ToString("N"), m => m.Moments));
+            var (script, lines, hooks) = ToContracts(doc.RootElement, media.ToDictionary(m => m.Id.ToString("N"), m => m.Moments), job.Format);
             errors = ScriptContract.Validate(script, lines);
             // Mesma mídia em duas cenas deixa o vídeo repetitivo (relato de 30/10: o receituário aparecia 3 vezes).
             var repeated = script.GetProperty("blocos").EnumerateArray()
@@ -171,21 +171,32 @@ public sealed class ScriptWriter
         return [$"acervo-{mediaId}", Math.Round(m.Start, 1), Math.Round(end, 1)];
     }
 
-    private static (JsonElement Script, JsonElement Lines, IReadOnlyList<string> Hooks) ToContracts(JsonElement ai, IReadOnlyDictionary<string, IReadOnlyList<MediaMoment>> mediaMoments)
+    private static (JsonElement Script, JsonElement Lines, IReadOnlyList<string> Hooks) ToContracts(JsonElement ai, IReadOnlyDictionary<string, IReadOnlyList<MediaMoment>> mediaMoments, VideoFormat requested)
     {
         var lines = new List<string>();
+        // Formato pedido manda; no automático, o que a IA decidiu.
+        var personal = requested switch
+        {
+            VideoFormat.Personal => true,
+            VideoFormat.Explainer => false,
+            _ => Str(ai, "formato") == "pessoal",
+        };
         var opening = ai.TryGetProperty("abertura", out var a) && a.ValueKind == JsonValueKind.Object
             ? new[] { Str(a, "titulo"), Str(a, "subtitulo") } : null;
-        if (opening is not null) lines.Add(Str(a, "fala"));
+        // Pessoal: abertura e fecho são cartões sem narração (a música segue); a fala, quando há, está nas cenas.
+        if (opening is not null) lines.Add(personal ? "" : Str(a, "fala"));
 
         var blocks = new List<object>();
         var n = 0;
         foreach (var b in ai.GetProperty("blocos").EnumerateArray())
         {
             n++;
-            var fala = Str(b, "fala");
+            var audio = personal ? Str(b, "audio") switch { "original" => "original", "narracao" => "narracao", _ => "musica" } : "narracao";
+            var fala = audio == "narracao" ? Str(b, "fala") : "";
             lines.Add(fala);
-            var seconds = Math.Max(3, Math.Round(fala.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length / ScriptGates.WordsPerSecond, 1));
+            var seconds = audio == "narracao"
+                ? Math.Max(3, Math.Round(fala.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length / ScriptGates.WordsPerSecond, 1))
+                : Math.Clamp(b.TryGetProperty("duracao", out var du) && du.ValueKind == JsonValueKind.Number ? du.GetDouble() : 4, 2, 8);
             blocks.Add(new
             {
                 titulo = Str(b, "titulo"),
@@ -196,13 +207,17 @@ public sealed class ScriptWriter
                 // Edição por bloco (transição de entrada e movimento da foto); fora da lista vira o padrão suave.
                 transicao = Transitions.Contains(Str(b, "transicao")) ? Str(b, "transicao") : "fade",
                 movimento = Motions.Contains(Str(b, "movimento")) ? Str(b, "movimento") : "zoom-in",
+                // Som da cena: narracao (voz da marca), original (fala da pessoa no vídeo dela) ou musica.
+                audio,
             });
         }
         var final = ai.GetProperty("final");
-        lines.Add(Str(final, "fala"));
+        lines.Add(personal ? "" : Str(final, "fala"));
 
         var script = new Dictionary<string, object?>
         {
+            ["formato"] = personal ? "pessoal" : "explicativo",
+            ["musica"] = new { clima = Str(ai, "musicaClima") },
             ["nome"] = Str(ai, "nome"),
             ["abertura"] = opening,
             ["fecho"] = new[] { Str(final, "titulo"), Str(final, "cta") },
@@ -216,7 +231,7 @@ public sealed class ScriptWriter
     private static string Str(JsonElement e, string prop) =>
         e.TryGetProperty(prop, out var v) && v.ValueKind == JsonValueKind.String ? v.GetString()!.Trim() : string.Empty;
 
-    private string SystemPrompt(CreativeKind kind, BrandProfile? brand, BrandProduct? product, IReadOnlyList<MediaAsset> media)
+    private string SystemPrompt(CreativeKind kind, BrandProfile? brand, BrandProduct? product, IReadOnlyList<MediaAsset> media, VideoFormat format = VideoFormat.Auto)
     {
         var (min, max) = ScriptGates.Range(kind);
         var sb = new StringBuilder();
@@ -229,6 +244,18 @@ public sealed class ScriptWriter
             ? "- Anúncio: sem abertura; o título do primeiro bloco é o gancho, curto e forte."
             : "- Abertura com a dor do público (título curto e subtítulo), depois blocos de um recurso cada, de 5 a 12 segundos.");
         sb.AppendLine("- Cada bloco tem título curto no topo da tela, subtítulo, a fala daquele trecho e a cena: o que a tela mostra, passo a passo, pra quem for gravar.");
+        sb.AppendLine(format switch
+        {
+            VideoFormat.Explainer => "- Formato explicativo (obrigatório): toda cena com narração (audio narracao) e fala.",
+            VideoFormat.Personal => "- Formato pessoal (obrigatório): vídeo de resultado, viagem ou rotina, sem explicação de sistema. " +
+                "Cada cena escolhe o som: musica (só música, fala vazia), original (vídeo do acervo em que a pessoa fala; fala vazia, " +
+                "a legenda vem da fala dela) ou narracao (só se a pessoa pediu narração). Foto e momento de resultado pedem musica.",
+            _ => "- Formato: decida pelo pedido e pelo acervo. explicativo = mostra um sistema ou ensina algo, narração em toda cena. " +
+                "pessoal = viagem, resultado, antes e depois, rotina: cenas com musica, original (a pessoa falando no vídeo dela) ou " +
+                "narracao só se fizer sentido. Na dúvida entre os dois, pessoal quando não houver sistema pra mostrar.",
+        });
+        sb.AppendLine("- Em cena musica a fala fica vazia e duracao diz quantos segundos ela fica na tela (2 a 6). Diga também o clima da música " +
+            "(musicaClima, 2 a 4 palavras em inglês, ex.: calm acoustic travel), mesmo no explicativo.");
         sb.AppendLine("- Edição: escolha a transição de entrada e o movimento de cada bloco pela cena e pelo ritmo. Sem pedido da pessoa, " +
             "prefira o suave (fade, dissolve, smoothleft) e varie o movimento (zoom-in aproxima detalhe, zoom-out mostra o todo, pan " +
             "acompanha foto larga). Slide e wipe mudam de assunto; circleopen e zoomin revelam resultado. Se a pessoa pedir um estilo " +
@@ -317,7 +344,7 @@ public sealed class ScriptWriter
         {
           "type": "object",
           "additionalProperties": false,
-          "required": ["nome", "abertura", "blocos", "final", "ganchosAlternativos", "ideiasEdicao"],
+          "required": ["nome", "abertura", "blocos", "final", "ganchosAlternativos", "ideiasEdicao", "formato", "musicaClima"],
           "properties": {
             "nome": { "type": "string", "description": "nome curto do vídeo em minúsculas com hífen, ex.: psicologia-agenda" },
             "abertura": {
@@ -329,17 +356,21 @@ public sealed class ScriptWriter
             },
             "blocos": {
               "type": "array",
-              "items": { "type": "object", "additionalProperties": false, "required": ["titulo", "subtitulo", "fala", "cena", "midia", "transicao", "movimento", "momento"],
+              "items": { "type": "object", "additionalProperties": false, "required": ["titulo", "subtitulo", "fala", "cena", "midia", "transicao", "movimento", "momento", "audio", "duracao"],
                 "properties": { "titulo": { "type": "string" }, "subtitulo": { "type": "string" }, "fala": { "type": "string" }, "cena": { "type": "string" },
                   "midia": { "type": "string", "description": "id da mídia do acervo pra este bloco, ou vazio" },
                   "transicao": { "type": "string", "enum": ["fade", "dissolve", "slideleft", "slideup", "smoothleft", "wipeleft", "circleopen", "zoomin"] },
                   "movimento": { "type": "string", "enum": ["zoom-in", "zoom-out", "pan-left", "pan-right"] },
-                  "momento": { "type": "integer", "description": "número do momento do vídeo do acervo, ou -1" } } }
+                  "momento": { "type": "integer", "description": "número do momento do vídeo do acervo, ou -1" },
+                  "audio": { "type": "string", "enum": ["narracao", "musica", "original"] },
+                  "duracao": { "type": "number", "description": "segundos na tela quando a cena é só música" } } }
             },
             "final": { "type": "object", "additionalProperties": false, "required": ["titulo", "cta", "fala"],
               "properties": { "titulo": { "type": "string" }, "cta": { "type": "string" }, "fala": { "type": "string" } } },
             "ganchosAlternativos": { "type": "array", "items": { "type": "string" } },
-            "ideiasEdicao": { "type": "array", "items": { "type": "string" } }
+            "ideiasEdicao": { "type": "array", "items": { "type": "string" } },
+            "formato": { "type": "string", "enum": ["explicativo", "pessoal"] },
+            "musicaClima": { "type": "string" }
           }
         }
         """).RootElement.Clone();

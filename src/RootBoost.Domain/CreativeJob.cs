@@ -11,6 +11,18 @@ public enum CreativeKind
 }
 
 /// <summary>
+/// Formato do vídeo (30/10): Explainer = explicação com narração e legenda em todas as cenas (reels do MedlyCare);
+/// Personal = pessoal ou resultado (viagem, antes e depois), cada cena com o som que faz sentido: narração, a fala
+/// original do vídeo da pessoa ou só música; legenda só onde alguém fala. Auto = a IA decide pelo pedido e pelo acervo.
+/// </summary>
+public enum VideoFormat
+{
+    Auto,
+    Explainer,
+    Personal,
+}
+
+/// <summary>
 /// Caminho do job do estúdio (RB-42): roteiro escrito (pela IA ou à mão) → humano libera pra render → o worker local
 /// puxa e renderiza → revisão → vira Publications em rascunho. Falhou no worker: volta pra fila até o limite.
 /// </summary>
@@ -49,6 +61,7 @@ public sealed class CreativeJob
     public string Theme { get; private set; } = default!;
     /// <summary>Voz por estilo (ex.: "matheus2a" solta, "matheus2b" pausada). Vazio: o worker usa a padrão da marca.</summary>
     public string? VoiceKey { get; private set; }
+    public VideoFormat Format { get; private set; } = VideoFormat.Auto;
     public string? Script { get; private set; }
     public string? Lines { get; private set; }
     public CreativeJobStatus Status { get; private set; }
@@ -78,8 +91,9 @@ public sealed class CreativeJob
 
     private CreativeJob() { }
 
-    public CreativeJob(string brandKey, CreativeKind kind, string theme, string? voiceKey, DateTimeOffset now)
+    public CreativeJob(string brandKey, CreativeKind kind, string theme, string? voiceKey, DateTimeOffset now, VideoFormat format = VideoFormat.Auto)
     {
+        Format = format;
         if (string.IsNullOrWhiteSpace(theme)) throw new ArgumentException("tema vazio", nameof(theme));
         if (theme.Trim().Length > 300) throw new ArgumentException("tema passa de 300 caracteres", nameof(theme));
         if (voiceKey is { Length: > 64 }) throw new ArgumentException("voz passa de 64 caracteres", nameof(voiceKey));

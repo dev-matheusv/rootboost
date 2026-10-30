@@ -174,6 +174,7 @@
                 <div class="row items-center no-wrap q-gutter-x-xs">
                   <div class="text-caption text-uppercase text-grey-7 col">{{ segmentLabel(e.label) }}</div>
                   <!-- O que a IA escolheu de edição pra esta cena (troca pelas ideias ou pelo pedido). -->
+                  <q-badge v-if="blockAudio(e.label)" outline color="primary">{{ $t(`studio.audio.${blockAudio(e.label)}`) }}</q-badge>
                   <template v-if="blockEdit(e.label)">
                     <q-badge outline color="secondary">{{ $t(`studio.edit.transition.${blockEdit(e.label)!.transicao}`) }}</q-badge>
                     <q-badge outline color="secondary">{{ $t(`studio.edit.motion.${blockEdit(e.label)!.movimento}`) }}</q-badge>
@@ -300,6 +301,20 @@
               </div>
             </div>
           </div>
+          <!-- 2b. Formato: explicação (narração e legenda) ou pessoal (música, fala original, legenda só onde alguém fala). -->
+          <div>
+            <div class="text-subtitle2 q-mb-xs">{{ $t('studio.newDialog.format') }}</div>
+            <div class="row q-col-gutter-sm">
+              <div v-for="f in formats" :key="f.value" class="col-12 col-sm-4">
+                <div class="kind-card card-rounded q-pa-sm cursor-pointer" :class="{ active: form.format === f.value }" role="radio"
+                  :aria-checked="form.format === f.value" tabindex="0" @click="form.format = f.value" @keyup.enter="form.format = f.value">
+                  <q-icon :name="f.icon" size="22px" color="primary" />
+                  <div class="text-weight-bold q-mt-xs">{{ $t(`studio.format.${f.value}`) }}</div>
+                  <div class="text-caption text-grey-7">{{ $t(`studio.newDialog.formatHelp.${f.value}`) }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
           <!-- 3. Quem narra: as vozes prontas da marca (página Vozes). Vazio usa a voz padrão do estúdio. -->
           <div v-if="brand.selected">
             <div class="text-subtitle2 q-mb-xs">{{ $t('studio.newDialog.voice') }}</div>
@@ -330,12 +345,12 @@ import { useI18n } from 'vue-i18n';
 import { useQuasar } from 'quasar';
 import { isAxiosError } from 'axios';
 import {
-  mdiAccountSearchOutline, mdiAccountVoice, mdiArrowULeftTop, mdiBullhornOutline, mdiCalendarPlus, mdiCheckCircleOutline, mdiCodeJson, mdiCreationOutline, mdiDeleteOutline, mdiDesktopClassic, mdiFormatQuoteOpen, mdiHeartOutline, mdiImageMultipleOutline, mdiMicrophoneOutline, mdiMonitorScreenshot, mdiMovieEditOutline, mdiMovieOpenPlayOutline, mdiPlay, mdiPlus, mdiRefresh,
+  mdiAccountSearchOutline, mdiAccountVoice, mdiArrowULeftTop, mdiBullhornOutline, mdiCalendarPlus, mdiCheckCircleOutline, mdiCodeJson, mdiCreationOutline, mdiDeleteOutline, mdiDesktopClassic, mdiFormatQuoteOpen, mdiHeartOutline, mdiImageMultipleOutline, mdiMicrophoneOutline, mdiMonitorScreenshot, mdiMovieEditOutline, mdiMovieOpenPlayOutline, mdiMusicNote, mdiPlay, mdiPlus, mdiRefresh, mdiSchoolOutline,
 } from '@quasar/extras/mdi-v7';
 import { api } from 'src/services/api';
 import VoicePicker from 'src/components/VoicePicker.vue';
 import DictateButton from 'src/components/DictateButton.vue';
-import type { PickableVoice } from 'src/types/api';
+import type { PickableVoice, VideoFormat } from 'src/types/api';
 import type { CreativeJob, CreativeKind, Publication } from 'src/types/api';
 import { useBrandStore } from 'src/stores/brandStore';
 import {
@@ -619,6 +634,14 @@ function blockEdit(label: string): { transicao: string; movimento: string } | nu
   return b?.transicao && b.movimento ? { transicao: b.transicao, movimento: b.movimento } : null;
 }
 
+/** Som da cena no vídeo pessoal: narracao, musica ou original (a fala da pessoa no vídeo dela). */
+function blockAudio(label: string): string | null {
+  const m = /^block:(\d+)$/.exec(label);
+  const blocos = (job.value?.roteiro as { formato?: string; blocos?: { audio?: string }[] } | null);
+  if (!m || blocos?.formato !== 'pessoal') return null;
+  return blocos.blocos?.[Number(m[1]) - 1]?.audio ?? null;
+}
+
 // --- Reprovar e apagar ---
 async function rejectJob() {
   if (!job.value) return;
@@ -707,8 +730,13 @@ function queueText(j: CreativeJob): string | null {
 
 // --- Novo job ---
 const newOpen = ref(false);
-const form = reactive<{ kind: CreativeKind; theme: string; voiceKey: string; instructions: string }>(
-  { kind: 'Organic', theme: '', voiceKey: '', instructions: '' });
+const form = reactive<{ kind: CreativeKind; theme: string; voiceKey: string; instructions: string; format: VideoFormat }>(
+  { kind: 'Organic', theme: '', voiceKey: '', instructions: '', format: 'Auto' });
+const formats: { value: VideoFormat; icon: string }[] = [
+  { value: 'Auto', icon: mdiCreationOutline },
+  { value: 'Explainer', icon: mdiSchoolOutline },
+  { value: 'Personal', icon: mdiMusicNote },
+];
 const kinds: { value: CreativeKind; icon: string }[] = [
   { value: 'Organic', icon: mdiHeartOutline },
   { value: 'Ad', icon: mdiBullhornOutline },
@@ -719,12 +747,12 @@ const examples = computed(() => [t('studio.newDialog.ex1'), t('studio.newDialog.
 async function createJob() {
   busy.value = true;
   try {
-    const { data } = await api.post<CreativeJob>(base.value, { kind: form.kind, theme: form.theme.trim(), voiceKey: form.voiceKey.trim() || null });
+    const { data } = await api.post<CreativeJob>(base.value, { kind: form.kind, theme: form.theme.trim(), voiceKey: form.voiceKey.trim() || null, format: form.format });
     jobs.value.unshift(data);
     select(data);
     newOpen.value = false;
     const extra = form.instructions;
-    Object.assign(form, { kind: 'Organic', theme: '', voiceKey: '', instructions: '' });
+    Object.assign(form, { kind: 'Organic', theme: '', voiceKey: '', instructions: '', format: 'Auto' });
     // Com a IA ligada, criar o vídeo já pede o roteiro: a pessoa só revisa.
     if (aiEnabled.value) void writeWithAi(extra);
   } catch (e) {

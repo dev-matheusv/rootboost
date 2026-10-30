@@ -265,3 +265,59 @@ export function parseMomentsList(text) {
     description: moments.map((x) => x.description.replace(/\.$/, "")).join(". ").slice(0, 490) + ".",
   }));
 }
+
+/**
+ * Spec do DMaker pro vídeo pessoal (30/10): viagem, resultado, antes e depois. Diferente do explicativo (narrado-calmo),
+ * cada cena tem o som que faz sentido: "musica" (vídeo sem som, a música entra na publicação), "original" (a fala da
+ * pessoa no vídeo dela, só a voz isolada) ou "narracao" (voz da marca, sintetizada pelo próprio DMaker). Foto e vídeo
+ * de vida real em tela cheia, cortados no foco; legenda só quando alguém fala.
+ *   media: { "<fonte>": { path, isVideo, focus? } }
+ */
+export function buildPersonalSpec({ name, brandKey, roteiro, falas, voice, seed, media }) {
+  const FADE = 0.4;
+  const timeline = [], overlays = [], narration = [];
+  let t = 0;
+  const lineOffset = roteiro.abertura ? 1 : 0;
+  const card = (title, subtitle, duration) => ({ type: "card", title, subtitle: subtitle || null, duration, variant: "dark" });
+  const push = (seg, dur) => {
+    if (timeline.length) { seg.transition = { type: seg.transition ?? "fade", duration: FADE }; t -= FADE; }
+    else delete seg.transition;
+    timeline.push(seg);
+    const start = t;
+    t += dur;
+    return start;
+  };
+
+  if (roteiro.abertura?.[0]) push(card(roteiro.abertura[0], roteiro.abertura[1], 2.5), 2.5);
+  let speech = false;
+  (roteiro.blocos ?? []).forEach((b, i) => {
+    const [src, a = 0, z] = b.trechos?.[0] ?? [];
+    const file = media[src];
+    if (!file) throw new Error(`mídia ${src} do bloco ${i + 1} não foi preparada`);
+    const dur = Math.max(1.5, Number(z) - Number(a) || 4);
+    const focus = file.focus ? [file.focus.x + file.focus.w / 2, file.focus.y + file.focus.h / 2] : [0.5, 0.5];
+    const reframe = { mode: "crop", focus };
+    const seg = file.isVideo
+      ? { type: "clip", src: file.path, start: Number(a), end: Number(a) + dur, reframe, transition: b.transicao,
+          ...(b.audio === "original" ? { audio_mode: "voice", volume: 1.2 } : { mute: true }) }
+      : { type: "image", src: file.path, duration: dur, motion: b.movimento ?? "zoom-in", motion_amount: 0.08, reframe, transition: b.transicao };
+    const start = push(seg, dur);
+    if (b.titulo) overlays.push({ type: "text", text: b.titulo, role: "title", start: +(start + 0.3).toFixed(2), end: +(start + Math.min(dur, 3.5)).toFixed(2), animation: "fade" });
+    if (b.audio === "narracao" && falas[lineOffset + i]) {
+      narration.push({ text: falas[lineOffset + i], voice, seed, start: +(start + 0.3).toFixed(2) });
+      speech = true;
+    }
+    if (b.audio === "original") speech = true;
+  });
+  if (roteiro.fecho?.[0]) push(card(roteiro.fecho[0], roteiro.fecho[1], 2.5), 2.5);
+
+  return {
+    name,
+    brand: brandKey,
+    output: { preset: "instagram/reels", quality: "high" },
+    timeline,
+    overlays,
+    ...(speech ? { captions: { source: "auto", language: "pt" } } : {}),
+    audio: { narration, normalize: "two-pass" },
+  };
+}

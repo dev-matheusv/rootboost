@@ -10,7 +10,7 @@ import { copyFileSync, existsSync, mkdirSync, openAsBlob, readFileSync, statSync
 import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
-  applyLibrary, applyRecordings, buildArgs, libraryScenes, photoClipArgs, expectedOutputs, isScriptProblem, lastLine, parsePrivateVoices, parseUnmatched, projectName, scenesToRecord,
+  applyLibrary, applyRecordings, buildArgs, buildPersonalSpec, libraryScenes, photoClipArgs, expectedOutputs, isScriptProblem, lastLine, parsePrivateVoices, parseUnmatched, projectName, scenesToRecord,
   seedFor, voiceProblem, warningsFrom,
 } from "./lib.mjs";
 import { recordScene } from "./recorder.mjs";
@@ -86,7 +86,10 @@ async function round() {
   // Vozes cadastradas na plataforma também são particulares da marca dona (somadas às do worker.env).
   const owners = new Map(cfg.privateVoices);
   for (const v of (await call("GET", "/worker/voices/keys")).data ?? []) owners.set(String(v.key).toLowerCase(), String(v.brandKey).toLowerCase());
-  const problem = voiceProblem(voice, job.brandKey, owners);
+  // Vídeo pessoal sem cena narrada não precisa de voz (música e a fala original da pessoa).
+  const personal = job.roteiro?.formato === "pessoal";
+  const needsVoice = !personal || (job.roteiro?.blocos ?? []).some((b) => b.audio === "narracao");
+  const problem = needsVoice ? voiceProblem(voice, job.brandKey, owners) : null;
   if (problem) return fail(job.id, problem, false);
 
   const projectDir = `${cfg.base}/projetos/${nome}`;
@@ -94,6 +97,8 @@ async function round() {
   // ganha um neutro com o nome dela (nunca o visual de outra marca; relato de 30/10: viagem saiu com logo do MedlyCare).
   job.roteiro = { ...job.roteiro, marca: job.brandKey };
   ensureBrandKit(job.brandKey, job.brandName);
+
+  if (personal) return renderPersonal(job, nome, projectDir, voice, seed);
 
   // 1. Pré-checagem barata: tudo que pode falhar sem gastar voz nem render (pedido do Matheus, 29/10).
   const scenes = scenesToRecord(job.roteiro);
@@ -290,6 +295,61 @@ async function prepareMedia(media, seconds, motion) {
     execFileSync(FFMPEG, photoClipArgs(raw, out, w, h, seconds, media.focus, motion), { stdio: "ignore" });
   }
   return Number(execFileSync(FFPROBE, ["-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", out]).toString().trim());
+}
+
+/**
+ * Vídeo pessoal (30/10): sem narrado-calmo. Baixa as mídias do acervo (vídeo com o som, pra cena de fala original), monta a
+ * spec do DMaker (tela cheia, transição e movimento da IA, legenda só onde alguém fala, narração pelo próprio DMaker) e
+ * renderiza. Sem etapa de voz: a narração, quando há, sai com a voz e a semente do job.
+ */
+async function renderPersonal(job, nome, projectDir, voice, seed) {
+  const blocks = job.roteiro?.blocos ?? [];
+  const missing = blocks.map((b, i) => [b.trechos?.[0]?.[0], i]).filter(([src]) => !String(src ?? "").startsWith("acervo-"));
+  if (missing.length) return fail(job.id, `vídeo pessoal precisa de foto ou vídeo do acervo em toda cena (cena ${missing[0][1] + 1} está sem)`, false);
+  mkdirSync(projectDir, { recursive: true });
+  writeScript(projectDir, job);
+  const media = {};
+  for (const [i, b] of blocks.entries()) {
+    const id = b.trechos[0][0].slice(7);
+    const m = (job.media ?? []).find((x) => x.id === id);
+    if (!m) return fail(job.id, `mídia do acervo ${id} não veio no job: foi apagada do Acervo ou é de outra marca`, false);
+    await progress(job.id, 5 + Math.round((i / blocks.length) * 30), `baixando a mídia da cena ${i + 1}`);
+    try {
+      media[`acervo-${id}`] = { path: await downloadForPersonal(m), isVideo: m.isVideo, focus: m.focus };
+    } catch (e) {
+      return fail(job.id, `mídia da cena ${i + 1}: ${e.message}`, true);
+    }
+  }
+  const spec = buildPersonalSpec({ name: nome, brandKey: job.brandKey, roteiro: job.roteiro, falas: job.falas ?? [], voice, seed, media });
+  const specPath = `${projectDir}/spec-pessoal.json`;
+  writeFileSync(specPath, JSON.stringify(spec, null, 1));
+  mkdirSync(`${cfg.base}/finais`, { recursive: true });
+  await progress(job.id, 40, "montando o vídeo no DMaker");
+  const out = `${cfg.base}/finais/${nome}-narrado-instagram.mp4`;
+  const { code, log } = await runPipeline(job.id, DMAKER, ["render", specPath, "--no-ui", "--quiet", "--out", out]);
+  if (code !== 0) return fail(job.id, `montagem saiu com código ${code}: ${lastLine(log)}`, !isScriptProblem(log));
+  const { found, missing: lost } = expectedOutputs(`${cfg.base}/finais`, projectDir, nome, existsSync);
+  if (lost.length) return fail(job.id, `arquivo esperado não apareceu: ${lost.join(", ")}`, false);
+  await progress(job.id, 90, `subindo ${found.length} arquivos`);
+  const outputs = [];
+  for (const o of found) outputs.push({ role: o.role, url: await upload(job.brandKey, o.path) });
+  const done = await call("POST", `/worker/jobs/${job.id}/deliver`, { workerId: cfg.workerId, outputs, warnings: warningsFrom(log), seed });
+  console.log(`[${now()}] entregue (pessoal): ${done.status}`);
+}
+
+/** Mídia do vídeo pessoal: foto como veio; vídeo normalizado mantendo o som (a cena "original" usa a fala dele). */
+async function downloadForPersonal(media) {
+  const dir = `${cfg.base}/brutos/acervo-${media.id}`;
+  mkdirSync(dir, { recursive: true });
+  const res = await fetch(media.url);
+  if (!res.ok) throw new Error(`download ${res.status}`);
+  const raw = `${dir}/original${media.isVideo ? ".video" : ".jpg"}`;
+  writeFileSync(raw, Buffer.from(await res.arrayBuffer()));
+  if (!media.isVideo) return raw;
+  const out = `${dir}/com-som.mp4`;
+  execFileSync(FFMPEG, ["-y", "-i", raw, "-vf", "scale='min(1080,iw)':-2,format=yuv420p", "-r", "30", "-c:v", "libx264", "-preset", "medium",
+    "-crf", "18", "-c:a", "aac", "-b:a", "160k", "-movflags", "+faststart", out], { stdio: "ignore" });
+  return out;
 }
 
 /** Kit mínimo do DMaker pra marca nova: só o nome e as regras da casa; cores, fonte e estilo ficam no padrão do DMaker. */
