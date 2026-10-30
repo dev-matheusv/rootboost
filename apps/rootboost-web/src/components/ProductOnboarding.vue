@@ -13,6 +13,7 @@
         <div class="q-pa-sm row no-wrap items-end q-gutter-x-sm">
           <q-input v-model="draft" class="col" dense borderless autogrow :disable="!aiEnabled || thinking"
             :placeholder="aiEnabled ? $t('onboarding.placeholder') : $t('onboarding.off')" @keydown.enter.exact.prevent="send" />
+          <DictateButton v-model="draft" :disable="!aiEnabled || thinking" />
           <q-btn round unelevated color="primary" :icon="mdiSend" :disable="!draft.trim() || thinking || !aiEnabled" @click="send" />
         </div>
       </div>
@@ -49,6 +50,7 @@
 
 <script setup lang="ts">
 import { nextTick, onMounted, reactive, ref } from 'vue';
+import DictateButton from 'src/components/DictateButton.vue';
 import { useI18n } from 'vue-i18n';
 import { useQuasar } from 'quasar';
 import { isAxiosError } from 'axios';
