@@ -99,14 +99,14 @@ public sealed class FakeLanguageModel : ILanguageModel
         var blocks = ad
             ? new[]
             {
-                new { titulo = "Paciente que falta custa caro", subtitulo = "", fala = "Paciente que falta é horário perdido.", cena = "Abrir a agenda do dia.", midia = mediaId, transicao = "slideleft", movimento = "pan-left" },
-                new { titulo = "Confirmação pelo WhatsApp", subtitulo = "Um toque pra confirmar", fala = "Na véspera, a confirmação sai pelo WhatsApp com um clique.", cena = "Clicar em confirmar.", midia = "", transicao = "fade", movimento = "zoom-in" },
+                new { titulo = "Paciente que falta custa caro", subtitulo = "", fala = "Paciente que falta é horário perdido.", cena = "Abrir a agenda do dia.", midia = mediaId, transicao = "slideleft", movimento = "pan-left", momento = 1 },
+                new { titulo = "Confirmação pelo WhatsApp", subtitulo = "Um toque pra confirmar", fala = "Na véspera, a confirmação sai pelo WhatsApp com um clique.", cena = "Clicar em confirmar.", midia = "", transicao = "fade", movimento = "zoom-in", momento = -1 },
             }
             : new[]
             {
-                new { titulo = "Agenda que se repete", subtitulo = "Marca uma vez", fala = "Você marca a sessão uma vez e o sistema repete nas próximas semanas, sem planilha e sem esquecer ninguém.", cena = "Abrir a agenda, criar sessão semanal.", midia = mediaId, transicao = "slideleft", movimento = "pan-left" },
-                new { titulo = "Evolução pronta", subtitulo = "Texto com nome e data", fala = "Depois do atendimento, a evolução vai direto pro prontuário com o nome do paciente e a data já preenchidos.", cena = "Abrir o prontuário e salvar a evolução.", midia = "", transicao = "fade", movimento = "zoom-in" },
-                new { titulo = "Confirmação no WhatsApp", subtitulo = "Quem vem amanhã", fala = "Na véspera, a confirmação vai pelo WhatsApp e você sabe quem vem antes de abrir a agenda.", cena = "Mostrar a lista de confirmações.", midia = "", transicao = "fade", movimento = "zoom-in" },
+                new { titulo = "Agenda que se repete", subtitulo = "Marca uma vez", fala = "Você marca a sessão uma vez e o sistema repete nas próximas semanas, sem planilha e sem esquecer ninguém.", cena = "Abrir a agenda, criar sessão semanal.", midia = mediaId, transicao = "slideleft", movimento = "pan-left", momento = 1 },
+                new { titulo = "Evolução pronta", subtitulo = "Texto com nome e data", fala = "Depois do atendimento, a evolução vai direto pro prontuário com o nome do paciente e a data já preenchidos.", cena = "Abrir o prontuário e salvar a evolução.", midia = "", transicao = "fade", movimento = "zoom-in", momento = -1 },
+                new { titulo = "Confirmação no WhatsApp", subtitulo = "Quem vem amanhã", fala = "Na véspera, a confirmação vai pelo WhatsApp e você sabe quem vem antes de abrir a agenda.", cena = "Mostrar a lista de confirmações.", midia = "", transicao = "fade", movimento = "zoom-in", momento = -1 },
             };
         var json = JsonSerializer.Serialize(new
         {

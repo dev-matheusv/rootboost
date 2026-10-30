@@ -373,7 +373,7 @@ static object MediaDto(RootBoost.Application.Media.MediaOptions options, HttpReq
     id = a.Id, brandKey = a.BrandKey, fileName = a.FileName, contentType = a.ContentType, sizeBytes = a.SizeBytes,
     isVideo = a.IsVideo, createdAt = a.CreatedAt, url = MediaPublicUrl(options, req, a), description = a.Description, tags = a.Tags,
     personalData = a.PersonalData.ToString(), personalDataKinds = a.PersonalDataKinds, redactionBoxes = a.RedactionBoxes,
-    redacted = a.RedactedStorageKey is not null, hidesOriginal = a.HidesOriginal, finished = a.Finished, focus = a.Focus,
+    redacted = a.RedactedStorageKey is not null, hidesOriginal = a.HidesOriginal, finished = a.Finished, focus = a.Focus, moments = a.Moments,
 };
 
 brandProfile.MapPost("/media", async (string key, IFormFile file, HttpRequest req, IBrandStore brands,
@@ -1013,6 +1013,23 @@ worker.MapPost("/jobs/{id:guid}/fail", async (Guid id, WorkerFailInput input, Ro
     return Results.Ok(CreativeJobDto.From(job));
 });
 
+// Atualiza descrição e momentos de um vídeo já no acervo, pelo nome do arquivo (lista de brutos do PC, sem senha).
+worker.MapPut("/media/{brandKey}/details", async (string brandKey, MediaDetailsInput input, HttpRequest req,
+    RootBoost.Application.Media.IMediaAssetStore assets, RootBoost.Application.Media.MediaOptions options, CancellationToken ct) =>
+{
+    var name = MediaAsset.SafeName(input.FileName ?? "");
+    var asset = (await assets.ListByBrandAsync(brandKey.ToLowerInvariant(), 500, ct)).Where(a => a.FileName == name).OrderByDescending(a => a.CreatedAt).FirstOrDefault();
+    if (asset is null) return Results.NotFound(new { error = $"{name} não está no acervo de {brandKey}" });
+    try
+    {
+        if (input.Description is not null) asset.Describe(input.Description, asset.Tags);
+        if (input.Moments is not null) asset.SetMoments(input.Moments);
+    }
+    catch (ArgumentException ex) { return Results.BadRequest(new { error = ex.Message }); }
+    await assets.SaveAsync(asset, ct);
+    return Results.Ok(MediaDto(options, req, asset));
+});
+
 // Sinal de vida: o worker bate a cada rodada (e cada progresso conta como batida).
 worker.MapPost("/heartbeat", async (WorkerProgressInput input, RootBoost.Application.Studio.IStudioStatusStore status, TimeProvider time, CancellationToken ct) =>
 {
@@ -1120,6 +1137,8 @@ worker.MapPost("/media/{brandKey}", async (string brandKey, IFormFile file, Http
         var raw = req.HasFormContentType && req.Form["raw"] == "true";
         if (asset.IsVideo) asset.MarkFinished(!raw);
         if (raw) asset.Describe(req.Form["description"].ToString(), req.Form["tags"].ToString());
+        if (raw && req.Form["moments"].ToString() is { Length: > 0 } mj)
+            asset.SetMoments(System.Text.Json.JsonSerializer.Deserialize<List<MediaMoment>>(mj, new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web)) ?? []);
         if (asset.IsVideo || raw) await assets.SaveAsync(asset, ct);
         return Results.Created(MediaPublicUrl(options, req, asset), MediaDto(options, req, asset));
     }
@@ -1401,6 +1420,7 @@ record MediaDescriptionInput(string? Description, string? Tags);
 record RedactionBoxInput(double X, double Y, double W, double H);
 record RedactionInput(string? Status, List<RedactionBoxInput>? Boxes);
 record MediaFinishedInput(bool Finished);
+record MediaDetailsInput(string? FileName, string? Description, List<MediaMoment>? Moments);
 record VoiceDesignInput(string? Name, string? Gender, string? Age, string? Pitch);
 record VoiceChooseInput(int Seed);
 

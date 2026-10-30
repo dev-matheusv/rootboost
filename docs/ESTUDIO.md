@@ -68,6 +68,14 @@ Enquanto a gravação automática da tela (RB-50) não existe, cada bloco escrit
 - **Texto:** fala pra você (sem "eu fiz"), imperativo correto ("teste"), fala do que a cena mostra, só recursos cadastrados.
 - Ainda no pipeline (narrado-calmo): título, foto e legenda num bloco só; revisão automática pela grade de quadros.
 
+## Índice de momentos (30/10)
+
+Vídeo do acervo guarda `MomentsJson` (início, fim e o que a tela mostra). A IA do roteiro vê os momentos e escolhe um por
+cena (`momento`); o trecho vira `[acervo-<id>, início, fim]`, cortado pra caber na fala sem passar de 1,2x. Vídeo com
+momentos nunca entra do segundo zero (era a tela parada do relato de 30/10); escolha inválida cai no primeiro momento.
+O worker mantém o trecho dentro da duração. Momentos chegam por `tools/studio-worker/subir-acervo.mjs --momentos`
+(lista "- nome [início-fim] descrição", EVITAR fica de fora) ou `PUT /worker/media/{marca}/details`.
+
 ## Edição escolhida pela IA (29/10)
 
 Cada bloco do roteiro leva `transicao` (fade, dissolve, slideleft, slideup, smoothleft, wipeleft, circleopen, zoomin) e
