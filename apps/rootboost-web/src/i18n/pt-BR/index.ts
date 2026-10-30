@@ -164,6 +164,7 @@ export default {
     resetConfirm: 'Apaga os posts, vídeos, acervo e vozes desta marca de demonstração. Marca real nunca é afetada.',
     resetDone: 'Demonstração restaurada.',
   },
+  dictate: { start: 'Falar em vez de digitar', stop: 'Parar de ouvir', denied: 'Sem acesso ao microfone. Libere o microfone para este site.' },
   voicePicker: {
     default: 'Voz padrão',
     defaultHint: 'A voz que o estúdio usa quando você não escolhe.',

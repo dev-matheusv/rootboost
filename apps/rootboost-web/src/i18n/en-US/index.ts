@@ -164,6 +164,7 @@ export default {
     resetConfirm: 'Deletes posts, videos, library and voices of this demo brand. Real brands are never touched.',
     resetDone: 'Demo reset.',
   },
+  dictate: { start: 'Speak instead of typing', stop: 'Stop listening', denied: 'No microphone access. Allow the microphone for this site.' },
   voicePicker: {
     default: 'Default voice',
     defaultHint: 'The voice the studio uses when you do not pick one.',
