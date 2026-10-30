@@ -197,6 +197,9 @@ export interface Publication {
 
 /** Estúdio (RB-42/RB-51): job de criativo que o worker local renderiza. */
 export type CreativeKind = 'Organic' | 'Ad' | 'Prospecting';
+/** Formato do vídeo: Auto (a IA decide), Explainer (narração e legenda), Personal (música, fala original). */
+export type VideoFormat = 'Auto' | 'Explainer' | 'Personal';
+
 export type CreativeJobStatus = 'Draft' | 'ScriptReady' | 'Queued' | 'Rendering' | 'VoiceReview' | 'Review' | 'Done' | 'Failed';
 
 export interface CreativeOutput {
@@ -213,6 +216,7 @@ export interface CreativeJob {
   status: CreativeJobStatus;
   /** Voz escolhida pelo ouvido (Revisão da voz); sem ela o worker só gera as versões e para. */
   voiceApproved: boolean;
+  format: VideoFormat;
   voiceTakes: { seed: number; unmatched: number }[];
   roteiro: unknown;
   falas: unknown;

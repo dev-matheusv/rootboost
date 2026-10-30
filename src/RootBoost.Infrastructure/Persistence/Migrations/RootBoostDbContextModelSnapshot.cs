@@ -319,6 +319,13 @@ namespace RootBoost.Infrastructure.Persistence.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)");
 
+                    b.Property<string>("Format")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasDefaultValue("Auto");
+
                     b.Property<string>("Kind")
                         .IsRequired()
                         .HasMaxLength(16)
