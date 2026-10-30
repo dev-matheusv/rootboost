@@ -99,14 +99,14 @@ public sealed class FakeLanguageModel : ILanguageModel
         var blocks = ad
             ? new[]
             {
-                new { titulo = "Paciente que falta custa caro", subtitulo = "", fala = "Paciente que falta é horário perdido.", cena = "Abrir a agenda do dia.", midia = mediaId },
-                new { titulo = "Confirmação pelo WhatsApp", subtitulo = "Um toque pra confirmar", fala = "Na véspera, a confirmação sai pelo WhatsApp com um clique.", cena = "Clicar em confirmar.", midia = "" },
+                new { titulo = "Paciente que falta custa caro", subtitulo = "", fala = "Paciente que falta é horário perdido.", cena = "Abrir a agenda do dia.", midia = mediaId, transicao = "slideleft", movimento = "pan-left" },
+                new { titulo = "Confirmação pelo WhatsApp", subtitulo = "Um toque pra confirmar", fala = "Na véspera, a confirmação sai pelo WhatsApp com um clique.", cena = "Clicar em confirmar.", midia = "", transicao = "fade", movimento = "zoom-in" },
             }
             : new[]
             {
-                new { titulo = "Agenda que se repete", subtitulo = "Marca uma vez", fala = "Você marca a sessão uma vez e o sistema repete nas próximas semanas, sem planilha e sem esquecer ninguém.", cena = "Abrir a agenda, criar sessão semanal.", midia = mediaId },
-                new { titulo = "Evolução pronta", subtitulo = "Texto com nome e data", fala = "Depois do atendimento, a evolução vai direto pro prontuário com o nome do paciente e a data já preenchidos.", cena = "Abrir o prontuário e salvar a evolução.", midia = "" },
-                new { titulo = "Confirmação no WhatsApp", subtitulo = "Quem vem amanhã", fala = "Na véspera, a confirmação vai pelo WhatsApp e você sabe quem vem antes de abrir a agenda.", cena = "Mostrar a lista de confirmações.", midia = "" },
+                new { titulo = "Agenda que se repete", subtitulo = "Marca uma vez", fala = "Você marca a sessão uma vez e o sistema repete nas próximas semanas, sem planilha e sem esquecer ninguém.", cena = "Abrir a agenda, criar sessão semanal.", midia = mediaId, transicao = "slideleft", movimento = "pan-left" },
+                new { titulo = "Evolução pronta", subtitulo = "Texto com nome e data", fala = "Depois do atendimento, a evolução vai direto pro prontuário com o nome do paciente e a data já preenchidos.", cena = "Abrir o prontuário e salvar a evolução.", midia = "", transicao = "fade", movimento = "zoom-in" },
+                new { titulo = "Confirmação no WhatsApp", subtitulo = "Quem vem amanhã", fala = "Na véspera, a confirmação vai pelo WhatsApp e você sabe quem vem antes de abrir a agenda.", cena = "Mostrar a lista de confirmações.", midia = "", transicao = "fade", movimento = "zoom-in" },
             };
         var json = JsonSerializer.Serialize(new
         {
@@ -115,6 +115,7 @@ public sealed class FakeLanguageModel : ILanguageModel
             blocos = blocks,
             final = new { titulo = "Teste grátis", cta = "Link na bio", fala = ad ? "Testa três meses grátis, sem cartão." : "Feito pra quem atende com hora marcada. Três meses grátis, sem cartão." },
             ganchosAlternativos = new[] { "Quantas sessões você perdeu este mês?", "Sua agenda ainda é no papel?", "Paciente esqueceu de novo?" },
+            ideiasEdicao = new[] { "Transições de deslizar entre as cenas", "Zoom no resultado no fim", "Cortes mais rápidos no começo" },
         });
         return Task.FromResult(new LanguageModelResult(json, "fake", 0, 0, 0m));
     }

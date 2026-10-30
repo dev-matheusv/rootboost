@@ -105,6 +105,11 @@ public static class ScriptContract
                 if (b.ValueKind != JsonValueKind.Object) { errors.Add($"{where} precisa ser um objeto"); continue; }
                 CheckText(b, "titulo", where, required: true, errors);
                 CheckText(b, "sub", where, required: false, errors);
+                // Estilo da edição (opcional): só o que o DMaker sabe fazer.
+                if (b.TryGetProperty("transicao", out var tr) && !RootBoost.Application.Ai.ScriptWriter.Transitions.Contains(tr.GetString()))
+                    errors.Add($"{where}: transição desconhecida ({tr}); use {string.Join(", ", RootBoost.Application.Ai.ScriptWriter.Transitions)}");
+                if (b.TryGetProperty("movimento", out var mv) && !RootBoost.Application.Ai.ScriptWriter.Motions.Contains(mv.GetString()))
+                    errors.Add($"{where}: movimento desconhecido ({mv}); use {string.Join(", ", RootBoost.Application.Ai.ScriptWriter.Motions)}");
                 if (!b.TryGetProperty("trechos", out var trechos) || trechos.ValueKind != JsonValueKind.Array || trechos.GetArrayLength() == 0)
                 {
                     errors.Add($"{where} sem \"trechos\"");

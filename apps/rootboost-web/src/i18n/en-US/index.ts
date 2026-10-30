@@ -31,6 +31,7 @@ export default {
   studio: {
     advanced: 'Advanced: use roteiro.json and falas.json files',
     ai: {
+      editIdeas: 'Edit ideas (one tap redoes with it)',
       write: 'Write with AI',
       rewrite: 'Rewrite with AI',
       writeTitle: 'AI writes the script and lines',
@@ -43,7 +44,9 @@ export default {
       hooks: 'Other openings (tap to use)',
       createAndWrite: 'Create and write with AI',
     },
-    edit: { title: 'On screen title', sub: 'Subtitle', fala: 'What the voice says', save: 'Save changes' },
+    edit: {
+      transition: { fade: 'Soft fade', dissolve: 'Dissolve', slideleft: 'Slide left', slideup: 'Slide up', smoothleft: 'Smooth slide', wipeleft: 'Wipe', circleopen: 'Circle open', zoomin: 'Zoom in' },
+      motion: { 'zoom-in': 'Zoom in', 'zoom-out': 'Zoom out', 'pan-left': 'Pan left', 'pan-right': 'Pan right' }, title: 'On screen title', sub: 'Subtitle', fala: 'What the voice says', save: 'Save changes' },
     title: 'Studio',
     subtitle: 'From script to finished video. The worker on your computer does voice, alignment and editing.',
     pickBrand: 'Pick a brand in the menu to see the studio.',
