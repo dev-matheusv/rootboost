@@ -152,3 +152,26 @@ test("lista de momentos agrupa por bruto e ignora EVITAR", async () => {
   assert.deepEqual(items[0].moments.map((m) => [m.start, m.end]), [[1, 4.3], [5.9, 25.4]]);
   assert.equal(items[0].description, "Abre o agendamento. Marca sessao semanal.");
 });
+
+test("vídeo pessoal: tela cheia, fala original e narração só onde há fala", async () => {
+  const { buildPersonalSpec } = await import("./lib.mjs");
+  const spec = buildPersonalSpec({
+    name: "viagem", brandKey: "vitta-demo", voice: "v1", seed: 2,
+    roteiro: { abertura: ["Porto Velho", ""], blocos: [
+      { titulo: "Chegada", trechos: [["acervo-a", 0, 4]], audio: "musica", movimento: "pan-left", transicao: "slideleft" },
+      { titulo: "", trechos: [["acervo-b", 12, 18]], audio: "original", transicao: "fade" },
+      { titulo: "Dica", trechos: [["acervo-c", 0, 5]], audio: "narracao" },
+    ] },
+    falas: ["", "", "", "Vale a viagem.", ""],
+    media: { "acervo-a": { path: "a.jpg", isVideo: false }, "acervo-b": { path: "b.mp4", isVideo: true }, "acervo-c": { path: "c.jpg", isVideo: false } },
+  });
+  assert.equal(spec.timeline[0].type, "card");
+  assert.equal(spec.timeline[1].reframe.mode, "crop");
+  assert.equal(spec.timeline[1].transition.type, "slideleft");
+  assert.deepEqual([spec.timeline[2].start, spec.timeline[2].end, spec.timeline[2].audio_mode], [12, 18, "voice"]);
+  assert.equal(spec.audio.narration.length, 1);
+  assert.equal(spec.audio.narration[0].text, "Vale a viagem.");
+  assert.ok(spec.captions);
+  const silent = buildPersonalSpec({ name: "x", brandKey: "b", voice: null, seed: 1, roteiro: { blocos: [{ trechos: [["acervo-a", 0, 3]], audio: "musica" }] }, falas: ["", ""], media: { "acervo-a": { path: "a.jpg" } } });
+  assert.equal(silent.captions, undefined);
+});

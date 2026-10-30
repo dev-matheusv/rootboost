@@ -591,7 +591,8 @@ brandProfile.MapPost("/creative-jobs", async (string key, CreativeJobInput input
         // Voz cadastrada na plataforma só narra a própria marca (voz de pessoa nunca vai pra outro cliente).
         if (!string.IsNullOrWhiteSpace(input.VoiceKey) && await voices.FindByKeyAsync(input.VoiceKey.Trim(), ct) is { } v && v.BrandKey != brandKey)
             return Results.BadRequest(new { error = "esta voz é de outra marca" });
-        var job = new CreativeJob(brandKey, kind, input.Theme, input.VoiceKey, time.GetUtcNow());
+        var format = Enum.TryParse<VideoFormat>(input.Format, true, out var vf) && Enum.IsDefined(vf) ? vf : VideoFormat.Auto;
+        var job = new CreativeJob(brandKey, kind, input.Theme, input.VoiceKey, time.GetUtcNow(), format);
         await store.AddAsync(job, ct);
         return Results.Created($"/admin/brands/{brandKey}/creative-jobs/{job.Id}", CreativeJobDto.From(job));
     }
@@ -1460,7 +1461,7 @@ record ProductDto(string Name, string Kind, string? Url, string? AppUrl, string 
     public static ProductDto From(BrandProduct p) => new(p.Name, p.Kind, p.Url, p.AppUrl, p.Summary, p.Audience, p.Features,
         p.Differentials, p.Offer, p.UpdatedAt);
 }
-record CreativeJobInput(string Kind, string Theme, string? VoiceKey);
+record CreativeJobInput(string Kind, string Theme, string? VoiceKey, string? Format = null);
 record ScriptInput(System.Text.Json.JsonElement Roteiro, System.Text.Json.JsonElement Falas);
 record JobPublicationsInput(DateTimeOffset ScheduledFor, string? Instagram, string? Facebook, string? LinkedIn);
 record WorkerClaimInput(string WorkerId);
@@ -1472,11 +1473,12 @@ record WorkerFailInput(string WorkerId, string? Error, bool Retry);
 record CreativeJobDto(Guid Id, string BrandKey, string Kind, string Theme, string? VoiceKey, string Status,
     System.Text.Json.JsonElement? Roteiro, System.Text.Json.JsonElement? Falas, int? Seed, IReadOnlyList<string> Warnings,
     IReadOnlyList<CreativeOutput> Outputs, int Attempts, int Progress, string? ProgressNote, string? Error,
-    DateTimeOffset CreatedAt, DateTimeOffset UpdatedAt, bool VoiceApproved, IReadOnlyList<VoiceTakeDto> VoiceTakes)
+    DateTimeOffset CreatedAt, DateTimeOffset UpdatedAt, bool VoiceApproved, IReadOnlyList<VoiceTakeDto> VoiceTakes, string Format)
 {
     public static CreativeJobDto From(CreativeJob j) => new(j.Id, j.BrandKey, j.Kind.ToString(), j.Theme, j.VoiceKey,
         j.Status.ToString(), Parse(j.Script), Parse(j.Lines), j.Seed, j.Warnings, j.Outputs, j.Attempts, j.Progress,
-        j.ProgressNote, j.Error, j.CreatedAt, j.UpdatedAt, j.VoiceApproved, j.VoiceTakes.Select(t => new VoiceTakeDto(t.Seed, t.Unmatched)).ToList());
+        j.ProgressNote, j.Error, j.CreatedAt, j.UpdatedAt, j.VoiceApproved, j.VoiceTakes.Select(t => new VoiceTakeDto(t.Seed, t.Unmatched)).ToList(),
+        j.Format.ToString());
 
     public static System.Text.Json.JsonElement? Parse(string? json) =>
         json is null ? null : System.Text.Json.JsonDocument.Parse(json).RootElement.Clone();

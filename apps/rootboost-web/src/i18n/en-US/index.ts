@@ -29,6 +29,8 @@ export default {
     groups: { nav: 'Go to', actions: 'Actions', posts: 'Posts' },
   },
   studio: {
+    format: { Auto: 'AI decides', Explainer: 'Explainer', Personal: 'Personal or results' },
+    audio: { narracao: 'Narration', musica: 'Music', original: 'Speech from video' },
     advanced: 'Advanced: use roteiro.json and falas.json files',
     ai: {
       editIdeas: 'Edit ideas (one tap redoes with it)',
@@ -82,6 +84,8 @@ export default {
     delete: 'Delete video',
     deleteConfirm: 'The video leaves the Studio. Files already used in posts stay in the Library.',
     newDialog: {
+      format: 'Video format',
+      formatHelp: { Auto: 'From the request and the library, the AI picks and shows it.', Explainer: 'Shows a system or teaches: narration and captions everywhere.', Personal: 'Travel, before and after, routine: music, your own speech from the video, captions only when someone talks.' },
       what: 'What should the video show?',
       whatPlaceholder: 'Write it as you would ask someone. E.g. how the calendar reminds the client the day before',
       ex1: 'Before and after a session',

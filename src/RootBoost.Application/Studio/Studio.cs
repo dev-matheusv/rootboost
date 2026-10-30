@@ -125,11 +125,13 @@ public static class ScriptContract
             errors.Add("falas precisa ser uma lista de frases");
             return errors;
         }
+        // Vídeo pessoal: cena só com música ou com a fala original do vídeo não tem fala narrada (fica "").
+        var personal = script.TryGetProperty("formato", out var fmt) && fmt.ValueKind == JsonValueKind.String && fmt.GetString() == "pessoal";
         var count = 0;
         foreach (var l in lines.EnumerateArray())
         {
             count++;
-            if (l.ValueKind != JsonValueKind.String || string.IsNullOrWhiteSpace(l.GetString())) errors.Add($"fala {count} vazia");
+            if (l.ValueKind != JsonValueKind.String || (!personal && string.IsNullOrWhiteSpace(l.GetString()))) errors.Add($"fala {count} vazia");
             else if (HasDash(l.GetString()!)) errors.Add($"fala {count} tem travessão ou meia-risca");
         }
         if (count > MaxLines) errors.Add($"falas demais ({count}, máximo {MaxLines})");
