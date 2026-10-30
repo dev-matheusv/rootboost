@@ -6,7 +6,7 @@
 //       node worker.mjs --once     (uma rodada e sai)
 // Config por variável de ambiente ou num worker.env ao lado (ver worker.env.example). A chave nunca vai pro repo.
 import { execFileSync, spawn } from "node:child_process";
-import { copyFileSync, existsSync, mkdirSync, openAsBlob, readFileSync, statSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, openAsBlob, readFileSync, statSync, unlinkSync, writeFileSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -50,18 +50,40 @@ if (!cfg.api || !cfg.key) {
 }
 
 const once = process.argv.includes("--once");
-// Código do worker mudou no disco (git pull): reinicia sozinho entre um job e outro. Antes, um worker ligado de manhã
-// seguia com o código velho o dia todo (29/10: fotos saíram com o recorte antigo depois da correção).
+const RESTART = 75;
+
+// O processo que você roda no terminal é só o supervisor: segura a trava (um worker por PC) e roda o worker de verdade
+// num processo filho, que sai com 75 quando o código muda no disco; aí o supervisor sobe um filho novo. Antes cada
+// reinício deixava o processo anterior parado esperando (30/10: 15 processos em cadeia).
+if (!once && !process.env.RB_WORKER_CHILD) {
+  const lock = join(here, "worker.lock");
+  const other = existsSync(lock) ? Number(readFileSync(lock, "utf8")) : 0;
+  if (other && other !== process.pid && isAlive(other)) {
+    console.error(`Já tem um worker rodando neste PC (processo ${other}). Use aquele terminal, ou feche ele antes de abrir outro.`);
+    process.exit(3);
+  }
+  writeFileSync(lock, String(process.pid));
+  const release = () => { try { if (readFileSync(lock, "utf8") === String(process.pid)) unlinkSync(lock); } catch { /* já saiu */ } };
+  process.on("exit", release);
+  for (const sig of ["SIGINT", "SIGTERM"]) process.on(sig, () => process.exit(0));
+  for (;;) {
+    const code = await new Promise((resolve) =>
+      spawn(process.execPath, process.argv.slice(1), { stdio: "inherit", env: { ...process.env, RB_WORKER_CHILD: "1" } }).on("exit", resolve));
+    if (code !== RESTART) process.exit(code ?? 0);
+    console.log(`[${now()}] código do worker atualizado: reiniciando`);
+  }
+}
+
+function isAlive(pid) {
+  try { process.kill(pid, 0); return true; } catch { return false; }
+}
+
+// Código do worker mudou no disco (git pull): o filho sai entre um job e outro e o supervisor sobe a versão nova.
 const CODE = ["worker.mjs", "lib.mjs", "recorder.mjs"].map((f) => join(here, f));
 const codeStamp = () => CODE.map((f) => (existsSync(f) ? statSync(f).mtimeMs : 0)).join("|");
 const startedWith = codeStamp();
 do {
-  if (!once && codeStamp() !== startedWith) {
-    console.log(`[${now()}] código do worker atualizado: reiniciando`);
-    // O novo processo assume no mesmo terminal; este só espera ele terminar (Ctrl+C encerra os dois).
-    const child = spawn(process.execPath, process.argv.slice(1), { stdio: "inherit" });
-    await new Promise((resolve) => child.on("exit", (code) => resolve(process.exit(code ?? 0))));
-  }
+  if (!once && codeStamp() !== startedWith) process.exit(RESTART);
   try {
     // Sinal de vida a cada rodada: o Console avisa "nenhum computador ligado" quando ele some.
     await call("POST", "/worker/heartbeat", { workerId: cfg.workerId, note: "livre" }).catch(() => {});
