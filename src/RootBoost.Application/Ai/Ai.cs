@@ -135,6 +135,10 @@ public sealed class ScriptWriter
             var repeated = script.GetProperty("blocos").EnumerateArray()
                 .Select(b => b.GetProperty("trechos")[0][0].GetString() ?? "").Where(src => src.StartsWith("acervo-", StringComparison.Ordinal))
                 .GroupBy(src => src).Where(g => g.Count() > 1).Select(g => g.Key).ToList();
+            var plain = string.Join(" ", lines.EnumerateArray().Select(l => l.GetString() ?? "")).ToLowerInvariant();
+            var forbidden = ForbiddenWords.Where(w => System.Text.RegularExpressions.Regex.IsMatch(plain, $@"{System.Text.RegularExpressions.Regex.Escape(w)}")).ToList();
+            if (forbidden.Count > 0)
+                errors = [.. errors, $"fala com palavra proibida ({string.Join(", ", forbidden)}); reescreva em linguagem do dia a dia"];
             if (repeated.Count > 0)
                 errors = [.. errors, $"a mesma mídia do acervo aparece em mais de uma cena ({string.Join(", ", repeated)}); use cada mídia uma vez só, troque ou deixe a cena pra gravar"];
             if (errors.Count == 0)
@@ -153,6 +157,9 @@ public sealed class ScriptWriter
     /// A IA não sabe o tempo de cada gravação ainda: cada bloco ganha um trecho "a gravar" com a duração estimada
     /// da fala (o worker troca pela gravação de tela no RB-50) e guarda a descrição da cena pra quem for gravar.
     /// </summary>
+    /// <summary>Palavras com cara de "IA burguesa" (Matheus, 30/10): a conferência recusa e a IA reescreve.</summary>
+    public static readonly string[] ForbiddenWords = ["otimize", "otimizar", "eleve", "elevar", "potencialize", "potencializar", "solução completa", "experiência", "jornada"];
+
     /// <summary>Transições e movimentos que o DMaker faz e que ficam bem em reel (lista curta de propósito).</summary>
     public static readonly string[] Transitions = ["fade", "dissolve", "slideleft", "slideup", "smoothleft", "wipeleft", "circleopen", "zoomin"];
     public static readonly string[] Motions = ["zoom-in", "zoom-out", "pan-left", "pan-right"];
@@ -262,6 +269,10 @@ public sealed class ScriptWriter
             "de edição, siga o pedido.");
         sb.AppendLine("- Dê também 3 ideias de edição pra esse vídeo (frases curtas que a pessoa pode pedir, ex.: \"transições de deslizar entre as fotos\").");
         sb.AppendLine("- Conversa, não locução. A voz fala com quem assiste (você), como quem conhece o produto por dentro. Nada de primeira pessoa contando a própria rotina (\"eu fiz\", \"eu uso\").");
+        sb.AppendLine("- Linguagem do dia a dia, como quem conta pra um colega no WhatsApp: \"pra\", \"tá\", \"a gente\", \"sabe quando...\", " +
+            "\"então\", \"simples assim\". Frase curta, uma ideia por frase. Comece pela situação real de quem assiste. Nada rebuscado " +
+            "(\"registrado do jeito certo\", \"consultar quando precisar\" soam formais). Se ninguém falaria assim no WhatsApp, reescreva.");
+        sb.AppendLine($"- Palavras proibidas na fala, no título e no subtítulo: {string.Join(", ", ForbiddenWords)}.");
         sb.AppendLine("- Português correto: imperativo de você (teste, veja, comece), nunca \"testa\", \"vê\", \"começa\".");
         sb.AppendLine("- A fala de cada bloco descreve o que a cena daquele bloco mostra. Bloco com mídia do acervo fala do que está na mídia; não narre o que a tela não mostra.");
         sb.AppendLine("- Só cite recursos que estão na lista de recursos do produto; nada de recurso suposto.");
