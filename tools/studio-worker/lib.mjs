@@ -140,9 +140,9 @@ export function applyRecordings(roteiro, recordings) {
 /** Blocos que a IA montou com mídia do acervo (RB-16): [{ index, id, seconds }]. O id vem da API e só aceita hex. */
 export function libraryScenes(roteiro) {
   return (roteiro?.blocos ?? [])
-    .map((b, i) => ({ index: i, source: b.trechos?.[0]?.[0], seconds: Number(b.trechos?.[0]?.[2]) || 5 }))
+    .map((b, i) => ({ index: i, source: b.trechos?.[0]?.[0], seconds: Number(b.trechos?.[0]?.[2]) || 5, motion: b.movimento }))
     .filter((b) => typeof b.source === "string" && /^acervo-[0-9a-f]{32}$/.test(b.source))
-    .map((b) => ({ index: b.index, id: b.source.slice(7), seconds: b.seconds }));
+    .map((b) => ({ index: b.index, id: b.source.slice(7), seconds: b.seconds, motion: b.motion }));
 }
 
 /**
@@ -179,11 +179,10 @@ export function focusBox(width, height, focus, pad = 0.06) {
  *   quadro é a própria imagem desfocada no fundo (relato de 29/10: o recorte comia "Dias de Afastamento").
  * Duração com folga: o pipeline desacelera pra caber na fala, nunca acelera foto.
  */
-export function photoClipArgs(input, output, width, height, seconds, focus) {
+export function photoClipArgs(input, output, width, height, seconds, focus, motion = "zoom-in") {
   const dur = Math.max(4, Math.ceil(seconds + 2));
   const frames = dur * 30;
-  const zoom = `min(1+0.06*on/${frames},1.06)`;
-  const pan = `zoompan=z='${zoom}':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=${frames}:s=1080x1350:fps=30,format=yuv420p`;
+  const pan = `${motionFilter(motion, frames)}:d=${frames}:s=1080x1350:fps=30,format=yuv420p`;
   const out = ["-t", String(dur), "-c:v", "libx264", "-preset", "medium", "-crf", "18", "-movflags", "+faststart", output];
   const b = focusBox(width, height, focus);
   if (b.w / b.h <= 0.8) {
@@ -194,6 +193,21 @@ export function photoClipArgs(input, output, width, height, seconds, focus) {
     `[0:v]crop=${b.w}:${b.h}:${b.x}:${b.y},split[a][b];` +
     `[a]scale=1080:1350:force_original_aspect_ratio=increase,crop=1080:1350,scale=108:135,boxblur=10:3,scale=1080:1350,eq=brightness=0.04:saturation=0.8[bg];` +
     `[b]scale=1032:-2[fg];[bg][fg]overlay=(W-w)/2:(H-h)/2,scale=2160:2700,${pan}`, ...out];
+}
+
+/**
+ * Movimento da foto escolhido pela IA no roteiro (o mesmo vocabulário do DMaker): aproxima, afasta ou panorâmica.
+ * Suave de propósito (6 a 8%): reel com movimento exagerado parece amador.
+ */
+export function motionFilter(motion, frames) {
+  const t = `on/${frames}`;
+  const center = "x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)'";
+  switch (motion) {
+    case "zoom-out": return `zoompan=z='max(1.06-0.06*${t},1)':${center}`;
+    case "pan-left": return `zoompan=z='1.08':x='(iw-iw/zoom)*(1-${t})':y='ih/2-(ih/zoom/2)'`;
+    case "pan-right": return `zoompan=z='1.08':x='(iw-iw/zoom)*${t}':y='ih/2-(ih/zoom/2)'`;
+    default: return `zoompan=z='min(1+0.06*${t},1.06)':${center}`;
+  }
 }
 
 /** Troca "acervo-<id>" pelo bruto pronto: [fonte, 0, fim, 1]. Vídeo usa no máximo o que tem; bloco sem clipe fica como estava. */

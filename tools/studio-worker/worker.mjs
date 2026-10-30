@@ -173,7 +173,7 @@ async function round() {
     for (const s of library) {
       const media = job.media.find((m) => m.id === s.id);
       try {
-        clips.push({ index: s.index, source: `acervo-${s.id}`, duration: await prepareMedia(media, s.seconds) });
+        clips.push({ index: s.index, source: `acervo-${s.id}`, duration: await prepareMedia(media, s.seconds, s.motion) });
       } catch (e) {
         return fail(job.id, `mídia do acervo do bloco ${s.index + 1}: ${e.message}`, true);
       }
@@ -266,7 +266,7 @@ async function voiceFail(id, error, retry) {
 }
 
 /** Baixa a mídia e deixa em brutos/acervo-<id>/acervo-<id>.mp4 (o pipeline lê dali). Devolve a duração em segundos. */
-async function prepareMedia(media, seconds) {
+async function prepareMedia(media, seconds, motion) {
   const source = `acervo-${media.id}`;
   const dir = `${cfg.base}/brutos/${source}`;
   mkdirSync(dir, { recursive: true });
@@ -282,7 +282,7 @@ async function prepareMedia(media, seconds) {
   } else {
     const [w, h] = execFileSync(FFPROBE, ["-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height", "-of", "csv=p=0", raw])
       .toString().trim().split(",").map(Number);
-    execFileSync(FFMPEG, photoClipArgs(raw, out, w, h, seconds, media.focus), { stdio: "ignore" });
+    execFileSync(FFMPEG, photoClipArgs(raw, out, w, h, seconds, media.focus, motion), { stdio: "ignore" });
   }
   return Number(execFileSync(FFPROBE, ["-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", out]).toString().trim());
 }

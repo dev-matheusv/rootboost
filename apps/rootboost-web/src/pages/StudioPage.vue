@@ -152,13 +152,29 @@
               </div>
             </div>
 
+            <!-- Ideias de edição da IA: um toque reescreve com o pedido (transições, movimento, ritmo; o DMaker faz). -->
+            <div v-if="editIdeas.length" class="column q-gutter-y-xs">
+              <div class="text-caption text-weight-bold">{{ $t('studio.ai.editIdeas') }}</div>
+              <div class="row q-gutter-sm">
+                <q-chip v-for="idea in editIdeas" :key="idea" clickable outline color="secondary" :icon="mdiMovieEditOutline"
+                  :disable="writing" @click="writeWithAi(idea)">{{ idea }}</q-chip>
+              </div>
+            </div>
+
             <div v-if="edits.length" class="column no-wrap q-gutter-y-sm">
               <div class="row items-center">
                 <div class="text-subtitle1 text-weight-bold col">{{ $t('studio.script') }}</div>
                 <div class="text-caption text-grey-7">{{ $t('studio.duration', { s: seconds }) }}</div>
               </div>
               <div v-for="e in edits" :key="e.label" class="segment card-rounded q-pa-sm column q-gutter-y-xs">
-                <div class="text-caption text-uppercase text-grey-7">{{ segmentLabel(e.label) }}</div>
+                <div class="row items-center no-wrap q-gutter-x-xs">
+                  <div class="text-caption text-uppercase text-grey-7 col">{{ segmentLabel(e.label) }}</div>
+                  <!-- O que a IA escolheu de edição pra esta cena (troca pelas ideias ou pelo pedido). -->
+                  <template v-if="blockEdit(e.label)">
+                    <q-badge outline color="secondary">{{ $t(`studio.edit.transition.${blockEdit(e.label)!.transicao}`) }}</q-badge>
+                    <q-badge outline color="secondary">{{ $t(`studio.edit.motion.${blockEdit(e.label)!.movimento}`) }}</q-badge>
+                  </template>
+                </div>
                 <template v-if="canEditScript">
                   <q-input v-model="e.title" dense borderless class="text-weight-bold" :placeholder="$t('studio.edit.title')" />
                   <q-input v-model="e.sub" dense borderless :placeholder="$t('studio.edit.sub')" />
@@ -307,7 +323,7 @@ import { useI18n } from 'vue-i18n';
 import { useQuasar } from 'quasar';
 import { isAxiosError } from 'axios';
 import {
-  mdiAccountSearchOutline, mdiAccountVoice, mdiArrowULeftTop, mdiBullhornOutline, mdiCalendarPlus, mdiCheckCircleOutline, mdiCodeJson, mdiCreationOutline, mdiDeleteOutline, mdiDesktopClassic, mdiFormatQuoteOpen, mdiHeartOutline, mdiImageMultipleOutline, mdiMicrophoneOutline, mdiMonitorScreenshot, mdiMovieOpenPlayOutline, mdiPlay, mdiPlus, mdiRefresh,
+  mdiAccountSearchOutline, mdiAccountVoice, mdiArrowULeftTop, mdiBullhornOutline, mdiCalendarPlus, mdiCheckCircleOutline, mdiCodeJson, mdiCreationOutline, mdiDeleteOutline, mdiDesktopClassic, mdiFormatQuoteOpen, mdiHeartOutline, mdiImageMultipleOutline, mdiMicrophoneOutline, mdiMonitorScreenshot, mdiMovieEditOutline, mdiMovieOpenPlayOutline, mdiPlay, mdiPlus, mdiRefresh,
 } from '@quasar/extras/mdi-v7';
 import { api } from 'src/services/api';
 import VoicePicker from 'src/components/VoicePicker.vue';
@@ -346,6 +362,7 @@ const aiEnabled = ref(false);
 const writing = ref(false);
 const instructions = ref('');
 const hooks = ref<string[]>([]);
+const editIdeas = ref<string[]>([]);
 
 // Vozes prontas da marca pro "Quem narra?" do Novo vídeo.
 const readyVoices = ref<PickableVoice[]>([]);
@@ -372,11 +389,12 @@ async function writeWithAi(extra?: string) {
   writing.value = true;
   scriptErrors.value = [];
   try {
-    const { data } = await api.post<{ job: CreativeJob; hooks: string[] }>(`${base.value}/${job.value.id}/write-script`,
+    const { data } = await api.post<{ job: CreativeJob; hooks: string[]; editIdeas: string[] }>(`${base.value}/${job.value.id}/write-script`,
       { instructions: (extra ?? instructions.value).trim() || null }, { timeout: 5 * 60_000 });
     replace(data.job);
     select(data.job);
     hooks.value = data.hooks;
+    editIdeas.value = data.editIdeas ?? [];
     instructions.value = '';
   } catch (e) {
     const errors = isAxiosError(e) && e.response?.status === 422 ? (e.response.data?.errors as string[] | undefined) : undefined;
@@ -459,7 +477,10 @@ const falasText = ref('');
 const scriptErrors = ref<string[]>([]);
 
 function select(j: CreativeJob) {
-  if (selectedId.value !== j.id) hooks.value = [];
+  if (selectedId.value !== j.id) {
+    hooks.value = [];
+    editIdeas.value = [];
+  }
   selectedId.value = j.id;
   loadEdits(j);
   roteiroText.value = j.roteiro ? JSON.stringify(j.roteiro, null, 2) : '';
@@ -580,6 +601,14 @@ async function createPosts() {
   } finally {
     busy.value = false;
   }
+}
+
+/** Transição e movimento que a IA pôs no bloco ("block:2" → roteiro.blocos[1]). */
+function blockEdit(label: string): { transicao: string; movimento: string } | null {
+  const m = /^block:(\d+)$/.exec(label);
+  const blocos = (job.value?.roteiro as { blocos?: { transicao?: string; movimento?: string }[] } | null)?.blocos;
+  const b = m && blocos ? blocos[Number(m[1]) - 1] : undefined;
+  return b?.transicao && b.movimento ? { transicao: b.transicao, movimento: b.movimento } : null;
 }
 
 // --- Reprovar e apagar ---

@@ -721,7 +721,7 @@ brandProfile.MapPost("/creative-jobs/{id:guid}/write-script", async (string key,
         job.SetScript(ok.Script.GetRawText(), ok.Lines.GetRawText(), time.GetUtcNow(),
             ok.Warnings.Select(w => CreativeJob.ScriptWarningPrefix + w).ToList());
         await store.SaveAsync(job, ct);
-        return Results.Ok(new { job = CreativeJobDto.From(job), hooks = ok.Hooks, costUsd = ok.CostUsd });
+        return Results.Ok(new { job = CreativeJobDto.From(job), hooks = ok.Hooks, editIdeas = ok.EditIdeas ?? [], costUsd = ok.CostUsd });
     }
     catch (RootBoost.Application.Ai.AiDisabledException ex) { return Results.Conflict(new { error = ex.Message }); }
     catch (InvalidOperationException ex) { return Results.BadRequest(new { error = ex.Message }); }
