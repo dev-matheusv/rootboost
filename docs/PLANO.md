@@ -71,6 +71,10 @@ fora dos trechos, foto recortada no foco 4:5, regras de texto).
 8. **Persuasão verdadeira** como portão do roteiro e do anúncio (dor, prova real, redução de risco, ancoragem; urgência
    só real; nada de dark pattern, depoimento inventado ou promessa de saúde).
 9. **Aprendizado de volta:** reprovação vira regra em `knowledge/`, pronúncia vai pro léxico do DMaker, performance pesa.
+11. **Vídeo sem voz, com música** (pedido de 30/10, reels de viagem e só fotos): o DMaker já mistura música (volume,
+    entrada e saída suaves, ducking). Falta: biblioteca de músicas com licença (pasta no PC ou da marca, com clima por
+    faixa), modo "sem narração" no Novo vídeo e a montagem direto pelo DMaker (fotos com transição e movimento, título
+    por cena, música). A IA escolhe a música pelo clima e mostra opções.
 10. Custos (arquivo de 29/10): estimativa por reel R$ 1,40 a 2,00 otimizado; gravação de tela no Opus é 70% do custo
     (Haiku já configurado nela); trocar estimativa pelo real do `AiUsage`; **Vercel Hobby não serve pra uso comercial**
     (Pro ao vender); decidir provedor do render na nuvem.

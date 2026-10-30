@@ -132,7 +132,11 @@
                 <q-icon :name="mdiCreationOutline" color="primary" size="22px" />
                 <div class="text-weight-bold col">{{ segments.length ? $t('studio.ai.rewriteTitle') : $t('studio.ai.writeTitle') }}</div>
               </div>
-              <q-input v-model="instructions" outlined dense autogrow :label="$t('studio.ai.instructions')" :hint="$t('studio.ai.instructionsHint')" />
+              <!-- Enter envia, Shift+Enter pula linha; o microfone dita. -->
+              <q-input v-model="instructions" outlined dense autogrow :label="$t('studio.ai.instructions')" :hint="$t('studio.ai.instructionsHint')"
+                @keydown.enter.exact.prevent="writeWithAi()">
+                <template #append><DictateButton v-model="instructions" /></template>
+              </q-input>
               <div class="row q-gutter-sm">
                 <q-btn unelevated color="primary" no-caps :icon="mdiCreationOutline" :loading="busy"
                   :label="segments.length ? $t('studio.ai.rewrite') : $t('studio.ai.write')" @click="writeWithAi()" />
@@ -274,7 +278,10 @@
           <!-- 1. O que mostrar: uma frase, como se pedisse pra alguém. -->
           <div>
             <div class="text-subtitle2 q-mb-xs">{{ $t('studio.newDialog.what') }}</div>
-            <q-input v-model="form.theme" outlined autogrow autofocus maxlength="300" :placeholder="$t('studio.newDialog.whatPlaceholder')" />
+            <q-input v-model="form.theme" outlined autogrow autofocus maxlength="300" :placeholder="$t('studio.newDialog.whatPlaceholder')"
+              @keydown.enter.exact.prevent="form.theme.trim() && createJob()">
+              <template #append><DictateButton v-model="form.theme" /></template>
+            </q-input>
             <div class="row q-gutter-xs q-mt-xs">
               <q-chip v-for="ex in examples" :key="ex" dense clickable outline color="primary" size="sm" @click="form.theme = ex">{{ ex }}</q-chip>
             </div>
@@ -327,6 +334,7 @@ import {
 } from '@quasar/extras/mdi-v7';
 import { api } from 'src/services/api';
 import VoicePicker from 'src/components/VoicePicker.vue';
+import DictateButton from 'src/components/DictateButton.vue';
 import type { PickableVoice } from 'src/types/api';
 import type { CreativeJob, CreativeKind, Publication } from 'src/types/api';
 import { useBrandStore } from 'src/stores/brandStore';
