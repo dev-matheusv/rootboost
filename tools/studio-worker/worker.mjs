@@ -178,7 +178,7 @@ async function round() {
     for (const s of library) {
       const media = job.media.find((m) => m.id === s.id);
       try {
-        clips.push({ index: s.index, source: `acervo-${s.id}`, duration: await prepareMedia(media, s.seconds, s.motion) });
+        clips.push({ index: s.index, source: `acervo-${s.id}`, isVideo: media.isVideo, duration: await prepareMedia(media, s.seconds, s.motion) });
       } catch (e) {
         return fail(job.id, `mídia do acervo do bloco ${s.index + 1}: ${e.message}`, true);
       }

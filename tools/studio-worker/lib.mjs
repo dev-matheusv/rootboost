@@ -213,10 +213,15 @@ export function motionFilter(motion, frames) {
 /** Troca "acervo-<id>" pelo bruto pronto: [fonte, 0, fim, 1]. Vídeo usa no máximo o que tem; bloco sem clipe fica como estava. */
 export function applyLibrary(roteiro, clips) {
   const out = JSON.parse(JSON.stringify(roteiro));
+  const round = (n) => Math.round(n * 10) / 10;
   for (const c of clips) {
     const b = out.blocos?.[c.index];
     if (!b || !(c.duration > 1)) continue;
-    b.trechos = [[c.source, 0, Math.round((c.duration - 0.1) * 10) / 10, 1]];
+    const [, start, end] = b.trechos?.[0] ?? [];
+    // Vídeo com momento escolhido pela IA (início > 0 ou fim antes do fim do vídeo): mantém o trecho, dentro da duração.
+    if (c.isVideo && Number(end) > Number(start) && Number(start) < c.duration - 0.5)
+      b.trechos = [[c.source, round(Number(start)), round(Math.min(Number(end), c.duration - 0.1)), 1]];
+    else b.trechos = [[c.source, 0, round(c.duration - 0.1), 1]];
   }
   return out;
 }
@@ -236,4 +241,27 @@ export function parseRawList(text, { includeToCheck = false } = {}) {
     for (const name of m[1].split(/\s+e\s+/)) if (/^[a-z0-9-]+$/i.test(name.trim())) out.push({ name: name.trim(), description });
   }
   return out;
+}
+
+/**
+ * Lista de momentos do marketing → [{ name, description, moments: [{ start, end, description }] }].
+ * Linha "- nome [12.0-17.5] [R] o que a tela mostra"; linhas EVITAR e notas ficam de fora (só entra o permitido).
+ * Para em "FORA DO ACERVO". A descrição geral junta os momentos (a IA também lê cada momento).
+ */
+export function parseMomentsList(text) {
+  const byName = new Map();
+  for (const line of String(text).split(/\r?\n/)) {
+    if (/^\s*FORA DO ACERVO/i.test(line)) break;
+    const m = line.match(/^-\s+([a-z0-9-]+)\s+\[(\d+(?:\.\d+)?)-(\d+(?:\.\d+)?)\]\s*(?:\[[A-Z]\]\s*)?(.+)$/i);
+    if (!m) continue;
+    const [, name, a, b, desc] = m;
+    if (Number(b) <= Number(a)) continue;
+    if (!byName.has(name)) byName.set(name, []);
+    byName.get(name).push({ start: Number(a), end: Number(b), description: desc.trim().slice(0, 300) });
+  }
+  return [...byName].map(([name, moments]) => ({
+    name,
+    moments,
+    description: moments.map((x) => x.description.replace(/\.$/, "")).join(". ").slice(0, 490) + ".",
+  }));
 }

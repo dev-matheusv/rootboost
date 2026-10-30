@@ -462,6 +462,12 @@ namespace RootBoost.Infrastructure.Persistence.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
+                    b.Property<string>("MomentsJson")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("jsonb")
+                        .HasDefaultValue("[]");
+
                     b.Property<string>("PersonalData")
                         .IsRequired()
                         .ValueGeneratedOnAdd()

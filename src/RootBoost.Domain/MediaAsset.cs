@@ -46,6 +46,26 @@ public sealed class MediaAsset
 
     public void MarkFinished(bool finished) => Finished = finished;
 
+    /// <summary>
+    /// Momentos do vídeo (índice de momentos, 30/10): trechos com início, fim e o que a tela mostra. A IA do roteiro
+    /// escolhe um por cena em vez de pegar o vídeo do segundo zero (que mostrava a tela parada).
+    /// </summary>
+    public string MomentsJson { get; private set; } = "[]";
+
+    public IReadOnlyList<MediaMoment> Moments =>
+        System.Text.Json.JsonSerializer.Deserialize<List<MediaMoment>>(MomentsJson, MomentJson) ?? [];
+
+    private static readonly System.Text.Json.JsonSerializerOptions MomentJson = new(System.Text.Json.JsonSerializerDefaults.Web);
+
+    public void SetMoments(IReadOnlyList<MediaMoment> moments)
+    {
+        if (moments.Count > 40) throw new ArgumentException("no máximo 40 momentos por vídeo", nameof(moments));
+        foreach (var m in moments)
+            if (m.Start < 0 || m.End <= m.Start || string.IsNullOrWhiteSpace(m.Description) || m.Description.Length > 300)
+                throw new ArgumentException($"momento inválido: {m.Start}-{m.End}", nameof(moments));
+        MomentsJson = System.Text.Json.JsonSerializer.Serialize(moments.OrderBy(m => m.Start).ToList(), MomentJson);
+    }
+
     public RedactionBox? Focus => string.IsNullOrWhiteSpace(FocusJson) ? null : RedactionBox.Read($"[{FocusJson}]").FirstOrDefault();
 
     public void SetFocus(RedactionBox? focus) => FocusJson = focus is { IsValid: true } ? RedactionBox.Write([focus])[1..^1] : null;

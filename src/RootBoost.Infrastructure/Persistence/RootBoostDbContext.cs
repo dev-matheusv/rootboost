@@ -251,6 +251,8 @@ public sealed class RootBoostDbContext : DbContext
         media.Property(x => x.RedactedStorageKey).HasMaxLength(300);
         media.Ignore(x => x.RedactionBoxes);
         media.Property(x => x.FocusJson).HasMaxLength(200);
+        media.Property(x => x.MomentsJson).HasColumnType("jsonb").IsRequired().HasDefaultValue("[]");
+        media.Ignore(x => x.Moments);
         media.Ignore(x => x.Focus);
         media.Property(x => x.CreatedAt).HasConversion(Utc);
         media.HasIndex(x => new { x.BrandKey, x.CreatedAt });
