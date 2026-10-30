@@ -129,7 +129,7 @@ public sealed class ScriptWriter
                 result.InputTokens, result.OutputTokens, result.CostUsd, _time.GetUtcNow()), ct);
 
             using var doc = JsonDocument.Parse(result.Json);
-            var (script, lines, hooks) = ToContracts(doc.RootElement, media.Select(m => m.Id.ToString("N")).ToHashSet());
+            var (script, lines, hooks) = ToContracts(doc.RootElement, media.ToDictionary(m => m.Id.ToString("N"), m => m.Moments));
             errors = ScriptContract.Validate(script, lines);
             // Mesma mídia em duas cenas deixa o vídeo repetitivo (relato de 30/10: o receituário aparecia 3 vezes).
             var repeated = script.GetProperty("blocos").EnumerateArray()
@@ -157,7 +157,21 @@ public sealed class ScriptWriter
     public static readonly string[] Transitions = ["fade", "dissolve", "slideleft", "slideup", "smoothleft", "wipeleft", "circleopen", "zoomin"];
     public static readonly string[] Motions = ["zoom-in", "zoom-out", "pan-left", "pan-right"];
 
-    private static (JsonElement Script, JsonElement Lines, IReadOnlyList<string> Hooks) ToContracts(JsonElement ai, IReadOnlySet<string> mediaIds)
+    /// <summary>
+    /// Trecho do bloco: mídia do acervo (no momento escolhido, cortado pra caber na fala sem passar de 1,2x) ou "a gravar".
+    /// Vídeo com momentos e escolha inválida cai no primeiro momento, nunca no segundo zero.
+    /// </summary>
+    private static object[] Trecho(string mediaId, JsonElement b, IReadOnlyDictionary<string, IReadOnlyList<MediaMoment>> mediaMoments, int n, double seconds)
+    {
+        if (!mediaMoments.TryGetValue(mediaId, out var moments)) return [$"gravar-bloco-{n}", 0, seconds];
+        if (moments.Count == 0) return [$"acervo-{mediaId}", 0, seconds];
+        var i = b.TryGetProperty("momento", out var mo) && mo.ValueKind == JsonValueKind.Number ? mo.GetInt32() : 0;
+        var m = moments[i >= 0 && i < moments.Count ? i : 0];
+        var end = Math.Min(m.End, m.Start + Math.Max(seconds * 1.2, 2));
+        return [$"acervo-{mediaId}", Math.Round(m.Start, 1), Math.Round(end, 1)];
+    }
+
+    private static (JsonElement Script, JsonElement Lines, IReadOnlyList<string> Hooks) ToContracts(JsonElement ai, IReadOnlyDictionary<string, IReadOnlyList<MediaMoment>> mediaMoments)
     {
         var lines = new List<string>();
         var opening = ai.TryGetProperty("abertura", out var a) && a.ValueKind == JsonValueKind.Object
@@ -178,7 +192,7 @@ public sealed class ScriptWriter
                 sub = Str(b, "subtitulo"),
                 cena = Str(b, "cena"),
                 // Mídia do acervo escolhida pela IA vira o trecho ("acervo-<id>"); sem ela, o bloco fica pra gravar a tela.
-                trechos = new object[] { new object[] { mediaIds.Contains(Str(b, "midia")) ? $"acervo-{Str(b, "midia")}" : $"gravar-bloco-{n}", 0, seconds } },
+                trechos = new object[] { Trecho(Str(b, "midia"), b, mediaMoments, n, seconds) },
                 // Edição por bloco (transição de entrada e movimento da foto); fora da lista vira o padrão suave.
                 transicao = Transitions.Contains(Str(b, "transicao")) ? Str(b, "transicao") : "fade",
                 movimento = Motions.Contains(Str(b, "movimento")) ? Str(b, "movimento") : "zoom-in",
@@ -249,9 +263,16 @@ public sealed class ScriptWriter
                 : "Acervo da marca: cada bloco usa uma destas mídias (campo midia = id), a que melhor mostra a cena; cada mídia no máximo uma vez (com menos mídias que cenas, faça menos cenas).");
             sb.AppendLine("Não use mídia de tela vazia (lista sem itens, formulário em branco) nem a que fica quase toda borrada; " +
                 "pra mostrar o sistema funcionando, prefira a gravação de tela (midia vazia) quando o produto tem app.");
+            sb.AppendLine("Vídeo com momentos: escolha no campo momento o número do momento que mostra a cena da fala (o vídeo entra " +
+                "só nesse trecho). Foto ou vídeo sem momentos: momento -1.");
             foreach (var m in media)
+            {
                 sb.AppendLine($"- {m.Id:N}: {(m.IsVideo ? "vídeo" : "foto")}: {m.Description ?? m.FileName}" +
                     (m.RedactedStorageKey is not null ? $" (com {m.PersonalDataKinds ?? "dado pessoal"} borrado)" : ""));
+                var moments = m.Moments;
+                for (var i = 0; i < moments.Count; i++)
+                    sb.AppendLine($"    momento {i} ({moments[i].End - moments[i].Start:0.#} s): {moments[i].Description}");
+            }
         }
         if (brand is not null)
         {
@@ -308,11 +329,12 @@ public sealed class ScriptWriter
             },
             "blocos": {
               "type": "array",
-              "items": { "type": "object", "additionalProperties": false, "required": ["titulo", "subtitulo", "fala", "cena", "midia", "transicao", "movimento"],
+              "items": { "type": "object", "additionalProperties": false, "required": ["titulo", "subtitulo", "fala", "cena", "midia", "transicao", "movimento", "momento"],
                 "properties": { "titulo": { "type": "string" }, "subtitulo": { "type": "string" }, "fala": { "type": "string" }, "cena": { "type": "string" },
                   "midia": { "type": "string", "description": "id da mídia do acervo pra este bloco, ou vazio" },
                   "transicao": { "type": "string", "enum": ["fade", "dissolve", "slideleft", "slideup", "smoothleft", "wipeleft", "circleopen", "zoomin"] },
-                  "movimento": { "type": "string", "enum": ["zoom-in", "zoom-out", "pan-left", "pan-right"] } } }
+                  "movimento": { "type": "string", "enum": ["zoom-in", "zoom-out", "pan-left", "pan-right"] },
+                  "momento": { "type": "integer", "description": "número do momento do vídeo do acervo, ou -1" } } }
             },
             "final": { "type": "object", "additionalProperties": false, "required": ["titulo", "cta", "fala"],
               "properties": { "titulo": { "type": "string" }, "cta": { "type": "string" }, "fala": { "type": "string" } } },

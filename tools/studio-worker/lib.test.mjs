@@ -124,3 +124,31 @@ test("movimento da foto segue o roteiro", async () => {
   const id = "d063b8ee53e2455f899ff9752759f2ee";
   assert.equal(libraryScenes({ blocos: [{ movimento: "pan-right", trechos: [[`acervo-${id}`, 0, 5]] }] })[0].motion, "pan-right");
 });
+
+test("vídeo do acervo entra no momento escolhido, não no segundo zero", async () => {
+  const { applyLibrary } = await import("./lib.mjs");
+  const id = "d063b8ee53e2455f899ff9752759f2ee";
+  const roteiro = { blocos: [{ trechos: [[`acervo-${id}`, 12.0, 17.5]] }, { trechos: [[`acervo-${id}`, 0, 6]] }] };
+  const out = applyLibrary(roteiro, [
+    { index: 0, source: `acervo-${id}`, isVideo: true, duration: 30 },
+    { index: 1, source: `acervo-${id}`, isVideo: false, duration: 8 },
+  ]);
+  assert.deepEqual(out.blocos[0].trechos, [[`acervo-${id}`, 12, 17.5, 1]]);
+  assert.deepEqual(out.blocos[1].trechos, [[`acervo-${id}`, 0, 7.9, 1]]);
+});
+
+test("lista de momentos agrupa por bruto e ignora EVITAR", async () => {
+  const { parseMomentsList } = await import("./lib.mjs");
+  const text = [
+    "- psico1 [1.0-4.3] [R] Abre o agendamento.",
+    "- psico1 [5.9-25.4] [R] Marca sessao semanal.",
+    "  EVITAR psico1 [4.3-5.9] (aparece nome).",
+    "- migracaocorte (1080x900, SUBIR ESTE)",
+    "FORA DO ACERVO",
+    "- soap [0-5] nao usar",
+  ].join("\n");
+  const items = parseMomentsList(text);
+  assert.equal(items.length, 1);
+  assert.deepEqual(items[0].moments.map((m) => [m.start, m.end]), [[1, 4.3], [5.9, 25.4]]);
+  assert.equal(items[0].description, "Abre o agendamento. Marca sessao semanal.");
+});

@@ -158,3 +158,37 @@ public class RawUploadTests : IClassFixture<StudioAiWebApplicationFactory>
         Assert.Equal("Arrasta uma consulta para outro horario.", up.GetProperty("description").GetString());
     }
 }
+
+public class MomentsTests : IClassFixture<StudioAiWebApplicationFactory>
+{
+    private readonly StudioAiWebApplicationFactory _factory;
+    public MomentsTests(StudioAiWebApplicationFactory factory) => _factory = factory;
+
+    [Fact]
+    public async Task Script_uses_the_chosen_moment_of_the_video_not_second_zero()
+    {
+        var w = _factory.CreateClient();
+        w.DefaultRequestHeaders.Add("X-Worker-Key", "chave-gravacao");
+        using var form = new MultipartFormDataContent();
+        form.Add(new ByteArrayContent([0, 0, 0, 24, 0x66, 0x74, 0x79, 0x70]), "file", "momentos-demo.mp4");
+        form.Add(new StringContent("true"), "raw");
+        form.Add(new StringContent("Agenda"), "description");
+        Assert.Equal(HttpStatusCode.Created, (await w.PostAsync($"/worker/media/{BrandKeys.Demo}", form)).StatusCode);
+        var updated = await w.PutAsJsonAsync($"/worker/media/{BrandKeys.Demo}/details", new
+        {
+            fileName = "momentos-demo.mp4",
+            description = "Abre a agenda. Marca sessão semanal.",
+            moments = new[] { new { start = 1.0, end = 4.3, description = "Abre a agenda" }, new { start = 12.0, end = 30.0, description = "Marca sessão semanal" } },
+        });
+        Assert.Equal(HttpStatusCode.OK, updated.StatusCode);
+
+        var c = _factory.CreateClient();
+        var job = await (await c.PostAsJsonAsync($"/admin/brands/{BrandKeys.Demo}/creative-jobs", new { kind = "organic", theme = "Agenda" })).Content.ReadFromJsonAsync<JsonElement>();
+        var written = await (await c.PostAsJsonAsync($"/admin/brands/{BrandKeys.Demo}/creative-jobs/{job.GetProperty("id").GetString()}/write-script", new { }))
+            .Content.ReadFromJsonAsync<JsonElement>();
+        var trecho = written.GetProperty("job").GetProperty("roteiro").GetProperty("blocos")[0].GetProperty("trechos")[0];
+        Assert.StartsWith("acervo-", trecho[0].GetString());
+        Assert.Equal(12.0, trecho[1].GetDouble()); // momento 1 escolhido pela IA (fake), não o segundo zero
+        Assert.True(trecho[2].GetDouble() < 30.0); // cortado pra caber na fala
+    }
+}
