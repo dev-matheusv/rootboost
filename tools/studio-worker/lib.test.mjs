@@ -77,7 +77,7 @@ test("acervo: blocos com mídia, foto vira trecho e troca dos trechos", async ()
     { trechos: [["acervo-../../x", 0, 6]] },
     { cena: "agenda", trechos: [["gravar-bloco-3", 0, 5]] },
   ] };
-  assert.deepEqual(libraryScenes(roteiro), [{ index: 0, id, seconds: 6 }]);
+  assert.deepEqual(libraryScenes(roteiro), [{ index: 0, id, seconds: 6, motion: undefined }]);
   const args = photoClipArgs("in.jpg", "out.mp4", 3000, 4000, 6);
   assert.equal(args[args.indexOf("-t") + 1], "8");
   assert.match(args[args.indexOf("-vf") + 1], /s=1080x1350/); // retrato: recorta
@@ -114,4 +114,13 @@ test("lista de brutos do marketing vira itens", async () => {
   ].join("\n");
   assert.deepEqual(parseRawList(text).map((i) => i.name), ["arrastar", "previsaotopo", "previsaobaixo"]);
   assert.equal(parseRawList(text, { includeToCheck: true })[3].description, "Escolha do formato.");
+});
+
+test("movimento da foto segue o roteiro", async () => {
+  const { motionFilter, libraryScenes } = await import("./lib.mjs");
+  assert.ok(motionFilter("zoom-out", 120).includes("max(1.06"));
+  assert.ok(motionFilter("pan-left", 120).includes("(1-on/120)"));
+  assert.ok(motionFilter("qualquer", 120).includes("min(1+0.06"));
+  const id = "d063b8ee53e2455f899ff9752759f2ee";
+  assert.equal(libraryScenes({ blocos: [{ movimento: "pan-right", trechos: [[`acervo-${id}`, 0, 5]] }] })[0].motion, "pan-right");
 });

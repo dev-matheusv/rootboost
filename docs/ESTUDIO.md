@@ -68,6 +68,15 @@ Enquanto a gravação automática da tela (RB-50) não existe, cada bloco escrit
 - **Texto:** fala pra você (sem "eu fiz"), imperativo correto ("teste"), fala do que a cena mostra, só recursos cadastrados.
 - Ainda no pipeline (narrado-calmo): título, foto e legenda num bloco só; revisão automática pela grade de quadros.
 
+## Edição escolhida pela IA (29/10)
+
+Cada bloco do roteiro leva `transicao` (fade, dissolve, slideleft, slideup, smoothleft, wipeleft, circleopen, zoomin) e
+`movimento` (zoom-in, zoom-out, pan-left, pan-right), do que o DMaker já faz (xfade e motion de imagem). Sem pedido, a IA
+prefere o suave e varia o movimento; com pedido ("transições de deslizar", "zoom no resultado"), segue o pedido. Ela também
+devolve 3 **ideias de edição** que viram chips no Estúdio (um toque reescreve com a ideia), e cada bloco mostra a
+transição e o movimento escolhidos. O worker aplica o movimento nas fotos; a transição entre blocos vem do narrado-calmo
+(lê `bloco.transicao`). O contrato recusa valor fora da lista.
+
 ## Ordem do worker: falhar cedo e barato (29/10)
 
 1. **Pré-checagem** (segundos): conta de demonstração e app da gravação respondendo; mídias do acervo no job (a API já

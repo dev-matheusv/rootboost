@@ -104,7 +104,8 @@ public sealed class ScriptWriter
         _time = time;
     }
 
-    public sealed record Written(JsonElement Script, JsonElement Lines, IReadOnlyList<string> Hooks, IReadOnlyList<string> Warnings, decimal CostUsd);
+    public sealed record Written(JsonElement Script, JsonElement Lines, IReadOnlyList<string> Hooks, IReadOnlyList<string> Warnings, decimal CostUsd,
+        IReadOnlyList<string>? EditIdeas = null);
 
     public sealed record Failed(IReadOnlyList<string> Errors);
 
@@ -133,7 +134,9 @@ public sealed class ScriptWriter
             if (errors.Count == 0)
             {
                 var review = ScriptGates.Review(job.Kind, script, lines, _knowledge, brand);
-                if (review.Errors.Count == 0) return (new Written(script, lines, hooks, review.Warnings, cost), null);
+                var ideas = doc.RootElement.TryGetProperty("ideiasEdicao", out var ie) && ie.ValueKind == JsonValueKind.Array
+                    ? ie.EnumerateArray().Select(x => x.GetString() ?? "").Where(x => x.Length > 0).Take(3).ToList() : [];
+                if (review.Errors.Count == 0) return (new Written(script, lines, hooks, review.Warnings, cost, ideas), null);
                 errors = review.Errors;
             }
         }
@@ -144,6 +147,10 @@ public sealed class ScriptWriter
     /// A IA não sabe o tempo de cada gravação ainda: cada bloco ganha um trecho "a gravar" com a duração estimada
     /// da fala (o worker troca pela gravação de tela no RB-50) e guarda a descrição da cena pra quem for gravar.
     /// </summary>
+    /// <summary>Transições e movimentos que o DMaker faz e que ficam bem em reel (lista curta de propósito).</summary>
+    public static readonly string[] Transitions = ["fade", "dissolve", "slideleft", "slideup", "smoothleft", "wipeleft", "circleopen", "zoomin"];
+    public static readonly string[] Motions = ["zoom-in", "zoom-out", "pan-left", "pan-right"];
+
     private static (JsonElement Script, JsonElement Lines, IReadOnlyList<string> Hooks) ToContracts(JsonElement ai, IReadOnlySet<string> mediaIds)
     {
         var lines = new List<string>();
@@ -166,6 +173,9 @@ public sealed class ScriptWriter
                 cena = Str(b, "cena"),
                 // Mídia do acervo escolhida pela IA vira o trecho ("acervo-<id>"); sem ela, o bloco fica pra gravar a tela.
                 trechos = new object[] { new object[] { mediaIds.Contains(Str(b, "midia")) ? $"acervo-{Str(b, "midia")}" : $"gravar-bloco-{n}", 0, seconds } },
+                // Edição por bloco (transição de entrada e movimento da foto); fora da lista vira o padrão suave.
+                transicao = Transitions.Contains(Str(b, "transicao")) ? Str(b, "transicao") : "fade",
+                movimento = Motions.Contains(Str(b, "movimento")) ? Str(b, "movimento") : "zoom-in",
             });
         }
         var final = ai.GetProperty("final");
@@ -199,6 +209,11 @@ public sealed class ScriptWriter
             ? "- Anúncio: sem abertura; o título do primeiro bloco é o gancho, curto e forte."
             : "- Abertura com a dor do público (título curto e subtítulo), depois blocos de um recurso cada, de 5 a 12 segundos.");
         sb.AppendLine("- Cada bloco tem título curto no topo da tela, subtítulo, a fala daquele trecho e a cena: o que a tela mostra, passo a passo, pra quem for gravar.");
+        sb.AppendLine("- Edição: escolha a transição de entrada e o movimento de cada bloco pela cena e pelo ritmo. Sem pedido da pessoa, " +
+            "prefira o suave (fade, dissolve, smoothleft) e varie o movimento (zoom-in aproxima detalhe, zoom-out mostra o todo, pan " +
+            "acompanha foto larga). Slide e wipe mudam de assunto; circleopen e zoomin revelam resultado. Se a pessoa pedir um estilo " +
+            "de edição, siga o pedido.");
+        sb.AppendLine("- Dê também 3 ideias de edição pra esse vídeo (frases curtas que a pessoa pode pedir, ex.: \"transições de deslizar entre as fotos\").");
         sb.AppendLine("- Conversa, não locução. A voz fala com quem assiste (você), como quem conhece o produto por dentro. Nada de primeira pessoa contando a própria rotina (\"eu fiz\", \"eu uso\").");
         sb.AppendLine("- Português correto: imperativo de você (teste, veja, comece), nunca \"testa\", \"vê\", \"começa\".");
         sb.AppendLine("- A fala de cada bloco descreve o que a cena daquele bloco mostra. Bloco com mídia do acervo fala do que está na mídia; não narre o que a tela não mostra.");
@@ -275,7 +290,7 @@ public sealed class ScriptWriter
         {
           "type": "object",
           "additionalProperties": false,
-          "required": ["nome", "abertura", "blocos", "final", "ganchosAlternativos"],
+          "required": ["nome", "abertura", "blocos", "final", "ganchosAlternativos", "ideiasEdicao"],
           "properties": {
             "nome": { "type": "string", "description": "nome curto do vídeo em minúsculas com hífen, ex.: psicologia-agenda" },
             "abertura": {
@@ -287,13 +302,16 @@ public sealed class ScriptWriter
             },
             "blocos": {
               "type": "array",
-              "items": { "type": "object", "additionalProperties": false, "required": ["titulo", "subtitulo", "fala", "cena", "midia"],
+              "items": { "type": "object", "additionalProperties": false, "required": ["titulo", "subtitulo", "fala", "cena", "midia", "transicao", "movimento"],
                 "properties": { "titulo": { "type": "string" }, "subtitulo": { "type": "string" }, "fala": { "type": "string" }, "cena": { "type": "string" },
-                  "midia": { "type": "string", "description": "id da mídia do acervo pra este bloco, ou vazio" } } }
+                  "midia": { "type": "string", "description": "id da mídia do acervo pra este bloco, ou vazio" },
+                  "transicao": { "type": "string", "enum": ["fade", "dissolve", "slideleft", "slideup", "smoothleft", "wipeleft", "circleopen", "zoomin"] },
+                  "movimento": { "type": "string", "enum": ["zoom-in", "zoom-out", "pan-left", "pan-right"] } } }
             },
             "final": { "type": "object", "additionalProperties": false, "required": ["titulo", "cta", "fala"],
               "properties": { "titulo": { "type": "string" }, "cta": { "type": "string" }, "fala": { "type": "string" } } },
-            "ganchosAlternativos": { "type": "array", "items": { "type": "string" } }
+            "ganchosAlternativos": { "type": "array", "items": { "type": "string" } },
+            "ideiasEdicao": { "type": "array", "items": { "type": "string" } }
           }
         }
         """).RootElement.Clone();
