@@ -131,6 +131,12 @@ public sealed class ScriptWriter
             using var doc = JsonDocument.Parse(result.Json);
             var (script, lines, hooks) = ToContracts(doc.RootElement, media.Select(m => m.Id.ToString("N")).ToHashSet());
             errors = ScriptContract.Validate(script, lines);
+            // Mesma mídia em duas cenas deixa o vídeo repetitivo (relato de 30/10: o receituário aparecia 3 vezes).
+            var repeated = script.GetProperty("blocos").EnumerateArray()
+                .Select(b => b.GetProperty("trechos")[0][0].GetString() ?? "").Where(src => src.StartsWith("acervo-", StringComparison.Ordinal))
+                .GroupBy(src => src).Where(g => g.Count() > 1).Select(g => g.Key).ToList();
+            if (repeated.Count > 0)
+                errors = [.. errors, $"a mesma mídia do acervo aparece em mais de uma cena ({string.Join(", ", repeated)}); use cada mídia uma vez só, troque ou deixe a cena pra gravar"];
             if (errors.Count == 0)
             {
                 var review = ScriptGates.Review(job.Kind, script, lines, _knowledge, brand);
@@ -239,8 +245,8 @@ public sealed class ScriptWriter
         {
             sb.AppendLine();
             sb.AppendLine(product?.AppUrl is { Length: > 0 }
-                ? "Acervo da marca: use uma destas mídias no bloco quando ela mostrar a cena melhor que gravar a tela (campo midia = id; vazio pra gravar)."
-                : "Acervo da marca: cada bloco usa uma destas mídias (campo midia = id), a que melhor mostra a cena; não repita a mesma se houver outras.");
+                ? "Acervo da marca: use uma destas mídias no bloco quando ela mostrar a cena melhor que gravar a tela (campo midia = id; vazio pra gravar). Cada mídia no máximo uma vez, e nunca duas que mostram a mesma tela."
+                : "Acervo da marca: cada bloco usa uma destas mídias (campo midia = id), a que melhor mostra a cena; cada mídia no máximo uma vez (com menos mídias que cenas, faça menos cenas).");
             sb.AppendLine("Não use mídia de tela vazia (lista sem itens, formulário em branco) nem a que fica quase toda borrada; " +
                 "pra mostrar o sistema funcionando, prefira a gravação de tela (midia vazia) quando o produto tem app.");
             foreach (var m in media)
