@@ -23,6 +23,7 @@ const FFPROBE = process.env.FFPROBE_PATH ?? FFMPEG.replace(/ffmpeg(\.exe)?$/i, "
 
 const DMAKER = process.env.DMAKER_PATH ?? "C:/DMaker/.venv/Scripts/dmaker.exe";
 const PY = process.env.DMAKER_PYTHON ?? "C:/DMaker/.venv/Scripts/python.exe";
+const DMAKER_BRANDS = process.env.DMAKER_BRANDS ?? "C:/DMaker/assets/brands";
 // Frase das amostras de voz: curta, neutra, com pergunta e pausa (mostra a entonação).
 const SAMPLE_TEXT = "Oi! Esta é uma amostra da voz para os vídeos da marca. Dá pra ouvir com calma, e se gostar, é só escolher esta.";
 
@@ -89,6 +90,10 @@ async function round() {
   if (problem) return fail(job.id, problem, false);
 
   const projectDir = `${cfg.base}/projetos/${nome}`;
+  // O vídeo é desta marca: o narrado-calmo usa a marca do roteiro (kit visual, léxico, CTA). Marca sem kit no DMaker
+  // ganha um neutro com o nome dela (nunca o visual de outra marca; relato de 30/10: viagem saiu com logo do MedlyCare).
+  job.roteiro = { ...job.roteiro, marca: job.brandKey };
+  ensureBrandKit(job.brandKey, job.brandName);
 
   // 1. Pré-checagem barata: tudo que pode falhar sem gastar voz nem render (pedido do Matheus, 29/10).
   const scenes = scenesToRecord(job.roteiro);
@@ -285,6 +290,16 @@ async function prepareMedia(media, seconds, motion) {
     execFileSync(FFMPEG, photoClipArgs(raw, out, w, h, seconds, media.focus, motion), { stdio: "ignore" });
   }
   return Number(execFileSync(FFPROBE, ["-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", out]).toString().trim());
+}
+
+/** Kit mínimo do DMaker pra marca nova: só o nome e as regras da casa; cores, fonte e estilo ficam no padrão do DMaker. */
+function ensureBrandKit(brandKey, brandName) {
+  if (!/^[a-z0-9-]{2,64}$/.test(brandKey)) return;
+  const dir = `${DMAKER_BRANDS}/${brandKey}`;
+  if (existsSync(`${dir}/brand.json`)) return;
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(`${dir}/brand.json`, JSON.stringify({ name: brandName || brandKey, rules: { no_dash: true }, cta: { url: "", text: "" } }, null, 2));
+  console.log(`[${now()}] kit neutro criado no DMaker pra ${brandKey}`);
 }
 
 /** Palavras sem par gravadas pelo alinhamento da voz (o log não repete a contagem quando a voz vem do cache). */
