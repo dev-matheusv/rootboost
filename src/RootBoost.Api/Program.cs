@@ -937,7 +937,8 @@ worker.MapPost("/jobs/claim", async (WorkerClaimInput input, HttpRequest req, Ro
         voiceKey = brandVoice.Key;
     if (seed is null && voiceKey is { } vk && await voices.FindByKeyAsync(vk, ct) is { BrandKey: var vb, ChosenSeed: { } chosen } && vb == job.BrandKey)
         seed = chosen;
-    return Results.Ok(WorkerJobDto.From(job) with { Media = media, Seed = seed, VoiceKey = voiceKey });
+    var brandName = (await brands.ListAsync(ct)).FirstOrDefault(b => b.Key == job.BrandKey)?.Name ?? job.BrandKey;
+    return Results.Ok(WorkerJobDto.From(job) with { Media = media, Seed = seed, VoiceKey = voiceKey, BrandName = brandName });
 });
 
 worker.MapPost("/jobs/{id:guid}/progress", async (Guid id, WorkerProgressInput input, RootBoost.Application.Studio.ICreativeJobStore store,
@@ -1468,7 +1469,7 @@ record VoiceTakeDto(int Seed, int Unmatched);
 
 record WorkerJobDto(Guid Id, string BrandKey, string Kind, string Theme, string? VoiceKey, int? Seed, int Attempts,
     System.Text.Json.JsonElement? Roteiro, System.Text.Json.JsonElement? Falas, IReadOnlyList<WorkerMediaDto>? Media = null,
-    bool VoiceApproved = false)
+    bool VoiceApproved = false, string? BrandName = null)
 {
     public static WorkerJobDto From(CreativeJob j) => new(j.Id, j.BrandKey, j.Kind.ToString(), j.Theme, j.VoiceKey, j.Seed,
         j.Attempts, CreativeJobDto.Parse(j.Script), CreativeJobDto.Parse(j.Lines), VoiceApproved: j.VoiceApproved);
