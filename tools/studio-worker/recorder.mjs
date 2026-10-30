@@ -140,7 +140,7 @@ async function login(cdp, elements, account) {
     const now = await evaluate(cdp, LIST_ELEMENTS);
     if (!now.some((e) => e.role === "campo password")) return { ok: true };
     // Enter não enviou: clica no botão de entrar.
-    const submit = now.find((e) => e.role === "botão" && /(entrar|login|acessar|continuar|sign in)/i.test(e.text));
+    const submit = now.find((e) => e.role === "botão" && /\b(entrar|login|acessar|continuar|sign in)\b/i.test(e.text));
     if (i === 0 && submit) await click(cdp, submit);
   }
   return { ok: false, error: (await evaluate(cdp, LOGIN_ERROR)) || "a tela de login continuou aberta" };

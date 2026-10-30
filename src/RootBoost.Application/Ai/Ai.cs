@@ -136,7 +136,7 @@ public sealed class ScriptWriter
                 .Select(b => b.GetProperty("trechos")[0][0].GetString() ?? "").Where(src => src.StartsWith("acervo-", StringComparison.Ordinal))
                 .GroupBy(src => src).Where(g => g.Count() > 1).Select(g => g.Key).ToList();
             var plain = string.Join(" ", lines.EnumerateArray().Select(l => l.GetString() ?? "")).ToLowerInvariant();
-            var forbidden = ForbiddenWords.Where(w => System.Text.RegularExpressions.Regex.IsMatch(plain, $@"{System.Text.RegularExpressions.Regex.Escape(w)}")).ToList();
+            var forbidden = ForbiddenWords.Where(w => System.Text.RegularExpressions.Regex.IsMatch(plain, $@"(?<!\w){System.Text.RegularExpressions.Regex.Escape(w)}")).ToList();
             if (forbidden.Count > 0)
                 errors = [.. errors, $"fala com palavra proibida ({string.Join(", ", forbidden)}); reescreva em linguagem do dia a dia"];
             if (repeated.Count > 0)
