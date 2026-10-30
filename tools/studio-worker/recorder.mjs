@@ -116,18 +116,34 @@ async function pressEnter(cdp) {
   await cdp.send("Input.dispatchKeyEvent", { type: "keyUp", key: "Enter", code: "Enter", windowsVirtualKeyCode: 13 });
 }
 
-/** Entra com a conta de demonstração: o usuário no primeiro campo antes da senha, a senha no campo de senha. A IA nunca vê. */
+/** Texto de erro visível na tela de login (alerta, mensagem do campo), pra dizer por que não entrou. */
+const LOGIN_ERROR = `(() => {
+  const sel = '[role=alert],.q-field__messages,.q-notification__message,.error,.alert,.text-negative,.invalid-feedback';
+  return [...document.querySelectorAll(sel)].map((e) => e.innerText.trim()).filter(Boolean).join(' | ').slice(0, 200);
+})()`;
+
+/**
+ * Entra com a conta de demonstração: usuário no campo antes da senha, senha no campo de senha. A IA nunca vê.
+ * Confere se entrou de verdade (o campo de senha some); senão tenta o botão Entrar; devolve o erro da tela quando não entra.
+ */
 async function login(cdp, elements, account) {
   const pass = elements.find((e) => e.role === "campo password");
-  const user = [...elements].reverse().find((e) => e.role.startsWith("campo") && e !== pass && elements.indexOf(e) < elements.indexOf(pass));
-  if (!pass || !user) return false;
+  const user = [...elements].reverse().find((e) => /^campo (texto|text|email|tel)/.test(e.role) && elements.indexOf(e) < elements.indexOf(pass));
+  if (!pass || !user) return { ok: false, error: "não achei os campos de usuário e senha" };
   await click(cdp, user);
   await type(cdp, account.usuario, 25);
   await click(cdp, pass);
   await type(cdp, account.senha, 25);
   await pressEnter(cdp);
-  await wait(2500);
-  return true;
+  for (let i = 0; i < 2; i++) {
+    await wait(3000);
+    const now = await evaluate(cdp, LIST_ELEMENTS);
+    if (!now.some((e) => e.role === "campo password")) return { ok: true };
+    // Enter não enviou: clica no botão de entrar.
+    const submit = now.find((e) => e.role === "botão" && /(entrar|login|acessar|continuar|sign in)/i.test(e.text));
+    if (i === 0 && submit) await click(cdp, submit);
+  }
+  return { ok: false, error: (await evaluate(cdp, LOGIN_ERROR)) || "a tela de login continuou aberta" };
 }
 
 /**
@@ -154,7 +170,18 @@ export async function recordScene({ brandKey, scene, account, outDir, name, ask,
     let loggedIn = false;
     // Login antes de gravar, se a primeira tela pedir: o vídeo começa já dentro do sistema.
     let elements = await evaluate(cdp, LIST_ELEMENTS);
-    if (elements.some((e) => e.role === "campo password")) loggedIn = await login(cdp, elements, account);
+    if (elements.some((e) => e.role === "campo password")) {
+      const r = await login(cdp, elements, account);
+      if (!r.ok) {
+        // Print da tela de login pra conferência (fica só no PC; o campo de senha aparece mascarado).
+        const shot = await cdp.send("Page.captureScreenshot", { format: "jpeg", quality: 70 });
+        writeFileSync(join(outDir, "login-falhou.jpg"), Buffer.from(shot.data, "base64"));
+        const err = new Error(`não entrou no sistema com a conta de demonstração (${r.error}); confira usuário, senha e endereço em contas.json. Print em ${join(outDir, "login-falhou.jpg")}`);
+        err.personalData = true; // não adianta tentar de novo sem corrigir a conta
+        throw err;
+      }
+      loggedIn = true;
+    }
 
     recording = true;
     await cdp.send("Page.startScreencast", { format: "jpeg", quality: 90, maxWidth: VIEW.width * VIEW.scale, maxHeight: VIEW.height * VIEW.scale });
@@ -186,8 +213,11 @@ export async function recordScene({ brandKey, scene, account, outDir, name, ask,
         await type(cdp, next.text ?? "");
       } else if (next.action === "rolar") {
         await cdp.send("Input.dispatchMouseEvent", { type: "mouseWheel", x: 270, y: 300, deltaX: 0, deltaY: next.text === "cima" ? -350 : 350 });
-      } else if (next.action === "login" && !loggedIn) {
-        loggedIn = await login(cdp, elements, account);
+      } else if (next.action === "login") {
+        // Sessão caiu no meio (ou o primeiro login não pegou): tenta de novo; se não entrar, para com o motivo.
+        const r = await login(cdp, elements, account);
+        if (!r.ok) throw Object.assign(new Error(`não entrou no sistema com a conta de demonstração (${r.error}); confira contas.json`), { personalData: true });
+        loggedIn = true;
       }
       history.push(`${next.action} ${el?.text ?? next.text ?? ""}`.trim());
       await wait(900);
