@@ -193,6 +193,28 @@ export interface Publication {
   coverUrl: string | null;
   thumbOffsetMs: number | null;
   shareToFeed: boolean;
+  /** Música do Instagram (Audio API), anexada ao publicar. Volumes de 1 a 100. */
+  musicAudioId: string | null;
+  musicTitle: string | null;
+  musicVolume: number | null;
+  videoVolume: number | null;
+}
+
+/** Música da biblioteca do Instagram; previewUrl é temporário. */
+export interface MusicTrack {
+  id: string;
+  title: string;
+  artist: string;
+  durationMs: number;
+  previewUrl: string | null;
+  coverUrl: string | null;
+}
+
+export interface MusicChoice {
+  audioId: string | null;
+  title: string | null;
+  musicVolume: number;
+  videoVolume: number;
 }
 
 /** Estúdio (RB-42/RB-51): job de criativo que o worker local renderiza. */
