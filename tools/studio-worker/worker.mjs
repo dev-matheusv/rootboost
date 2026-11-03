@@ -270,9 +270,10 @@ async function voiceRound() {
 
     writeFileSync(`${dir}/amostra.txt`, SAMPLE_TEXT);
     const parts = [["workerId", cfg.workerId]];
-    for (const seed of [1, 2]) {
+    // Voz do banco: uma amostra só, com a semente do catálogo (já fica escolhida). Léxico de pronúncia da marca dona.
+    for (const seed of Number.isInteger(v.presetSeed) ? [v.presetSeed] : [1, 2]) {
       const wav = `${dir}/amostra-${seed}.wav`, m4a = `${dir}/amostra-${seed}.m4a`;
-      execFileSync(PY, ["-X", "utf8", `${cfg.tools}/falar-continuo.py`, v.key, `${dir}/amostra.txt`, wav, "32", String(seed)], { stdio: "ignore" });
+      execFileSync(PY, ["-X", "utf8", `${cfg.tools}/falar-continuo.py`, v.key, `${dir}/amostra.txt`, wav, "32", String(seed)], { stdio: "ignore", env: { ...process.env, MARCA: v.brandKey } });
       execFileSync(FFMPEG, ["-y", "-i", wav, "-c:a", "aac", "-b:a", "96k", m4a], { stdio: "ignore" });
       parts.push([`sample-${seed}`, { path: m4a, filename: `amostra-${seed}.m4a` }]);
     }

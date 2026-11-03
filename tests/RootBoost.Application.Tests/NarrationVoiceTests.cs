@@ -41,6 +41,23 @@ public class NarrationVoiceTests
         Assert.Equal("female, middle-aged, low pitch", NarrationVoice.Design("medlycare", "Ana", "female", "middle-aged", "low pitch", Now).Instruct);
         Assert.Throws<ArgumentException>(() => NarrationVoice.Design("medlycare", "Ana", "female; rm -rf", "middle-aged", "low pitch", Now));
     }
+
+    [Fact]
+    public void Bank_voice_comes_with_the_catalog_seed_already_chosen()
+    {
+        var v = NarrationVoice.FromBank("medlycare", "Clara", "clara", "female", "young adult", "moderate pitch", 7, Now);
+        Assert.Equal(7, v.PresetSeed);
+        Assert.Equal("clara", v.BankId);
+        Assert.Equal("female, young adult, moderate pitch", v.Instruct);
+        v.Claim("pc", Now, TimeSpan.FromMinutes(15));
+        v.Complete("pc", [new VoiceSample(7, "a")], Now);
+        Assert.Equal(7, v.ChosenSeed);
+        Assert.Throws<ArgumentException>(() => NarrationVoice.FromBank("medlycare", "X", "x", "female", "young adult", "moderate pitch", 0, Now));
+        // Toda voz do catálogo cabe no vocabulário do DMaker e tem id único.
+        foreach (var b in RootBoost.Application.Studio.VoiceBank.All)
+            Assert.NotNull(NarrationVoice.FromBank("medlycare", b.Name, b.Id, b.Gender, b.Age, b.Pitch, b.Seed, Now));
+        Assert.Equal(RootBoost.Application.Studio.VoiceBank.All.Count, RootBoost.Application.Studio.VoiceBank.All.Select(b => b.Id).Distinct().Count());
+    }
 }
 
 public class VoiceReviewDomainTests

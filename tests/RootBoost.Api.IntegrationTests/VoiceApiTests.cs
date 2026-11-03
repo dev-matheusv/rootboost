@@ -107,6 +107,24 @@ public class VoiceApiTests : IClassFixture<StudioAiWebApplicationFactory>
         var bad = await c.PostAsJsonAsync("/admin/brands/medlycare/voices/design", new { name = "X", gender = "robot", age = "middle-aged", pitch = "low pitch" });
         Assert.Equal(HttpStatusCode.BadRequest, bad.StatusCode);
     }
+
+    [Fact]
+    public async Task Bank_voice_is_created_for_the_brand_with_the_catalog_seed_and_only_once()
+    {
+        var c = _factory.CreateClient();
+        var bank = await c.GetFromJsonAsync<JsonElement>($"/admin/brands/{BrandKeys.Store}/voices/bank");
+        Assert.Contains(bank.EnumerateArray(), b => b.GetProperty("id").GetString() == "helena");
+
+        var res = await c.PostAsJsonAsync($"/admin/brands/{BrandKeys.Store}/voices/bank", new { bankId = "helena" });
+        Assert.Equal(HttpStatusCode.Created, res.StatusCode);
+        var voice = await res.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("Helena", voice.GetProperty("name").GetString());
+        Assert.Equal("helena", voice.GetProperty("bankId").GetString());
+        Assert.StartsWith($"{BrandKeys.Store}-helena-", voice.GetProperty("key").GetString());
+
+        Assert.Equal(HttpStatusCode.Conflict, (await c.PostAsJsonAsync($"/admin/brands/{BrandKeys.Store}/voices/bank", new { bankId = "helena" })).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await c.PostAsJsonAsync($"/admin/brands/{BrandKeys.Store}/voices/bank", new { bankId = "nao-existe" })).StatusCode);
+    }
 }
 
 public class StudioStatusTests : IClassFixture<StudioAiWebApplicationFactory>

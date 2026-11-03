@@ -50,6 +50,10 @@ public sealed partial class NarrationVoice
     public NarrationVoiceStatus Status { get; private set; }
     public string SamplesJson { get; private set; } = "[]";
     public int? ChosenSeed { get; private set; }
+    /// <summary>Voz pronta do banco: a semente já vem escolhida (é a da amostra que a pessoa ouviu no catálogo).</summary>
+    public int? PresetSeed { get; private set; }
+    /// <summary>Id da voz no catálogo do banco (ex.: "clara"), quando veio de lá.</summary>
+    public string? BankId { get; private set; }
     public string? WorkerId { get; private set; }
     public DateTimeOffset? LeaseUntil { get; private set; }
     public int Attempts { get; private set; }
@@ -112,6 +116,20 @@ public sealed partial class NarrationVoice
         return new NarrationVoice(brandKey, name, NarrationVoiceKind.Design, now) { Instruct = $"{gender}, {age}, {pitch}" };
     }
 
+    /// <summary>
+    /// Voz pronta do catálogo: mesma descrição e semente da amostra do catálogo, criada de novo no DMaker com esta marca
+    /// como dona. O worker gera uma amostra só, com essa semente, e ela já fica escolhida.
+    /// </summary>
+    public static NarrationVoice FromBank(string brandKey, string name, string bankId, string gender, string age, string pitch, int seed, DateTimeOffset now)
+    {
+        if (seed is < 1 or > 9999) throw new ArgumentException("semente fora do intervalo", nameof(seed));
+        if (string.IsNullOrWhiteSpace(bankId) || bankId.Length > 40) throw new ArgumentException("voz do banco inválida", nameof(bankId));
+        var voice = Design(brandKey, name, gender, age, pitch, now);
+        voice.PresetSeed = seed;
+        voice.BankId = bankId.Trim();
+        return voice;
+    }
+
     public bool CanBeClaimed(DateTimeOffset now) =>
         Status == NarrationVoiceStatus.Queued || (Status == NarrationVoiceStatus.Processing && LeaseUntil < now);
 
@@ -131,6 +149,7 @@ public sealed partial class NarrationVoice
         EnsureOwner(workerId);
         if (samples.Count == 0) throw new ArgumentException("voz sem amostra", nameof(samples));
         SamplesJson = JsonSerializer.Serialize(samples, Json);
+        if (PresetSeed is int preset && samples.Any(x => x.Seed == preset)) ChosenSeed = preset;
         Status = NarrationVoiceStatus.Ready;
         Error = null;
         WorkerId = null;
