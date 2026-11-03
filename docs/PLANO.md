@@ -79,6 +79,18 @@ fora dos trechos, foto recortada no foco 4:5, regras de texto).
     (Haiku já configurado nela); trocar estimativa pelo real do `AiUsage`; **Vercel Hobby não serve pra uso comercial**
     (Pro ao vender); decidir provedor do render na nuvem.
 
+**Semana de fechamento (03/11 a 07/11), depois só pente fino:**
+1. DMaker v2 no PC (atualizar sem render rodando) e regressão de um pessoal e de um explicativo.
+2. Pipeline com a v2: legenda arredondada, transições novas com curva, look, som discreto, corte automático na fala
+   original (ver `docs/ESTUDIO.md`, DMaker v2).
+3. Música do Instagram na publicação (busca pelo clima, escolha da pessoa, `audio_configuration`) e o compartilhamento
+   automático Instagram → Facebook ligado e testado com um Reels publicado pela API.
+4. Banco de vozes prontas (RB-59 "Escolher do banco"): vozes projetadas no DMaker por gênero, idade e tom, amostra fixa
+   com o mesmo texto do dia a dia, sem sotaque (o único é o de Portugal); a voz do MedlyCare aprovada vira a primeira
+   feminina.
+5. Validação real: pessoal de Porto Velho (Vitta Demo) e MedlyCare R3/R4 com momentos e a conta demo de produção.
+6. "Ajustar no DMaker": o worker guarda o projeto de cada job pra abrir no editor do DMaker.
+
 ### Onda 3: a IA da plataforma, a Root AI (o cérebro, junto com o DMaker)
 **Decidido (27/10):** a IA do RootFlow vira produto próprio, a **Root AI**, usada no RootFlow, no
 MedlyCare e no RootBoost (RB-17, RB-56). Base: o RAG do RootFlow (documentos da empresa, embeddings,
