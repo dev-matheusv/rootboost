@@ -275,12 +275,19 @@ export function parseMomentsList(text) {
  */
 export function buildPersonalSpec({ name, brandKey, roteiro, falas, voice, seed, media }) {
   const FADE = 0.4;
+  // Transições de movimento do DMaker v2 pedem um pouco mais de tempo e a curva suave (entra e assenta).
+  const MOTION = new Set(["crosszoom", "whippan", "blurslide", "filmburn", "lightleak"]);
   const timeline = [], overlays = [], narration = [];
   let t = 0;
   const lineOffset = roteiro.abertura ? 1 : 0;
   const card = (title, subtitle, duration) => ({ type: "card", title, subtitle: subtitle || null, duration, variant: "dark" });
   const push = (seg, dur) => {
-    if (timeline.length) { seg.transition = { type: seg.transition ?? "fade", duration: FADE }; t -= FADE; }
+    if (timeline.length) {
+      const type = seg.transition ?? "fade";
+      const duration = MOTION.has(type) ? 0.6 : FADE;
+      seg.transition = MOTION.has(type) ? { type, duration, curve: "ease" } : { type, duration };
+      t -= duration;
+    }
     else delete seg.transition;
     timeline.push(seg);
     const start = t;
@@ -302,7 +309,7 @@ export function buildPersonalSpec({ name, brandKey, roteiro, falas, voice, seed,
           ...(b.audio === "original" ? { audio_mode: "voice", volume: 1.2 } : { mute: true }) }
       : { type: "image", src: file.path, duration: dur, motion: b.movimento ?? "zoom-in", motion_amount: 0.08, reframe, transition: b.transicao };
     const start = push(seg, dur);
-    if (b.titulo) overlays.push({ type: "text", text: b.titulo, role: "title", start: +(start + 0.3).toFixed(2), end: +(start + Math.min(dur, 3.5)).toFixed(2), animation: "fade" });
+    if (b.titulo) overlays.push({ type: "text", text: b.titulo, role: "title", start: +(start + 0.3).toFixed(2), end: +(start + Math.min(dur, 3.5)).toFixed(2), animation: "fade", style: { box_shape: "rounded" } });
     if (b.audio === "narracao" && falas[lineOffset + i]) {
       narration.push({ text: falas[lineOffset + i], voice, seed, start: +(start + 0.3).toFixed(2) });
       speech = true;
@@ -317,7 +324,7 @@ export function buildPersonalSpec({ name, brandKey, roteiro, falas, voice, seed,
     output: { preset: "instagram/reels", quality: "high" },
     timeline,
     overlays,
-    ...(speech ? { captions: { source: "auto", language: "pt" } } : {}),
+    ...(speech ? { captions: { source: "auto", language: "pt", style: { mode: "rounded" } } } : {}),
     audio: { narration, normalize: "two-pass" },
   };
 }

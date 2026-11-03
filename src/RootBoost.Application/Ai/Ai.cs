@@ -161,7 +161,9 @@ public sealed class ScriptWriter
     public static readonly string[] ForbiddenWords = ["otimize", "otimizar", "eleve", "elevar", "potencialize", "potencializar", "solução completa", "experiência", "jornada"];
 
     /// <summary>Transições e movimentos que o DMaker faz e que ficam bem em reel (lista curta de propósito).</summary>
-    public static readonly string[] Transitions = ["fade", "dissolve", "slideleft", "slideup", "smoothleft", "wipeleft", "circleopen", "zoomin"];
+    public static readonly string[] Transitions = ["fade", "dissolve", "slideleft", "slideup", "smoothleft", "wipeleft", "circleopen", "zoomin",
+        // De movimento, do DMaker v2 (03/11): zoom de passagem, chicote, desfoque deslizando, queima de filme, luz.
+        "crosszoom", "whippan", "blurslide", "filmburn", "lightleak"];
     public static readonly string[] Motions = ["zoom-in", "zoom-out", "pan-left", "pan-right"];
 
     /// <summary>
@@ -265,7 +267,8 @@ public sealed class ScriptWriter
             "(musicaClima, 2 a 4 palavras em inglês, ex.: calm acoustic travel), mesmo no explicativo.");
         sb.AppendLine("- Edição: escolha a transição de entrada e o movimento de cada bloco pela cena e pelo ritmo. Sem pedido da pessoa, " +
             "prefira o suave (fade, dissolve, smoothleft) e varie o movimento (zoom-in aproxima detalhe, zoom-out mostra o todo, pan " +
-            "acompanha foto larga). Slide e wipe mudam de assunto; circleopen e zoomin revelam resultado. Se a pessoa pedir um estilo " +
+            "acompanha foto larga). Slide e wipe mudam de assunto; circleopen e zoomin revelam resultado. As de movimento (crosszoom, whippan, " +
+            "blurslide, filmburn, lightleak) dão energia: no máximo duas por vídeo, em viagem, antes e depois ou virada. Se a pessoa pedir um estilo " +
             "de edição, siga o pedido.");
         sb.AppendLine("- Dê também 3 ideias de edição pra esse vídeo (frases curtas que a pessoa pode pedir, ex.: \"transições de deslizar entre as fotos\").");
         sb.AppendLine("- Conversa, não locução. A voz fala com quem assiste (você), como quem conhece o produto por dentro. Nada de primeira pessoa contando a própria rotina (\"eu fiz\", \"eu uso\").");
