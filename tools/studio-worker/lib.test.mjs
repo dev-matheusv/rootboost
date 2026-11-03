@@ -172,6 +172,10 @@ test("vídeo pessoal: tela cheia, fala original e narração só onde há fala",
   assert.equal(spec.audio.narration.length, 1);
   assert.equal(spec.audio.narration[0].text, "Vale a viagem.");
   assert.equal(spec.captions.style.mode, "rounded");
+  assert.equal(spec.captions.source, "auto");
+  const narrated = buildPersonalSpec({ name: "n", brandKey: "b", voice: "v", seed: 1, falas: ["Oi.", ""], media: { "acervo-a": { path: "a.jpg" } },
+    roteiro: { blocos: [{ trechos: [["acervo-a", 0, 3]], audio: "narracao" }] } });
+  assert.equal(narrated.captions.source, "narration");
   assert.equal(spec.overlays[0].style.box_shape, "rounded");
   const moving = buildPersonalSpec({ name: "m", brandKey: "b", voice: null, seed: 1, falas: ["", "", ""], media: { "acervo-a": { path: "a.jpg" } },
     roteiro: { blocos: [{ trechos: [["acervo-a", 0, 3]], audio: "musica" }, { trechos: [["acervo-a", 0, 3]], audio: "musica", transicao: "whippan" }] } });

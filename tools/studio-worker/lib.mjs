@@ -296,7 +296,7 @@ export function buildPersonalSpec({ name, brandKey, roteiro, falas, voice, seed,
   };
 
   if (roteiro.abertura?.[0]) push(card(roteiro.abertura[0], roteiro.abertura[1], 2.5), 2.5);
-  let speech = false;
+  let original = false;
   (roteiro.blocos ?? []).forEach((b, i) => {
     const [src, a = 0, z] = b.trechos?.[0] ?? [];
     const file = media[src];
@@ -309,12 +309,11 @@ export function buildPersonalSpec({ name, brandKey, roteiro, falas, voice, seed,
           ...(b.audio === "original" ? { audio_mode: "voice", volume: 1.2 } : { mute: true }) }
       : { type: "image", src: file.path, duration: dur, motion: b.movimento ?? "zoom-in", motion_amount: 0.08, reframe, transition: b.transicao };
     const start = push(seg, dur);
-    if (b.titulo) overlays.push({ type: "text", text: b.titulo, role: "title", start: +(start + 0.3).toFixed(2), end: +(start + Math.min(dur, 3.5)).toFixed(2), animation: "fade", style: { box_shape: "rounded" } });
+    if (b.titulo) overlays.push({ type: "text", text: b.titulo, role: "title", start: +(start + 0.3).toFixed(2), end: +(start + Math.max(1, Math.min(dur - 0.7, 3.5))).toFixed(2), animation: "fade", style: { box_shape: "rounded" } });
     if (b.audio === "narracao" && falas[lineOffset + i]) {
       narration.push({ text: falas[lineOffset + i], voice, seed, start: +(start + 0.3).toFixed(2) });
-      speech = true;
     }
-    if (b.audio === "original") speech = true;
+    if (b.audio === "original") original = true;
   });
   if (roteiro.fecho?.[0]) push(card(roteiro.fecho[0], roteiro.fecho[1], 2.5), 2.5);
 
@@ -324,7 +323,10 @@ export function buildPersonalSpec({ name, brandKey, roteiro, falas, voice, seed,
     output: { preset: "instagram/reels", quality: "high" },
     timeline,
     overlays,
-    ...(speech ? { captions: { source: "auto", language: "pt", style: { mode: "rounded" } } } : {}),
+    // "auto" transcreve o som dos clipes (a fala original); só com narração, a legenda vem do texto da narração.
+    ...(original || narration.length
+      ? { captions: { source: original ? "auto" : "narration", language: "pt", style: { mode: "rounded" } } }
+      : {}),
     audio: { narration, normalize: "two-pass" },
   };
 }
