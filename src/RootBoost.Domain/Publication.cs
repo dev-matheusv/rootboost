@@ -39,6 +39,13 @@ public sealed class Publication
 
     /// <summary>Reels: aparece também no feed (true) ou só na aba Reels (false).</summary>
     public bool ShareToFeed { get; private set; } = true;
+    /// <summary>Música da biblioteca do Instagram (Audio API), anexada ao publicar o Reels. Nulo = sem música.</summary>
+    public string? MusicAudioId { get; private set; }
+    /// <summary>Título e artista pra mostrar no Console; quem toca é o Instagram.</summary>
+    public string? MusicTitle { get; private set; }
+    /// <summary>Volumes de 1 a 100 (100 = cheio), como a Audio API recebe.</summary>
+    public int? MusicVolume { get; private set; }
+    public int? VideoVolume { get; private set; }
     public int CaptionVersion { get; private set; }
     public DateTimeOffset ScheduledFor { get; private set; }
     public PublicationStatus Status { get; private set; }
@@ -121,6 +128,29 @@ public sealed class Publication
         CoverUrl = coverUrl;
         ThumbOffsetMs = thumbOffsetMs;
         ShareToFeed = shareToFeed;
+        CaptionVersion++;
+        ResetApproval();
+        UpdatedAt = now;
+    }
+
+    /// <summary>
+    /// Música do Reels (só Instagram). Faz parte do que foi aprovado: mudou, volta pra rascunho. Sem id, tira a música.
+    /// </summary>
+    public void SetMusic(string? audioId, string? title, int musicVolume, int videoVolume, DateTimeOffset now)
+    {
+        EnsureEditable();
+        audioId = string.IsNullOrWhiteSpace(audioId) ? null : audioId.Trim();
+        if (audioId is { Length: > 64 }) throw new ArgumentException("id da música inválido", nameof(audioId));
+        if (musicVolume is < 1 or > 100 || videoVolume is < 1 or > 100)
+            throw new ArgumentException("volume vai de 1 a 100");
+        title = audioId is null || string.IsNullOrWhiteSpace(title) ? null : title.Trim();
+        if (title is { Length: > 200 }) title = title[..200];
+        int? music = audioId is null ? null : musicVolume, video = audioId is null ? null : videoVolume;
+        if (audioId == MusicAudioId && title == MusicTitle && music == MusicVolume && video == VideoVolume) return;
+        MusicAudioId = audioId;
+        MusicTitle = title;
+        MusicVolume = music;
+        VideoVolume = video;
         CaptionVersion++;
         ResetApproval();
         UpdatedAt = now;

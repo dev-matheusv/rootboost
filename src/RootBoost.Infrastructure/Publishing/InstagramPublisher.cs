@@ -51,6 +51,14 @@ public sealed class InstagramPublisher : ISocialPublisher
             form["video_url"] = publication.MediaUrl;
             // Conferido na referência IG User Media em 27/10/2026: cover_url (JPEG público) vence thumb_offset (ms).
             form["share_to_feed"] = publication.ShareToFeed ? "true" : "false";
+            // Audio API (doc de 03/11/2026): JSON em texto; volumes de 1 a 100. O Instagram não mostra prévia do Reels com música.
+            if (publication.MusicAudioId is { } audio)
+                form["audio_configuration"] = System.Text.Json.JsonSerializer.Serialize(new
+                {
+                    audio_id = audio,
+                    audio_volume = publication.MusicVolume ?? 100,
+                    video_volume = publication.VideoVolume ?? 100,
+                });
             if (publication.CoverUrl is { } cover) form["cover_url"] = cover;
             else if (publication.ThumbOffsetMs is { } offset) form["thumb_offset"] = offset.ToString(System.Globalization.CultureInfo.InvariantCulture);
         }
