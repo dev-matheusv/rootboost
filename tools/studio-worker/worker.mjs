@@ -24,6 +24,8 @@ const FFPROBE = process.env.FFPROBE_PATH ?? FFMPEG.replace(/ffmpeg(\.exe)?$/i, "
 const DMAKER = process.env.DMAKER_PATH ?? "C:/DMaker/.venv/Scripts/dmaker.exe";
 const PY = process.env.DMAKER_PYTHON ?? "C:/DMaker/.venv/Scripts/python.exe";
 const DMAKER_BRANDS = process.env.DMAKER_BRANDS ?? "C:/DMaker/assets/brands";
+// Pasta de projetos do editor do DMaker: "Ajustar no DMaker" abre o vídeo pessoal entregue como rb-<nome>.
+const DMAKER_PROJECTS = process.env.DMAKER_PROJECTS ?? "C:/DMaker/projects";
 // Frase das amostras de voz: curta, neutra, com pergunta e pausa (mostra a entonação).
 const SAMPLE_TEXT = "Oi! Esta é uma amostra da voz para os vídeos da marca. Dá pra ouvir com calma, e se gostar, é só escolher esta.";
 
@@ -353,11 +355,26 @@ async function renderPersonal(job, nome, projectDir, voice, seed) {
   if (code !== 0) return fail(job.id, `montagem saiu com código ${code}: ${lastLine(log)}`, !isScriptProblem(log));
   const { found, missing: lost } = expectedOutputs(`${cfg.base}/finais`, projectDir, nome, existsSync);
   if (lost.length) return fail(job.id, `arquivo esperado não apareceu: ${lost.join(", ")}`, false);
+  exportToEditor(spec, nome);
   await progress(job.id, 90, `subindo ${found.length} arquivos`);
   const outputs = [];
   for (const o of found) outputs.push({ role: o.role, url: await upload(job.brandKey, o.path) });
   const done = await call("POST", `/worker/jobs/${job.id}/deliver`, { workerId: cfg.workerId, outputs, warnings: warningsFrom(log), seed });
   console.log(`[${now()}] entregue (pessoal): ${done.status}`);
+}
+
+/**
+ * "Ajustar no DMaker": deixa o projeto do vídeo entregue na lista do editor do DMaker (caminhos absolutos, então abre
+ * direto). Melhor esforço: se falhar, o vídeo já foi feito e só o atalho fica faltando.
+ */
+function exportToEditor(spec, nome) {
+  try {
+    const dir = `${DMAKER_PROJECTS}/rb-${nome}`;
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(`${dir}/spec.json`, JSON.stringify({ ...spec, name: `rb-${nome}` }, null, 1));
+  } catch (e) {
+    console.error(`[${now()}] projeto não foi pro editor do DMaker: ${e.message}`);
+  }
 }
 
 /** Mídia do vídeo pessoal: foto como veio; vídeo normalizado mantendo o som (a cena "original" usa a fala dele). */
