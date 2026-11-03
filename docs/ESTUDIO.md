@@ -80,9 +80,39 @@ O worker monta o pessoal direto no DMaker (`buildPersonalSpec` → `dmaker rende
 cheia cortada no foco, transição e movimento da IA, título por cena, legenda automática só se alguém fala. Vídeo do
 acervo baixa com o som. Marca sem kit ganha um neutro (nunca o visual de outra marca).
 
-**Música:** ainda não entra no arquivo. Caminhos: Instagram Audio API (anexa música licenciada ao publicar o Reels,
-grátis, só Instagram); pro arquivo (Facebook e outros) falta escolher a fonte (o Openverse não responde a partir do PC;
-Jamendo responde mas precisa de chave e conferir a licença; geração por IA quando o render for pra nuvem com GPU).
+**Música (decidido 03/11):** a música entra na publicação, não no arquivo. Instagram Audio API: busca pelo
+`musica.clima` (`GET /ig_audio?audio_type=music`), a pessoa escolhe entre as opções e a música vai no contêiner do Reels
+(`audio_configuration` com `audio_id`, `audio_volume` e `video_volume`; no pessoal, som do vídeo baixo onde ninguém fala).
+Pro Facebook, o compartilhamento automático de Reels do Instagram no Facebook (Central de Contas) leva a música junto;
+falta confirmar que vale pra Reels publicado pela API. A API do Facebook Reels não tem música. Plano B: música gerada
+(ACE-Step, MIT) quando o render for pra nuvem com GPU. Openverse não responde do PC; Jamendo comercial só com orçamento.
+
+## DMaker v2 (03/11): o que muda pro Estúdio
+
+O Douglas fechou a v2 do DMaker (142 commits, CHANGELOG `v2 — 2026-11-03`). Agora ele tem interface própria em Vue
+(Projetos, Editor com arrastar e redimensionar no quadro, Transições, Looks, Infográficos, Lote, Vozes, Dublagem) e um
+agente local por conversa (Ollama, sem internet).
+
+**Interface: não copiar.** O Console continua sendo o produto do cliente (nuvem, várias marcas, login, Claude, aprovação,
+publicação). A interface do DMaker é a mesa do editor, no PC: serve pra nós e pra agência fazerem o ajuste fino de um
+vídeo entregue. Caminho: o worker guarda o projeto do DMaker de cada job, e "ajustar no DMaker" abre esse projeto no
+editor; o render ajustado volta pelo mesmo upload. O cliente nunca precisa dela (edição pelo Console segue em texto).
+
+**O que entra no nosso pipeline (spec do DMaker):**
+- Legenda estilo TikTok: `captions.style.mode: "rounded"` (e `box_shape: "rounded"` nos títulos), raio e margem da marca.
+- Transições novas `crosszoom`, `whippan`, `blurslide`, `filmburn`, `lightleak` e a curva `transition.curve`
+  (`linear`, `ease`, `spring`): entram na lista que a IA escolhe e no contrato.
+- Looks por nome (`cinema`, `quente`, `frio`, `pb-contraste`, `vintage`, ou o da marca em `brand.json`): a IA sugere
+  como ideia de edição; a marca pode fixar um.
+- Som curto em transição e título (`sound`, `audio.sfx`): discreto, só quando pedido ou no gancho.
+- Corte automático de pausas e vícios (`dmaker autocut`): nos trechos `original` do vídeo pessoal (a fala da Laura).
+- Infográficos prontos (`contador`, `barra`, `linha`): números de verdade do roteiro no explicativo ("3 meses grátis").
+- Depois: texto atrás da pessoa (`layer: "behind-person"`), modelo `explicativo` do DMaker no lugar do narrado-calmo
+  (avaliar lado a lado), lote por planilha pra calendário.
+
+**Atualizar o DMaker no PC:** `git pull`, `pip install -e ".[dev,captions,voice]"` (o extra `captions` agora trava o
+PyAV abaixo do 16; o PC está com o 19), `cd frontend; npm ci; npm run build`. Só com nenhum render nem teste de voz
+rodando, e um render pessoal de regressão em seguida.
 
 ## Índice de momentos (30/10)
 
