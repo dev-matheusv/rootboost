@@ -546,6 +546,28 @@ brandProfile.MapPost("/voices/design", async (string key, VoiceDesignInput input
     catch (ArgumentException ex) { return Results.BadRequest(new { error = ex.Message }); }
 });
 
+// Banco de vozes prontas: o catálogo (a amostra de cada uma é arquivo do Console) e "usar esta voz" nesta marca.
+brandProfile.MapGet("/voices/bank", () => Results.Ok(RootBoost.Application.Studio.VoiceBank.All));
+
+brandProfile.MapPost("/voices/bank", async (string key, VoiceBankInput input, IBrandStore brands,
+    RootBoost.Application.Studio.INarrationVoiceStore voices, TimeProvider time, CancellationToken ct) =>
+{
+    var brandKey = key.ToLowerInvariant();
+    if (!(await brands.ListAsync(ct)).Any(b => b.Key == brandKey)) return Results.NotFound();
+    var entry = RootBoost.Application.Studio.VoiceBank.Find(input.BankId);
+    if (entry is null) return Results.BadRequest(new { error = "voz do banco não encontrada" });
+    if ((await voices.ListByBrandAsync(brandKey, ct)).Any(v => v.BankId == entry.Id))
+        return Results.Conflict(new { error = $"a voz {entry.Name} já está nesta marca" });
+    try
+    {
+        var name = string.IsNullOrWhiteSpace(input.Name) ? entry.Name : input.Name;
+        var voice = NarrationVoice.FromBank(brandKey, name, entry.Id, entry.Gender, entry.Age, entry.Pitch, entry.Seed, time.GetUtcNow());
+        await voices.AddAsync(voice, ct);
+        return Results.Created($"/admin/brands/{brandKey}/voices/{voice.Id}", NarrationVoiceDto.From(voice));
+    }
+    catch (ArgumentException ex) { return Results.BadRequest(new { error = ex.Message }); }
+});
+
 brandProfile.MapGet("/voices/{id:guid}/samples/{seed:int}", async (string key, Guid id, int seed,
     RootBoost.Application.Studio.INarrationVoiceStore voices, RootBoost.Application.Media.IMediaStorage storage, CancellationToken ct) =>
 {
@@ -1068,7 +1090,7 @@ worker.MapPost("/voices/claim", async (WorkerClaimInput input, RootBoost.Applica
     var v = await voices.ClaimNextAsync(input.WorkerId, time.GetUtcNow(), options.Lease, ct);
     return v is null ? Results.NoContent() : Results.Ok(new
     {
-        v.Id, v.BrandKey, v.Key, v.Name, Kind = v.Kind.ToString(), v.Instruct, v.ReferenceText, v.Attempts,
+        v.Id, v.BrandKey, v.Key, v.Name, Kind = v.Kind.ToString(), v.Instruct, v.ReferenceText, v.Attempts, v.PresetSeed,
         HasReference = v.ReferenceStorageKey is not null,
     });
 });
@@ -1443,6 +1465,7 @@ record RedactionInput(string? Status, List<RedactionBoxInput>? Boxes);
 record MediaFinishedInput(bool Finished);
 record MediaDetailsInput(string? FileName, string? Description, List<MediaMoment>? Moments);
 record VoiceDesignInput(string? Name, string? Gender, string? Age, string? Pitch);
+record VoiceBankInput(string? BankId, string? Name);
 record VoiceChooseInput(int Seed);
 
 sealed class VoiceCloneForm
@@ -1464,10 +1487,10 @@ static class VoiceAudio
 }
 
 record NarrationVoiceDto(Guid Id, string Key, string Name, string Kind, string Status, IReadOnlyList<int> Samples, int? ChosenSeed,
-    string? Error, string? ConsentBy, DateTimeOffset? ConsentAt, DateTimeOffset CreatedAt, string? Instruct)
+    string? Error, string? ConsentBy, DateTimeOffset? ConsentAt, DateTimeOffset CreatedAt, string? Instruct, string? BankId)
 {
     public static NarrationVoiceDto From(NarrationVoice v) => new(v.Id, v.Key, v.Name, v.Kind.ToString(), v.Status.ToString(),
-        v.Samples.Select(x => x.Seed).ToList(), v.ChosenSeed, v.Error, v.ConsentBy, v.ConsentAt, v.CreatedAt, v.Instruct);
+        v.Samples.Select(x => x.Seed).ToList(), v.ChosenSeed, v.Error, v.ConsentBy, v.ConsentAt, v.CreatedAt, v.Instruct, v.BankId);
 }
 record ScreenElementInput(string? Id, string? Role, string? Text);
 record ScreenStateInput(string? BrandKey, string Scene, string? Url, List<ScreenElementInput>? Elements, List<string>? History, int Step, string Image);

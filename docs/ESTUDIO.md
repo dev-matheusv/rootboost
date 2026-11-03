@@ -185,6 +185,14 @@ escolhe; a semente escolhida vira a padrão dos jobs com essa voz. **Trava de ma
 recusado na API, e o worker soma as vozes da plataforma às particulares do `worker.env` antes de narrar. O id da voz
 leva a marca (`<marca>-<nome>-xxxx`). Custo: zero de IA paga (DMaker local).
 
+**Banco de vozes prontas (03/11):** catálogo em `VoiceBank` (Application/Studio): 8 vozes (4 femininas, 4 masculinas),
+cada uma com descrição do DMaker e semente. A amostra de cada uma fica no Console (`public/vozes-banco/<id>.m4a`), com o
+mesmo texto de leitura pra todas, sem sotaque (nunca passar `accent`). "Usar esta voz" cria a voz pra marca com a mesma
+descrição e semente (`POST .../voices/bank`); o worker gera uma amostra só com essa semente e ela já fica escolhida.
+A primeira feminina (Clara) é a receita da voz escolhida pro MedlyCare (medlynat1, semente 1). Toda voz entra como
+"em revisão" (`Approved=false`) até o Matheus ouvir: o portão de palavras não pega gaguejo. Pra trocar ou aprovar uma
+voz: mudar a semente ou o `Approved` no catálogo e regenerar a amostra no PC.
+
 ## Rotas do Console (login do Console)
 
 | Rota | O que faz |

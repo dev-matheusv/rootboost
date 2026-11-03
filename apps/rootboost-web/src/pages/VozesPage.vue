@@ -33,10 +33,12 @@
               <q-tooltip>{{ $t('voices.delete') }}</q-tooltip>
             </q-btn>
           </div>
-          <div v-if="v.status === 'Queued' || v.status === 'Processing'" class="text-caption text-grey-7">{{ $t('voices.waiting') }}</div>
+          <div v-if="v.status === 'Queued' || v.status === 'Processing'" class="text-caption text-grey-7">
+            {{ v.bankId ? $t('voices.bankWaiting') : $t('voices.waiting') }}
+          </div>
           <div v-if="v.error && v.status !== 'Ready'" class="text-caption text-negative">{{ v.error }}</div>
           <template v-if="v.status === 'Ready'">
-            <div class="text-caption text-grey-7">{{ $t('voices.listen') }}</div>
+            <div v-if="v.samples.length > 1" class="text-caption text-grey-7">{{ $t('voices.listen') }}</div>
             <div v-for="seed in v.samples" :key="seed" class="row items-center no-wrap q-gutter-x-sm">
               <audio v-if="sampleUrls[`${v.id}-${seed}`]" :src="sampleUrls[`${v.id}-${seed}`]" controls preload="none" class="col" />
               <q-btn v-else flat dense no-caps color="primary" :icon="mdiPlay" :label="$t('voices.sample', { n: seed })" class="col"
@@ -80,11 +82,33 @@
       </q-card>
     </q-dialog>
 
-    <!-- Voz do banco: só gênero, idade e tom. -->
-    <q-dialog v-model="bankOpen">
-      <q-card style="width: 480px; max-width: 94vw" class="q-pa-sm">
+    <!-- Banco: vozes prontas com amostra (mesmo texto pra todas); ou montar outra por gênero, idade e tom. -->
+    <q-dialog v-model="bankOpen" @hide="stopPreview">
+      <q-card style="width: 720px; max-width: 96vw" class="q-pa-sm">
         <q-card-section class="text-h6">{{ $t('voices.bank') }}</q-card-section>
         <q-card-section class="column q-gutter-y-md">
+          <div class="text-caption text-grey-7">{{ $t('voices.bankHint') }}</div>
+          <div class="bank-grid">
+            <div v-for="b in catalog" :key="b.id" class="bank-card card-rounded q-pa-sm column q-gutter-y-xs">
+              <div class="row items-center no-wrap q-gutter-x-xs">
+                <q-btn round dense flat size="sm" color="primary" :icon="previewing === b.id ? mdiStop : mdiPlay"
+                  :aria-label="$t('voices.sample', { n: 1 })" @click="togglePreview(b)" />
+                <div class="col ellipsis">
+                  <div class="text-weight-bold">{{ b.name }}</div>
+                  <div class="text-caption text-grey-7 ellipsis">
+                    {{ $t(`voices.${b.gender}`) }} · {{ $t(`voices.age.${b.age}`) }} · {{ $t(`voices.pitch.${b.pitch}`) }}
+                  </div>
+                </div>
+                <q-chip v-if="!b.approved" dense outline color="orange-8" size="sm">{{ $t('voices.pending') }}
+                  <q-tooltip>{{ $t('voices.pendingHint') }}</q-tooltip>
+                </q-chip>
+              </div>
+              <q-btn :outline="!inBrand(b)" unelevated dense no-caps color="primary" :disable="inBrand(b)" :loading="busy && picking === b.id"
+                :label="inBrand(b) ? $t('voices.inBrand') : $t('voices.useVoice')" @click="useBank(b)" />
+            </div>
+          </div>
+          <q-expansion-item dense dense-toggle switch-toggle-side :label="$t('voices.custom')" :caption="$t('voices.customHint')" header-class="q-px-none">
+            <div class="column q-gutter-y-md q-pt-sm">
           <q-input v-model="bank.name" outlined dense :label="$t('voices.name')" maxlength="60" />
           <q-btn-toggle v-model="bank.gender" spread no-caps unelevated rounded toggle-color="primary"
             :options="[{ value: 'female', label: $t('voices.female') }, { value: 'male', label: $t('voices.male') }]" />
@@ -92,10 +116,14 @@
             :options="['young adult', 'middle-aged', 'elderly'].map((a) => ({ value: a, label: $t(`voices.age.${a}`) }))" />
           <q-btn-toggle v-model="bank.pitch" spread no-caps unelevated rounded toggle-color="primary"
             :options="['low pitch', 'moderate pitch', 'high pitch'].map((p) => ({ value: p, label: $t(`voices.pitch.${p}`) }))" />
+              <div class="row justify-end">
+                <q-btn unelevated color="primary" no-caps :label="$t('voices.create')" :loading="busy && !picking" :disable="!bank.name.trim()" @click="createBank" />
+              </div>
+            </div>
+          </q-expansion-item>
         </q-card-section>
         <q-card-actions align="right">
           <q-btn flat no-caps :label="$t('common.actions.cancel')" v-close-popup />
-          <q-btn unelevated color="primary" no-caps :label="$t('voices.create')" :loading="busy" :disable="!bank.name.trim()" @click="createBank" />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -115,8 +143,11 @@ defineOptions({ name: 'VozesPage' });
 
 interface Voice {
   id: string; key: string; name: string; kind: 'Clone' | 'Design'; status: 'Queued' | 'Processing' | 'Ready' | 'Failed';
-  samples: number[]; chosenSeed: number | null; error: string | null; consentBy: string | null;
+  samples: number[]; chosenSeed: number | null; error: string | null; consentBy: string | null; bankId: string | null;
 }
+
+/** Voz pronta do banco; a amostra é arquivo estático do Console (voz sintética, sem dado de pessoa). */
+interface BankVoice { id: string; name: string; gender: 'female' | 'male'; age: string; pitch: string; seed: number; approved: boolean }
 
 const MAX_SECONDS = 60;
 const { t } = useI18n();
@@ -271,6 +302,51 @@ async function sendRecording() {
 const bankOpen = ref(false);
 const bank = reactive({ name: '', gender: 'female', age: 'middle-aged', pitch: 'moderate pitch' });
 
+const catalog = ref<BankVoice[]>([]);
+const picking = ref<string | null>(null);
+const inBrand = (b: BankVoice) => voices.value.some((v) => v.bankId === b.id);
+
+watch(bankOpen, (open) => {
+  if (open && !catalog.value.length)
+    void api.get<BankVoice[]>(`${base()}/bank`).then(({ data }) => (catalog.value = data)).catch(() => undefined);
+});
+
+async function useBank(b: BankVoice) {
+  busy.value = true;
+  picking.value = b.id;
+  try {
+    const { data } = await api.post<Voice>(`${base()}/bank`, { bankId: b.id });
+    voices.value.unshift(data);
+    $q.notify({ type: 'positive', message: t('voices.sent') });
+  } catch (e) {
+    $q.notify({ type: 'negative', message: apiError(e) });
+  } finally {
+    busy.value = false;
+    picking.value = null;
+  }
+}
+
+// Prévia do banco: arquivo do próprio Console, tocado aqui.
+const previewing = ref<string | null>(null);
+const preview = new Audio();
+preview.onended = () => (previewing.value = null);
+
+async function togglePreview(b: BankVoice) {
+  if (previewing.value === b.id) return stopPreview();
+  preview.src = `/vozes-banco/${b.id}.m4a`;
+  previewing.value = b.id;
+  try {
+    await preview.play();
+  } catch {
+    previewing.value = null;
+  }
+}
+
+function stopPreview() {
+  preview.pause();
+  previewing.value = null;
+}
+
 async function createBank() {
   busy.value = true;
   try {
@@ -294,6 +370,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   clearInterval(poll);
   stopRecording(true);
+  stopPreview();
   Object.values(sampleUrls).forEach((u) => URL.revokeObjectURL(u));
 });
 watch(() => brand.selected, () => void load());
@@ -305,4 +382,7 @@ watch(() => brand.selected, () => void load());
 .empty { border-style: dashed; }
 .script { background: rgba(122, 76, 224, 0.08); font-size: 1.05rem; line-height: 1.5; }
 audio { height: 36px; min-width: 0; }
+.bank-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; }
+.bank-card { border: 1px solid rgba(0, 0, 0, 0.12); }
+.body--dark .bank-card { border-color: rgba(255, 255, 255, 0.12); }
 </style>

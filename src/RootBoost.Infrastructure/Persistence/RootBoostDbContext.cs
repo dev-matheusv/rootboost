@@ -181,6 +181,7 @@ public sealed class RootBoostDbContext : DbContext
         voice.Property(x => x.Key).HasMaxLength(64).IsRequired();
         voice.HasIndex(x => x.Key).IsUnique();
         voice.Property(x => x.Name).HasMaxLength(60).IsRequired();
+        voice.Property(x => x.BankId).HasMaxLength(40);
         voice.Property(x => x.Kind).HasConversion<string>().HasMaxLength(16);
         voice.Property(x => x.Status).HasConversion<string>().HasMaxLength(16);
         voice.Property(x => x.ReferenceStorageKey).HasMaxLength(300);
