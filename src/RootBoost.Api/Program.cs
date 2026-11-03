@@ -295,6 +295,26 @@ brandProfile.MapPut("/publications/{id:guid}/reel", async (string key, Guid id, 
     return Results.Ok(PublicationDto.From(publication));
 });
 
+// Música do Reels (Audio API do Instagram): busca pelo clima e escolha. A música entra ao publicar; mudou, pede aprovação.
+brandProfile.MapGet("/publications/music", async (string key, string? q, RootBoost.Application.Publishing.IMusicCatalog music, CancellationToken ct) =>
+{
+    try { return Results.Ok(await music.SearchAsync(key.ToLowerInvariant(), q, ct)); }
+    catch (InvalidOperationException ex) { return Results.Json(new { error = $"não deu pra buscar música no Instagram: {ex.Message}" }, statusCode: 502); }
+});
+
+brandProfile.MapPut("/publications/{id:guid}/music", async (string key, Guid id, MusicInput input,
+    RootBoost.Application.Publishing.IPublicationStore store, TimeProvider time, CancellationToken ct) =>
+{
+    var publication = await store.GetAsync(id, ct);
+    if (publication is null || publication.BrandKey != key.ToLowerInvariant()) return Results.NotFound();
+    if (publication.Channel != SocialChannel.Instagram || !RootBoost.Infrastructure.Publishing.InstagramPublisher.IsVideo(publication.MediaUrl))
+        return Results.BadRequest(new { error = "música só vale pra Reels (vídeo no Instagram)" });
+    try { publication.SetMusic(input.AudioId, input.Title, input.MusicVolume ?? 80, input.VideoVolume ?? 100, time.GetUtcNow()); }
+    catch (Exception ex) when (ex is ArgumentException or InvalidOperationException) { return Results.BadRequest(new { error = ex.Message }); }
+    await store.SaveAsync(publication, ct);
+    return Results.Ok(PublicationDto.From(publication));
+});
+
 // Canal manual (LinkedIn): depois de postar à mão, registra aqui (fica Publicado com o link).
 brandProfile.MapPost("/publications/{id:guid}/mark-published", async (string key, Guid id, ManualPublishedInput input,
     RootBoost.Application.Publishing.IPublicationStore store, TimeProvider time, CancellationToken ct) =>
@@ -1503,13 +1523,16 @@ record ScheduleInput(DateTimeOffset ScheduledFor);
 record MediaInput(string MediaUrl);
 record ManualPublishedInput(string? Url);
 record ReelOptionsInput(string? CoverUrl, int? ThumbOffsetMs, bool? ShareToFeed);
+record MusicInput(string? AudioId, string? Title, int? MusicVolume, int? VideoVolume);
 record PublicationDto(Guid Id, string BrandKey, string Channel, string MediaUrl, string Caption, int CaptionVersion,
     DateTimeOffset ScheduledFor, string Status, string? ApprovedBy, DateTimeOffset? ApprovedAt, int? ApprovedCaptionVersion,
-    string? ExternalId, string? PublishedUrl, string? Error, int Attempts, string? CoverUrl, int? ThumbOffsetMs, bool ShareToFeed)
+    string? ExternalId, string? PublishedUrl, string? Error, int Attempts, string? CoverUrl, int? ThumbOffsetMs, bool ShareToFeed,
+    string? MusicAudioId, string? MusicTitle, int? MusicVolume, int? VideoVolume)
 {
     public static PublicationDto From(Publication p) => new(p.Id, p.BrandKey, p.Channel.ToString(), p.MediaUrl, p.Caption,
         p.CaptionVersion, p.ScheduledFor, p.Status.ToString(), p.ApprovedBy, p.ApprovedAt, p.ApprovedCaptionVersion,
-        p.ExternalId, p.PublishedUrl, p.Error, p.Attempts, p.CoverUrl, p.ThumbOffsetMs, p.ShareToFeed);
+        p.ExternalId, p.PublishedUrl, p.Error, p.Attempts, p.CoverUrl, p.ThumbOffsetMs, p.ShareToFeed,
+        p.MusicAudioId, p.MusicTitle, p.MusicVolume, p.VideoVolume);
 }
 record CopyCheckRequest(string Text, string? Channel = null, string? Field = null);
 record ProofInput(string Kind, string Statement, string Source, DateOnly VerifiedAt, DateOnly? ReviewBy = null);

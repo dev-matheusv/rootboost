@@ -84,7 +84,9 @@ acervo baixa com o som. Marca sem kit ganha um neutro (nunca o visual de outra m
 `musica.clima` (`GET /ig_audio?audio_type=music`), a pessoa escolhe entre as opções e a música vai no contêiner do Reels
 (`audio_configuration` com `audio_id`, `audio_volume` e `video_volume`; no pessoal, som do vídeo baixo onde ninguém fala).
 Pro Facebook, o compartilhamento automático de Reels do Instagram no Facebook (Central de Contas) leva a música junto;
-falta confirmar que vale pra Reels publicado pela API. A API do Facebook Reels não tem música. Plano B: música gerada
+falta confirmar que vale pra Reels publicado pela API. **Feito (03/11):** em Publicações, Reels do Instagram ganha "Música do
+Instagram" (atalhos de clima, busca, prévia, volumes da música e do vídeo); `GET /admin/brands/{key}/publications/music`
+e `PUT .../publications/{id}/music`; mudar a música pede aprovação de novo. A API do Facebook Reels não tem música. Plano B: música gerada
 (ACE-Step, MIT) quando o render for pra nuvem com GPU. Openverse não responde do PC; Jamendo comercial só com orçamento.
 
 ## DMaker v2 (03/11): o que muda pro Estúdio

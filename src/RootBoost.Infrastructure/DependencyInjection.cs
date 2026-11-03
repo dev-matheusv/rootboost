@@ -81,6 +81,7 @@ public static class DependencyInjection
             foreach (var channel in Enum.GetValues<RootBoost.Domain.SocialChannel>())
                 services.AddSingleton<RootBoost.Application.Publishing.ISocialPublisher>(
                     new RootBoost.Infrastructure.Publishing.FakeSocialPublisher(channel));
+            services.AddSingleton<RootBoost.Application.Publishing.IMusicCatalog, RootBoost.Infrastructure.Publishing.FakeMusicCatalog>();
         }
         else
         {
@@ -89,6 +90,7 @@ public static class DependencyInjection
             services.AddSingleton(new RootBoost.Infrastructure.Publishing.SocialAccounts(config));
             services.AddSingleton<RootBoost.Application.Publishing.ISocialPublisher, RootBoost.Infrastructure.Publishing.InstagramPublisher>();
             services.AddSingleton<RootBoost.Application.Publishing.ISocialPublisher, RootBoost.Infrastructure.Publishing.FacebookPagePublisher>();
+            services.AddSingleton<RootBoost.Application.Publishing.IMusicCatalog, RootBoost.Infrastructure.Publishing.InstagramMusicCatalog>();
             services.AddScoped<RootBoost.Infrastructure.Publishing.MetaConnectionCheck>();
             if (!string.Equals(config["Social:HealthCheckEnabled"], "false", StringComparison.OrdinalIgnoreCase))
                 services.AddHostedService<RootBoost.Infrastructure.Publishing.MetaConnectionScheduler>();

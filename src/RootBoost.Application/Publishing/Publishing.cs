@@ -25,6 +25,15 @@ public interface ISocialPublisher
     Task<PublishedPost> PublishAsync(Publication publication, string externalId, CancellationToken ct = default);
 }
 
+/// <summary>Música licenciada pra Reels, da biblioteca do Instagram (Audio API). A prévia é um link temporário.</summary>
+public sealed record MusicTrack(string Id, string Title, string Artist, int DurationMs, string? PreviewUrl, string? CoverUrl);
+
+public interface IMusicCatalog
+{
+    /// <summary>Busca por palavra (o clima do roteiro serve); sem palavra, as que estão em alta.</summary>
+    Task<IReadOnlyList<MusicTrack>> SearchAsync(string brandKey, string? query, CancellationToken ct = default);
+}
+
 public interface IPublicationStore
 {
     Task AddAsync(Publication publication, CancellationToken ct = default);

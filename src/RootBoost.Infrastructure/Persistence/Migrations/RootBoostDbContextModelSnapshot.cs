@@ -827,6 +827,17 @@ namespace RootBoost.Infrastructure.Persistence.Migrations
                         .HasMaxLength(2048)
                         .HasColumnType("character varying(2048)");
 
+                    b.Property<string>("MusicAudioId")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("MusicTitle")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<int?>("MusicVolume")
+                        .HasColumnType("integer");
+
                     b.Property<string>("PublishedUrl")
                         .HasMaxLength(2048)
                         .HasColumnType("character varying(2048)");
@@ -855,6 +866,9 @@ namespace RootBoost.Infrastructure.Persistence.Migrations
 
                     b.Property<DateTimeOffset>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("VideoVolume")
+                        .HasColumnType("integer");
 
                     b.HasKey("Id");
 

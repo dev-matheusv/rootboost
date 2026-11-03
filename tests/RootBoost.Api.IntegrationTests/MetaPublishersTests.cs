@@ -39,6 +39,7 @@ public class MetaPublishersTests
 
             string json =
                 path.EndsWith("/media") ? """{"id":"cont-1"}""" :
+                path.EndsWith("/ig_audio") ? """{"audio":[{"audio_id":"587784541076604","cover_artwork_thumbnail_uri":"https://scontent.x/c.jpg","display_artist":"Shuba","duration_in_ms":153760,"audio_type":"music","title":"Birthday Wish","download_url":"https://scontent.x/a.m4a"},{"audio_id":"","title":"sem id"}]}""" :
                 path.EndsWith("/media_publish") ? """{"id":"media-9"}""" :
                 path.EndsWith("/photos") ? PhotoResponse! :
                 path.EndsWith("/video_reels") && body.Contains("upload_phase=start") ? """{"video_id":"vid-7","upload_url":"https://rupload.facebook.com/video-upload/vid-7"}""" :
@@ -119,6 +120,62 @@ public class MetaPublishersTests
         Assert.Contains("share_to_feed=false", g.Calls[0].Body);
         Assert.Contains("cover_url=https%3A%2F%2Fcdn.exemplo.com%2Fcapa.jpg", g.Calls[0].Body);
         Assert.DoesNotContain("thumb_offset", g.Calls[0].Body); // capa vence o quadro
+    }
+
+    [Fact]
+    public async Task Instagram_reel_sends_music_configuration()
+    {
+        var g = new Graph();
+        var (ig, _) = Instagram(g);
+        var post = Post(SocialChannel.Instagram, "https://cdn.exemplo.com/reel.mp4");
+        post.SetMusic("587784541076604", "Birthday Wish · Shuba", 80, 30, DateTimeOffset.UtcNow);
+
+        await ig.PrepareAsync(post);
+
+        var form = System.Web.HttpUtility.ParseQueryString(g.Calls[0].Body);
+        Assert.Equal("""{"audio_id":"587784541076604","audio_volume":80,"video_volume":30}""", form["audio_configuration"]);
+    }
+
+    [Fact]
+    public async Task Instagram_reel_without_music_sends_no_audio_configuration()
+    {
+        var g = new Graph();
+        var (ig, _) = Instagram(g);
+        await ig.PrepareAsync(Post(SocialChannel.Instagram, "https://cdn.exemplo.com/reel.mp4"));
+        Assert.DoesNotContain("audio_configuration", g.Calls[0].Body);
+    }
+
+    [Fact]
+    public async Task Music_search_uses_ig_audio_with_user_and_query()
+    {
+        var g = new Graph();
+        var catalog = new InstagramMusicCatalog(new Factory(g), Accounts(), Meta);
+
+        var tracks = await catalog.SearchAsync("medlycare", "calm acoustic");
+
+        Assert.Equal(HttpMethod.Get, g.Calls[0].Method);
+        Assert.Equal("/v26.0/ig_audio", g.Calls[0].Path);
+        Assert.Contains("audio_type=music", g.Calls[0].Query);
+        Assert.Contains("user_id=1784", g.Calls[0].Query);
+        Assert.Contains("search_query=calm%20acoustic", g.Calls[0].Query);
+        Assert.Equal("Bearer tok-ig", g.Calls[0].Auth);
+        var t = Assert.Single(tracks); // item sem id fica de fora
+        Assert.Equal(("587784541076604", "Birthday Wish", "Shuba", 153760), (t.Id, t.Title, t.Artist, t.DurationMs));
+        Assert.Equal("https://scontent.x/a.m4a", t.PreviewUrl);
+        Assert.Equal("https://scontent.x/c.jpg", t.CoverUrl);
+    }
+
+    [Fact]
+    public void Changing_music_resets_approval_and_validates_volume()
+    {
+        var post = Post(SocialChannel.Instagram, "https://cdn.exemplo.com/reel.mp4");
+        post.Approve("matheus", Now);
+        post.SetMusic("1", "x", 80, 100, Now);
+        Assert.Equal(PublicationStatus.Draft, post.Status);
+        Assert.Throws<ArgumentException>(() => post.SetMusic("1", "x", 0, 100, Now));
+        post.SetMusic(null, "x", 80, 100, Now);
+        Assert.Null(post.MusicAudioId);
+        Assert.Null(post.MusicVolume);
     }
 
     [Fact]

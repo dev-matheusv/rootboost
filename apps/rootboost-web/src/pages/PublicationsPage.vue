@@ -154,6 +154,11 @@
                   :disable="!!form.coverUrl" :label="$t('pages.publications.thumbSeconds')" :hint="$t('pages.publications.thumbHint')" />
               </div>
             </q-expansion-item>
+            <!-- Música do Instagram: entra ao publicar o Reels (e vai pro Facebook pelo compartilhamento automático). -->
+            <q-expansion-item v-if="isReel" dense dense-toggle switch-toggle-side :label="$t('musicPicker.title')"
+              :caption="form.music.title || $t('musicPicker.caption')" header-class="q-px-none">
+              <div class="q-pt-sm"><MusicPicker v-model="form.music" :brand-key="brand.selected" /></div>
+            </q-expansion-item>
           </template>
           <q-input v-model="form.caption" outlined type="textarea" autogrow :label="$t('pages.publications.caption')"
             :hint="editing?.status === 'Approved' ? $t('pages.publications.editResets') : undefined" />
@@ -200,9 +205,10 @@ import {
   mdiCheckCircleOutline, mdiPlayCircleOutline,
 } from '@quasar/extras/mdi-v7';
 import { api } from 'src/services/api';
-import type { CopyFinding, Publication, SocialChannel } from 'src/types/api';
+import type { CopyFinding, MusicChoice, Publication, SocialChannel } from 'src/types/api';
 import { useBrandStore } from 'src/stores/brandStore';
 import ReelImportDialog from 'src/components/ReelImportDialog.vue';
+import MusicPicker from 'src/components/MusicPicker.vue';
 import PublicationPreview from 'src/components/PublicationPreview.vue';
 import { proposeSlots } from 'src/utils/calendar';
 import { findingColor, sortFindings } from 'src/utils/brandProfile';
@@ -456,9 +462,18 @@ interface PublicationForm {
   coverUrl: string | null;
   thumbSeconds: number | null;
   shareToFeed: boolean;
+  music: MusicChoice;
 }
+const noMusic = (): MusicChoice => ({ audioId: null, title: null, musicVolume: 80, videoVolume: 100 });
 const emptyReel = { coverUrl: null, thumbSeconds: null, shareToFeed: true };
-const form = reactive<PublicationForm>({ channel: 'Instagram', mediaUrl: '', caption: '', when: '', ...emptyReel });
+const form = reactive<PublicationForm>({ channel: 'Instagram', mediaUrl: '', caption: '', when: '', ...emptyReel, music: noMusic() });
+
+/** O que vai pro PUT /music, e se mudou em relação ao salvo. */
+function musicChanged(p: Publication | null): boolean {
+  const m = form.music;
+  if (!p) return !!m.audioId;
+  return m.audioId !== p.musicAudioId || (!!m.audioId && (m.musicVolume !== p.musicVolume || m.videoVolume !== p.videoVolume));
+}
 
 /** Capa e feed só valem pra Reels: vídeo no Instagram (mesma regra da API, pela extensão). */
 const isReel = computed(() => form.channel === 'Instagram' && /\.(mp4|mov)$/i.test(safePath(form.mediaUrl)));
@@ -552,7 +567,7 @@ function openNew() {
   upload.value = null;
   editing.value = null;
   coverUpload.value = null;
-  Object.assign(form, { channel: 'Instagram', mediaUrl: '', caption: '', when: nextSlot(), ...emptyReel });
+  Object.assign(form, { channel: 'Instagram', mediaUrl: '', caption: '', when: nextSlot(), ...emptyReel, music: noMusic() });
   dialog.value = true;
 }
 
@@ -563,6 +578,9 @@ function openEdit(p: Publication) {
   Object.assign(form, {
     channel: p.channel, mediaUrl: p.mediaUrl, caption: p.caption, when: toLocalInput(p.scheduledFor),
     coverUrl: p.coverUrl, thumbSeconds: p.thumbOffsetMs === null ? null : p.thumbOffsetMs / 1000, shareToFeed: p.shareToFeed,
+    music: p.musicAudioId
+      ? { audioId: p.musicAudioId, title: p.musicTitle, musicVolume: p.musicVolume ?? 80, videoVolume: p.videoVolume ?? 100 }
+      : noMusic(),
   });
   dialog.value = true;
 }
@@ -599,6 +617,7 @@ async function save() {
       const reel = reelBody();
       if (isReel.value && (reel.coverUrl || reel.thumbOffsetMs !== null || !reel.shareToFeed))
         await api.put(`${base.value}/${data.id}/reel`, reel);
+      if (isReel.value && musicChanged(null)) await api.put(`${base.value}/${data.id}/music`, form.music);
     } else {
       // Trocar vídeo ou legenda volta o post pra rascunho (precisa aprovar de novo).
       if (form.mediaUrl.trim() !== p.mediaUrl) await api.put(`${base.value}/${p.id}/media`, { mediaUrl: form.mediaUrl.trim() });
@@ -606,6 +625,7 @@ async function save() {
       const reel = reelBody();
       if (isReel.value && (reel.coverUrl !== p.coverUrl || reel.thumbOffsetMs !== p.thumbOffsetMs || reel.shareToFeed !== p.shareToFeed))
         await api.put(`${base.value}/${p.id}/reel`, reel);
+      if (isReel.value && musicChanged(p)) await api.put(`${base.value}/${p.id}/music`, form.music);
       if (when !== new Date(p.scheduledFor).toISOString()) await api.put(`${base.value}/${p.id}/schedule`, { scheduledFor: when });
     }
     dialog.value = false;
