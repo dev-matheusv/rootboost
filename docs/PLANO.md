@@ -88,8 +88,13 @@ fora dos trechos, foto recortada no foco 4:5, regras de texto).
 4. Banco de vozes prontas (RB-59 "Escolher do banco"): vozes projetadas no DMaker por gênero, idade e tom, amostra fixa
    com o mesmo texto do dia a dia, sem sotaque (o único é o de Portugal); a voz do MedlyCare aprovada vira a primeira
    feminina.
+   **Feito (03/11):** catálogo de 8 vozes com amostra no Console e "Usar esta voz"; falta o Matheus ouvir e aprovar.
 5. Validação real: pessoal de Porto Velho (Vitta Demo) e MedlyCare R3/R4 com momentos e a conta demo de produção.
 6. "Ajustar no DMaker": o worker guarda o projeto de cada job pra abrir no editor do DMaker.
+   **Feito (03/11) pro vídeo pessoal:** cada render entregue vira o projeto `rb-<nome>` na lista do editor do DMaker
+   (`C:/DMaker/projects`, pasta de dados ignorada pelo git dele). O explicativo (narrado-calmo) ainda não gera spec do
+   DMaker; entra quando o modelo `explicativo` da v2 substituir o narrado-calmo. Subir o render ajustado de volta: pelo
+   Acervo, por enquanto.
 
 ### Onda 3: a IA da plataforma, a Root AI (o cérebro, junto com o DMaker)
 **Decidido (27/10):** a IA do RootFlow vira produto próprio, a **Root AI**, usada no RootFlow, no

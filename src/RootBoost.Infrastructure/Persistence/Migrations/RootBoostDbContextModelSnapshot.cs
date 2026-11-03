@@ -524,6 +524,10 @@ namespace RootBoost.Infrastructure.Persistence.Migrations
                     b.Property<int>("Attempts")
                         .HasColumnType("integer");
 
+                    b.Property<string>("BankId")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
                     b.Property<string>("BrandKey")
                         .IsRequired()
                         .HasMaxLength(64)
@@ -571,6 +575,9 @@ namespace RootBoost.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasMaxLength(60)
                         .HasColumnType("character varying(60)");
+
+                    b.Property<int?>("PresetSeed")
+                        .HasColumnType("integer");
 
                     b.Property<string>("ReferenceStorageKey")
                         .HasMaxLength(300)
