@@ -321,6 +321,7 @@ export function buildPersonalSpec({ name, brandKey, roteiro, falas, voice, seed,
     name,
     brand: brandKey,
     output: { preset: "instagram/reels", quality: "high" },
+    ...(roteiro.look && roteiro.look !== "nenhum" ? { look: roteiro.look } : {}),
     timeline,
     overlays,
     // "auto" transcreve o som dos clipes (a fala original); só com narração, a legenda vem do texto da narração.
