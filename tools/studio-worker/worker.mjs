@@ -526,7 +526,8 @@ function loadEnvFile(path) {
   if (!existsSync(path)) return;
   for (const line of readFileSync(path, "utf8").split(/\r?\n/)) {
     const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)\s*$/);
-    if (m && !(m[1] in process.env)) process.env[m[1]] = m[2].replace(/^"(.*)"$/, "$1");
+    // No filho o arquivo vence: o pai guarda os valores de quando abriu, e uma troca no worker.env ficaria sem efeito.
+    if (m && (process.env.RB_WORKER_CHILD || !(m[1] in process.env))) process.env[m[1]] = m[2].replace(/^"(.*)"$/, "$1");
   }
 }
 
