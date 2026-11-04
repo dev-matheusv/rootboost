@@ -3,13 +3,16 @@
 // elementos pra API (/worker/ai/next-action), que devolve o que fazer. Grava os quadros e monta o mp4 com FFmpeg.
 // Mesmo molde do gravar-reel.mjs do MedlyCare (CDP, cursor desenhado, 540x600 a 2x), sem passos escritos à mão.
 import { spawn } from "node:child_process";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { isDestructive, sameSite } from "./lib.mjs";
 
 const CHROME = process.env.CHROME_PATH ?? "C:/Program Files/Google/Chrome/Application/chrome.exe";
 const FFMPEG = process.env.FFMPEG_PATH ?? "C:/DMaker/bin/ffmpeg/bin/ffmpeg.exe";
+// Imagem fictícia que a gravação cola ou anexa: nunca um arquivo de verdade do PC.
+const DEMO_IMAGE = join(dirname(fileURLToPath(import.meta.url)), "demo", "imagem-demo.png");
 const VIEW = { width: 540, height: 600, scale: 2 };
 const MAX_SECONDS = 90;
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -54,14 +57,14 @@ const CURSOR = `(() => {
 
 // Numera os elementos visíveis de clicar ou digitar (data-rb-id) e devolve id, tipo, texto e o centro de cada um.
 const LIST_ELEMENTS = `(() => {
-  const sel = 'a,button,input,select,textarea,[role=button],[role=link],[role=tab],[role=menuitem],[onclick],[tabindex]:not([tabindex="-1"])';
+  const sel = 'a,button,input,select,textarea,[role=button],[role=link],[role=tab],[role=menuitem],[onclick],[tabindex]:not([tabindex="-1"]),[contenteditable="true"]';
   const out = []; let n = 0;
   for (const el of document.querySelectorAll(sel)) {
     const r = el.getBoundingClientRect();
     if (r.width < 4 || r.height < 4 || r.bottom < 0 || r.top > innerHeight || getComputedStyle(el).visibility === 'hidden') continue;
     const id = 'e' + (++n); el.setAttribute('data-rb-id', id);
     const tag = el.tagName.toLowerCase();
-    const role = tag === 'input' ? 'campo ' + (el.type || 'texto') : tag === 'textarea' ? 'campo texto' : tag === 'select' ? 'lista' : tag === 'a' ? 'link' : 'botão';
+    const role = tag === 'input' ? 'campo ' + (el.type || 'texto') : tag === 'textarea' ? 'campo texto' : tag === 'select' ? 'lista' : tag === 'a' ? 'link' : el.isContentEditable ? 'campo editor' : 'botão';
     const text = (el.getAttribute('aria-label') || el.innerText || el.placeholder || el.value || el.title || '').trim().replace(/\\s+/g, ' ').slice(0, 80);
     out.push({ id, role, text, x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) });
     if (n >= 150) break;
@@ -84,6 +87,12 @@ async function openChrome(port) {
   await cdp.open;
   await cdp.send("Page.enable");
   await cdp.send("Runtime.enable");
+  await cdp.send("DOM.enable");
+  // Janela de escolher arquivo não existe sem tela: quem abre recebe a imagem de demonstração.
+  await cdp.send("Page.setInterceptFileChooserDialog", { enabled: true });
+  cdp.on("Page.fileChooserOpened", (p) => {
+    cdp.send("DOM.setFileInputFiles", { files: [DEMO_IMAGE], backendNodeId: p.backendNodeId }).catch(() => {});
+  });
   await cdp.send("Emulation.setDeviceMetricsOverride", { width: VIEW.width, height: VIEW.height, deviceScaleFactor: VIEW.scale, mobile: false });
   await cdp.send("Emulation.setFocusEmulationEnabled", { enabled: true });
   await cdp.send("Page.addScriptToEvaluateOnNewDocument", { source: CURSOR });
@@ -109,6 +118,17 @@ async function type(cdp, text, delay = 60) {
     await cdp.send("Input.insertText", { text: ch });
     await wait(delay);
   }
+}
+
+/** Cola a imagem de demonstração no campo com foco, como um print vindo da área de transferência. */
+async function pasteImage(cdp) {
+  const base64 = readFileSync(DEMO_IMAGE).toString("base64");
+  return evaluate(cdp, `(() => {
+    const bytes = Uint8Array.from(atob(${JSON.stringify(base64)}), (c) => c.charCodeAt(0));
+    const data = new DataTransfer();
+    data.items.add(new File([bytes], "imagem-demo.png", { type: "image/png" }));
+    return !(document.activeElement ?? document.body).dispatchEvent(new ClipboardEvent("paste", { clipboardData: data, bubbles: true, cancelable: true }));
+  })()`);
 }
 
 async function pressEnter(cdp) {
@@ -221,6 +241,11 @@ export async function recordScene({ brandKey, scene, account, outDir, name, ask,
       } else if (next.action === "digitar" && el) {
         await click(cdp, el);
         await type(cdp, next.text ?? "");
+      } else if (next.action === "colar-imagem" && el) {
+        await click(cdp, el);
+        await wait(500);
+        if (!(await pasteImage(cdp))) history.push("colar-imagem: este campo não recebeu a imagem; procure o botão de inserir imagem");
+        await wait(2000); // tempo do envio e de a imagem aparecer no vídeo
       } else if (next.action === "rolar") {
         await cdp.send("Input.dispatchMouseEvent", { type: "mouseWheel", x: 270, y: 300, deltaX: 0, deltaY: next.text === "cima" ? -350 : 350 });
       } else if (next.action === "login") {
