@@ -284,6 +284,9 @@ public sealed class ScriptWriter
         sb.AppendLine($"- Palavras proibidas na fala, no título e no subtítulo: {string.Join(", ", ForbiddenWords)}.");
         sb.AppendLine("- Português correto: imperativo de você (teste, veja, comece), nunca \"testa\", \"vê\", \"começa\".");
         sb.AppendLine("- A fala de cada bloco descreve o que a cena daquele bloco mostra. Bloco com mídia do acervo fala do que está na mídia; não narre o que a tela não mostra.");
+        sb.AppendLine("- Fala nunca é cortada nem trocada porque falta cena. Pra cada bloco, olhe o acervo primeiro: se o momento existe, use a mídia; " +
+            "se não existe, deixe midia vazia e descreva a cena pra gravar a tela. Falas dadas no pedido ficam palavra por palavra, acima das regras de estilo.");
+        sb.AppendLine("- Cuidados do pedido sobre a tela entram na cena do bloco a que se aplicam, porque quem grava só lê a cena.");
         sb.AppendLine("- Só cite recursos que estão na lista de recursos do produto; nada de recurso suposto.");
         sb.AppendLine("- A fala final é a frase do cartão final; o CTA vai embaixo. Final próprio deste vídeo, nada genérico.");
         sb.AppendLine("- Números por extenso na fala (\"às quatro da tarde\"). Nada de travessão nem meia-risca em nenhum texto.");

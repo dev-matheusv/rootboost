@@ -3,15 +3,19 @@
 // elementos pra API (/worker/ai/next-action), que devolve o que fazer. Grava os quadros e monta o mp4 com FFmpeg.
 // Mesmo molde do gravar-reel.mjs do MedlyCare (CDP, cursor desenhado, 540x600 a 2x), sem passos escritos à mão.
 import { spawn } from "node:child_process";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { appendFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { isDestructive, sameSite } from "./lib.mjs";
 
 const CHROME = process.env.CHROME_PATH ?? "C:/Program Files/Google/Chrome/Application/chrome.exe";
 const FFMPEG = process.env.FFMPEG_PATH ?? "C:/DMaker/bin/ffmpeg/bin/ffmpeg.exe";
+// Imagem fictícia que a gravação cola ou anexa: nunca um arquivo de verdade do PC.
+const DEMO_IMAGE = join(dirname(fileURLToPath(import.meta.url)), "demo", "imagem-demo.png");
 const VIEW = { width: 540, height: 600, scale: 2 };
-const MAX_SECONDS = 90;
+// Tempo total da cena, contando a espera pela IA (essa espera não entra no vídeo).
+const MAX_SECONDS = 240;
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
 class Cdp {
@@ -54,14 +58,14 @@ const CURSOR = `(() => {
 
 // Numera os elementos visíveis de clicar ou digitar (data-rb-id) e devolve id, tipo, texto e o centro de cada um.
 const LIST_ELEMENTS = `(() => {
-  const sel = 'a,button,input,select,textarea,[role=button],[role=link],[role=tab],[role=menuitem],[onclick],[tabindex]:not([tabindex="-1"])';
+  const sel = 'a,button,input,select,textarea,[role=button],[role=link],[role=tab],[role=menuitem],[onclick],[tabindex]:not([tabindex="-1"]),[contenteditable="true"]';
   const out = []; let n = 0;
   for (const el of document.querySelectorAll(sel)) {
     const r = el.getBoundingClientRect();
     if (r.width < 4 || r.height < 4 || r.bottom < 0 || r.top > innerHeight || getComputedStyle(el).visibility === 'hidden') continue;
     const id = 'e' + (++n); el.setAttribute('data-rb-id', id);
     const tag = el.tagName.toLowerCase();
-    const role = tag === 'input' ? 'campo ' + (el.type || 'texto') : tag === 'textarea' ? 'campo texto' : tag === 'select' ? 'lista' : tag === 'a' ? 'link' : 'botão';
+    const role = tag === 'input' ? 'campo ' + (el.type || 'texto') : tag === 'textarea' ? 'campo texto' : tag === 'select' ? 'lista' : tag === 'a' ? 'link' : el.isContentEditable ? 'campo editor' : 'botão';
     const text = (el.getAttribute('aria-label') || el.innerText || el.placeholder || el.value || el.title || '').trim().replace(/\\s+/g, ' ').slice(0, 80);
     out.push({ id, role, text, x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) });
     if (n >= 150) break;
@@ -84,6 +88,12 @@ async function openChrome(port) {
   await cdp.open;
   await cdp.send("Page.enable");
   await cdp.send("Runtime.enable");
+  await cdp.send("DOM.enable");
+  // Janela de escolher arquivo não existe sem tela: quem abre recebe a imagem de demonstração.
+  await cdp.send("Page.setInterceptFileChooserDialog", { enabled: true });
+  cdp.on("Page.fileChooserOpened", (p) => {
+    cdp.send("DOM.setFileInputFiles", { files: [DEMO_IMAGE], backendNodeId: p.backendNodeId }).catch(() => {});
+  });
   await cdp.send("Emulation.setDeviceMetricsOverride", { width: VIEW.width, height: VIEW.height, deviceScaleFactor: VIEW.scale, mobile: false });
   await cdp.send("Emulation.setFocusEmulationEnabled", { enabled: true });
   await cdp.send("Page.addScriptToEvaluateOnNewDocument", { source: CURSOR });
@@ -111,10 +121,30 @@ async function type(cdp, text, delay = 60) {
   }
 }
 
+/** Cola a imagem de demonstração no campo com foco, como um print vindo da área de transferência. */
+async function pasteImage(cdp) {
+  const base64 = readFileSync(DEMO_IMAGE).toString("base64");
+  return evaluate(cdp, `(() => {
+    const bytes = Uint8Array.from(atob(${JSON.stringify(base64)}), (c) => c.charCodeAt(0));
+    const data = new DataTransfer();
+    data.items.add(new File([bytes], "imagem-demo.png", { type: "image/png" }));
+    return !(document.activeElement ?? document.body).dispatchEvent(new ClipboardEvent("paste", { clipboardData: data, bubbles: true, cancelable: true }));
+  })()`);
+}
+
 async function pressEnter(cdp) {
   await cdp.send("Input.dispatchKeyEvent", { type: "keyDown", key: "Enter", code: "Enter", windowsVirtualKeyCode: 13, text: "\r" });
   await cdp.send("Input.dispatchKeyEvent", { type: "keyUp", key: "Enter", code: "Enter", windowsVirtualKeyCode: 13 });
 }
+
+// Campo de senha em qualquer lugar da página, não só na parte visível: na janela de 540x600 a logo grande empurra o
+// formulário pra baixo da dobra. Rola até ele pra que usuário e senha entrem na lista de elementos.
+const SHOW_PASSWORD = `(() => {
+  const p = [...document.querySelectorAll('input[type=password]')].find((e) => e.offsetParent !== null);
+  if (!p) return false;
+  p.scrollIntoView({ block: 'center' });
+  return true;
+})()`;
 
 /** Texto de erro visível na tela de login (alerta, mensagem do campo), pra dizer por que não entrou. */
 const LOGIN_ERROR = `(() => {
@@ -138,7 +168,7 @@ async function login(cdp, elements, account) {
   for (let i = 0; i < 2; i++) {
     await wait(3000);
     const now = await evaluate(cdp, LIST_ELEMENTS);
-    if (!now.some((e) => e.role === "campo password")) return { ok: true };
+    if (!(await evaluate(cdp, SHOW_PASSWORD))) return { ok: true };
     // Enter não enviou: clica no botão de entrar.
     const submit = now.find((e) => e.role === "botão" && /\b(entrar|login|acessar|continuar|sign in)\b/i.test(e.text));
     if (i === 0 && submit) await click(cdp, submit);
@@ -149,8 +179,10 @@ async function login(cdp, elements, account) {
 /** Campos da tela de login, esperando a página terminar de carregar (até ~6 s). Nulo se esta tela não pede senha. */
 async function loginFields(cdp) {
   for (let i = 0; i < 6; i++) {
-    const elements = await evaluate(cdp, LIST_ELEMENTS);
-    if (elements.some((e) => e.role === "campo password")) return elements;
+    if (await evaluate(cdp, SHOW_PASSWORD)) {
+      await wait(300);
+      return evaluate(cdp, LIST_ELEMENTS);
+    }
     await wait(1000);
   }
   return null;
@@ -166,12 +198,24 @@ export async function recordScene({ brandKey, scene, account, outDir, name, ask,
   const { cdp, close } = await openChrome(port);
   const frames = [];
   let recording = false;
+  let skipped = 0; // segundos em que a gravação esperou a IA: saem da linha do tempo do vídeo
+  // Registro de cada passo, junto dos quadros: é o que explica uma gravação que falhou.
+  const trail = join(outDir, "passos.txt");
+  writeFileSync(trail, `Cena: ${scene}\n`);
+  const note = (line) => { log(line); appendFileSync(trail, `${new Date().toISOString()} ${line}\n`); };
+  // Tela parada não gera quadro: foto na hora, pra o começo da cena e o "segurar" no fim existirem no vídeo.
+  const grab = async () => {
+    const shot = await cdp.send("Page.captureScreenshot", { format: "jpeg", quality: 90 });
+    const file = `q${String(frames.length).padStart(5, "0")}.jpg`;
+    writeFileSync(join(outDir, "quadros", file), Buffer.from(shot.data, "base64"));
+    frames.push({ file, t: Date.now() / 1000 - skipped });
+  };
   cdp.on("Page.screencastFrame", (p) => {
     cdp.send("Page.screencastFrameAck", { sessionId: p.sessionId }).catch(() => {});
     if (!recording) return;
     const file = `q${String(frames.length).padStart(5, "0")}.jpg`;
     writeFileSync(join(outDir, "quadros", file), Buffer.from(p.data, "base64"));
-    frames.push({ file, t: p.metadata.timestamp });
+    frames.push({ file, t: p.metadata.timestamp - skipped });
   });
   try {
     await cdp.send("Page.navigate", { url: account.url });
@@ -179,9 +223,11 @@ export async function recordScene({ brandKey, scene, account, outDir, name, ask,
     const history = [];
     let loggedIn = false;
     // Login antes de gravar, se a primeira tela pedir: o vídeo começa já dentro do sistema.
-    let elements = await evaluate(cdp, LIST_ELEMENTS);
-    if (elements.some((e) => e.role === "campo password")) {
+    let elements = await loginFields(cdp);
+    note(elements ? "tela de login encontrada" : `sem tela de login em ${await evaluate(cdp, "location.href")}`);
+    if (elements) {
       const r = await login(cdp, elements, account);
+      note(r.ok ? "entrou com a conta de demonstração" : `não entrou: ${r.error}`);
       if (!r.ok) {
         // Print da tela de login pra conferência (fica só no PC; o campo de senha aparece mascarado).
         const shot = await cdp.send("Page.captureScreenshot", { format: "jpeg", quality: 70 });
@@ -197,14 +243,27 @@ export async function recordScene({ brandKey, scene, account, outDir, name, ask,
     await cdp.send("Page.startScreencast", { format: "jpeg", quality: 90, maxWidth: VIEW.width * VIEW.scale, maxHeight: VIEW.height * VIEW.scale });
     const started = Date.now();
     let outcome = "desistir";
+    let stopReason = `passou de ${MAX_SECONDS} s sem terminar`;
     for (let step = 0; Date.now() - started < MAX_SECONDS * 1000; step++) {
       elements = await evaluate(cdp, LIST_ELEMENTS);
       // Foto em 1x (540x600) pra IA: um quarto dos pixels da gravação, bem menos tokens por passo (custo).
       const shot = await cdp.send("Page.captureScreenshot", { format: "jpeg", quality: 55, clip: { x: 0, y: 0, width: VIEW.width, height: VIEW.height, scale: 1 / VIEW.scale } });
       const url = await evaluate(cdp, "location.href");
+      recording = false;
+      const asked = Date.now();
       const next = await ask({ brandKey, scene, url, elements: elements.map(({ id, role, text }) => ({ id, role, text })), history, step, image: shot.data });
-      log(`  passo ${step + 1}: ${next.action} ${next.target ?? ""} (${next.reason})`);
-      if (next.action === "pronto" || next.action === "desistir") { outcome = next.action; break; }
+      skipped += (Date.now() - asked) / 1000;
+      recording = true;
+      const chosen = elements.find((e) => e.id === next.target);
+      note(`passo ${step + 1} em ${url}: ${next.action} ${chosen ? `"${chosen.text}"` : next.target ?? ""} ${next.text ?? ""} (${next.reason})`);
+      if (next.action === "pronto" || next.action === "desistir") { outcome = next.action; stopReason = next.reason; break; }
+      if (next.action === "comecar") {
+        // Preparo terminou: o que veio antes (navegar, abrir, ajustar) fica fora do vídeo.
+        frames.length = 0;
+        await grab();
+        history.push("comecar: gravação da cena valendo a partir daqui");
+        continue;
+      }
       if (next.action === "dado-pessoal") {
         // Dado de pessoa real na tela: apaga os quadros já gravados e para sem tentar de novo.
         recording = false;
@@ -221,6 +280,11 @@ export async function recordScene({ brandKey, scene, account, outDir, name, ask,
       } else if (next.action === "digitar" && el) {
         await click(cdp, el);
         await type(cdp, next.text ?? "");
+      } else if (next.action === "colar-imagem" && el) {
+        await click(cdp, el);
+        await wait(500);
+        if (!(await pasteImage(cdp))) history.push("colar-imagem: este campo não recebeu a imagem; procure o botão de inserir imagem");
+        await wait(2000); // tempo do envio e de a imagem aparecer no vídeo
       } else if (next.action === "rolar") {
         await cdp.send("Input.dispatchMouseEvent", { type: "mouseWheel", x: 270, y: 300, deltaX: 0, deltaY: next.text === "cima" ? -350 : 350 });
       } else if (next.action === "login") {
@@ -241,10 +305,16 @@ export async function recordScene({ brandKey, scene, account, outDir, name, ask,
       const now = await evaluate(cdp, "location.href");
       if (!sameSite(now, account.url)) { outcome = "desistir"; history.push(`saiu do site: ${now}`); break; }
     }
-    await wait(1200); // segura o resultado na tela
+    await wait(2000); // segura o resultado na tela
     recording = false;
+    await grab();
     await cdp.send("Page.stopScreencast");
-    if (outcome !== "pronto") throw new Error(`a IA não conseguiu mostrar a cena: ${scene}`);
+    if (outcome !== "pronto") {
+      const shot = await cdp.send("Page.captureScreenshot", { format: "jpeg", quality: 70 });
+      writeFileSync(join(outDir, "falhou.jpg"), Buffer.from(shot.data, "base64"));
+      note(`parou: ${stopReason}`);
+      throw new Error(`a IA parou: ${stopReason}. Tela final em ${await evaluate(cdp, "location.href")}. Passos em ${trail}`);
+    }
     if (frames.length < 2) throw new Error("nenhum quadro gravado");
 
     const lines = [];

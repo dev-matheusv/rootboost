@@ -12,7 +12,7 @@ job com trechos "gravar-bloco-N"  ──►  worker abre o Chrome (sem janela, 5
                                          ▼
           para cada bloco: loop curto ── foto da tela + lista de elementos clicáveis
                                          │  POST /worker/ai/next-action  (a API chama a IA)
-                                         ▼  resposta: clicar | digitar | rolar | esperar | pronto
+                                         ▼  resposta: clicar | digitar | colar-imagem | rolar | esperar | comecar | pronto
                                          executa no Chrome, grava os quadros (screencast)
                                          ▼
           brutos/<nome>-bloco-N.mp4 + troca o trecho no roteiro por [bruto, 0, duração]
@@ -23,6 +23,12 @@ job com trechos "gravar-bloco-N"  ──►  worker abre o Chrome (sem janela, 5
 - **A chave da IA fica só no Railway.** O worker manda a foto e recebe o próximo passo; cada chamada grava custo em
   `AiUsage` (finalidade `screen-recording`).
 - **Limites por cena:** no máximo 25 passos e 90 s; passou disso, o bloco falha e vai pra revisão humana.
+- **Preparo fora do vídeo:** cada cena abre uma sessão nova na tela inicial. A IA navega até o ponto de partida e responde
+  `comecar`; os quadros anteriores são descartados. A espera pela IA também sai da linha do tempo.
+- **Diagnóstico:** cada passo vai pra `passos.txt` na pasta da gravação; quando falha, o motivo vai pro erro do job e a
+  tela final pra `falhou.jpg`.
+- **Imagem e anexo:** `colar-imagem` cola `tools/studio-worker/demo/imagem-demo.png` no campo, e qualquer botão que abre
+  a escolha de arquivo recebe essa mesma imagem. Nunca sai um arquivo de verdade do PC.
 - **Cursor desenhado na página** e marcas de tempo, como no gravador do MedlyCare.
 
 ## Segurança

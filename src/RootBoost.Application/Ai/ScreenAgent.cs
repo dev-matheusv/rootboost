@@ -11,7 +11,7 @@ public sealed record ScreenState(string BrandKey, string Scene, string Url, IRea
     IReadOnlyList<string> History, int Step, string ImageJpegBase64, string? FictionalMarkers = null);
 
 /// <summary>
-/// Próximo passo da gravação. <see cref="Action"/>: clicar, digitar, rolar, esperar, login, pronto, desistir, ou
+/// Próximo passo da gravação. <see cref="Action"/>: clicar, digitar, colar-imagem, rolar, esperar, login, comecar, pronto, desistir, ou
 /// "dado-pessoal" (a tela mostrou dado de pessoa real: a gravação para e não tenta de novo).
 /// </summary>
 public sealed record ScreenAction(string Action, string? Target, string? Text, string Reason);
@@ -24,7 +24,7 @@ public sealed record ScreenAction(string Action, string? Target, string? Text, s
 public sealed class ScreenAgent
 {
     public const int MaxSteps = 25;
-    private static readonly string[] Actions = ["clicar", "digitar", "rolar", "esperar", "login", "pronto", "desistir"];
+    private static readonly string[] Actions = ["clicar", "digitar", "colar-imagem", "rolar", "esperar", "login", "comecar", "pronto", "desistir"];
     private readonly ILanguageModel _model;
     private readonly IAiUsageStore _usage;
     private readonly TimeProvider _time;
@@ -66,7 +66,7 @@ public sealed class ScreenAgent
             return new ScreenAction("dado-pessoal", null, null, string.IsNullOrWhiteSpace(reason) ? "a tela mostrou dado pessoal real" : reason);
 
         if (!Actions.Contains(action)) return new ScreenAction("esperar", null, null, "passo desconhecido");
-        if (action is "clicar" or "digitar" && !state.Elements.Any(e => e.Id == target))
+        if (action is "clicar" or "digitar" or "colar-imagem" && !state.Elements.Any(e => e.Id == target))
             return new ScreenAction("esperar", null, null, $"elemento {target} não está na página");
         return new ScreenAction(action, string.IsNullOrWhiteSpace(target) ? null : target, string.IsNullOrEmpty(text) ? null : text, reason);
     }
@@ -77,10 +77,16 @@ public sealed class ScreenAgent
         Você opera um sistema web pelo navegador pra gravar um vídeo curto de demonstração. Recebe a foto da tela, a lista
         de elementos e a cena que precisa aparecer no vídeo. Devolva UM passo por vez, como uma pessoa calma mostrando o
         uso: clicar (alvo = id), digitar (alvo = id do campo, texto = o que digitar, sempre dado fictício e plausível),
-        rolar (texto = "baixo" ou "cima"), esperar (a tela está carregando), login (a tela pede usuário e senha: o sistema
-        entra sozinho, nunca digite senha), pronto (a cena já foi mostrada inteira) ou desistir (não dá pra mostrar a cena).
-        Nunca exclua, cancele, pague, envie mensagem de verdade, mude configuração ou saia do sistema. Prefira o caminho
-        mais curto e visível. O motivo é uma frase curta em português.
+        colar-imagem (alvo = id do campo: cola um print fictício, como Ctrl+V), rolar (texto = "baixo" ou "cima"), esperar (a tela está carregando), login (a tela pede usuário e senha: o sistema
+        entra sozinho, nunca digite senha), comecar (a tela chegou no ponto de partida da cena: tudo antes disso sai do vídeo), pronto (a cena já foi mostrada inteira) ou desistir (não dá pra mostrar a cena).
+        A gravação começa na tela inicial, sem nada aberto, mesmo que a cena diga "já aberta" ou "no mesmo atendimento".
+        Primeiro prepare: navegue, abra ou crie o que a cena pressupõe, com dado fictício, e ajuste o que for preciso pra
+        tela ficar como a cena descreve. Quando estiver no ponto de partida, responda comecar, uma vez só, e aí mostre a cena.
+        Só desista depois de tentar outro caminho, e diga no motivo o que faltou.
+        Pra anexar arquivo ou inserir imagem, clique no botão: o sistema escolhe sozinho um arquivo fictício, sem janela.
+        Nunca exclua, cancele, pague, envie mensagem de verdade ou saia do sistema. Só mude configuração ou preferência
+        quando a cena pedir ou depender daquilo. Siga os cuidados escritos na cena. Prefira o caminho mais curto e visível.
+        O motivo é uma frase curta em português.
         Dado sensível: marque dadoPessoalReal = true só se a tela mostrar CPF, RG, cartão do SUS ou convênio, telefone,
         e-mail, endereço completo ou data de nascimento que não pareçam de demonstração (compare com os dados fictícios
         conhecidos da marca). Nome de pessoa sozinho não conta. Na dúvida, true, e o motivo diz o que apareceu.
@@ -92,7 +98,7 @@ public sealed class ScreenAgent
           "additionalProperties": false,
           "required": ["acao", "alvo", "texto", "motivo", "dadoPessoalReal"],
           "properties": {
-            "acao": { "type": "string", "enum": ["clicar", "digitar", "rolar", "esperar", "login", "pronto", "desistir"] },
+            "acao": { "type": "string", "enum": ["clicar", "digitar", "colar-imagem", "rolar", "esperar", "login", "comecar", "pronto", "desistir"] },
             "alvo": { "type": "string" },
             "texto": { "type": "string" },
             "motivo": { "type": "string" },

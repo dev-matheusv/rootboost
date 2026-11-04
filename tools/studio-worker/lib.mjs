@@ -96,6 +96,21 @@ export function voiceProblem(voice, brandKey, privateVoices) {
   return null;
 }
 
+/** Passos da síntese por voz ("voz:64,voz:48"): a voz aprovada num número de passos soa diferente em outro. */
+export function parseVoiceSteps(value) {
+  const map = new Map();
+  for (const pair of String(value ?? "").split(",")) {
+    const [voice, steps] = pair.split(":").map((s) => s?.trim().toLowerCase());
+    if (voice && Number.isInteger(Number(steps)) && Number(steps) > 0) map.set(voice, Number(steps));
+  }
+  return map;
+}
+
+/** Passos desta voz; 32 é o padrão do narrado-calmo. */
+export function stepsFor(voice, voiceSteps) {
+  return voiceSteps.get(String(voice ?? "").toLowerCase()) ?? 32;
+}
+
 // --- Gravação de tela (RB-50, docs/GRAVACAO.md) ---
 
 /** Botões que a gravação nunca clica, mesmo que a IA peça: nada destrutivo, nada que saia ou mande algo de verdade. */
