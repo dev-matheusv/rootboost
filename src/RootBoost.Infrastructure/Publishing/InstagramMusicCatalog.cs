@@ -27,7 +27,9 @@ public sealed class InstagramMusicCatalog : IMusicCatalog
 
     public async Task<IReadOnlyList<MusicTrack>> SearchAsync(string brandKey, string? query, CancellationToken ct = default)
     {
-        var account = _accounts.For(brandKey, SocialChannel.Instagram);
+        // Marca de demonstração não tem Instagram (nem publica): a busca só lê o catálogo, pela primeira conta configurada.
+        var account = (BrandKeys.IsDemo(brandKey) ? _accounts.All.FirstOrDefault(a => a.Channel == SocialChannel.Instagram) : null)
+            ?? _accounts.For(brandKey, SocialChannel.Instagram);
         var path = $"{_version}/ig_audio?audio_type=music&user_id={Uri.EscapeDataString(account.AccountId)}";
         if (!string.IsNullOrWhiteSpace(query)) path += $"&search_query={Uri.EscapeDataString(query.Trim())}";
         using var doc = await GraphApi.SendAsync(_factory.CreateClient("meta"), HttpMethod.Get, path, account.AccessToken, null, ct);

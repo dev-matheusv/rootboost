@@ -146,6 +146,17 @@ public class MetaPublishersTests
     }
 
     [Fact]
+    public async Task Music_search_of_a_demo_brand_reads_the_catalog_through_a_configured_account()
+    {
+        var g = new Graph();
+        var catalog = new InstagramMusicCatalog(new Factory(g), Accounts(), Meta);
+
+        Assert.Single(await catalog.SearchAsync(BrandKeys.Demo, "calm"));
+        Assert.Contains("user_id=1784", g.Calls[0].Query);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => catalog.SearchAsync(BrandKeys.Store, "calm"));
+    }
+
+    [Fact]
     public async Task Music_search_uses_ig_audio_with_user_and_query()
     {
         var g = new Graph();

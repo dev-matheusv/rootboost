@@ -146,6 +146,16 @@ async function login(cdp, elements, account) {
   return { ok: false, error: (await evaluate(cdp, LOGIN_ERROR)) || "a tela de login continuou aberta" };
 }
 
+/** Campos da tela de login, esperando a página terminar de carregar (até ~6 s). Nulo se esta tela não pede senha. */
+async function loginFields(cdp) {
+  for (let i = 0; i < 6; i++) {
+    const elements = await evaluate(cdp, LIST_ELEMENTS);
+    if (elements.some((e) => e.role === "campo password")) return elements;
+    await wait(1000);
+  }
+  return null;
+}
+
 /**
  * Grava uma cena: abre o sistema, deixa a IA conduzir até "pronto" e devolve o mp4. Recusa navegar pra fora do site do
  * produto e clicar em botão destrutivo (vira passo perdido no histórico, e a IA escolhe outro caminho).
@@ -215,7 +225,14 @@ export async function recordScene({ brandKey, scene, account, outDir, name, ask,
         await cdp.send("Input.dispatchMouseEvent", { type: "mouseWheel", x: 270, y: 300, deltaX: 0, deltaY: next.text === "cima" ? -350 : 350 });
       } else if (next.action === "login") {
         // Sessão caiu no meio (ou o primeiro login não pegou): tenta de novo; se não entrar, para com o motivo.
-        const r = await login(cdp, elements, account);
+        // A IA pediu login mas não há campo de senha (tela carregando, sessão ativa, botão Entrar antes do formulário):
+        // não é conta errada, então não derruba o vídeo; ela vê o aviso no histórico e segue a cena.
+        const fields = await loginFields(cdp);
+        if (!fields) {
+          history.push("login: esta tela não tem campo de senha; a sessão pode já estar ativa, siga a cena ou abra a tela de entrar");
+          continue;
+        }
+        const r = await login(cdp, fields, account);
         if (!r.ok) throw Object.assign(new Error(`não entrou no sistema com a conta de demonstração (${r.error}); confira contas.json`), { personalData: true });
         loggedIn = true;
       }
