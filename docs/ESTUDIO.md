@@ -189,7 +189,7 @@ leva a marca (`<marca>-<nome>-xxxx`). Custo: zero de IA paga (DMaker local).
 cada uma com descrição do DMaker e semente. A amostra de cada uma fica no Console (`public/vozes-banco/<id>.m4a`), com o
 mesmo texto de leitura pra todas, sem sotaque (nunca passar `accent`). "Usar esta voz" cria a voz pra marca com a mesma
 descrição e semente (`POST .../voices/bank`); o worker gera uma amostra só com essa semente e ela já fica escolhida.
-A primeira feminina (Clara) é a receita da voz escolhida pro MedlyCare (medlynat1, semente 1). Toda voz entra como
+A primeira feminina (Clara) é a receita da voz padrão do MedlyCare (medlynat1, semente 1, 64 passos no worker via `STUDIO_VOICE_STEPS`; o banco usa 32). Toda voz entra como
 "em revisão" (`Approved=false`) até o Matheus ouvir: o portão de palavras não pega gaguejo. Pra trocar ou aprovar uma
 voz: mudar a semente ou o `Approved` no catálogo e regenerar a amostra no PC.
 
