@@ -10,7 +10,7 @@ import { copyFileSync, existsSync, mkdirSync, openAsBlob, readFileSync, statSync
 import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
-  applyLibrary, applyRecordings, buildArgs, buildPersonalSpec, libraryScenes, photoClipArgs, expectedOutputs, isScriptProblem, lastLine, parsePrivateVoices, parseUnmatched, projectName, scenesToRecord,
+  applyLibrary, applyRecordings, buildArgs, buildPersonalSpec, libraryScenes, photoClipArgs, expectedOutputs, isScriptProblem, lastLine, parsePrivateVoices, parseUnmatched, parseVoiceSteps, stepsFor, projectName, scenesToRecord,
   seedFor, voiceProblem, warningsFrom,
 } from "./lib.mjs";
 import { recordScene } from "./recorder.mjs";
@@ -41,7 +41,9 @@ const cfg = {
   // Voz quando o job não escolhe: só pra marca dona dela (ver privateVoices). Vazio = sem padrão.
   defaultVoice: process.env.STUDIO_DEFAULT_VOICE ?? "",
   // Vozes clonadas de pessoas: voz:marca. A do Matheus só narra o MedlyCare.
-  privateVoices: parsePrivateVoices(process.env.STUDIO_PRIVATE_VOICES ?? "matheus2a:medlycare,matheus2b:medlycare,medlyfem:medlycare,medlyfem2:medlycare"),
+  privateVoices: parsePrivateVoices(process.env.STUDIO_PRIVATE_VOICES ?? "matheus2a:medlycare,matheus2b:medlycare,medlyfem:medlycare,medlyfem2:medlycare,medlynat1:medlycare"),
+  // Passos da síntese por voz (voz:passos), pra sair igual à amostra aprovada. Sem entrada: 32.
+  voiceSteps: parseVoiceSteps(process.env.STUDIO_VOICE_STEPS ?? "medlynat1:64"),
   pollSeconds: Number(process.env.STUDIO_POLL_SECONDS ?? 60),
   heartbeatSeconds: Number(process.env.STUDIO_HEARTBEAT_SECONDS ?? 30),
 };
@@ -139,13 +141,15 @@ async function round() {
 
   // 2. Voz primeiro: só a fala, com o portão de palavras sem par, sem montar nada.
   writeScript(projectDir, job);
-  const voiceArgs = (sd) => [...buildArgs(cfg.args, { nome, voz: voice, seed: sd, tools: cfg.tools, base: cfg.base }), "--so-voz"];
-  const voiceDir = (sd) => `${projectDir}/voz-continua/${voice}-p32-s${sd}`;
+  const steps = stepsFor(voice, cfg.voiceSteps);
+  const stepArgs = steps === 32 ? [] : ["--passos", String(steps)];
+  const voiceArgs = (sd) => [...buildArgs(cfg.args, { nome, voz: voice, seed: sd, tools: cfg.tools, base: cfg.base }), ...stepArgs, "--so-voz"];
+  const voiceDir = (sd) => `${projectDir}/voz-continua/${voice}-p${steps}-s${sd}`;
   async function makeVoice(sd, note) {
     await progress(job.id, 3, note);
     const { code, log } = await runPipeline(job.id, cfg.bin, voiceArgs(sd));
     if (code !== 0) return { error: `voz saiu com código ${code}: ${lastLine(log)}`, retry: !isScriptProblem(log) };
-    const unmatched = readUnmatched(projectDir, voice, sd) ?? parseUnmatched(log);
+    const unmatched = readUnmatched(projectDir, voice, steps, sd) ?? parseUnmatched(log);
     return unmatched === null ? { error: "não achei a contagem de palavras sem par da voz", retry: false } : { unmatched };
   }
 
@@ -220,7 +224,7 @@ async function round() {
 
   // 4. Montagem: o narrado-calmo reaproveita a voz e o alinhamento da semente aprovada (mesmo texto, léxico e semente).
   const vars = { nome, voz: voice, seed, tools: cfg.tools, base: cfg.base };
-  const { code, log } = await runPipeline(job.id, cfg.bin, buildArgs(cfg.args, vars));
+  const { code, log } = await runPipeline(job.id, cfg.bin, [...buildArgs(cfg.args, vars), ...stepArgs]);
   if (code !== 0) {
     const scriptProblem = isScriptProblem(log);
     return fail(job.id, `pipeline saiu com código ${code}: ${lastLine(log)}`, !scriptProblem);
@@ -403,9 +407,9 @@ function ensureBrandKit(brandKey, brandName) {
 }
 
 /** Palavras sem par gravadas pelo alinhamento da voz (o log não repete a contagem quando a voz vem do cache). */
-function readUnmatched(projectDir, voice, seed) {
+function readUnmatched(projectDir, voice, steps, seed) {
   try {
-    const n = JSON.parse(readFileSync(`${projectDir}/voz-continua/${voice}-p32-s${seed}/alinhamento.json`, "utf8")).sem_par;
+    const n = JSON.parse(readFileSync(`${projectDir}/voz-continua/${voice}-p${steps}-s${seed}/alinhamento.json`, "utf8")).sem_par;
     return Number.isInteger(n) ? n : null;
   } catch {
     return null;
@@ -522,7 +526,8 @@ function loadEnvFile(path) {
   if (!existsSync(path)) return;
   for (const line of readFileSync(path, "utf8").split(/\r?\n/)) {
     const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)\s*$/);
-    if (m && !(m[1] in process.env)) process.env[m[1]] = m[2].replace(/^"(.*)"$/, "$1");
+    // No filho o arquivo vence: o pai guarda os valores de quando abriu, e uma troca no worker.env ficaria sem efeito.
+    if (m && (process.env.RB_WORKER_CHILD || !(m[1] in process.env))) process.env[m[1]] = m[2].replace(/^"(.*)"$/, "$1");
   }
 }
 

@@ -1,6 +1,14 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { buildArgs, expectedOutputs, isScriptProblem, lastLine, parseUnmatched, projectName, seedFor, warningsFrom } from "./lib.mjs";
+import { buildArgs, expectedOutputs, isScriptProblem, lastLine, parseUnmatched, parseVoiceSteps, projectName, seedFor, stepsFor, warningsFrom } from "./lib.mjs";
+
+test("passos por voz: a voz listada usa os dela, as outras ficam em 32", () => {
+  const steps = parseVoiceSteps("MedlyNat1:64, ruim:x, outra:0");
+  assert.equal(stepsFor("medlynat1", steps), 64);
+  assert.equal(stepsFor("medlyfem2", steps), 32);
+  assert.equal(stepsFor("ruim", steps), 32);
+  assert.equal(stepsFor(null, steps), 32);
+});
 
 test("nome do projeto vira pasta segura", () => {
   assert.equal(projectName({ nome: "Combo 8: Psicologia!" }, "x"), "combo-8-psicologia");
