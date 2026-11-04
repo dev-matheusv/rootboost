@@ -93,6 +93,9 @@ public static class ScriptContract
         if (script.TryGetProperty("fecho", out var closing) && closing.ValueKind != JsonValueKind.Null)
             CheckPair(closing, "fecho", errors);
 
+        if (script.TryGetProperty("look", out var look) && !RootBoost.Application.Ai.ScriptWriter.Looks.Contains(look.GetString()))
+            errors.Add($"look desconhecido ({look}); use {string.Join(", ", RootBoost.Application.Ai.ScriptWriter.Looks)}");
+
         var blocks = 0;
         if (!script.TryGetProperty("blocos", out var blocos) || blocos.ValueKind != JsonValueKind.Array || blocos.GetArrayLength() == 0)
             errors.Add("roteiro sem \"blocos\" (precisa de pelo menos um)");

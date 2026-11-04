@@ -160,6 +160,9 @@ public sealed class ScriptWriter
     /// <summary>Palavras com cara de "IA burguesa" (Matheus, 30/10): a conferência recusa e a IA reescreve.</summary>
     public static readonly string[] ForbiddenWords = ["otimize", "otimizar", "eleve", "elevar", "potencialize", "potencializar", "solução completa", "experiência", "jornada"];
 
+    /// <summary>Acabamento de cor do vídeo pessoal, pelos nomes do DMaker v2; "nenhum" deixa a imagem como veio.</summary>
+    public static readonly string[] Looks = ["nenhum", "cinema", "quente", "frio", "pb-contraste", "vintage"];
+
     /// <summary>Transições e movimentos que o DMaker faz e que ficam bem em reel (lista curta de propósito).</summary>
     public static readonly string[] Transitions = ["fade", "dissolve", "slideleft", "slideup", "smoothleft", "wipeleft", "circleopen", "zoomin",
         // De movimento, do DMaker v2 (03/11): zoom de passagem, chicote, desfoque deslizando, queima de filme, luz.
@@ -227,6 +230,7 @@ public sealed class ScriptWriter
         {
             ["formato"] = personal ? "pessoal" : "explicativo",
             ["musica"] = new { clima = Str(ai, "musicaClima") },
+            ["look"] = personal && Looks.Contains(Str(ai, "look")) ? Str(ai, "look") : "nenhum",
             ["nome"] = Str(ai, "nome"),
             ["abertura"] = opening,
             ["fecho"] = new[] { Str(final, "titulo"), Str(final, "cta") },
@@ -270,6 +274,8 @@ public sealed class ScriptWriter
             "acompanha foto larga). Slide e wipe mudam de assunto; circleopen e zoomin revelam resultado. As de movimento (crosszoom, whippan, " +
             "blurslide, filmburn, lightleak) dão energia: no máximo duas por vídeo, em viagem, antes e depois ou virada. Se a pessoa pedir um estilo " +
             "de edição, siga o pedido.");
+        sb.AppendLine("- Look (só no pessoal): nenhum por padrão. Use quente em viagem com sol e momentos felizes, cinema em história com clima, " +
+            "frio em cidade ou noite, vintage em lembrança, pb-contraste só se a pessoa pedir. Se a pessoa pedir um look, siga o pedido.");
         sb.AppendLine("- Dê também 3 ideias de edição pra esse vídeo (frases curtas que a pessoa pode pedir, ex.: \"transições de deslizar entre as fotos\").");
         sb.AppendLine("- Conversa, não locução. A voz fala com quem assiste (você), como quem conhece o produto por dentro. Nada de primeira pessoa contando a própria rotina (\"eu fiz\", \"eu uso\").");
         sb.AppendLine("- Linguagem do dia a dia, como quem conta pra um colega no WhatsApp: \"pra\", \"tá\", \"a gente\", \"sabe quando...\", " +
@@ -358,8 +364,9 @@ public sealed class ScriptWriter
         {
           "type": "object",
           "additionalProperties": false,
-          "required": ["nome", "abertura", "blocos", "final", "ganchosAlternativos", "ideiasEdicao", "formato", "musicaClima"],
+          "required": ["nome", "abertura", "blocos", "final", "ganchosAlternativos", "ideiasEdicao", "formato", "musicaClima", "look"],
           "properties": {
+            "look": { "type": "string", "enum": ["nenhum", "cinema", "quente", "frio", "pb-contraste", "vintage"] },
             "nome": { "type": "string", "description": "nome curto do vídeo em minúsculas com hífen, ex.: psicologia-agenda" },
             "abertura": {
               "anyOf": [
@@ -373,7 +380,7 @@ public sealed class ScriptWriter
               "items": { "type": "object", "additionalProperties": false, "required": ["titulo", "subtitulo", "fala", "cena", "midia", "transicao", "movimento", "momento", "audio", "duracao"],
                 "properties": { "titulo": { "type": "string" }, "subtitulo": { "type": "string" }, "fala": { "type": "string" }, "cena": { "type": "string" },
                   "midia": { "type": "string", "description": "id da mídia do acervo pra este bloco, ou vazio" },
-                  "transicao": { "type": "string", "enum": ["fade", "dissolve", "slideleft", "slideup", "smoothleft", "wipeleft", "circleopen", "zoomin"] },
+                  "transicao": { "type": "string", "enum": ["fade", "dissolve", "slideleft", "slideup", "smoothleft", "wipeleft", "circleopen", "zoomin", "crosszoom", "whippan", "blurslide", "filmburn", "lightleak"] },
                   "movimento": { "type": "string", "enum": ["zoom-in", "zoom-out", "pan-left", "pan-right"] },
                   "momento": { "type": "integer", "description": "número do momento do vídeo do acervo, ou -1" },
                   "audio": { "type": "string", "enum": ["narracao", "musica", "original"] },
