@@ -47,7 +47,7 @@ export default {
       createAndWrite: 'Create and write with AI',
     },
     edit: {
-      transition: { fade: 'Soft fade', dissolve: 'Dissolve', slideleft: 'Slide left', slideup: 'Slide up', smoothleft: 'Smooth slide', wipeleft: 'Wipe', circleopen: 'Circle open', zoomin: 'Zoom in' },
+      transition: { fade: 'Soft fade', dissolve: 'Dissolve', slideleft: 'Slide left', slideup: 'Slide up', smoothleft: 'Smooth slide', wipeleft: 'Wipe', circleopen: 'Circle open', zoomin: 'Zoom in', crosszoom: 'Cross zoom', whippan: 'Whip pan', blurslide: 'Blur slide', filmburn: 'Film burn', lightleak: 'Light leak' },
       motion: { 'zoom-in': 'Zoom in', 'zoom-out': 'Zoom out', 'pan-left': 'Pan left', 'pan-right': 'Pan right' }, title: 'On screen title', sub: 'Subtitle', fala: 'What the voice says', save: 'Save changes' },
     title: 'Studio',
     subtitle: 'From script to finished video. The worker on your computer does voice, alignment and editing.',
@@ -180,7 +180,7 @@ export default {
     musicVolume: 'Music volume',
     videoVolume: 'Video sound volume',
     videoVolumeHint: 'With narration, keep the video loud and the music lower. Photo only videos: lower the video sound.',
-    noPreview: 'Instagram does not preview a Reel with music: it is published as set here. With automatic sharing on, it goes to Facebook with the music.',
+    noPreview: 'Instagram does not preview a Reel with music: it is published as set here. The music only goes to Instagram: the Facebook post has none.',
   },
   voicePicker: {
     default: 'Default voice',

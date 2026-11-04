@@ -83,6 +83,7 @@ fora dos trechos, foto recortada no foco 4:5, regras de texto).
 1. DMaker v2 no PC (atualizar sem render rodando) e regressão de um pessoal e de um explicativo.
 2. Pipeline com a v2: legenda arredondada, transições novas com curva, look, som discreto, corte automático na fala
    original (ver `docs/ESTUDIO.md`, DMaker v2).
+   **Feito (03/11):** legenda, transições (a IA só passou a escolher as novas com o schema corrigido) e look no pessoal; faltam som discreto, corte automático e infográficos.
 3. Música do Instagram na publicação (busca pelo clima, escolha da pessoa, `audio_configuration`) e o compartilhamento
    automático Instagram → Facebook ligado e testado com um Reels publicado pela API.
 4. Banco de vozes prontas (RB-59 "Escolher do banco"): vozes projetadas no DMaker por gênero, idade e tom, amostra fixa

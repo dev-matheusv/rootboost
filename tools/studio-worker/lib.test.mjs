@@ -180,6 +180,10 @@ test("vídeo pessoal: tela cheia, fala original e narração só onde há fala",
   const moving = buildPersonalSpec({ name: "m", brandKey: "b", voice: null, seed: 1, falas: ["", "", ""], media: { "acervo-a": { path: "a.jpg" } },
     roteiro: { blocos: [{ trechos: [["acervo-a", 0, 3]], audio: "musica" }, { trechos: [["acervo-a", 0, 3]], audio: "musica", transicao: "whippan" }] } });
   assert.deepEqual(moving.timeline[1].transition, { type: "whippan", duration: 0.6, curve: "ease" });
+  assert.equal(moving.look, undefined);
+  const warm = buildPersonalSpec({ name: "n", brandKey: "b", voice: "v", seed: 1, falas: [], media: { "acervo-a": { path: "a.jpg" } },
+    roteiro: { look: "quente", blocos: [{ trechos: [["acervo-a", 0, 3]], audio: "musica" }] } });
+  assert.equal(warm.look, "quente");
   const silent = buildPersonalSpec({ name: "x", brandKey: "b", voice: null, seed: 1, roteiro: { blocos: [{ trechos: [["acervo-a", 0, 3]], audio: "musica" }] }, falas: ["", ""], media: { "acervo-a": { path: "a.jpg" } } });
   assert.equal(silent.captions, undefined);
 });

@@ -47,7 +47,7 @@ export default {
       createAndWrite: 'Criar e escrever com a IA',
     },
     edit: {
-      transition: { fade: 'Entra suave', dissolve: 'Dissolve', slideleft: 'Desliza pro lado', slideup: 'Desliza pra cima', smoothleft: 'Desliza suave', wipeleft: 'Cortina', circleopen: 'Círculo abrindo', zoomin: 'Zoom de entrada' },
+      transition: { fade: 'Entra suave', dissolve: 'Dissolve', slideleft: 'Desliza pro lado', slideup: 'Desliza pra cima', smoothleft: 'Desliza suave', wipeleft: 'Cortina', circleopen: 'Círculo abrindo', zoomin: 'Zoom de entrada', crosszoom: 'Zoom de passagem', whippan: 'Chicote', blurslide: 'Desfoque deslizando', filmburn: 'Queima de filme', lightleak: 'Luz' },
       motion: { 'zoom-in': 'Aproxima', 'zoom-out': 'Afasta', 'pan-left': 'Panorâmica à esquerda', 'pan-right': 'Panorâmica à direita' }, title: 'Título na tela', sub: 'Subtítulo', fala: 'O que a voz fala', save: 'Salvar alterações' },
     title: 'Estúdio',
     subtitle: 'Do roteiro ao vídeo pronto. O worker no seu computador faz voz, alinhamento e montagem.',
@@ -180,7 +180,7 @@ export default {
     musicVolume: 'Volume da música',
     videoVolume: 'Volume do som do vídeo',
     videoVolumeHint: 'Com narração, deixe o vídeo alto e a música mais baixa. Vídeo só com fotos, abaixe o som do vídeo.',
-    noPreview: 'O Instagram não mostra prévia do Reels com a música: ele sai como configurado aqui. Com o compartilhamento automático ligado, vai pro Facebook com a música.',
+    noPreview: 'O Instagram não mostra prévia do Reels com a música: ele sai como configurado aqui. A música só entra no Instagram: o post do Facebook sai sem ela.',
   },
   voicePicker: {
     default: 'Voz padrão',
