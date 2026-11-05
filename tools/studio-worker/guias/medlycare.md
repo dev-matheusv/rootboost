@@ -11,7 +11,7 @@ Criar o modelo "Ficha de harmonização facial" (fica fora do vídeo):
 1. Vá direto pra tela: use clicar com alvo = qualquer id da lista e texto = "/modelos-formulario". Esse texto abre a tela pelo endereço; o atalho fica em "Meu Perfil", que não cabe na barra de baixo no celular.
 2. Toque na aba "Ficha" no topo e depois no botão redondo de adicionar, no canto de baixo.
 3. Nome do modelo: Ficha de harmonização facial. Deixe ligado "Pedir produto/medicação em cada marcação".
-4. Toque em "Adicionar seção" e use o título Aplicação. Toque em "Adicionar pergunta", escreva Pontos de aplicação e escolha o tipo "Tabela de aplicações".
+4. Toque em "Adicionar seção" e use o título Aplicação. Toque em "Adicionar pergunta", escreva Pontos de aplicação uma vez só e escolha o tipo "Tabela de aplicações": toque em "Tipo de resposta" e, na lista que abre, toque na opção. Texto já digitado aparece na foto: não digite de novo.
 5. No campo "Regiões (separadas por vírgula)", digite: Frontal, Prócero, Corrugador.
 6. Toque em "Adicionar pergunta" de novo, escreva Produto utilizado e escolha o tipo "Dados do produto" (ele traz lote e validade).
 7. Salve o modelo. Abra o modelo salvo na lista, vá em "Imagem de referência" e toque em "Enviar imagem": o sistema escolhe sozinho a imagem do rosto. Espere o aviso "Imagem enviada." e salve se a tela pedir.

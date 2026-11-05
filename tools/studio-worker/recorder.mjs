@@ -381,7 +381,16 @@ export async function recordScene({ brandKey, scene, account, outDir, name, ask,
         const before = await evaluate(cdp, SCREEN_SIGN);
         // Texto "x,y" no clique: ponto exato da foto da tela, pra marcar um lugar dentro de uma imagem.
         const spot = /^(\d+)\s*,\s*(\d+)$/.exec(next.text ?? "");
-        const at = spot ? { ...el, x: Number(spot[1]), y: Number(spot[2]) } : el;
+        // Opção de lista pode estar cortada no fim da janela: traz pra vista antes, senão o clique cai no fundo e fecha a lista.
+        const visible = spot ? null : await evaluate(cdp, `(() => {
+          const n = document.querySelector('[data-rb-id="${el.id}"]');
+          const hit = document.elementFromPoint(${el.x}, ${el.y});
+          if (!n || (hit && (n.contains(hit) || hit.contains(n)))) return null;
+          n.scrollIntoView({ block: 'center' });
+          const r = n.getBoundingClientRect();
+          return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) };
+        })()`);
+        const at = spot ? { ...el, x: Number(spot[1]), y: Number(spot[2]) } : { ...el, ...visible };
         const under = await evaluate(cdp, `(() => { const e = document.elementFromPoint(${at.x}, ${at.y}); return e ? e.tagName.toLowerCase() + '.' + String(e.className.baseVal ?? e.className).slice(0, 50) : 'nada'; })()`);
         await click(cdp, at, byScript);
         await wait(1500);
