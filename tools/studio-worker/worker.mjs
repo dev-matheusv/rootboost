@@ -191,13 +191,18 @@ async function round() {
     const recordings = [];
     for (const [i, s] of scenes.entries()) {
       const source = `${nome}-bloco-${s.index + 1}`;
-      await progress(job.id, 5 + Math.round((i / scenes.length) * 25), `gravando a tela: ${s.scene}`);
+      const percent = 5 + Math.round((i / scenes.length) * 25);
+      await progress(job.id, percent, `gravando a tela: ${s.scene}`);
+      // Sinal de vida durante a gravação: sem ele o Console acusa computador desligado e a API solta o job.
+      const beat = setInterval(() => void progress(job.id, percent, `gravando a tela: ${s.scene}`).catch(() => {}), cfg.heartbeatSeconds * 1000);
       try {
         const r = await recordScene({ brandKey: job.brandKey, scene: s.scene, account, outDir: `${cfg.base}/brutos/${source}`, name: source,
           ask: async (state) => (await call("POST", "/worker/ai/next-action", state)).data });
         recordings.push({ index: s.index, source, duration: r.duration });
       } catch (e) {
         return fail(job.id, `gravação do bloco ${s.index + 1}: ${e.message}`, !e.personalData);
+      } finally {
+        clearInterval(beat);
       }
     }
     job.roteiro = applyRecordings(job.roteiro, recordings);

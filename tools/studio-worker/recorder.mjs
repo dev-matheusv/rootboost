@@ -2,8 +2,8 @@
 // sistema do cliente com a conta de demonstração (contas.json, fora do git), e a cada passo manda a foto e os
 // elementos pra API (/worker/ai/next-action), que devolve o que fazer. Grava os quadros e monta o mp4 com FFmpeg.
 // Mesmo molde do gravar-reel.mjs do MedlyCare (CDP, cursor desenhado, 540x600 a 2x), sem passos escritos à mão.
-import { spawn } from "node:child_process";
-import { appendFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { spawn, spawnSync } from "node:child_process";
+import { appendFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -19,6 +19,7 @@ const MOBILE_UA = "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (
 const VIEW = { width: 540, height: 600, scale: 2 };
 // Tempo total da cena, contando a espera pela IA (essa espera não entra no vídeo).
 const MAX_SECONDS = 240;
+const CDP_TIMEOUT_MS = 30_000; // comando sem resposta do Chrome vira erro, nunca espera infinita
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
 class Cdp {
@@ -28,6 +29,10 @@ class Cdp {
     this.pending = new Map();
     this.listeners = new Map();
     this.open = new Promise((ok, fail) => { this.ws.onopen = ok; this.ws.onerror = fail; });
+    this.ws.onclose = () => {
+      for (const { fail } of this.pending.values()) fail(new Error("o Chrome da gravação fechou no meio"));
+      this.pending.clear();
+    };
     this.ws.onmessage = (ev) => {
       const msg = JSON.parse(ev.data);
       if (msg.id && this.pending.has(msg.id)) {
@@ -39,8 +44,14 @@ class Cdp {
   }
   send(method, params = {}) {
     const id = ++this.seq;
-    this.ws.send(JSON.stringify({ id, method, params }));
-    return new Promise((ok, fail) => this.pending.set(id, { ok, fail }));
+    return new Promise((ok, fail) => {
+      const timer = setTimeout(() => {
+        this.pending.delete(id);
+        fail(new Error(`o Chrome não respondeu a ${method} em ${CDP_TIMEOUT_MS / 1000} s`));
+      }, CDP_TIMEOUT_MS);
+      this.pending.set(id, { ok: (r) => { clearTimeout(timer); ok(r); }, fail: (e) => { clearTimeout(timer); fail(e); } });
+      this.ws.send(JSON.stringify({ id, method, params }));
+    });
   }
   on(method, fn) { this.listeners.set(method, [...(this.listeners.get(method) ?? []), fn]); }
 }
@@ -82,17 +93,27 @@ const LIST_ELEMENTS = `(() => {
   return out;
 })()`;
 
-async function openChrome(port) {
+async function openChrome() {
   const profile = mkdtempSync(join(tmpdir(), "rb-rec-"));
-  const proc = spawn(CHROME, ["--headless=new", `--remote-debugging-port=${port}`, `--user-data-dir=${profile}`, "--no-first-run",
+  const proc = spawn(CHROME, ["--headless=new", "--remote-debugging-port=0", `--user-data-dir=${profile}`, "--no-first-run",
     "--no-default-browser-check", "--hide-scrollbars", "--mute-audio", "--lang=pt-BR", `--window-size=${VIEW.width},${VIEW.height}`, "about:blank"],
   { stdio: "ignore" });
+  // Porta livre a cada gravação (o Chrome escolhe e grava no perfil): porta fixa pegava um Chrome velho ainda fechando.
+  const close = () => {
+    if (proc.pid) spawnSync("taskkill", ["/pid", String(proc.pid), "/t", "/f"], { stdio: "ignore" });
+    try { rmSync(profile, { recursive: true, force: true }); } catch { /* arquivo preso, o Windows limpa depois */ }
+  };
+  const portFile = join(profile, "DevToolsActivePort");
   let target = null;
-  for (let i = 0; i < 60 && !target; i++) {
+  for (let i = 0; i < 80 && !target; i++) {
     await wait(250);
-    try { target = (await (await fetch(`http://127.0.0.1:${port}/json/list`)).json()).find((t) => t.type === "page"); } catch { /* subindo */ }
+    try {
+      if (!existsSync(portFile)) continue;
+      const port = readFileSync(portFile, "utf8").split("\n")[0].trim();
+      target = (await (await fetch(`http://localhost:${port}/json/list`)).json()).find((t) => t.type === "page");
+    } catch { /* subindo */ }
   }
-  if (!target) throw new Error("o Chrome não respondeu");
+  if (!target) { close(); throw new Error("o Chrome da gravação não abriu em 20 s"); }
   const cdp = new Cdp(target.webSocketDebuggerUrl);
   await cdp.open;
   await cdp.send("Page.enable");
@@ -107,7 +128,7 @@ async function openChrome(port) {
   await cdp.send("Emulation.setUserAgentOverride", { userAgent: MOBILE_UA, platform: "Android" });
   await cdp.send("Emulation.setFocusEmulationEnabled", { enabled: true });
   await cdp.send("Page.addScriptToEvaluateOnNewDocument", { source: CURSOR });
-  return { cdp, close: () => { try { proc.kill(); } catch {} try { rmSync(profile, { recursive: true, force: true }); } catch {} } };
+  return { cdp, close };
 }
 
 async function evaluate(cdp, expression) {
@@ -203,9 +224,9 @@ async function loginFields(cdp) {
  * produto e clicar em botão destrutivo (vira passo perdido no histórico, e a IA escolhe outro caminho).
  * @param ask (state) => Promise<{ action, target, text, reason }>, a chamada à API.
  */
-export async function recordScene({ brandKey, scene, account, outDir, name, ask, port = 9333, log = console.log }) {
+export async function recordScene({ brandKey, scene, account, outDir, name, ask, log = console.log }) {
   mkdirSync(join(outDir, "quadros"), { recursive: true });
-  const { cdp, close } = await openChrome(port);
+  const { cdp, close } = await openChrome();
   const frames = [];
   let recording = false;
   let skipped = 0; // segundos em que a gravação esperou a IA: saem da linha do tempo do vídeo
