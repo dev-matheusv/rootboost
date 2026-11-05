@@ -19,6 +19,7 @@ const MOBILE_UA = "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (
 const VIEW = { width: 540, height: 600, scale: 2 };
 // Tempo total da cena, contando a espera pela IA (essa espera não entra no vídeo).
 const MAX_SECONDS = 240;
+const MAX_DEAD_CLICKS = 4; // cliques seguidos sem mudar nada na tela: para antes de gastar mais IA
 const CDP_TIMEOUT_MS = 30_000; // comando sem resposta do Chrome vira erro, nunca espera infinita
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -137,6 +138,15 @@ async function evaluate(cdp, expression) {
   return r.result.value;
 }
 
+// Conta o que chega na página em cada clique, pra saber se ele parou no caminho ou se a página ignorou.
+const WATCH_CLICKS = `(() => {
+  if (window.__rbClicks) return; window.__rbClicks = [];
+  for (const k of ['pointerdown', 'click']) document.addEventListener(k, (e) => {
+    window.__rbClicks.push(k + ' em ' + e.target.tagName.toLowerCase() + '.' + String(e.target.className.baseVal ?? e.target.className).slice(0, 40) + (e.defaultPrevented ? ' (cancelado)' : ''));
+  }, true);
+})()`;
+const SCREEN_SIGN = `location.href + '|' + document.body.innerText.length + '|' + document.querySelectorAll('body *').length`;
+
 async function click(cdp, el) {
   await evaluate(cdp, `window.__moveCursor && window.__moveCursor(${el.x}, ${el.y})`);
   await wait(650);
@@ -228,6 +238,12 @@ export async function recordScene({ brandKey, scene, account, outDir, name, ask,
   mkdirSync(join(outDir, "quadros"), { recursive: true });
   const { cdp, close } = await openChrome();
   const frames = [];
+  const problems = []; // erro de script e chamada recusada desde o último passo
+  await cdp.send("Network.enable");
+  cdp.on("Runtime.exceptionThrown", (p) => problems.push(`erro na página: ${p.exceptionDetails.exception?.description?.split("\n")[0] ?? p.exceptionDetails.text}`));
+  cdp.on("Runtime.consoleAPICalled", (p) => { if (p.type === "error") problems.push(`console: ${p.args.map((a) => a.value ?? a.description ?? "").join(" ").slice(0, 160)}`); });
+  cdp.on("Network.responseReceived", (p) => { if (p.response.status >= 400) problems.push(`HTTP ${p.response.status} ${new URL(p.response.url).pathname}`); });
+  cdp.on("Network.loadingFailed", (p) => { if (!p.canceled) problems.push(`rede falhou: ${p.errorText}`); });
   let recording = false;
   let skipped = 0; // segundos em que a gravação esperou a IA: saem da linha do tempo do vídeo
   // Registro de cada passo, junto dos quadros: é o que explica uma gravação que falhou.
@@ -275,6 +291,8 @@ export async function recordScene({ brandKey, scene, account, outDir, name, ask,
     const started = Date.now();
     let outcome = "desistir";
     let stopReason = `passou de ${MAX_SECONDS} s sem terminar`;
+    let deadClicks = 0;
+    await evaluate(cdp, WATCH_CLICKS);
     for (let step = 0; Date.now() - started < MAX_SECONDS * 1000; step++) {
       elements = await evaluate(cdp, LIST_ELEMENTS);
       // Foto em 1x (540x600) pra IA: um quarto dos pixels da gravação, bem menos tokens por passo (custo).
@@ -307,7 +325,18 @@ export async function recordScene({ brandKey, scene, account, outDir, name, ask,
       const el = elements.find((e) => e.id === next.target);
       if (next.action === "clicar" && el) {
         if (isDestructive(el.text)) { history.push(`recusado: ${el.text} (botão proibido)`); continue; }
+        const before = await evaluate(cdp, SCREEN_SIGN);
+        const under = await evaluate(cdp, `(() => { const e = document.elementFromPoint(${el.x}, ${el.y}); return e ? e.tagName.toLowerCase() + '.' + String(e.className.baseVal ?? e.className).slice(0, 50) : 'nada'; })()`);
         await click(cdp, el);
+        await wait(1500);
+        const seen = await evaluate(cdp, "(window.__rbClicks ?? []).splice(0).join(', ')");
+        const changed = (await evaluate(cdp, SCREEN_SIGN)) !== before;
+        note(`  clique em ${el.x},${el.y} sobre ${under}; a página viu: ${seen || "nada"}; tela ${changed ? "mudou" : "igual"}${problems.length ? `; problemas: ${problems.splice(0).slice(0, 6).join(" | ")}` : ""}`);
+        deadClicks = changed ? 0 : deadClicks + 1;
+        if (deadClicks >= MAX_DEAD_CLICKS) {
+          stopReason = `${deadClicks} cliques seguidos sem mudar a tela`;
+          break;
+        }
       } else if (next.action === "digitar" && el) {
         await click(cdp, el);
         await type(cdp, next.text ?? "");
