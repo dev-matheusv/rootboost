@@ -189,6 +189,9 @@ async function round() {
   // 3. Gravação de tela (RB-50): blocos que a IA escreveu com "cena" e trecho "gravar-bloco-N" são gravados agora.
   if (scenes.length) {
     const recordings = [];
+    // Mapa das telas do sistema da marca: sem ele a IA gasta os passos procurando onde cada coisa fica.
+    const guidePath = join(here, "guias", `${job.brandKey}.md`);
+    const guide = existsSync(guidePath) ? `${readFileSync(guidePath, "utf8").trim()}\n\nCena: ` : "";
     for (const [i, s] of scenes.entries()) {
       const source = `${nome}-bloco-${s.index + 1}`;
       const percent = 5 + Math.round((i / scenes.length) * 25);
@@ -197,7 +200,7 @@ async function round() {
       const beat = setInterval(() => void progress(job.id, percent, `gravando a tela: ${s.scene}`).catch(() => {}), cfg.heartbeatSeconds * 1000);
       try {
         const r = await recordScene({ brandKey: job.brandKey, scene: s.scene, account, outDir: `${cfg.base}/brutos/${source}`, name: source,
-          ask: async (state) => (await call("POST", "/worker/ai/next-action", state)).data });
+          ask: async (state) => (await call("POST", "/worker/ai/next-action", { ...state, scene: guide + state.scene })).data });
         recordings.push({ index: s.index, source, duration: r.duration });
       } catch (e) {
         return fail(job.id, `gravação do bloco ${s.index + 1}: ${e.message}`, !e.personalData);

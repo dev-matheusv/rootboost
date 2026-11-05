@@ -79,15 +79,17 @@ const LIST_ELEMENTS = `(() => {
   const nodes = new Set(document.querySelectorAll(sel));
   for (const el of document.querySelectorAll('body *'))
     if (getComputedStyle(el).cursor === 'pointer' && getComputedStyle(el.parentElement).cursor !== 'pointer') nodes.add(el);
+  // Imagem grande entra na lista: é onde a IA marca um ponto exato (clicar com texto "x,y").
+  for (const el of document.querySelectorAll('img')) if (el.getBoundingClientRect().width >= 150) nodes.add(el);
   for (const el of nodes) {
     const r = el.getBoundingClientRect();
     if (r.width < 4 || r.height < 4 || r.bottom < 0 || r.top > innerHeight || getComputedStyle(el).visibility === 'hidden') continue;
     const id = 'e' + (++n); el.setAttribute('data-rb-id', id);
     const tag = el.tagName.toLowerCase();
-    const role = tag === 'input' ? 'campo ' + (el.type || 'texto') : tag === 'textarea' ? 'campo texto' : tag === 'select' ? 'lista' : tag === 'a' ? 'link' : el.isContentEditable ? 'campo editor' : 'botão';
+    const role = tag === 'img' ? 'imagem' : tag === 'input' ? 'campo ' + (el.type || 'texto') : tag === 'textarea' ? 'campo texto' : tag === 'select' ? 'lista' : tag === 'a' ? 'link' : el.isContentEditable ? 'campo editor' : 'botão';
     const x = Math.round(r.left + r.width / 2), y = Math.round(r.top + r.height / 2);
     // Ícone sem texto (barra de baixo): a posição deixa a IA casar o id com o que ela vê na foto de 540x600.
-    const text = (el.getAttribute('aria-label') || el.innerText || el.placeholder || el.value || el.title || '').trim().replace(/\\s+/g, ' ').slice(0, 80) || 'ícone sem texto em x=' + x + ' y=' + y;
+    const text = (el.getAttribute('aria-label') || el.innerText || el.placeholder || el.value || el.title || '').trim().replace(/\\s+/g, ' ').slice(0, 80) || (tag === 'img' ? 'imagem de x=' + Math.round(r.left) + ' a ' + Math.round(r.right) + ', y=' + Math.round(r.top) + ' a ' + Math.round(r.bottom) : 'ícone sem texto em x=' + x + ' y=' + y);
     out.push({ id, role, text, x, y });
     if (n >= 150) break;
   }
@@ -364,16 +366,19 @@ export async function recordScene({ brandKey, scene, account, outDir, name, ask,
       if (next.action === "clicar" && el) {
         if (isDestructive(el.text)) { history.push(`recusado: ${el.text} (botão proibido)`); continue; }
         const before = await evaluate(cdp, SCREEN_SIGN);
-        const under = await evaluate(cdp, `(() => { const e = document.elementFromPoint(${el.x}, ${el.y}); return e ? e.tagName.toLowerCase() + '.' + String(e.className.baseVal ?? e.className).slice(0, 50) : 'nada'; })()`);
-        await click(cdp, el, byScript);
+        // Texto "x,y" no clique: ponto exato da foto da tela, pra marcar um lugar dentro de uma imagem.
+        const spot = /^(\d+)\s*,\s*(\d+)$/.exec(next.text ?? "");
+        const at = spot ? { ...el, x: Number(spot[1]), y: Number(spot[2]) } : el;
+        const under = await evaluate(cdp, `(() => { const e = document.elementFromPoint(${at.x}, ${at.y}); return e ? e.tagName.toLowerCase() + '.' + String(e.className.baseVal ?? e.className).slice(0, 50) : 'nada'; })()`);
+        await click(cdp, at, byScript);
         await wait(1500);
         let seen = await evaluate(cdp, "(window.__rbClicks ?? []).splice(0).join(', ')");
         let changed = (await evaluate(cdp, SCREEN_SIGN)) !== before;
-        note(`  clique em ${el.x},${el.y} sobre ${under}; a página viu: ${seen || "nada"}; tela ${changed ? "mudou" : "igual"}${problems.length ? `; problemas: ${problems.splice(0).slice(0, 6).join(" | ")}` : ""}`);
+        note(`  clique em ${at.x},${at.y} sobre ${under}; a página viu: ${seen || "nada"}; tela ${changed ? "mudou" : "igual"}${problems.length ? `; problemas: ${problems.splice(0).slice(0, 6).join(" | ")}` : ""}`);
         if (!byScript && !seen && !changed) {
           note(`  o clique não chegou na página; estado: ${await evaluate(cdp, PAGE_STATE)}`);
           byScript = true;
-          await evaluate(cdp, scriptClick(el.x, el.y));
+          await evaluate(cdp, scriptClick(at.x, at.y));
           await wait(1500);
           seen = await evaluate(cdp, "(window.__rbClicks ?? []).splice(0).join(', ')");
           changed = (await evaluate(cdp, SCREEN_SIGN)) !== before;
