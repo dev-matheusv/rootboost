@@ -20,6 +20,7 @@ const MOBILE_UA = "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (
 const VIEW = { width: 540, height: 600, scale: 2 };
 // Tempo total da cena, contando a espera pela IA (essa espera não entra no vídeo).
 const MAX_SECONDS = 240;
+const MIN_SCENE_SECONDS = 8; // abaixo disso não dá pra cobrir a fala com ação
 const MAX_DEAD_CLICKS = 4; // cliques seguidos sem mudar nada na tela: para antes de gastar mais IA
 const CDP_TIMEOUT_MS = 30_000; // comando sem resposta do Chrome vira erro, nunca espera infinita
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -335,6 +336,7 @@ export async function recordScene({ brandKey, scene, account, outDir, name, ask,
     let outcome = "desistir";
     let stopReason = `passou de ${MAX_SECONDS} s sem terminar`;
     let deadClicks = 0;
+    let started_scene = false;
     let byScript = false; // o clique do navegador não chegou na página: segue clicando por dentro dela
     await evaluate(cdp, WATCH_CLICKS);
     for (let step = 0; Date.now() - started < MAX_SECONDS * 1000; step++) {
@@ -351,8 +353,18 @@ export async function recordScene({ brandKey, scene, account, outDir, name, ask,
       recording = true;
       const chosen = elements.find((e) => e.id === next.target);
       note(`passo ${step + 1} em ${url}: ${next.action} ${chosen ? `"${chosen.text}"` : next.target ?? ""} ${next.text ?? ""} (${next.reason})`);
+      // Cena de dois segundos vira imagem parada no vídeo: manda mostrar a ação antes de encerrar.
+      const shown = frames.length ? frames.at(-1).t - frames[0].t : 0;
+      if (next.action === "pronto" && shown < MIN_SCENE_SECONDS && step < 20) {
+        note(`  pronto recusado: só ${shown.toFixed(1)} s de cena`);
+        history.push(`recusado: a cena tem só ${shown.toFixed(1)} s; mostre a ação acontecendo antes de encerrar`);
+        continue;
+      }
       if (next.action === "pronto" || next.action === "desistir") { outcome = next.action; stopReason = next.reason; break; }
       if (next.action === "comecar") {
+        // Só o primeiro vale: repetir apagava a ação já gravada e o vídeo saía parado.
+        if (started_scene) { history.push("recusado: a cena já começou, siga mostrando a ação"); continue; }
+        started_scene = true;
         // Preparo terminou: o que veio antes (navegar, abrir, ajustar) fica fora do vídeo.
         frames.length = 0;
         await grab();

@@ -1,3 +1,10 @@
+Direção do vídeo (vale pra toda cena):
+- Tudo que a fala promete tem de acontecer na tela depois de comecar. Prepare antes só a navegação; a ação principal fica depois de comecar. Responda comecar uma vez só.
+- Prontuário em SOAP: depois de comecar, digite em cada seção um texto curto, fictício e plausível (S: dor lombar há duas semanas; O: flexão limitada, sem irradiação; A: lombalgia mecânica; P: fortalecimento de core, duas vezes por semana), uma seção por vez.
+- Não use o atendimento de Pedro Henrique: ele está cheio de imagens de teste e com o cronômetro alto. Pra atendimento vazio, abra /waiting-queue (clicar com texto "/waiting-queue") e toque em "Atender" antes de comecar. Se o cartão "Em atendimento" mostrar outro paciente sem texto, use esse.
+- Colar print: depois de comecar, clique no campo de texto e use colar-imagem uma vez. Anexar foto: toque no botão de imagem ao lado de "Inserir modelo", uma vez. Não saia procurando outro botão de anexar.
+- Encerre com pronto logo depois da última ação, sem rolar a tela à toa.
+
 Como chegar nas telas do MedlyCare (no celular):
 - Atendimento em andamento: toque no cartão "Em atendimento" da tela inicial. A tela do atendimento é longa: Anotações fica no topo e as outras seções ficam abaixo, então use rolar pra baixo pra encontrá-las.
 - Anotações: o seletor "Texto corrido" ou "SOAP" fica no topo da seção. "Inserir modelo" e o botão de imagem ficam ao lado dele.
