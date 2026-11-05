@@ -369,6 +369,13 @@ export async function recordScene({ brandKey, scene, account, outDir, name, ask,
         throw err;
       }
       const el = elements.find((e) => e.id === next.target);
+      // Texto começando com "/": vai direto pra esse endereço do sistema (tela que não cabe na barra do celular).
+      if (next.action === "clicar" && /^\/[\w/-]*$/.test(next.text ?? "")) {
+        await evaluate(cdp, `location.assign(${JSON.stringify(next.text)})`);
+        await wait(3000);
+        history.push(`abriu ${next.text}`);
+        continue;
+      }
       if (next.action === "clicar" && el) {
         if (isDestructive(el.text)) { history.push(`recusado: ${el.text} (botão proibido)`); continue; }
         const before = await evaluate(cdp, SCREEN_SIGN);

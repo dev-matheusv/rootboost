@@ -8,7 +8,7 @@ Como chegar nas telas do MedlyCare (no celular):
 - Se a cena usa ficha de harmonização e a lista de modelos não tiver "Ficha de harmonização facial", crie o modelo antes, seguindo os passos abaixo. Ele fica salvo na conta. Assim que a imagem for enviada, responda desistir com o motivo "modelo criado, gravar de novo": a próxima tentativa já encontra o modelo e grava a cena.
 
 Criar o modelo "Ficha de harmonização facial" (fica fora do vídeo):
-1. Feche o que estiver aberto. Na barra de baixo, o último ícone à direita é "Meu Perfil"; se ele estiver fora da tela, abra o endereço do sistema pelo ícone que aparecer na lista. Em "Meu Perfil", toque no atalho "Modelos de formulário".
+1. Vá direto pra tela: use clicar com alvo = qualquer id da lista e texto = "/modelos-formulario". Esse texto abre a tela pelo endereço; o atalho fica em "Meu Perfil", que não cabe na barra de baixo no celular.
 2. Toque na aba "Ficha" no topo e depois no botão redondo de adicionar, no canto de baixo.
 3. Nome do modelo: Ficha de harmonização facial. Deixe ligado "Pedir produto/medicação em cada marcação".
 4. Toque em "Adicionar seção" e use o título Aplicação. Toque em "Adicionar pergunta", escreva Pontos de aplicação e escolha o tipo "Tabela de aplicações".
