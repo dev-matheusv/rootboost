@@ -13,6 +13,7 @@ const CHROME = process.env.CHROME_PATH ?? "C:/Program Files/Google/Chrome/Applic
 const FFMPEG = process.env.FFMPEG_PATH ?? "C:/DMaker/bin/ffmpeg/bin/ffmpeg.exe";
 // Imagem fictícia que a gravação cola ou anexa: nunca um arquivo de verdade do PC.
 const DEMO_IMAGE = join(dirname(fileURLToPath(import.meta.url)), "demo", "imagem-demo.png");
+const DEMO_FACE = join(dirname(fileURLToPath(import.meta.url)), "demo", "rosto-referencia.jpg");
 // Janela estreita de Reels se apresenta como celular: sistema que escolhe o menu pelo aparelho (MedlyCare) mostra a barra
 // de baixo; com Chrome de computador nessa largura a tela fica sem menu nenhum e a IA não tem por onde navegar.
 const MOBILE_UA = "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36";
@@ -128,7 +129,10 @@ async function openChrome() {
   // Janela de escolher arquivo não existe sem tela: quem abre recebe a imagem de demonstração.
   await cdp.send("Page.setInterceptFileChooserDialog", { enabled: true });
   cdp.on("Page.fileChooserOpened", (p) => {
-    cdp.send("DOM.setFileInputFiles", { files: [DEMO_IMAGE], backendNodeId: p.backendNodeId }).catch(() => {});
+    // No cadastro de modelo de ficha a imagem é o rosto de referência; no resto, o print de demonstração.
+    evaluate(cdp, "location.pathname")
+      .then((path) => cdp.send("DOM.setFileInputFiles", { files: [path.includes("modelos-formulario") ? DEMO_FACE : DEMO_IMAGE], backendNodeId: p.backendNodeId }))
+      .catch(() => {});
   });
   await cdp.send("Emulation.setDeviceMetricsOverride", { width: VIEW.width, height: VIEW.height, deviceScaleFactor: VIEW.scale, mobile: false });
   await cdp.send("Emulation.setUserAgentOverride", { userAgent: MOBILE_UA, platform: "Android" });

@@ -5,4 +5,13 @@ Como chegar nas telas do MedlyCare (no celular):
 - Dentro da ficha: os campos Região, tipo de marcação e quantidade por clique ficam acima da imagem do rosto. A tabela com a soma por região fica abaixo da imagem. Salve a ficha pelo botão de salvar.
 - Marcar um ponto na imagem do rosto: use clicar com alvo = id da imagem e texto = "x,y", a posição em pixels na foto da tela (exemplo: "270,210"). Cada clique abre um editor pequeno com produto e quantidade; preencha e feche antes do próximo ponto. Escolha sempre o lugar certo do rosto olhando a foto.
 - Não toque em "Finalizar atendimento".
-- Se a lista de modelos não tiver o modelo que a cena precisa, responda desistir na hora e diga no motivo qual modelo falta.
+- Se a cena usa ficha de harmonização e a lista de modelos não tiver "Ficha de harmonização facial", crie o modelo antes, seguindo os passos abaixo. Ele fica salvo na conta. Assim que a imagem for enviada, responda desistir com o motivo "modelo criado, gravar de novo": a próxima tentativa já encontra o modelo e grava a cena.
+
+Criar o modelo "Ficha de harmonização facial" (fica fora do vídeo):
+1. Feche o que estiver aberto. Na barra de baixo, o último ícone à direita é "Meu Perfil"; se ele estiver fora da tela, abra o endereço do sistema pelo ícone que aparecer na lista. Em "Meu Perfil", toque no atalho "Modelos de formulário".
+2. Toque na aba "Ficha" no topo e depois no botão redondo de adicionar, no canto de baixo.
+3. Nome do modelo: Ficha de harmonização facial. Deixe ligado "Pedir produto/medicação em cada marcação".
+4. Toque em "Adicionar seção" e use o título Aplicação. Toque em "Adicionar pergunta", escreva Pontos de aplicação e escolha o tipo "Tabela de aplicações".
+5. No campo "Regiões (separadas por vírgula)", digite: Frontal, Prócero, Corrugador.
+6. Toque em "Adicionar pergunta" de novo, escreva Produto utilizado e escolha o tipo "Dados do produto" (ele traz lote e validade).
+7. Salve o modelo. Abra o modelo salvo na lista, vá em "Imagem de referência" e toque em "Enviar imagem": o sistema escolhe sozinho a imagem do rosto. Espere o aviso "Imagem enviada." e salve se a tela pedir.
