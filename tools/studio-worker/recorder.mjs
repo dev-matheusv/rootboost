@@ -13,6 +13,9 @@ const CHROME = process.env.CHROME_PATH ?? "C:/Program Files/Google/Chrome/Applic
 const FFMPEG = process.env.FFMPEG_PATH ?? "C:/DMaker/bin/ffmpeg/bin/ffmpeg.exe";
 // Imagem fictícia que a gravação cola ou anexa: nunca um arquivo de verdade do PC.
 const DEMO_IMAGE = join(dirname(fileURLToPath(import.meta.url)), "demo", "imagem-demo.png");
+// Janela estreita de Reels se apresenta como celular: sistema que escolhe o menu pelo aparelho (MedlyCare) mostra a barra
+// de baixo; com Chrome de computador nessa largura a tela fica sem menu nenhum e a IA não tem por onde navegar.
+const MOBILE_UA = "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36";
 const VIEW = { width: 540, height: 600, scale: 2 };
 // Tempo total da cena, contando a espera pela IA (essa espera não entra no vídeo).
 const MAX_SECONDS = 240;
@@ -60,14 +63,20 @@ const CURSOR = `(() => {
 const LIST_ELEMENTS = `(() => {
   const sel = 'a,button,input,select,textarea,[role=button],[role=link],[role=tab],[role=menuitem],[onclick],[tabindex]:not([tabindex="-1"]),[contenteditable="true"]';
   const out = []; let n = 0;
-  for (const el of document.querySelectorAll(sel)) {
+  // Cartão clicável costuma ser só um div com cursor de mão; pega o de fora, não cada filho dele.
+  const nodes = new Set(document.querySelectorAll(sel));
+  for (const el of document.querySelectorAll('body *'))
+    if (getComputedStyle(el).cursor === 'pointer' && getComputedStyle(el.parentElement).cursor !== 'pointer') nodes.add(el);
+  for (const el of nodes) {
     const r = el.getBoundingClientRect();
     if (r.width < 4 || r.height < 4 || r.bottom < 0 || r.top > innerHeight || getComputedStyle(el).visibility === 'hidden') continue;
     const id = 'e' + (++n); el.setAttribute('data-rb-id', id);
     const tag = el.tagName.toLowerCase();
     const role = tag === 'input' ? 'campo ' + (el.type || 'texto') : tag === 'textarea' ? 'campo texto' : tag === 'select' ? 'lista' : tag === 'a' ? 'link' : el.isContentEditable ? 'campo editor' : 'botão';
-    const text = (el.getAttribute('aria-label') || el.innerText || el.placeholder || el.value || el.title || '').trim().replace(/\\s+/g, ' ').slice(0, 80);
-    out.push({ id, role, text, x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) });
+    const x = Math.round(r.left + r.width / 2), y = Math.round(r.top + r.height / 2);
+    // Ícone sem texto (barra de baixo): a posição deixa a IA casar o id com o que ela vê na foto de 540x600.
+    const text = (el.getAttribute('aria-label') || el.innerText || el.placeholder || el.value || el.title || '').trim().replace(/\\s+/g, ' ').slice(0, 80) || 'ícone sem texto em x=' + x + ' y=' + y;
+    out.push({ id, role, text, x, y });
     if (n >= 150) break;
   }
   return out;
@@ -95,6 +104,7 @@ async function openChrome(port) {
     cdp.send("DOM.setFileInputFiles", { files: [DEMO_IMAGE], backendNodeId: p.backendNodeId }).catch(() => {});
   });
   await cdp.send("Emulation.setDeviceMetricsOverride", { width: VIEW.width, height: VIEW.height, deviceScaleFactor: VIEW.scale, mobile: false });
+  await cdp.send("Emulation.setUserAgentOverride", { userAgent: MOBILE_UA, platform: "Android" });
   await cdp.send("Emulation.setFocusEmulationEnabled", { enabled: true });
   await cdp.send("Page.addScriptToEvaluateOnNewDocument", { source: CURSOR });
   return { cdp, close: () => { try { proc.kill(); } catch {} try { rmSync(profile, { recursive: true, force: true }); } catch {} } };
