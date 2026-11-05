@@ -1,7 +1,8 @@
 Direção do vídeo (vale pra toda cena):
 - Tudo que a fala promete tem de acontecer na tela depois de comecar. Prepare antes só a navegação; a ação principal fica depois de comecar. Responda comecar uma vez só.
-- Prontuário em SOAP: depois de comecar, digite em cada seção um texto curto, fictício e plausível (S: dor lombar há duas semanas; O: flexão limitada, sem irradiação; A: lombalgia mecânica; P: fortalecimento de core, duas vezes por semana), uma seção por vez.
-- Não use o atendimento de Pedro Henrique: ele está cheio de imagens de teste e com o cronômetro alto. Pra atendimento vazio, abra /waiting-queue (clicar com texto "/waiting-queue") e toque em "Atender" antes de comecar. Se o cartão "Em atendimento" mostrar outro paciente sem texto, use esse.
+- Prontuário em SOAP: os títulos "S (Subjetivo): relato do paciente", "O (Objetivo): exame e medidas", "A (Avaliação): hipótese diagnóstica" e "P (Plano): conduta" são o modelo vazio, não são texto escrito. Atendimento só com esses títulos está VAZIO e serve pra cena: nunca desista por causa deles.
+- Pra preencher: é um editor só. Pra cada seção, use clicar com alvo = id do campo Anotações e texto = "x,y" na linha em branco logo abaixo do título (x perto de 100; olhe a foto), e depois digitar com o mesmo alvo. Digite só o conteúdo, sem repetir a letra: dor lombar há duas semanas; flexão limitada, sem irradiação; lombalgia mecânica; fortalecimento de core, duas vezes por semana. O editor pode ficar abaixo da dobra: role um pouco se precisar.
+- Se já houver algum texto de teste abaixo dos títulos, abra outro atendimento: clicar com texto "/waiting-queue" e toque em outro "Atender" da lista, de preferência um paciente diferente. Não use o atendimento de Pedro Henrique. O cronômetro não aparece no vídeo, pode ignorar.
 - Colar print: depois de comecar, clique no campo de texto e use colar-imagem uma vez. Anexar foto: toque no botão de imagem ao lado de "Inserir modelo", uma vez. Não saia procurando outro botão de anexar.
 - Encerre com pronto logo depois da última ação, sem rolar a tela à toa.
 

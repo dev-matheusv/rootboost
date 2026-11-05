@@ -309,6 +309,8 @@ export async function recordScene({ brandKey, scene, account, outDir, name, ask,
     frames.push({ file, t: p.metadata.timestamp - skipped });
   });
   try {
+    const css = join(dirname(fileURLToPath(import.meta.url)), "guias", `${brandKey}.css`);
+    if (existsSync(css)) await cdp.send("Page.addScriptToEvaluateOnNewDocument", { source: `addEventListener('DOMContentLoaded', () => { const s = document.createElement('style'); s.textContent = ${JSON.stringify(readFileSync(css, "utf8"))}; document.head.append(s); });` });
     await cdp.send("Page.navigate", { url: account.url });
     await wait(2500);
     const history = [];
@@ -425,8 +427,11 @@ export async function recordScene({ brandKey, scene, account, outDir, name, ask,
           break;
         }
       } else if (next.action === "digitar" && el) {
-        await click(cdp, el);
+        // Campo já com foco mantém o cursor onde a IA clicou: num editor de várias linhas o clique no centro cairia na seção errada.
+        const focused = await evaluate(cdp, `(() => { const n = document.querySelector('[data-rb-id="${el.id}"]'), a = document.activeElement; return !!(n && a && a !== document.body && (n === a || n.contains(a) || a.contains(n))); })()`);
+        if (!focused) await click(cdp, el, byScript);
         await type(cdp, next.text ?? "");
+        deadClicks = 0;
       } else if (next.action === "colar-imagem" && el) {
         await click(cdp, el);
         await wait(500);
