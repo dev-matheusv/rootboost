@@ -126,6 +126,15 @@ export function voiceFolder(voice, steps, seed, tone = 0, finish = "") {
   return `${voice}-p${steps}-s${seed}${tone ? `-t${tone}` : ""}${finish ? `-${finish}` : ""}`;
 }
 
+/**
+ * Preparo da conta antes de gravar: itens de guias/<marca>.preparo.json cujo "quando" (expressão regular) casa com
+ * alguma cena do job. Assim a gravação começa com a conta pronta, e a cena não gasta passos criando cadastro.
+ */
+export function preparationsFor(items, scenes) {
+  const text = scenes.map((s) => s.scene).join("\n");
+  return (Array.isArray(items) ? items : []).filter((p) => p?.cena && new RegExp(p.quando ?? ".", "i").test(text));
+}
+
 /** Lê "medlynat1:corpo-forte": acabamento de cada voz no acabar-voz.py. Nome fora do padrão fica de fora. */
 export function parseVoiceFinish(value) {
   const map = new Map();

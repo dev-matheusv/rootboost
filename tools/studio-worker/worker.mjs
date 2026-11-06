@@ -10,7 +10,7 @@ import { copyFileSync, existsSync, mkdirSync, openAsBlob, readFileSync, statSync
 import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
-  applyLibrary, applyRecordings, buildArgs, buildPersonalSpec, libraryScenes, photoClipArgs, expectedOutputs, isScriptProblem, lastLine, parsePrivateVoices, parseVoiceFinish, parseVoiceTones, stepByStepPlan, voiceFolder, parseUnmatched, parseVoiceSteps, stepsFor, projectName, scenesToRecord,
+  applyLibrary, applyRecordings, buildArgs, buildPersonalSpec, libraryScenes, photoClipArgs, expectedOutputs, isScriptProblem, lastLine, parsePrivateVoices, parseVoiceFinish, parseVoiceTones, preparationsFor, stepByStepPlan, voiceFolder, parseUnmatched, parseVoiceSteps, stepsFor, projectName, scenesToRecord,
   seedFor, voiceProblem, warningsFrom,
 } from "./lib.mjs";
 import { recordScene } from "./recorder.mjs";
@@ -199,6 +199,21 @@ async function round() {
     // Mapa das telas do sistema da marca: sem ele a IA gasta os passos procurando onde cada coisa fica.
     const guidePath = join(here, "guias", `${job.brandKey}.md`);
     const guide = existsSync(guidePath) ? `${readFileSync(guidePath, "utf8").trim()}\n\nCena: ` : "";
+    // Preparo da conta (fora do vídeo): o que a cena precisa já existir, como modelo de ficha.
+    const prepPath = join(here, "guias", `${job.brandKey}.preparo.json`);
+    const preps = preparationsFor(existsSync(prepPath) ? JSON.parse(readFileSync(prepPath, "utf8")) : [], scenes);
+    for (const [i, p] of preps.entries()) {
+      await progress(job.id, 5, `preparando a conta de demonstração (${i + 1} de ${preps.length})`);
+      const beat = setInterval(() => void progress(job.id, 5, "preparando a conta de demonstração").catch(() => {}), cfg.heartbeatSeconds * 1000);
+      try {
+        await recordScene({ brandKey: job.brandKey, scene: p.cena, account, outDir: `${cfg.base}/brutos/${nome}-preparo-${i + 1}`, name: `${nome}-preparo-${i + 1}`, prepare: true,
+          ask: async (state) => (await call("POST", "/worker/ai/next-action", state)).data });
+      } catch (e) {
+        return fail(job.id, `preparo da conta: ${e.message}`, !e.personalData);
+      } finally {
+        clearInterval(beat);
+      }
+    }
     for (const [i, s] of scenes.entries()) {
       const source = `${nome}-bloco-${s.index + 1}`;
       const percent = 5 + Math.round((i / scenes.length) * 25);

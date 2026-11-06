@@ -277,7 +277,8 @@ async function loginFields(cdp) {
  * produto e clicar em botão destrutivo (vira passo perdido no histórico, e a IA escolhe outro caminho).
  * @param ask (state) => Promise<{ action, target, text, reason }>, a chamada à API.
  */
-export async function recordScene({ brandKey, scene, account, outDir, name, ask, log = console.log }) {
+/** prepare: passo fora do vídeo (preparo da conta). Vale o mesmo controle da IA, sem tempo mínimo e sem gerar mp4. */
+export async function recordScene({ brandKey, scene, account, outDir, name, ask, prepare = false, log = console.log }) {
   mkdirSync(join(outDir, "quadros"), { recursive: true });
   const { cdp, close } = await openChrome();
   const frames = [];
@@ -341,7 +342,7 @@ export async function recordScene({ brandKey, scene, account, outDir, name, ask,
     let started_scene = false;
     let byScript = false; // o clique do navegador não chegou na página: segue clicando por dentro dela
     await evaluate(cdp, WATCH_CLICKS);
-    for (let step = 0; Date.now() - started < MAX_SECONDS * 1000; step++) {
+    for (let step = 0; Date.now() - started < (prepare ? 2 * MAX_SECONDS : MAX_SECONDS) * 1000; step++) {
       elements = await evaluate(cdp, LIST_ELEMENTS);
       // Foto em 1x (540x600) pra IA: um quarto dos pixels da gravação, bem menos tokens por passo (custo).
       // O recorte conta a partir do topo do documento: sem somar a rolagem, a foto saía em branco depois de rolar.
@@ -357,7 +358,7 @@ export async function recordScene({ brandKey, scene, account, outDir, name, ask,
       note(`passo ${step + 1} em ${url}: ${next.action} ${chosen ? `"${chosen.text}"` : next.target ?? ""} ${next.text ?? ""} (${next.reason})`);
       // Cena de dois segundos vira imagem parada no vídeo: manda mostrar a ação antes de encerrar.
       const shown = frames.length ? frames.at(-1).t - frames[0].t : 0;
-      if (next.action === "pronto" && shown < MIN_SCENE_SECONDS && step < 20) {
+      if (!prepare && next.action === "pronto" && shown < MIN_SCENE_SECONDS && step < 20) {
         note(`  pronto recusado: só ${shown.toFixed(1)} s de cena`);
         history.push(`recusado: a cena tem só ${shown.toFixed(1)} s; mostre a ação acontecendo antes de encerrar`);
         continue;
@@ -469,6 +470,7 @@ export async function recordScene({ brandKey, scene, account, outDir, name, ask,
       note(`parou: ${stopReason}`);
       throw new Error(`a IA parou: ${stopReason}. Tela final em ${await evaluate(cdp, "location.href")}. Passos em ${trail}`);
     }
+    if (prepare) return { path: null, duration: 0 };
     if (frames.length < 2) throw new Error("nenhum quadro gravado");
 
     const lines = [];
