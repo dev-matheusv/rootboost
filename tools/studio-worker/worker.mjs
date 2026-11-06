@@ -177,7 +177,14 @@ async function round() {
     let takes = 0;
     for (const c of chosenTakes) {
       const m4a = `${voiceDir(c.seed)}/revisao.m4a`;
-      execFileSync(FFMPEG, ["-y", "-i", `${voiceDir(c.seed)}/tratado.wav`, "-c:a", "aac", "-b:a", "128k", m4a], { stdio: "ignore" });
+      // Passo a passo: a pessoa ouve a voz com as pausas finais, a mesma que vai pro vídeo.
+      const allRecorded = scenes.length === (job.roteiro.blocos ?? []).length;
+      if (allRecorded) {
+        const paused = await runPipeline(job.id, cfg.bin, [`${cfg.tools}/narrado-passo.mjs`, nome, "--voz-dir", voiceDir(c.seed), "--pausar", "--so-voz"]);
+        if (paused.code !== 0) return fail(job.id, `pausas da voz: ${lastLine(paused.log)}`, false);
+      }
+      const review = `${voiceDir(c.seed)}${allRecorded ? "-final" : ""}/tratado.wav`;
+      execFileSync(FFMPEG, ["-y", "-i", review, "-c:a", "aac", "-b:a", "128k", m4a], { stdio: "ignore" });
       parts.push([`take-${c.seed}`, { path: m4a, filename: `voz-${c.seed}.m4a` }], [`unmatched-${c.seed}`, String(c.unmatched)]);
       takes++;
     }
