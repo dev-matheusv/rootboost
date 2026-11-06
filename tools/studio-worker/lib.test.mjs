@@ -1,6 +1,12 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { parseVoiceFinish, parseVoiceTones, stepByStepPlan, voiceFolder } from "./lib.mjs";
+import { parseVoiceFinish, parseVoiceTones, preparationsFor, stepByStepPlan, voiceFolder } from "./lib.mjs";
+
+test("preparo da conta: só o que a cena do job precisa", () => {
+  const items = [{ quando: "ficha", cena: "criar modelo" }, { quando: "agenda", cena: "abrir agenda" }, { quando: "ficha" }];
+  assert.deepEqual(preparationsFor(items, [{ scene: "Preencha a Ficha de harmonização" }]).map((p) => p.cena), ["criar modelo"]);
+  assert.deepEqual(preparationsFor(null, [{ scene: "x" }]), []);
+});
 
 test("acabamento da voz: lê o nome e separa a pasta", () => {
   assert.equal(parseVoiceFinish("MedlyNat1:corpo-forte, ruim:x y").get("medlynat1"), "corpo-forte");
