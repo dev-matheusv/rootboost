@@ -1,5 +1,14 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { parseVoiceTones, voiceFolder } from "./lib.mjs";
+
+test("tom da voz: lê semitons e separa a pasta da fala", () => {
+  const tones = parseVoiceTones("MedlyNat1:-1, ruim:x, outra:0");
+  assert.equal(tones.get("medlynat1"), -1);
+  assert.equal(tones.size, 1);
+  assert.equal(voiceFolder("medlynat1", 64, 1, -1), "medlynat1-p64-s1-t-1");
+  assert.equal(voiceFolder("medlynat1", 64, 1), "medlynat1-p64-s1");
+});
 import { buildArgs, expectedOutputs, isScriptProblem, lastLine, parseUnmatched, parseVoiceSteps, projectName, seedFor, stepsFor, warningsFrom } from "./lib.mjs";
 
 test("passos por voz: a voz listada usa os dela, as outras ficam em 32", () => {

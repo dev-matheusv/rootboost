@@ -2,8 +2,8 @@
 // sistema do cliente com a conta de demonstração (contas.json, fora do git), e a cada passo manda a foto e os
 // elementos pra API (/worker/ai/next-action), que devolve o que fazer. Grava os quadros e monta o mp4 com FFmpeg.
 // Mesmo molde do gravar-reel.mjs do MedlyCare (CDP, cursor desenhado, 540x600 a 2x), sem passos escritos à mão.
-import { spawn } from "node:child_process";
-import { appendFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { spawn, spawnSync } from "node:child_process";
+import { appendFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -13,9 +13,16 @@ const CHROME = process.env.CHROME_PATH ?? "C:/Program Files/Google/Chrome/Applic
 const FFMPEG = process.env.FFMPEG_PATH ?? "C:/DMaker/bin/ffmpeg/bin/ffmpeg.exe";
 // Imagem fictícia que a gravação cola ou anexa: nunca um arquivo de verdade do PC.
 const DEMO_IMAGE = join(dirname(fileURLToPath(import.meta.url)), "demo", "imagem-demo.png");
+const DEMO_FACE = join(dirname(fileURLToPath(import.meta.url)), "demo", "rosto-referencia.jpg");
+// Janela estreita de Reels se apresenta como celular: sistema que escolhe o menu pelo aparelho (MedlyCare) mostra a barra
+// de baixo; com Chrome de computador nessa largura a tela fica sem menu nenhum e a IA não tem por onde navegar.
+const MOBILE_UA = "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36";
 const VIEW = { width: 540, height: 600, scale: 2 };
 // Tempo total da cena, contando a espera pela IA (essa espera não entra no vídeo).
 const MAX_SECONDS = 240;
+const MIN_SCENE_SECONDS = 8; // abaixo disso não dá pra cobrir a fala com ação
+const MAX_DEAD_CLICKS = 4; // cliques seguidos sem mudar nada na tela: para antes de gastar mais IA
+const CDP_TIMEOUT_MS = 30_000; // comando sem resposta do Chrome vira erro, nunca espera infinita
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
 class Cdp {
@@ -25,6 +32,10 @@ class Cdp {
     this.pending = new Map();
     this.listeners = new Map();
     this.open = new Promise((ok, fail) => { this.ws.onopen = ok; this.ws.onerror = fail; });
+    this.ws.onclose = () => {
+      for (const { fail } of this.pending.values()) fail(new Error("o Chrome da gravação fechou no meio"));
+      this.pending.clear();
+    };
     this.ws.onmessage = (ev) => {
       const msg = JSON.parse(ev.data);
       if (msg.id && this.pending.has(msg.id)) {
@@ -36,8 +47,14 @@ class Cdp {
   }
   send(method, params = {}) {
     const id = ++this.seq;
-    this.ws.send(JSON.stringify({ id, method, params }));
-    return new Promise((ok, fail) => this.pending.set(id, { ok, fail }));
+    return new Promise((ok, fail) => {
+      const timer = setTimeout(() => {
+        this.pending.delete(id);
+        fail(new Error(`o Chrome não respondeu a ${method} em ${CDP_TIMEOUT_MS / 1000} s`));
+      }, CDP_TIMEOUT_MS);
+      this.pending.set(id, { ok: (r) => { clearTimeout(timer); ok(r); }, fail: (e) => { clearTimeout(timer); fail(e); } });
+      this.ws.send(JSON.stringify({ id, method, params }));
+    });
   }
   on(method, fn) { this.listeners.set(method, [...(this.listeners.get(method) ?? []), fn]); }
 }
@@ -60,30 +77,51 @@ const CURSOR = `(() => {
 const LIST_ELEMENTS = `(() => {
   const sel = 'a,button,input,select,textarea,[role=button],[role=link],[role=tab],[role=menuitem],[onclick],[tabindex]:not([tabindex="-1"]),[contenteditable="true"]';
   const out = []; let n = 0;
-  for (const el of document.querySelectorAll(sel)) {
+  // Cartão clicável costuma ser só um div com cursor de mão; pega o de fora, não cada filho dele.
+  const nodes = new Set(document.querySelectorAll(sel));
+  for (const el of document.querySelectorAll('body *'))
+    if (getComputedStyle(el).cursor === 'pointer' && getComputedStyle(el.parentElement).cursor !== 'pointer') nodes.add(el);
+  // Imagem grande entra na lista: é onde a IA marca um ponto exato (clicar com texto "x,y").
+  for (const el of document.querySelectorAll('img')) if (el.getBoundingClientRect().width >= 150) nodes.add(el);
+  for (const el of nodes) {
     const r = el.getBoundingClientRect();
     if (r.width < 4 || r.height < 4 || r.bottom < 0 || r.top > innerHeight || getComputedStyle(el).visibility === 'hidden') continue;
     const id = 'e' + (++n); el.setAttribute('data-rb-id', id);
     const tag = el.tagName.toLowerCase();
-    const role = tag === 'input' ? 'campo ' + (el.type || 'texto') : tag === 'textarea' ? 'campo texto' : tag === 'select' ? 'lista' : tag === 'a' ? 'link' : el.isContentEditable ? 'campo editor' : 'botão';
-    const text = (el.getAttribute('aria-label') || el.innerText || el.placeholder || el.value || el.title || '').trim().replace(/\\s+/g, ' ').slice(0, 80);
-    out.push({ id, role, text, x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) });
+    const role = tag === 'img' ? 'imagem' : tag === 'input' ? 'campo ' + (el.type || 'texto') : tag === 'textarea' ? 'campo texto' : tag === 'select' ? 'lista' : tag === 'a' ? 'link' : el.isContentEditable ? 'campo editor' : 'botão';
+    const x = Math.round(r.left + r.width / 2), y = Math.round(r.top + r.height / 2);
+    // Ícone sem texto (barra de baixo): a posição deixa a IA casar o id com o que ela vê na foto de 540x600.
+    const text = (el.getAttribute('aria-label') || el.innerText || el.placeholder || el.value || el.title || '').trim().replace(/\\s+/g, ' ').slice(0, 80) || (tag === 'img' ? 'imagem de x=' + Math.round(r.left) + ' a ' + Math.round(r.right) + ', y=' + Math.round(r.top) + ' a ' + Math.round(r.bottom) : 'ícone sem texto em x=' + x + ' y=' + y);
+    out.push({ id, role, text, x, y });
     if (n >= 150) break;
   }
   return out;
 })()`;
 
-async function openChrome(port) {
+async function openChrome() {
   const profile = mkdtempSync(join(tmpdir(), "rb-rec-"));
-  const proc = spawn(CHROME, ["--headless=new", `--remote-debugging-port=${port}`, `--user-data-dir=${profile}`, "--no-first-run",
-    "--no-default-browser-check", "--hide-scrollbars", "--mute-audio", "--lang=pt-BR", `--window-size=${VIEW.width},${VIEW.height}`, "about:blank"],
+  // Sem gerenciador de senhas: depois do login o Chrome oferece salvar a senha, e o que ele abre pode segurar os cliques.
+  mkdirSync(join(profile, "Default"), { recursive: true });
+  writeFileSync(join(profile, "Default", "Preferences"), JSON.stringify({ credentials_enable_service: false, profile: { password_manager_enabled: false, password_manager_leak_detection: false } }));
+  const proc = spawn(CHROME, ["--headless=new", "--remote-debugging-port=0", `--user-data-dir=${profile}`, "--no-first-run",
+    "--no-default-browser-check", "--password-store=basic", "--disable-save-password-bubble", "--disable-notifications", "--hide-scrollbars", "--mute-audio", "--lang=pt-BR", `--window-size=${VIEW.width},${VIEW.height}`, "about:blank"],
   { stdio: "ignore" });
+  // Porta livre a cada gravação (o Chrome escolhe e grava no perfil): porta fixa pegava um Chrome velho ainda fechando.
+  const close = () => {
+    if (proc.pid) spawnSync("taskkill", ["/pid", String(proc.pid), "/t", "/f"], { stdio: "ignore" });
+    try { rmSync(profile, { recursive: true, force: true }); } catch { /* arquivo preso, o Windows limpa depois */ }
+  };
+  const portFile = join(profile, "DevToolsActivePort");
   let target = null;
-  for (let i = 0; i < 60 && !target; i++) {
+  for (let i = 0; i < 80 && !target; i++) {
     await wait(250);
-    try { target = (await (await fetch(`http://127.0.0.1:${port}/json/list`)).json()).find((t) => t.type === "page"); } catch { /* subindo */ }
+    try {
+      if (!existsSync(portFile)) continue;
+      const port = readFileSync(portFile, "utf8").split("\n")[0].trim();
+      target = (await (await fetch(`http://localhost:${port}/json/list`)).json()).find((t) => t.type === "page");
+    } catch { /* subindo */ }
   }
-  if (!target) throw new Error("o Chrome não respondeu");
+  if (!target) { close(); throw new Error("o Chrome da gravação não abriu em 20 s"); }
   const cdp = new Cdp(target.webSocketDebuggerUrl);
   await cdp.open;
   await cdp.send("Page.enable");
@@ -92,12 +130,17 @@ async function openChrome(port) {
   // Janela de escolher arquivo não existe sem tela: quem abre recebe a imagem de demonstração.
   await cdp.send("Page.setInterceptFileChooserDialog", { enabled: true });
   cdp.on("Page.fileChooserOpened", (p) => {
-    cdp.send("DOM.setFileInputFiles", { files: [DEMO_IMAGE], backendNodeId: p.backendNodeId }).catch(() => {});
+    // No cadastro de modelo de ficha a imagem é o rosto de referência; no resto, o print de demonstração.
+    evaluate(cdp, "location.pathname")
+      .then((path) => cdp.send("DOM.setFileInputFiles", { files: [path.includes("modelos-formulario") ? DEMO_FACE : DEMO_IMAGE], backendNodeId: p.backendNodeId }))
+      .catch(() => {});
   });
   await cdp.send("Emulation.setDeviceMetricsOverride", { width: VIEW.width, height: VIEW.height, deviceScaleFactor: VIEW.scale, mobile: false });
+  await cdp.send("Emulation.setUserAgentOverride", { userAgent: MOBILE_UA, platform: "Android" });
   await cdp.send("Emulation.setFocusEmulationEnabled", { enabled: true });
   await cdp.send("Page.addScriptToEvaluateOnNewDocument", { source: CURSOR });
-  return { cdp, close: () => { try { proc.kill(); } catch {} try { rmSync(profile, { recursive: true, force: true }); } catch {} } };
+  await cdp.send("Page.addScriptToEvaluateOnNewDocument", { source: WATCH_CLICKS });
+  return { cdp, close };
 }
 
 async function evaluate(cdp, expression) {
@@ -106,10 +149,51 @@ async function evaluate(cdp, expression) {
   return r.result.value;
 }
 
-async function click(cdp, el) {
+// Conta o que chega na página em cada clique, pra saber se ele parou no caminho ou se a página ignorou.
+const WATCH_CLICKS = `(() => {
+  if (window.__rbClicks) return; window.__rbClicks = [];
+  for (const k of ['pointerdown', 'click']) window.addEventListener(k, (e) => {
+    const t = e.target;
+    window.__rbClicks.push(k + ' em ' + String(t?.tagName).toLowerCase() + '.' + String(t?.className?.baseVal ?? t?.className ?? '').slice(0, 40) + (e.isTrusted ? '' : ' (script)'));
+  }, true);
+})()`;
+const SCREEN_SIGN = `location.href + '|' + document.body.innerText.length + '|' + document.querySelectorAll('body *').length`;
+
+// O que ajuda a explicar um clique que não chegou: foco, camadas abertas e bloqueios na página.
+const PAGE_STATE = `JSON.stringify({ visivel: document.visibilityState, foco: document.hasFocus(), ativo: document.activeElement?.tagName, corpo: document.body.className.slice(0, 80), ponteiro: getComputedStyle(document.body).pointerEvents, camadas: document.querySelectorAll('.q-dialog, .q-menu, .driver-popover, .q-loading, dialog[open]').length })`;
+
+// Testa as rotas direto, sem depender de clique: mostra se a navegação do sistema anda, falha ou fica pendurada.
+const ROUTER_TEST = `(async () => {
+  try {
+    const router = document.querySelector('#q-app')?.__vue_app__?.config.globalProperties.$router;
+    if (!router) return 'sem acesso às rotas';
+    const from = router.currentRoute.value.fullPath;
+    const result = await Promise.race([router.push('/me').then((f) => (f ? 'recusada: ' + f.message : 'ok')), new Promise((ok) => setTimeout(() => ok('pendurada'), 4000))]);
+    const to = router.currentRoute.value.fullPath;
+    if (to !== from) await router.replace(from);
+    return from + ' para ' + to + ': ' + result;
+  } catch (e) { return 'erro: ' + e.message; }
+})()`;
+
+/** Clique feito pela própria página, pra quando o clique do navegador não chega nela. */
+const scriptClick = (x, y) => `(() => {
+  const e = document.elementFromPoint(${x}, ${y});
+  if (!e) return false;
+  const at = { bubbles: true, cancelable: true, composed: true, view: window, clientX: ${x}, clientY: ${y}, button: 0 };
+  e.dispatchEvent(new PointerEvent('pointerdown', { ...at, buttons: 1, pointerId: 1, pointerType: 'mouse', isPrimary: true }));
+  e.dispatchEvent(new MouseEvent('mousedown', { ...at, buttons: 1 }));
+  e.closest('input, textarea, [contenteditable]')?.focus();
+  e.dispatchEvent(new PointerEvent('pointerup', { ...at, pointerId: 1, pointerType: 'mouse', isPrimary: true }));
+  e.dispatchEvent(new MouseEvent('mouseup', at));
+  e.dispatchEvent(new MouseEvent('click', at));
+  return true;
+})()`;
+
+async function click(cdp, el, byScript = false) {
   await evaluate(cdp, `window.__moveCursor && window.__moveCursor(${el.x}, ${el.y})`);
   await wait(650);
   await evaluate(cdp, `window.__ripple && window.__ripple(${el.x}, ${el.y})`);
+  if (byScript) return evaluate(cdp, scriptClick(el.x, el.y));
   for (const type of ["mouseMoved", "mousePressed", "mouseReleased"])
     await cdp.send("Input.dispatchMouseEvent", { type, x: el.x, y: el.y, button: "left", clickCount: type === "mouseMoved" ? 0 : 1 });
 }
@@ -193,10 +277,17 @@ async function loginFields(cdp) {
  * produto e clicar em botão destrutivo (vira passo perdido no histórico, e a IA escolhe outro caminho).
  * @param ask (state) => Promise<{ action, target, text, reason }>, a chamada à API.
  */
-export async function recordScene({ brandKey, scene, account, outDir, name, ask, port = 9333, log = console.log }) {
+export async function recordScene({ brandKey, scene, account, outDir, name, ask, log = console.log }) {
   mkdirSync(join(outDir, "quadros"), { recursive: true });
-  const { cdp, close } = await openChrome(port);
+  const { cdp, close } = await openChrome();
   const frames = [];
+  const problems = []; // erro de script e chamada recusada desde o último passo
+  await cdp.send("Network.enable");
+  cdp.on("Runtime.exceptionThrown", (p) => problems.push(`erro na página: ${p.exceptionDetails.exception?.description?.split("\n")[0] ?? p.exceptionDetails.text}`));
+  cdp.on("Runtime.consoleAPICalled", (p) => { if (p.type === "error") problems.push(`console: ${p.args.map((a) => a.value ?? a.description ?? "").join(" ").slice(0, 160)}`); });
+  cdp.on("Network.responseReceived", (p) => { if (p.response.status >= 400) problems.push(`HTTP ${p.response.status} ${new URL(p.response.url).pathname}`); });
+  cdp.on("Page.frameNavigated", (p) => { if (!p.frame.parentId) note(`página carregada: ${p.frame.url}`); });
+  cdp.on("Network.loadingFailed", (p) => { if (!p.canceled) problems.push(`rede falhou: ${p.errorText}`); });
   let recording = false;
   let skipped = 0; // segundos em que a gravação esperou a IA: saem da linha do tempo do vídeo
   // Registro de cada passo, junto dos quadros: é o que explica uma gravação que falhou.
@@ -218,6 +309,8 @@ export async function recordScene({ brandKey, scene, account, outDir, name, ask,
     frames.push({ file, t: p.metadata.timestamp - skipped });
   });
   try {
+    const css = join(dirname(fileURLToPath(import.meta.url)), "guias", `${brandKey}.css`);
+    if (existsSync(css)) await cdp.send("Page.addScriptToEvaluateOnNewDocument", { source: `addEventListener('DOMContentLoaded', () => { const s = document.createElement('style'); s.textContent = ${JSON.stringify(readFileSync(css, "utf8"))}; document.head.append(s); });` });
     await cdp.send("Page.navigate", { url: account.url });
     await wait(2500);
     const history = [];
@@ -244,10 +337,16 @@ export async function recordScene({ brandKey, scene, account, outDir, name, ask,
     const started = Date.now();
     let outcome = "desistir";
     let stopReason = `passou de ${MAX_SECONDS} s sem terminar`;
+    let deadClicks = 0;
+    let started_scene = false;
+    let byScript = false; // o clique do navegador não chegou na página: segue clicando por dentro dela
+    await evaluate(cdp, WATCH_CLICKS);
     for (let step = 0; Date.now() - started < MAX_SECONDS * 1000; step++) {
       elements = await evaluate(cdp, LIST_ELEMENTS);
       // Foto em 1x (540x600) pra IA: um quarto dos pixels da gravação, bem menos tokens por passo (custo).
-      const shot = await cdp.send("Page.captureScreenshot", { format: "jpeg", quality: 55, clip: { x: 0, y: 0, width: VIEW.width, height: VIEW.height, scale: 1 / VIEW.scale } });
+      // O recorte conta a partir do topo do documento: sem somar a rolagem, a foto saía em branco depois de rolar.
+      const scroll = await evaluate(cdp, "({ x: scrollX, y: scrollY })");
+      const shot = await cdp.send("Page.captureScreenshot", { format: "jpeg", quality: 55, clip: { ...scroll, width: VIEW.width, height: VIEW.height, scale: 1 / VIEW.scale } });
       const url = await evaluate(cdp, "location.href");
       recording = false;
       const asked = Date.now();
@@ -256,8 +355,18 @@ export async function recordScene({ brandKey, scene, account, outDir, name, ask,
       recording = true;
       const chosen = elements.find((e) => e.id === next.target);
       note(`passo ${step + 1} em ${url}: ${next.action} ${chosen ? `"${chosen.text}"` : next.target ?? ""} ${next.text ?? ""} (${next.reason})`);
+      // Cena de dois segundos vira imagem parada no vídeo: manda mostrar a ação antes de encerrar.
+      const shown = frames.length ? frames.at(-1).t - frames[0].t : 0;
+      if (next.action === "pronto" && shown < MIN_SCENE_SECONDS && step < 20) {
+        note(`  pronto recusado: só ${shown.toFixed(1)} s de cena`);
+        history.push(`recusado: a cena tem só ${shown.toFixed(1)} s; mostre a ação acontecendo antes de encerrar`);
+        continue;
+      }
       if (next.action === "pronto" || next.action === "desistir") { outcome = next.action; stopReason = next.reason; break; }
       if (next.action === "comecar") {
+        // Só o primeiro vale: repetir apagava a ação já gravada e o vídeo saía parado.
+        if (started_scene) { history.push("recusado: a cena já começou, siga mostrando a ação"); continue; }
+        started_scene = true;
         // Preparo terminou: o que veio antes (navegar, abrir, ajustar) fica fora do vídeo.
         frames.length = 0;
         await grab();
@@ -274,19 +383,64 @@ export async function recordScene({ brandKey, scene, account, outDir, name, ask,
         throw err;
       }
       const el = elements.find((e) => e.id === next.target);
+      // Texto começando com "/": vai direto pra esse endereço do sistema (tela que não cabe na barra do celular).
+      if (next.action === "clicar" && /^\/[\w/-]*$/.test(next.text ?? "")) {
+        await evaluate(cdp, `location.assign(${JSON.stringify(next.text)})`);
+        await wait(3000);
+        history.push(`abriu ${next.text}`);
+        continue;
+      }
       if (next.action === "clicar" && el) {
         if (isDestructive(el.text)) { history.push(`recusado: ${el.text} (botão proibido)`); continue; }
-        await click(cdp, el);
+        const before = await evaluate(cdp, SCREEN_SIGN);
+        // Texto "x,y" no clique: ponto exato da foto da tela, pra marcar um lugar dentro de uma imagem.
+        const spot = /^(\d+)\s*,\s*(\d+)$/.exec(next.text ?? "");
+        // Opção de lista pode estar cortada no fim da janela: traz pra vista antes, senão o clique cai no fundo e fecha a lista.
+        const visible = spot ? null : await evaluate(cdp, `(() => {
+          const n = document.querySelector('[data-rb-id="${el.id}"]');
+          const hit = document.elementFromPoint(${el.x}, ${el.y});
+          if (!n || (hit && (n.contains(hit) || hit.contains(n)))) return null;
+          n.scrollIntoView({ block: 'center' });
+          const r = n.getBoundingClientRect();
+          return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) };
+        })()`);
+        const at = spot ? { ...el, x: Number(spot[1]), y: Number(spot[2]) } : { ...el, ...visible };
+        const under = await evaluate(cdp, `(() => { const e = document.elementFromPoint(${at.x}, ${at.y}); return e ? e.tagName.toLowerCase() + '.' + String(e.className.baseVal ?? e.className).slice(0, 50) : 'nada'; })()`);
+        await click(cdp, at, byScript);
+        await wait(1500);
+        let seen = await evaluate(cdp, "(window.__rbClicks ?? []).splice(0).join(', ')");
+        let changed = (await evaluate(cdp, SCREEN_SIGN)) !== before;
+        note(`  clique em ${at.x},${at.y} sobre ${under}; a página viu: ${seen || "nada"}; tela ${changed ? "mudou" : "igual"}${problems.length ? `; problemas: ${problems.splice(0).slice(0, 6).join(" | ")}` : ""}`);
+        if (!byScript && !seen && !changed) {
+          note(`  o clique não chegou na página; estado: ${await evaluate(cdp, PAGE_STATE)}`);
+          byScript = true;
+          await evaluate(cdp, scriptClick(at.x, at.y));
+          await wait(1500);
+          seen = await evaluate(cdp, "(window.__rbClicks ?? []).splice(0).join(', ')");
+          changed = (await evaluate(cdp, SCREEN_SIGN)) !== before;
+          note(`  clique por dentro da página; ela viu: ${seen || "nada"}; tela ${changed ? "mudou" : "igual"}${problems.length ? `; problemas: ${problems.splice(0).slice(0, 6).join(" | ")}` : ""}`);
+          if (!changed) note(`  teste das rotas: ${await evaluate(cdp, ROUTER_TEST)}`);
+        }
+        deadClicks = changed ? 0 : deadClicks + 1;
+        if (deadClicks >= MAX_DEAD_CLICKS) {
+          stopReason = `${deadClicks} cliques seguidos sem mudar a tela`;
+          break;
+        }
       } else if (next.action === "digitar" && el) {
-        await click(cdp, el);
+        // Campo já com foco mantém o cursor onde a IA clicou: num editor de várias linhas o clique no centro cairia na seção errada.
+        const focused = await evaluate(cdp, `(() => { const n = document.querySelector('[data-rb-id="${el.id}"]'), a = document.activeElement; return !!(n && a && a !== document.body && (n === a || n.contains(a) || a.contains(n))); })()`);
+        if (!focused) await click(cdp, el, byScript);
         await type(cdp, next.text ?? "");
+        deadClicks = 0;
       } else if (next.action === "colar-imagem" && el) {
         await click(cdp, el);
         await wait(500);
         if (!(await pasteImage(cdp))) history.push("colar-imagem: este campo não recebeu a imagem; procure o botão de inserir imagem");
         await wait(2000); // tempo do envio e de a imagem aparecer no vídeo
       } else if (next.action === "rolar") {
-        await cdp.send("Input.dispatchMouseEvent", { type: "mouseWheel", x: 270, y: 300, deltaX: 0, deltaY: next.text === "cima" ? -350 : 350 });
+        const delta = next.text === "cima" ? -350 : 350;
+        if (byScript) await evaluate(cdp, `(() => { let e = document.elementFromPoint(270, 300); while (e && e.scrollHeight <= e.clientHeight + 1) e = e.parentElement; (e ?? document.scrollingElement).scrollBy({ top: ${delta}, behavior: 'smooth' }); })()`);
+        else await cdp.send("Input.dispatchMouseEvent", { type: "mouseWheel", x: 270, y: 300, deltaX: 0, deltaY: delta });
       } else if (next.action === "login") {
         // Sessão caiu no meio (ou o primeiro login não pegou): tenta de novo; se não entrar, para com o motivo.
         // A IA pediu login mas não há campo de senha (tela carregando, sessão ativa, botão Entrar antes do formulário):

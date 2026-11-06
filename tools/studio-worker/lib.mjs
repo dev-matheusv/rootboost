@@ -111,6 +111,21 @@ export function stepsFor(voice, voiceSteps) {
   return voiceSteps.get(String(voice ?? "").toLowerCase()) ?? 32;
 }
 
+/** Lê "medlynat1:-1,outra:2": semitons de cada voz. Valor inválido ou zero fica de fora (voz sem mudança de tom). */
+export function parseVoiceTones(value) {
+  const map = new Map();
+  for (const pair of String(value ?? "").split(",")) {
+    const [voice, tone] = pair.split(":").map((s) => s?.trim().toLowerCase());
+    if (voice && tone && Number.isFinite(Number(tone)) && Number(tone) !== 0) map.set(voice, Number(tone));
+  }
+  return map;
+}
+
+/** Pasta da voz no projeto, a mesma que o narrado-calmo usa: tom diferente é outra fala, com cache próprio. */
+export function voiceFolder(voice, steps, seed, tone = 0) {
+  return `${voice}-p${steps}-s${seed}${tone ? `-t${tone}` : ""}`;
+}
+
 // --- Gravação de tela (RB-50, docs/GRAVACAO.md) ---
 
 /** Botões que a gravação nunca clica, mesmo que a IA peça: nada destrutivo, nada que saia ou mande algo de verdade. */

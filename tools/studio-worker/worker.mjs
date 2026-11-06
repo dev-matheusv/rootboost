@@ -10,7 +10,7 @@ import { copyFileSync, existsSync, mkdirSync, openAsBlob, readFileSync, statSync
 import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
-  applyLibrary, applyRecordings, buildArgs, buildPersonalSpec, libraryScenes, photoClipArgs, expectedOutputs, isScriptProblem, lastLine, parsePrivateVoices, parseUnmatched, parseVoiceSteps, stepsFor, projectName, scenesToRecord,
+  applyLibrary, applyRecordings, buildArgs, buildPersonalSpec, libraryScenes, photoClipArgs, expectedOutputs, isScriptProblem, lastLine, parsePrivateVoices, parseVoiceTones, voiceFolder, parseUnmatched, parseVoiceSteps, stepsFor, projectName, scenesToRecord,
   seedFor, voiceProblem, warningsFrom,
 } from "./lib.mjs";
 import { recordScene } from "./recorder.mjs";
@@ -44,6 +44,8 @@ const cfg = {
   privateVoices: parsePrivateVoices(process.env.STUDIO_PRIVATE_VOICES ?? "matheus2a:medlycare,matheus2b:medlycare,medlyfem:medlycare,medlyfem2:medlycare,medlynat1:medlycare"),
   // Passos da síntese por voz (voz:passos), pra sair igual à amostra aprovada. Sem entrada: 32.
   voiceSteps: parseVoiceSteps(process.env.STUDIO_VOICE_STEPS ?? "medlynat1:64"),
+  // Semitons por voz (05/11): a voz padrão do MedlyCare é a medlynat1 um tom abaixo.
+  voiceTones: parseVoiceTones(process.env.STUDIO_VOICE_TONES ?? "medlynat1:-1"),
   pollSeconds: Number(process.env.STUDIO_POLL_SECONDS ?? 60),
   heartbeatSeconds: Number(process.env.STUDIO_HEARTBEAT_SECONDS ?? 30),
 };
@@ -142,14 +144,15 @@ async function round() {
   // 2. Voz primeiro: só a fala, com o portão de palavras sem par, sem montar nada.
   writeScript(projectDir, job);
   const steps = stepsFor(voice, cfg.voiceSteps);
-  const stepArgs = steps === 32 ? [] : ["--passos", String(steps)];
+  const tone = cfg.voiceTones.get(String(voice ?? "").toLowerCase()) ?? 0;
+  const stepArgs = [...(steps === 32 ? [] : ["--passos", String(steps)]), ...(tone ? ["--semitons", String(tone)] : [])];
   const voiceArgs = (sd) => [...buildArgs(cfg.args, { nome, voz: voice, seed: sd, tools: cfg.tools, base: cfg.base }), ...stepArgs, "--so-voz"];
-  const voiceDir = (sd) => `${projectDir}/voz-continua/${voice}-p${steps}-s${sd}`;
+  const voiceDir = (sd) => `${projectDir}/voz-continua/${voiceFolder(voice, steps, sd, tone)}`;
   async function makeVoice(sd, note) {
     await progress(job.id, 3, note);
     const { code, log } = await runPipeline(job.id, cfg.bin, voiceArgs(sd));
     if (code !== 0) return { error: `voz saiu com código ${code}: ${lastLine(log)}`, retry: !isScriptProblem(log) };
-    const unmatched = readUnmatched(projectDir, voice, steps, sd) ?? parseUnmatched(log);
+    const unmatched = readUnmatched(voiceDir(sd)) ?? parseUnmatched(log);
     return unmatched === null ? { error: "não achei a contagem de palavras sem par da voz", retry: false } : { unmatched };
   }
 
@@ -189,15 +192,23 @@ async function round() {
   // 3. Gravação de tela (RB-50): blocos que a IA escreveu com "cena" e trecho "gravar-bloco-N" são gravados agora.
   if (scenes.length) {
     const recordings = [];
+    // Mapa das telas do sistema da marca: sem ele a IA gasta os passos procurando onde cada coisa fica.
+    const guidePath = join(here, "guias", `${job.brandKey}.md`);
+    const guide = existsSync(guidePath) ? `${readFileSync(guidePath, "utf8").trim()}\n\nCena: ` : "";
     for (const [i, s] of scenes.entries()) {
       const source = `${nome}-bloco-${s.index + 1}`;
-      await progress(job.id, 5 + Math.round((i / scenes.length) * 25), `gravando a tela: ${s.scene}`);
+      const percent = 5 + Math.round((i / scenes.length) * 25);
+      await progress(job.id, percent, `gravando a tela: ${s.scene}`);
+      // Sinal de vida durante a gravação: sem ele o Console acusa computador desligado e a API solta o job.
+      const beat = setInterval(() => void progress(job.id, percent, `gravando a tela: ${s.scene}`).catch(() => {}), cfg.heartbeatSeconds * 1000);
       try {
         const r = await recordScene({ brandKey: job.brandKey, scene: s.scene, account, outDir: `${cfg.base}/brutos/${source}`, name: source,
-          ask: async (state) => (await call("POST", "/worker/ai/next-action", state)).data });
+          ask: async (state) => (await call("POST", "/worker/ai/next-action", { ...state, scene: guide + state.scene })).data });
         recordings.push({ index: s.index, source, duration: r.duration });
       } catch (e) {
         return fail(job.id, `gravação do bloco ${s.index + 1}: ${e.message}`, !e.personalData);
+      } finally {
+        clearInterval(beat);
       }
     }
     job.roteiro = applyRecordings(job.roteiro, recordings);
@@ -231,7 +242,7 @@ async function round() {
   }
 
   // Portão (etapa 5 do pacote): palavra sem par = a síntese pode ter engolido texto. Outra semente costuma resolver.
-  const unmatched = readUnmatched(projectDir, voice, seed) ?? parseUnmatched(log);
+  const unmatched = readUnmatched(voiceDir(seed)) ?? parseUnmatched(log);
   if (unmatched === null) return fail(job.id, "não achei a contagem de palavras sem par no log do pipeline", false);
   // Voz aprovada pelo ouvido: palavra sem par já foi ouvida e aceita; vira só aviso.
   if (unmatched > 0 && !job.voiceApproved) return fail(job.id, `${unmatched} palavra(s) sem par no alinhamento com a semente ${seed}`, true);
@@ -407,9 +418,9 @@ function ensureBrandKit(brandKey, brandName) {
 }
 
 /** Palavras sem par gravadas pelo alinhamento da voz (o log não repete a contagem quando a voz vem do cache). */
-function readUnmatched(projectDir, voice, steps, seed) {
+function readUnmatched(dir) {
   try {
-    const n = JSON.parse(readFileSync(`${projectDir}/voz-continua/${voice}-p${steps}-s${seed}/alinhamento.json`, "utf8")).sem_par;
+    const n = JSON.parse(readFileSync(`${dir}/alinhamento.json`, "utf8")).sem_par;
     return Number.isInteger(n) ? n : null;
   } catch {
     return null;
