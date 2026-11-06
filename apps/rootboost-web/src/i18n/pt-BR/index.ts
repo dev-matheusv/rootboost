@@ -144,6 +144,16 @@ export default {
     denied: 'O navegador bloqueou as notificações. Libere nas configurações do site.',
     error: 'Não consegui ligar os avisos neste aparelho.',
   },
+  screenGuide: {
+    title: 'Como usar o seu sistema',
+    hint: 'A gravação de tela usa este guia para achar cada tela. Cole a documentação e a IA escreve o guia. Nada é salvo sem você conferir.',
+    documentation: 'Documentação do sistema',
+    generate: 'Gerar guia com a IA',
+    guide: 'Guia',
+    guideHint: 'Sem senha e sem dado real de pessoa.',
+    save: 'Salvar guia',
+    saved: 'Guia salvo',
+  },
   onboarding: {
     placeholder: 'Escreva aqui. Pode mandar o link do site.',
     off: 'A IA está desligada. Preencha o cadastro ao lado.',

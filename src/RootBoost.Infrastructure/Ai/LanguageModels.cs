@@ -81,6 +81,8 @@ public sealed class FakeLanguageModel : ILanguageModel
     {
         if (request.Purpose == "onboarding-chat") return Task.FromResult(Interview(request));
         if (request.Purpose == "screen-recording") return Task.FromResult(Screen(request));
+        if (request.Purpose == "screen-guide")
+            return Task.FromResult(new LanguageModelResult(JsonSerializer.Serialize(new { guia = "- Para abrir a agenda, toque em Agenda na barra de baixo." }), "fake", 0, 0, 0m));
         if (request.Purpose == "media-describe")
             return Task.FromResult(new LanguageModelResult(JsonSerializer.Serialize(new
             {

@@ -205,7 +205,9 @@ async function round() {
   if (scenes.length) {
     // Mapa das telas do sistema da marca: sem ele a IA gasta os passos procurando onde cada coisa fica.
     const guidePath = join(here, "guias", `${job.brandKey}.md`);
-    const guide = existsSync(guidePath) ? `${readFileSync(guidePath, "utf8").trim()}\n\nCena: ` : "";
+    // O guia salvo no Console vem no job e vale pra qualquer cliente; o arquivo local fica de reserva.
+    const guideText = [existsSync(guidePath) ? readFileSync(guidePath, "utf8").trim() : "", job.screenGuide?.trim() ?? ""].filter(Boolean).join("\n\n");
+    const guide = guideText ? `${guideText}\n\nCena: ` : "";
     // Preparo da conta (fora do vídeo): o que a cena precisa já existir, como modelo de ficha.
     const prepPath = join(here, "guias", `${job.brandKey}.preparo.json`);
     const preps = preparationsFor(existsSync(prepPath) ? JSON.parse(readFileSync(prepPath, "utf8")) : [], scenes);

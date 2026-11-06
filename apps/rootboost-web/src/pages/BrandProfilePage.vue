@@ -34,6 +34,7 @@
         <!-- Inventário de prova: o que a IA pode afirmar. -->
         <q-tab-panel name="product" class="q-pa-none">
           <ProductOnboarding :key="brand.selected" :brand-key="brand.selected" />
+          <ScreenGuidePanel :key="`guia-${brand.selected}`" :brand-key="brand.selected" />
         </q-tab-panel>
 
         <q-tab-panel name="proof" class="q-pa-none">
@@ -188,6 +189,7 @@
 
 <script setup lang="ts">
 import ProductOnboarding from 'src/components/ProductOnboarding.vue';
+import ScreenGuidePanel from 'src/components/ScreenGuidePanel.vue';
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useQuasar } from 'quasar';

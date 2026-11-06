@@ -144,6 +144,16 @@ export default {
     denied: 'The browser blocked notifications. Allow them in the site settings.',
     error: 'Could not turn on alerts on this device.',
   },
+  screenGuide: {
+    title: 'How to use your system',
+    hint: 'Screen recording uses this guide to find each screen. Paste the documentation and the AI writes the guide. Nothing is saved until you check it.',
+    documentation: 'System documentation',
+    generate: 'Generate guide with AI',
+    guide: 'Guide',
+    guideHint: 'No passwords and no real personal data.',
+    save: 'Save guide',
+    saved: 'Guide saved',
+  },
   onboarding: {
     placeholder: 'Type here. You can send your website link.',
     off: 'AI is off. Fill in the form beside.',

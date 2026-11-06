@@ -31,6 +31,10 @@ job com trechos "gravar-bloco-N"  ──►  worker abre o Chrome (sem janela, 5
   a escolha de arquivo recebe essa mesma imagem. Nunca sai um arquivo de verdade do PC.
 - **Cursor desenhado na página** e marcas de tempo, como no gravador do MedlyCare.
 
+## Guia de uso do sistema
+
+Em Perfil da marca, a pessoa cola a documentação do sistema e a IA propõe um guia (`POST /product/screen-guide/draft`). A pessoa confere e salva (`PUT /product/screen-guide`). O guia vem no job e vai junto de cada cena da gravação. Nada é salvo sem confirmação, e o texto colado entra como dado, nunca como instrução.
+
 ## Preparo da conta
 
 `guias/<marca>.preparo.json` lista o que a conta de demonstração precisa ter antes da gravação. Cada item tem `quando` (expressão regular sobre as cenas do job) e `cena`. O worker roda esses itens fora do vídeo, com a mesma IA e as mesmas travas. Se falhar, o job para com o motivo e nada é gravado.
