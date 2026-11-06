@@ -1,6 +1,12 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { parseVoiceFinish, parseVoiceTones, preparationsFor, stepByStepPlan, voiceFolder } from "./lib.mjs";
+import { logFileName, oldLogs, parseVoiceFinish, parseVoiceTones, preparationsFor, stepByStepPlan, voiceFolder } from "./lib.mjs";
+
+test("log do worker: um arquivo por dia e limpeza depois de 14 dias", () => {
+  const now = new Date(2026, 10, 20);
+  assert.equal(logFileName(now), "worker-2026-11-20.log");
+  assert.deepEqual(oldLogs(["worker-2026-11-01.log", "worker-2026-11-19.log", "nota.txt"], now, 14), ["worker-2026-11-01.log"]);
+});
 
 test("preparo da conta: só o que a cena do job precisa", () => {
   const items = [{ quando: "ficha", cena: "criar modelo" }, { quando: "agenda", cena: "abrir agenda" }, { quando: "ficha" }];

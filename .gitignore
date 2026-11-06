@@ -46,3 +46,4 @@ src/RootBoost.Api/media-local/
 tools/studio-worker/contas.json
 tools/studio-worker/acervo-enviados.json
 tools/studio-worker/worker.lock
+tools/studio-worker/logs/
