@@ -19,7 +19,7 @@ test("passo a passo: junta as gravações, numera os títulos e abre sobre o res
   const plan = stepByStepPlan(roteiro, [{ index: 1, source: "x-bloco-2", duration: 10 }, { index: 0, source: "x-bloco-1", duration: 20 }], "x");
   assert.deepEqual(plan.files, ["x-bloco-1", "x-bloco-2"]);
   assert.deepEqual(plan.tela.blocos.slice(1), [[[0.5, 19.8]], [[20.5, 29.8]]]);
-  assert.equal(plan.tela.blocos[0][0].hold, 29.75);
+  assert.deepEqual(plan.tela.blocos[0], [[24.8, 29.8], { hold: 29.75 }]);
   assert.deepEqual(plan.roteiro.blocos.map((b) => b.titulo), ["Ficha no papel?", "1. Abra", "2. Salve"]);
   assert.equal(plan.roteiro.abertura, undefined);
 });
