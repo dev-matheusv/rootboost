@@ -31,6 +31,10 @@ job com trechos "gravar-bloco-N"  ──►  worker abre o Chrome (sem janela, 5
   a escolha de arquivo recebe essa mesma imagem. Nunca sai um arquivo de verdade do PC.
 - **Cursor desenhado na página** e marcas de tempo, como no gravador do MedlyCare.
 
+## Reel de passo a passo (06/11)
+
+Quando toda cena do job é gravação de tela, o worker junta as gravações num bruto (`<nome>-completo`), escreve `tela.json` e monta com `narrado-passo.mjs --pausar`: voz inteira, pausas só em silêncio real, tela contínua, títulos numerados, legenda abaixo da tela e sem cartão de abertura. Job com acervo ou cena sem gravação segue no `narrado-calmo.mjs`. Regras em `Fluxo de producao de reels.txt`.
+
 ## Segurança
 
 - **Conta de demonstração no PC** (`tools/studio-worker/contas.json`, fora do git; modelo em `contas.exemplo.json`): `{ "<marca>": { "url", "usuario",

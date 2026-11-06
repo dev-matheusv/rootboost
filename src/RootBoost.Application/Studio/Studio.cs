@@ -214,7 +214,7 @@ public static class ScriptGates
     {
         CreativeKind.Ad => (13, 16),
         CreativeKind.Prospecting => (60, 120),
-        _ => (25, 40),
+        _ => (45, 90),
     };
 
     public static ScriptReview Review(CreativeKind kind, JsonElement script, JsonElement lines,
