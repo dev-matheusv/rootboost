@@ -37,8 +37,8 @@
     {
       "id": "structure-organic",
       "kind": "structure",
-      "durationSeconds": [25, 40],
-      "rule": "Cartão de abertura com a dor, blocos de 5 a 12 s (um recurso cada, título no topo), cartão final com frase própria do reel (não repetir o mesmo final em todos)"
+      "durationSeconds": [45, 90],
+      "rule": "Gancho falado sobre o produto, sem cartão de abertura; o processo inteiro em passos numerados de 5 a 15 s, na ordem real, até o resultado pronto; cartão final curto com a oferta"
     },
     {
       "id": "structure-ad",

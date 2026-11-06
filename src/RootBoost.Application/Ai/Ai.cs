@@ -255,7 +255,12 @@ public sealed class ScriptWriter
         sb.AppendLine($"- Duração da voz entre {min} e {max} segundos, a cerca de 2,4 palavras por segundo.");
         sb.AppendLine(kind == CreativeKind.Ad
             ? "- Anúncio: sem abertura; o título do primeiro bloco é o gancho, curto e forte."
-            : "- Abertura com a dor do público (título curto e subtítulo), depois blocos de um recurso cada, de 5 a 12 segundos.");
+            : "- Abertura com a dor do público (título curto e subtítulo), depois blocos de 5 a 15 segundos, cada um com um passo.");
+        if (kind != CreativeKind.Ad)
+        {
+            sb.AppendLine("- Vídeo que ensina mostra o processo inteiro, do começo ao fim: quem assistir tem de conseguir repetir sozinho. Nunca mostre só um pedaço. Cada bloco é um passo, na ordem em que acontece, e a cena continua de onde a anterior parou. Termine mostrando o resultado pronto.");
+            sb.AppendLine("- A fala explica o que está acontecendo na tela, como quem ensina uma colega: frases curtas, ponto onde se respira, vírgula onde a fala pede, sem tom de locução. A fala de cada bloco tem de durar o tempo que a ação leva.");
+        }
         sb.AppendLine("- Cada bloco tem título curto no topo da tela, subtítulo, a fala daquele trecho e a cena: o que a tela mostra, passo a passo, pra quem for gravar.");
         sb.AppendLine(format switch
         {

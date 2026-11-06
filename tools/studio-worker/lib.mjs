@@ -122,8 +122,47 @@ export function parseVoiceTones(value) {
 }
 
 /** Pasta da voz no projeto, a mesma que o narrado-calmo usa: tom diferente é outra fala, com cache próprio. */
-export function voiceFolder(voice, steps, seed, tone = 0) {
-  return `${voice}-p${steps}-s${seed}${tone ? `-t${tone}` : ""}`;
+export function voiceFolder(voice, steps, seed, tone = 0, finish = "") {
+  return `${voice}-p${steps}-s${seed}${tone ? `-t${tone}` : ""}${finish ? `-${finish}` : ""}`;
+}
+
+/** Lê "medlynat1:corpo-forte": acabamento de cada voz no acabar-voz.py. Nome fora do padrão fica de fora. */
+export function parseVoiceFinish(value) {
+  const map = new Map();
+  for (const pair of String(value ?? "").split(",")) {
+    const [voice, finish] = pair.split(":").map((s) => s?.trim().toLowerCase());
+    if (voice && /^[a-z-]+$/.test(finish ?? "")) map.set(voice, finish);
+  }
+  return map;
+}
+
+/**
+ * Reel de passo a passo (06/11): quando toda cena é gravação de tela, o vídeo é um processo só, contínuo, com a voz
+ * inteira. Junta as gravações num bruto e devolve o plano do narrado-passo.mjs. Abertura vira gancho falado sobre o
+ * resultado pronto (último quadro), sem cartão; o título de cada passo sai numerado. Sem gravação em todo bloco: null.
+ */
+export function stepByStepPlan(roteiro, recordings, nome) {
+  const blocos = roteiro?.blocos ?? [];
+  if (!blocos.length || recordings.length !== blocos.length) return null;
+  const ordered = [...recordings].sort((a, b) => a.index - b.index);
+  if (ordered.some((r, i) => r.index !== i || !(r.duration > 1))) return null;
+  const round = (n) => Math.round(n * 100) / 100;
+  let offset = 0;
+  const steps = ordered.map((r) => {
+    const segment = [round(offset + Math.min(0.5, r.duration / 4)), round(offset + r.duration - 0.2)];
+    offset += r.duration;
+    return [segment];
+  });
+  const hasOpening = Array.isArray(roteiro.abertura) && !!roteiro.abertura[0];
+  const numbered = blocos.map((b, i) => ({ ...b, titulo: `${i + 1}. ${b.titulo}` }));
+  const hook = { ...blocos[0], titulo: roteiro.abertura?.[0], sub: "" };
+  const { abertura: _unused, ...rest } = roteiro;
+  return {
+    source: `${nome}-completo`,
+    files: ordered.map((r) => r.source),
+    tela: { fonte: `${nome}-completo`, blocos: hasOpening ? [[{ hold: round(steps.at(-1)[0][1] - 0.05) }], ...steps] : steps },
+    roteiro: { ...rest, blocos: hasOpening ? [hook, ...numbered] : numbered },
+  };
 }
 
 // --- Gravação de tela (RB-50, docs/GRAVACAO.md) ---
