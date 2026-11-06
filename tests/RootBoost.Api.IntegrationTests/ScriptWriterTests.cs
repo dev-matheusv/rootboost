@@ -218,6 +218,21 @@ public class ProductApiTests : IClassFixture<FakeAiWebApplicationFactory>
         var saved = await c.GetFromJsonAsync<JsonElement>("/admin/brands/medlycare/product");
         Assert.Equal("https://medlycare.com.br", saved.GetProperty("url").GetString());
         Assert.Equal(2, saved.GetProperty("features").GetArrayLength());
+
+        // Guia de uso: a IA propõe e nada é gravado até a pessoa salvar.
+        var empty = await c.PostAsJsonAsync("/admin/brands/medlycare/product/screen-guide/draft", new { documentation = " " });
+        Assert.Equal(HttpStatusCode.BadRequest, empty.StatusCode);
+        var draft = await c.PostAsJsonAsync("/admin/brands/medlycare/product/screen-guide/draft", new { documentation = "Agenda fica na barra de baixo." });
+        var proposed = (await draft.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("guide").GetString();
+        Assert.Contains("Agenda", proposed);
+        var before = await c.GetFromJsonAsync<JsonElement>("/admin/brands/medlycare/product");
+        Assert.Equal(JsonValueKind.Null, before.GetProperty("screenGuide").ValueKind);
+        var guide = await c.PutAsJsonAsync("/admin/brands/medlycare/product/screen-guide", new { guide = proposed });
+        Assert.Equal(HttpStatusCode.OK, guide.StatusCode);
+        var after = await c.GetFromJsonAsync<JsonElement>("/admin/brands/medlycare/product");
+        Assert.Equal(proposed, after.GetProperty("screenGuide").GetString());
+        var tooLong = await c.PutAsJsonAsync("/admin/brands/medlycare/product/screen-guide", new { guide = new string('a', 12001) });
+        Assert.Equal(HttpStatusCode.BadRequest, tooLong.StatusCode);
     }
 }
 

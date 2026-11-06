@@ -254,6 +254,10 @@ namespace RootBoost.Infrastructure.Persistence.Migrations
                         .HasMaxLength(300)
                         .HasColumnType("character varying(300)");
 
+                    b.Property<string>("ScreenGuide")
+                        .HasMaxLength(12000)
+                        .HasColumnType("character varying(12000)");
+
                     b.Property<string>("Summary")
                         .IsRequired()
                         .HasMaxLength(1000)

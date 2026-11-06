@@ -177,7 +177,14 @@ async function round() {
     let takes = 0;
     for (const c of chosenTakes) {
       const m4a = `${voiceDir(c.seed)}/revisao.m4a`;
-      execFileSync(FFMPEG, ["-y", "-i", `${voiceDir(c.seed)}/tratado.wav`, "-c:a", "aac", "-b:a", "128k", m4a], { stdio: "ignore" });
+      // Passo a passo: a pessoa ouve a voz com as pausas finais, a mesma que vai pro vídeo.
+      const allRecorded = scenes.length === (job.roteiro.blocos ?? []).length;
+      if (allRecorded) {
+        const paused = await runPipeline(job.id, cfg.bin, [`${cfg.tools}/narrado-passo.mjs`, nome, "--voz-dir", voiceDir(c.seed), "--pausar", "--so-voz"]);
+        if (paused.code !== 0) return fail(job.id, `pausas da voz: ${lastLine(paused.log)}`, false);
+      }
+      const review = `${voiceDir(c.seed)}${allRecorded ? "-final" : ""}/tratado.wav`;
+      execFileSync(FFMPEG, ["-y", "-i", review, "-c:a", "aac", "-b:a", "128k", m4a], { stdio: "ignore" });
       parts.push([`take-${c.seed}`, { path: m4a, filename: `voz-${c.seed}.m4a` }], [`unmatched-${c.seed}`, String(c.unmatched)]);
       takes++;
     }
@@ -198,7 +205,9 @@ async function round() {
   if (scenes.length) {
     // Mapa das telas do sistema da marca: sem ele a IA gasta os passos procurando onde cada coisa fica.
     const guidePath = join(here, "guias", `${job.brandKey}.md`);
-    const guide = existsSync(guidePath) ? `${readFileSync(guidePath, "utf8").trim()}\n\nCena: ` : "";
+    // O guia salvo no Console vem no job e vale pra qualquer cliente; o arquivo local fica de reserva.
+    const guideText = [existsSync(guidePath) ? readFileSync(guidePath, "utf8").trim() : "", job.screenGuide?.trim() ?? ""].filter(Boolean).join("\n\n");
+    const guide = guideText ? `${guideText}\n\nCena: ` : "";
     // Preparo da conta (fora do vídeo): o que a cena precisa já existir, como modelo de ficha.
     const prepPath = join(here, "guias", `${job.brandKey}.preparo.json`);
     const preps = preparationsFor(existsSync(prepPath) ? JSON.parse(readFileSync(prepPath, "utf8")) : [], scenes);

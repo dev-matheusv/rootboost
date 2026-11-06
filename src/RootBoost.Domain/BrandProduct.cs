@@ -21,6 +21,9 @@ public sealed class BrandProduct
     public string FeaturesJson { get; private set; } = "[]";
     public string DifferentialsJson { get; private set; } = "[]";
     public string? Offer { get; private set; }
+
+    /// <summary>Como usar o sistema do cliente, conferido pela pessoa (RB-50): vai junto de cada cena da gravação.</summary>
+    public string? ScreenGuide { get; private set; }
     public DateTimeOffset CreatedAt { get; private set; }
     public DateTimeOffset UpdatedAt { get; private set; }
 
@@ -37,6 +40,17 @@ public sealed class BrandProduct
         BrandKey = BrandKeys.Validate(brandKey);
         Name = string.Empty;
         CreatedAt = now;
+        UpdatedAt = now;
+    }
+
+    public const int MaxScreenGuideChars = 12000;
+
+    /// <summary>Grava o guia conferido pela pessoa. Vazio apaga e a gravação volta a depender só da tela.</summary>
+    public void SetScreenGuide(string? guide, DateTimeOffset now)
+    {
+        var text = guide?.Trim();
+        if (text is { Length: > MaxScreenGuideChars }) throw new ArgumentException($"guia passa de {MaxScreenGuideChars} caracteres", nameof(guide));
+        ScreenGuide = string.IsNullOrEmpty(text) ? null : text;
         UpdatedAt = now;
     }
 

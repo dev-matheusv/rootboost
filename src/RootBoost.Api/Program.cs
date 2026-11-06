@@ -792,6 +792,29 @@ brandProfile.MapPut("/product", async (string key, ProductInput input, IBrandSto
     return Results.Ok(ProductDto.From(product));
 });
 
+// Guia de uso do sistema (RB-50): a IA lê a documentação e propõe; a pessoa confere e salva. É o que a gravação consulta.
+brandProfile.MapPost("/product/screen-guide/draft", async (string key, ScreenGuideDraftInput input, IBrandStore brands,
+    RootBoost.Application.Ai.IBrandProductStore products, RootBoost.Application.Ai.ScreenGuideWriter writer, CancellationToken ct) =>
+{
+    var brandKey = key.ToLowerInvariant();
+    var brand = (await brands.ListAsync(ct)).FirstOrDefault(b => b.Key == brandKey);
+    if (brand is null) return Results.NotFound();
+    if (string.IsNullOrWhiteSpace(input.Documentation)) return Results.BadRequest(new { error = "cole a documentação do sistema" });
+    var draft = await writer.DraftAsync(brandKey, brand.Name, await products.GetAsync(brandKey, ct), input.Documentation, ct);
+    return Results.Ok(new { guide = draft.Guide, costUsd = draft.CostUsd });
+});
+
+brandProfile.MapPut("/product/screen-guide", async (string key, ScreenGuideInput input,
+    RootBoost.Application.Ai.IBrandProductStore products, TimeProvider time, CancellationToken ct) =>
+{
+    var product = await products.GetAsync(key.ToLowerInvariant(), ct);
+    if (product is null) return Results.BadRequest(new { error = "cadastre o produto antes de salvar o guia" });
+    try { product.SetScreenGuide(input.Guide, time.GetUtcNow()); }
+    catch (ArgumentException ex) { return Results.BadRequest(new { error = ex.Message }); }
+    await products.SaveAsync(product, ct);
+    return Results.Ok(ProductDto.From(product));
+});
+
 brandProfile.MapPost("/onboarding/chat", async (string key, OnboardingChatInput input, IBrandStore brands,
     RootBoost.Application.Ai.IBrandProductStore products, RootBoost.Application.Ai.ProductInterviewer interviewer, CancellationToken ct) =>
 {
@@ -946,7 +969,7 @@ var worker = app.MapGroup("/worker").AddEndpointFilter(async (ctx, next) =>
     return ok ? await next(ctx) : Results.Unauthorized();
 });
 
-worker.MapPost("/jobs/claim", async (WorkerClaimInput input, HttpRequest req, RootBoost.Application.Studio.ICreativeJobStore store, IBrandStore brands,
+worker.MapPost("/jobs/claim", async (WorkerClaimInput input, HttpRequest req, RootBoost.Application.Studio.ICreativeJobStore store, IBrandStore brands, RootBoost.Application.Ai.IBrandProductStore products,
     RootBoost.Application.Studio.StudioOptions options, RootBoost.Application.Media.IMediaAssetStore assets,
     RootBoost.Application.Media.MediaOptions mediaOptions, RootBoost.Application.Studio.INarrationVoiceStore voices, TimeProvider time, CancellationToken ct) =>
 {
@@ -981,7 +1004,8 @@ worker.MapPost("/jobs/claim", async (WorkerClaimInput input, HttpRequest req, Ro
     if (seed is null && voiceKey is { } vk && await voices.FindByKeyAsync(vk, ct) is { BrandKey: var vb, ChosenSeed: { } chosen } && vb == job.BrandKey)
         seed = chosen;
     var brandName = (await brands.ListAsync(ct)).FirstOrDefault(b => b.Key == job.BrandKey)?.Name ?? job.BrandKey;
-    return Results.Ok(WorkerJobDto.From(job) with { Media = media, Seed = seed, VoiceKey = voiceKey, BrandName = brandName });
+    var screenGuide = (await products.GetAsync(job.BrandKey, ct))?.ScreenGuide;
+    return Results.Ok(WorkerJobDto.From(job) with { Media = media, Seed = seed, VoiceKey = voiceKey, BrandName = brandName, ScreenGuide = screenGuide });
 });
 
 worker.MapPost("/jobs/{id:guid}/progress", async (Guid id, WorkerProgressInput input, RootBoost.Application.Studio.ICreativeJobStore store,
@@ -1499,11 +1523,13 @@ record ProductInput(string Name, string Kind, string? Url, string? AppUrl, strin
 record ChatMessageInput(string? Role, string? Text);
 record OnboardingChatInput(List<ChatMessageInput>? Messages);
 record ProductDto(string Name, string Kind, string? Url, string? AppUrl, string Summary, string Audience,
-    IReadOnlyList<string> Features, IReadOnlyList<string> Differentials, string? Offer, DateTimeOffset UpdatedAt)
+    IReadOnlyList<string> Features, IReadOnlyList<string> Differentials, string? Offer, DateTimeOffset UpdatedAt, string? ScreenGuide = null)
 {
     public static ProductDto From(BrandProduct p) => new(p.Name, p.Kind, p.Url, p.AppUrl, p.Summary, p.Audience, p.Features,
-        p.Differentials, p.Offer, p.UpdatedAt);
+        p.Differentials, p.Offer, p.UpdatedAt, p.ScreenGuide);
 }
+record ScreenGuideDraftInput(string? Documentation);
+record ScreenGuideInput(string? Guide);
 record CreativeJobInput(string Kind, string Theme, string? VoiceKey, string? Format = null);
 record ScriptInput(System.Text.Json.JsonElement Roteiro, System.Text.Json.JsonElement Falas);
 record JobPublicationsInput(DateTimeOffset ScheduledFor, string? Instagram, string? Facebook, string? LinkedIn);
@@ -1534,7 +1560,7 @@ record VoiceTakeDto(int Seed, int Unmatched);
 
 record WorkerJobDto(Guid Id, string BrandKey, string Kind, string Theme, string? VoiceKey, int? Seed, int Attempts,
     System.Text.Json.JsonElement? Roteiro, System.Text.Json.JsonElement? Falas, IReadOnlyList<WorkerMediaDto>? Media = null,
-    bool VoiceApproved = false, string? BrandName = null)
+    bool VoiceApproved = false, string? BrandName = null, string? ScreenGuide = null)
 {
     public static WorkerJobDto From(CreativeJob j) => new(j.Id, j.BrandKey, j.Kind.ToString(), j.Theme, j.VoiceKey, j.Seed,
         j.Attempts, CreativeJobDto.Parse(j.Script), CreativeJobDto.Parse(j.Lines), VoiceApproved: j.VoiceApproved);
