@@ -135,6 +135,21 @@ export function preparationsFor(items, scenes) {
   return (Array.isArray(items) ? items : []).filter((p) => p?.cena && new RegExp(p.quando ?? ".", "i").test(text));
 }
 
+/** Nome do arquivo de log do dia, na data local do PC. */
+export function logFileName(date) {
+  const pad = (n) => String(n).padStart(2, "0");
+  return `worker-${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}.log`;
+}
+
+/** Arquivos de log com mais de `days` dias. Arquivo com outro nome fica. */
+export function oldLogs(files, now, days) {
+  const limit = now.getTime() - days * 86_400_000;
+  return files.filter((f) => {
+    const m = /^worker-(\d{4})-(\d{2})-(\d{2})\.log$/.exec(f);
+    return m && new Date(+m[1], +m[2] - 1, +m[3]).getTime() < limit;
+  });
+}
+
 /** Lê "medlynat1:corpo-forte": acabamento de cada voz no acabar-voz.py. Nome fora do padrão fica de fora. */
 export function parseVoiceFinish(value) {
   const map = new Map();
