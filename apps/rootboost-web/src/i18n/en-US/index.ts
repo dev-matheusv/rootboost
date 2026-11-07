@@ -145,6 +145,9 @@ export default {
     error: 'Could not turn on alerts on this device.',
   },
   screenGuide: {
+    upload: 'Upload document',
+    uploadHint: 'PDF, Word (DOCX) or text, up to 20 MB. The text shows below so you can check it.',
+    truncated: 'The document is long: only the beginning was used. Paste the rest if needed.',
     title: 'How to use your system',
     hint: 'Screen recording uses this guide to find each screen. Paste the documentation and the AI writes the guide. Nothing is saved until you check it.',
     documentation: 'System documentation',

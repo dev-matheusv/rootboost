@@ -3,6 +3,8 @@
   <div class="guide card-rounded q-pa-md q-mt-lg column q-gutter-y-sm">
     <div class="text-subtitle1 text-weight-bold">{{ $t('screenGuide.title') }}</div>
     <div class="text-caption text-grey-7">{{ $t('screenGuide.hint') }}</div>
+    <q-file v-model="file" outlined dense accept=".pdf,.docx,.txt,.md,.csv,.html,.htm" :label="$t('screenGuide.upload')"
+      :hint="$t('screenGuide.uploadHint')" :loading="reading" @update:model-value="readFile" />
     <q-input v-model="documentation" outlined dense autogrow type="textarea" maxlength="40000" :label="$t('screenGuide.documentation')" />
     <div>
       <q-btn outline color="primary" no-caps :label="$t('screenGuide.generate')" :loading="drafting"
@@ -32,6 +34,8 @@ const $q = useQuasar();
 const documentation = ref('');
 const guide = ref('');
 const drafting = ref(false);
+const file = ref<File | null>(null);
+const reading = ref(false);
 const saving = ref(false);
 const saved = ref(false);
 
@@ -43,6 +47,24 @@ function fail(e: unknown) {
 async function load() {
   const { data, status } = await api.get<{ screenGuide?: string | null }>(`/admin/brands/${props.brandKey}/product`);
   guide.value = status === 200 ? data.screenGuide ?? '' : '';
+}
+
+/** Lê o PDF, DOCX ou texto no servidor e põe o texto no campo, pra pessoa conferir antes de gerar o guia. */
+async function readFile(f: File | null) {
+  if (!f) return;
+  reading.value = true;
+  try {
+    const body = new FormData();
+    body.append('file', f);
+    const { data } = await api.post<{ text: string; truncated: boolean }>(`/admin/brands/${props.brandKey}/product/screen-guide/document`,
+      body, { timeout: 120_000 });
+    documentation.value = data.text;
+    if (data.truncated) $q.notify({ type: 'warning', message: t('screenGuide.truncated') });
+  } catch (e) {
+    fail(e);
+  } finally {
+    reading.value = false;
+  }
 }
 
 async function draft() {

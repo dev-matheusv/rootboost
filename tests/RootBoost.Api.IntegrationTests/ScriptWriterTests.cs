@@ -233,6 +233,13 @@ public class ProductApiTests : IClassFixture<FakeAiWebApplicationFactory>
         Assert.Equal(proposed, after.GetProperty("screenGuide").GetString());
         var tooLong = await c.PutAsJsonAsync("/admin/brands/medlycare/product/screen-guide", new { guide = new string('a', 12001) });
         Assert.Equal(HttpStatusCode.BadRequest, tooLong.StatusCode);
+
+        // Documento enviado vira texto pra conferir; tipo desconhecido é recusado.
+        using var txt = new MultipartFormDataContent { { new ByteArrayContent("Agenda: menu de baixo."u8.ToArray()), "file", "manual.txt" } };
+        var read = await c.PostAsync("/admin/brands/medlycare/product/screen-guide/document", txt);
+        Assert.Equal("Agenda: menu de baixo.", (await read.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("text").GetString());
+        using var exe = new MultipartFormDataContent { { new ByteArrayContent([1, 2, 3]), "file", "virus.exe" } };
+        Assert.Equal(HttpStatusCode.BadRequest, (await c.PostAsync("/admin/brands/medlycare/product/screen-guide/document", exe)).StatusCode);
     }
 }
 

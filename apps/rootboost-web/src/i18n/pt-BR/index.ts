@@ -145,6 +145,9 @@ export default {
     error: 'Não consegui ligar os avisos neste aparelho.',
   },
   screenGuide: {
+    upload: 'Enviar documento',
+    uploadHint: 'PDF, Word (DOCX) ou texto, até 20 MB. O texto aparece abaixo para você conferir.',
+    truncated: 'O documento é longo: só o começo entrou. Cole a parte que falta, se precisar.',
     title: 'Como usar o seu sistema',
     hint: 'A gravação de tela usa este guia para achar cada tela. Cole a documentação e a IA escreve o guia. Nada é salvo sem você conferir.',
     documentation: 'Documentação do sistema',
