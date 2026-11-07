@@ -5,6 +5,12 @@ namespace RootBoost.Application.Ai;
 
 public sealed record ScreenGuideDraft(string Guide, decimal CostUsd);
 
+/// <summary>Texto de um documento enviado (PDF, DOCX ou texto) pra IA ler como dado.</summary>
+public interface IDocumentTextExtractor
+{
+    Task<string> ExtractAsync(string fileName, Stream content, CancellationToken ct = default);
+}
+
 /// <summary>
 /// Transforma a documentação do sistema do cliente no guia que a IA da gravação usa (RB-50): onde cada tela fica e como
 /// fazer cada tarefa. Só propõe: a pessoa confere e salva. O texto recebido entra marcado como dado, nunca como instrução.

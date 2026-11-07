@@ -804,6 +804,28 @@ brandProfile.MapPost("/product/screen-guide/draft", async (string key, ScreenGui
     return Results.Ok(new { guide = draft.Guide, costUsd = draft.CostUsd });
 });
 
+// Documento do sistema (PDF, DOCX ou texto, até 20 MB): devolve o texto pra pessoa conferir antes de gerar o guia.
+brandProfile.MapPost("/product/screen-guide/document", async (string key, IFormFile file,
+    RootBoost.Application.Ai.IDocumentTextExtractor extractor, ILoggerFactory lf, CancellationToken ct) =>
+{
+    if (file.Length == 0 || file.Length > 20 * 1024 * 1024) return Results.BadRequest(new { error = "envie um arquivo de até 20 MB" });
+    if (!RootBoost.Infrastructure.Documents.DocumentTextExtractor.Supports(file.FileName))
+        return Results.BadRequest(new { error = "envie PDF, DOCX ou texto" });
+    try
+    {
+        await using var stream = file.OpenReadStream();
+        var text = await extractor.ExtractAsync(file.FileName, stream, ct);
+        if (string.IsNullOrWhiteSpace(text)) return Results.BadRequest(new { error = "não achei texto no arquivo; se for PDF escaneado, cole o texto" });
+        var max = RootBoost.Application.Ai.ScreenGuideWriter.MaxDocumentationChars;
+        return Results.Ok(new { text = text.Length > max ? text[..max] : text, truncated = text.Length > max });
+    }
+    catch (Exception ex) when (ex is not OperationCanceledException)
+    {
+        lf.CreateLogger("ScreenGuide").LogWarning(ex, "documento {File} da marca {Brand} não pôde ser lido", file.FileName, key);
+        return Results.BadRequest(new { error = $"não consegui ler o arquivo: {ex.Message}" });
+    }
+}).DisableAntiforgery();
+
 brandProfile.MapPut("/product/screen-guide", async (string key, ScreenGuideInput input,
     RootBoost.Application.Ai.IBrandProductStore products, TimeProvider time, CancellationToken ct) =>
 {
