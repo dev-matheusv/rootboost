@@ -235,6 +235,7 @@ public sealed class RootBoostDbContext : DbContext
         product.Property(x => x.FeaturesJson).HasColumnType("jsonb").IsRequired();
         product.Property(x => x.DifferentialsJson).HasColumnType("jsonb").IsRequired();
         product.Property(x => x.Offer).HasMaxLength(300);
+        product.Property(x => x.ScreenGuide).HasMaxLength(BrandProduct.MaxScreenGuideChars);
         product.Property(x => x.CreatedAt).HasConversion(Utc);
         product.Property(x => x.UpdatedAt).HasConversion(Utc);
         product.Ignore(x => x.Features);

@@ -6,17 +6,30 @@
 //       node worker.mjs --once     (uma rodada e sai)
 // Config por variável de ambiente ou num worker.env ao lado (ver worker.env.example). A chave nunca vai pro repo.
 import { execFileSync, spawn } from "node:child_process";
-import { copyFileSync, existsSync, mkdirSync, openAsBlob, readFileSync, statSync, unlinkSync, writeFileSync } from "node:fs";
+import { appendFileSync, copyFileSync, existsSync, mkdirSync, openAsBlob, readdirSync, readFileSync, rmSync, statSync, unlinkSync, writeFileSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
-  applyLibrary, applyRecordings, buildArgs, buildPersonalSpec, libraryScenes, photoClipArgs, expectedOutputs, isScriptProblem, lastLine, parsePrivateVoices, parseUnmatched, parseVoiceSteps, stepsFor, projectName, scenesToRecord,
+  applyLibrary, applyRecordings, buildArgs, buildPersonalSpec, libraryScenes, photoClipArgs, expectedOutputs, isScriptProblem, lastLine, parsePrivateVoices, logFileName, oldLogs, parseVoiceFinish, parseVoiceTones, preparationsFor, stepByStepPlan, voiceFolder, parseUnmatched, parseVoiceSteps, stepsFor, projectName, scenesToRecord,
   seedFor, voiceProblem, warningsFrom,
 } from "./lib.mjs";
 import { recordScene } from "./recorder.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 loadEnvFile(join(here, "worker.env"));
+
+// Tudo que o worker e o pipeline escrevem vai também pra logs/worker-AAAA-MM-DD.log: terminal fechado não apaga o motivo
+// de um problema. Guarda 14 dias.
+const logDir = join(here, "logs");
+mkdirSync(logDir, { recursive: true });
+for (const f of oldLogs(readdirSync(logDir), new Date(), 14)) rmSync(join(logDir, f), { force: true });
+for (const stream of [process.stdout, process.stderr]) {
+  const write = stream.write.bind(stream);
+  stream.write = (chunk, ...rest) => {
+    try { appendFileSync(join(logDir, logFileName(new Date())), chunk); } catch { /* disco cheio não pode derrubar o worker */ }
+    return write(chunk, ...rest);
+  };
+}
 
 const FFMPEG = process.env.FFMPEG_PATH ?? "C:/DMaker/bin/ffmpeg/bin/ffmpeg.exe";
 const FFPROBE = process.env.FFPROBE_PATH ?? FFMPEG.replace(/ffmpeg(\.exe)?$/i, "ffprobe$1");
@@ -44,6 +57,10 @@ const cfg = {
   privateVoices: parsePrivateVoices(process.env.STUDIO_PRIVATE_VOICES ?? "matheus2a:medlycare,matheus2b:medlycare,medlyfem:medlycare,medlyfem2:medlycare,medlynat1:medlycare"),
   // Passos da síntese por voz (voz:passos), pra sair igual à amostra aprovada. Sem entrada: 32.
   voiceSteps: parseVoiceSteps(process.env.STUDIO_VOICE_STEPS ?? "medlynat1:64"),
+  // Semitons por voz (05/11): a voz padrão do MedlyCare é a medlynat1 um tom abaixo.
+  voiceTones: parseVoiceTones(process.env.STUDIO_VOICE_TONES ?? "medlynat1:-1"),
+  // Acabamento por voz (06/11): a medlynat1 aprovada é a corpo-forte, um pouco mais lenta.
+  voiceFinish: parseVoiceFinish(process.env.STUDIO_VOICE_FINISH ?? "medlynat1:corpo-forte"),
   pollSeconds: Number(process.env.STUDIO_POLL_SECONDS ?? 60),
   heartbeatSeconds: Number(process.env.STUDIO_HEARTBEAT_SECONDS ?? 30),
 };
@@ -142,14 +159,17 @@ async function round() {
   // 2. Voz primeiro: só a fala, com o portão de palavras sem par, sem montar nada.
   writeScript(projectDir, job);
   const steps = stepsFor(voice, cfg.voiceSteps);
-  const stepArgs = steps === 32 ? [] : ["--passos", String(steps)];
+  const tone = cfg.voiceTones.get(String(voice ?? "").toLowerCase()) ?? 0;
+  const finish = cfg.voiceFinish.get(String(voice ?? "").toLowerCase()) ?? "";
+  const stepArgs = [...(steps === 32 ? [] : ["--passos", String(steps)]), ...(tone ? ["--semitons", String(tone)] : []),
+    ...(finish ? ["--acabamento", finish, "--mais-lenta"] : [])];
   const voiceArgs = (sd) => [...buildArgs(cfg.args, { nome, voz: voice, seed: sd, tools: cfg.tools, base: cfg.base }), ...stepArgs, "--so-voz"];
-  const voiceDir = (sd) => `${projectDir}/voz-continua/${voice}-p${steps}-s${sd}`;
+  const voiceDir = (sd) => `${projectDir}/voz-continua/${voiceFolder(voice, steps, sd, tone, finish)}`;
   async function makeVoice(sd, note) {
     await progress(job.id, 3, note);
     const { code, log } = await runPipeline(job.id, cfg.bin, voiceArgs(sd));
     if (code !== 0) return { error: `voz saiu com código ${code}: ${lastLine(log)}`, retry: !isScriptProblem(log) };
-    const unmatched = readUnmatched(projectDir, voice, steps, sd) ?? parseUnmatched(log);
+    const unmatched = readUnmatched(voiceDir(sd)) ?? parseUnmatched(log);
     return unmatched === null ? { error: "não achei a contagem de palavras sem par da voz", retry: false } : { unmatched };
   }
 
@@ -170,7 +190,14 @@ async function round() {
     let takes = 0;
     for (const c of chosenTakes) {
       const m4a = `${voiceDir(c.seed)}/revisao.m4a`;
-      execFileSync(FFMPEG, ["-y", "-i", `${voiceDir(c.seed)}/tratado.wav`, "-c:a", "aac", "-b:a", "128k", m4a], { stdio: "ignore" });
+      // Passo a passo: a pessoa ouve a voz com as pausas finais, a mesma que vai pro vídeo.
+      const allRecorded = scenes.length === (job.roteiro.blocos ?? []).length;
+      if (allRecorded) {
+        const paused = await runPipeline(job.id, cfg.bin, [`${cfg.tools}/narrado-passo.mjs`, nome, "--voz-dir", voiceDir(c.seed), "--pausar", "--so-voz"]);
+        if (paused.code !== 0) return fail(job.id, `pausas da voz: ${lastLine(paused.log)}`, false);
+      }
+      const review = `${voiceDir(c.seed)}${allRecorded ? "-final" : ""}/tratado.wav`;
+      execFileSync(FFMPEG, ["-y", "-i", review, "-c:a", "aac", "-b:a", "128k", m4a], { stdio: "ignore" });
       parts.push([`take-${c.seed}`, { path: m4a, filename: `voz-${c.seed}.m4a` }], [`unmatched-${c.seed}`, String(c.unmatched)]);
       takes++;
     }
@@ -187,17 +214,42 @@ async function round() {
   if (chosen.unmatched > 3) return fail(job.id, `a voz escolhida (semente ${seed}) mudou no cache; peça outras versões`, false);
 
   // 3. Gravação de tela (RB-50): blocos que a IA escreveu com "cena" e trecho "gravar-bloco-N" são gravados agora.
+  const recordings = [];
   if (scenes.length) {
-    const recordings = [];
+    // Mapa das telas do sistema da marca: sem ele a IA gasta os passos procurando onde cada coisa fica.
+    const guidePath = join(here, "guias", `${job.brandKey}.md`);
+    // O guia salvo no Console vem no job e vale pra qualquer cliente; o arquivo local fica de reserva.
+    const guideText = [existsSync(guidePath) ? readFileSync(guidePath, "utf8").trim() : "", job.screenGuide?.trim() ?? ""].filter(Boolean).join("\n\n");
+    const guide = guideText ? `${guideText}\n\nCena: ` : "";
+    // Preparo da conta (fora do vídeo): o que a cena precisa já existir, como modelo de ficha.
+    const prepPath = join(here, "guias", `${job.brandKey}.preparo.json`);
+    const preps = preparationsFor(existsSync(prepPath) ? JSON.parse(readFileSync(prepPath, "utf8")) : [], scenes);
+    for (const [i, p] of preps.entries()) {
+      await progress(job.id, 5, `preparando a conta de demonstração (${i + 1} de ${preps.length})`);
+      const beat = setInterval(() => void progress(job.id, 5, "preparando a conta de demonstração").catch(() => {}), cfg.heartbeatSeconds * 1000);
+      try {
+        await recordScene({ brandKey: job.brandKey, scene: p.cena, account, outDir: `${cfg.base}/brutos/${nome}-preparo-${i + 1}`, name: `${nome}-preparo-${i + 1}`, prepare: true,
+          ask: async (state) => (await call("POST", "/worker/ai/next-action", state)).data });
+      } catch (e) {
+        return fail(job.id, `preparo da conta: ${e.message}`, !e.personalData);
+      } finally {
+        clearInterval(beat);
+      }
+    }
     for (const [i, s] of scenes.entries()) {
       const source = `${nome}-bloco-${s.index + 1}`;
-      await progress(job.id, 5 + Math.round((i / scenes.length) * 25), `gravando a tela: ${s.scene}`);
+      const percent = 5 + Math.round((i / scenes.length) * 25);
+      await progress(job.id, percent, `gravando a tela: ${s.scene}`);
+      // Sinal de vida durante a gravação: sem ele o Console acusa computador desligado e a API solta o job.
+      const beat = setInterval(() => void progress(job.id, percent, `gravando a tela: ${s.scene}`).catch(() => {}), cfg.heartbeatSeconds * 1000);
       try {
         const r = await recordScene({ brandKey: job.brandKey, scene: s.scene, account, outDir: `${cfg.base}/brutos/${source}`, name: source,
-          ask: async (state) => (await call("POST", "/worker/ai/next-action", state)).data });
+          ask: async (state) => (await call("POST", "/worker/ai/next-action", { ...state, scene: guide + state.scene })).data });
         recordings.push({ index: s.index, source, duration: r.duration });
       } catch (e) {
         return fail(job.id, `gravação do bloco ${s.index + 1}: ${e.message}`, !e.personalData);
+      } finally {
+        clearInterval(beat);
       }
     }
     job.roteiro = applyRecordings(job.roteiro, recordings);
@@ -222,16 +274,25 @@ async function round() {
   writeScript(projectDir, job, false); // mesma rodada: só trocou os trechos, não guarda cópia
   await progress(job.id, 32, `roteiro gravado em projetos/${nome}`);
 
-  // 4. Montagem: o narrado-calmo reaproveita a voz e o alinhamento da semente aprovada (mesmo texto, léxico e semente).
+  // 4. Montagem. Toda cena gravada: passo a passo contínuo com a voz inteira (narrado-passo). Com acervo ou cena sem
+  // gravação, segue o narrado-calmo, que reaproveita a voz e o alinhamento da semente aprovada.
+  const plan = stepByStepPlan(job.roteiro, recordings, nome);
   const vars = { nome, voz: voice, seed, tools: cfg.tools, base: cfg.base };
-  const { code, log } = await runPipeline(job.id, cfg.bin, [...buildArgs(cfg.args, vars), ...stepArgs]);
+  let pipelineArgs = [...buildArgs(cfg.args, vars), ...stepArgs];
+  if (plan) {
+    joinRecordings(plan);
+    writeFileSync(`${projectDir}/roteiro.json`, JSON.stringify(plan.roteiro, null, 1));
+    writeFileSync(`${projectDir}/tela.json`, JSON.stringify(plan.tela));
+    pipelineArgs = [`${cfg.tools}/narrado-passo.mjs`, nome, "--voz-dir", voiceDir(seed), "--pausar"];
+  }
+  const { code, log } = await runPipeline(job.id, cfg.bin, pipelineArgs);
   if (code !== 0) {
     const scriptProblem = isScriptProblem(log);
     return fail(job.id, `pipeline saiu com código ${code}: ${lastLine(log)}`, !scriptProblem);
   }
 
   // Portão (etapa 5 do pacote): palavra sem par = a síntese pode ter engolido texto. Outra semente costuma resolver.
-  const unmatched = readUnmatched(projectDir, voice, seed) ?? parseUnmatched(log);
+  const unmatched = readUnmatched(voiceDir(seed)) ?? parseUnmatched(log);
   if (unmatched === null) return fail(job.id, "não achei a contagem de palavras sem par no log do pipeline", false);
   // Voz aprovada pelo ouvido: palavra sem par já foi ouvida e aceita; vira só aviso.
   if (unmatched > 0 && !job.voiceApproved) return fail(job.id, `${unmatched} palavra(s) sem par no alinhamento com a semente ${seed}`, true);
@@ -250,6 +311,17 @@ async function round() {
  * Voz da marca (RB-59): pega a próxima da fila, cria no DMaker com a marca dona gravada no perfil e gera duas amostras
  * (sementes 1 e 2) pra pessoa ouvir e escolher. A gravação vem pela API com a chave do worker, nunca por link público.
  */
+/** Junta as gravações do job num bruto só, na ordem dos blocos: a tela do passo a passo sai dele. */
+function joinRecordings(plan) {
+  const dir = `${cfg.base}/brutos/${plan.source}`;
+  mkdirSync(dir, { recursive: true });
+  const inputs = plan.files.flatMap((f) => ["-i", `${cfg.base}/brutos/${f}/${f}.mp4`]);
+  const norm = plan.files.map((_, i) => `[${i}:v]fps=30,setsar=1,scale=1080:1200[v${i}]`).join(";");
+  const graph = `${norm};${plan.files.map((_, i) => `[v${i}]`).join("")}concat=n=${plan.files.length}:v=1:a=0[v]`;
+  execFileSync(FFMPEG, ["-y", ...inputs, "-filter_complex", graph, "-map", "[v]", "-c:v", "libx264", "-crf", "14", "-preset", "fast",
+    "-pix_fmt", "yuv420p", `${dir}/${plan.source}.mp4`], { stdio: "ignore" });
+}
+
 async function voiceRound() {
   const res = await call("POST", "/worker/voices/claim", { workerId: cfg.workerId });
   if (res.status === 204) return;
@@ -407,9 +479,9 @@ function ensureBrandKit(brandKey, brandName) {
 }
 
 /** Palavras sem par gravadas pelo alinhamento da voz (o log não repete a contagem quando a voz vem do cache). */
-function readUnmatched(projectDir, voice, steps, seed) {
+function readUnmatched(dir) {
   try {
-    const n = JSON.parse(readFileSync(`${projectDir}/voz-continua/${voice}-p${steps}-s${seed}/alinhamento.json`, "utf8")).sem_par;
+    const n = JSON.parse(readFileSync(`${dir}/alinhamento.json`, "utf8")).sem_par;
     return Number.isInteger(n) ? n : null;
   } catch {
     return null;

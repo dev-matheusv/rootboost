@@ -1,5 +1,47 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { logFileName, oldLogs, parseVoiceFinish, parseVoiceTones, preparationsFor, stepByStepPlan, voiceFolder } from "./lib.mjs";
+
+test("log do worker: um arquivo por dia e limpeza depois de 14 dias", () => {
+  const now = new Date(2026, 10, 20);
+  assert.equal(logFileName(now), "worker-2026-11-20.log");
+  assert.deepEqual(oldLogs(["worker-2026-11-01.log", "worker-2026-11-19.log", "nota.txt"], now, 14), ["worker-2026-11-01.log"]);
+});
+
+test("preparo da conta: só o que a cena do job precisa", () => {
+  const items = [{ quando: "ficha", cena: "criar modelo" }, { quando: "agenda", cena: "abrir agenda" }, { quando: "ficha" }];
+  assert.deepEqual(preparationsFor(items, [{ scene: "Preencha a Ficha de harmonização" }]).map((p) => p.cena), ["criar modelo"]);
+  assert.deepEqual(preparationsFor(null, [{ scene: "x" }]), []);
+});
+
+test("acabamento da voz: lê o nome e separa a pasta", () => {
+  assert.equal(parseVoiceFinish("MedlyNat1:corpo-forte, ruim:x y").get("medlynat1"), "corpo-forte");
+  assert.equal(parseVoiceFinish("ruim:x y").size, 0);
+  assert.equal(voiceFolder("medlynat1", 64, 1, -1, "corpo-forte"), "medlynat1-p64-s1-t-1-corpo-forte");
+});
+
+test("passo a passo: junta as gravações, numera os títulos e abre sobre o resultado", () => {
+  const roteiro = { abertura: ["Ficha no papel?", "sub"], fecho: ["a", "b"], blocos: [{ titulo: "Abra" }, { titulo: "Salve" }] };
+  const plan = stepByStepPlan(roteiro, [{ index: 1, source: "x-bloco-2", duration: 10 }, { index: 0, source: "x-bloco-1", duration: 20 }], "x");
+  assert.deepEqual(plan.files, ["x-bloco-1", "x-bloco-2"]);
+  assert.deepEqual(plan.tela.blocos.slice(1), [[[0.5, 19.8]], [[20.5, 29.8]]]);
+  assert.deepEqual(plan.tela.blocos[0], [[24.8, 29.8], { hold: 29.75 }]);
+  assert.deepEqual(plan.roteiro.blocos.map((b) => b.titulo), ["Ficha no papel?", "1. Abra", "2. Salve"]);
+  assert.equal(plan.roteiro.abertura, undefined);
+});
+
+test("passo a passo: bloco sem gravação fica no pipeline antigo", () => {
+  const roteiro = { blocos: [{ titulo: "A" }, { titulo: "B" }] };
+  assert.equal(stepByStepPlan(roteiro, [{ index: 0, source: "x-bloco-1", duration: 10 }], "x"), null);
+});
+
+test("tom da voz: lê semitons e separa a pasta da fala", () => {
+  const tones = parseVoiceTones("MedlyNat1:-1, ruim:x, outra:0");
+  assert.equal(tones.get("medlynat1"), -1);
+  assert.equal(tones.size, 1);
+  assert.equal(voiceFolder("medlynat1", 64, 1, -1), "medlynat1-p64-s1-t-1");
+  assert.equal(voiceFolder("medlynat1", 64, 1), "medlynat1-p64-s1");
+});
 import { buildArgs, expectedOutputs, isScriptProblem, lastLine, parseUnmatched, parseVoiceSteps, projectName, seedFor, stepsFor, warningsFrom } from "./lib.mjs";
 
 test("passos por voz: a voz listada usa os dela, as outras ficam em 32", () => {

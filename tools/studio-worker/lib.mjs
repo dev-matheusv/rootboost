@@ -111,6 +111,86 @@ export function stepsFor(voice, voiceSteps) {
   return voiceSteps.get(String(voice ?? "").toLowerCase()) ?? 32;
 }
 
+/** Lê "medlynat1:-1,outra:2": semitons de cada voz. Valor inválido ou zero fica de fora (voz sem mudança de tom). */
+export function parseVoiceTones(value) {
+  const map = new Map();
+  for (const pair of String(value ?? "").split(",")) {
+    const [voice, tone] = pair.split(":").map((s) => s?.trim().toLowerCase());
+    if (voice && tone && Number.isFinite(Number(tone)) && Number(tone) !== 0) map.set(voice, Number(tone));
+  }
+  return map;
+}
+
+/** Pasta da voz no projeto, a mesma que o narrado-calmo usa: tom diferente é outra fala, com cache próprio. */
+export function voiceFolder(voice, steps, seed, tone = 0, finish = "") {
+  return `${voice}-p${steps}-s${seed}${tone ? `-t${tone}` : ""}${finish ? `-${finish}` : ""}`;
+}
+
+/**
+ * Preparo da conta antes de gravar: itens de guias/<marca>.preparo.json cujo "quando" (expressão regular) casa com
+ * alguma cena do job. Assim a gravação começa com a conta pronta, e a cena não gasta passos criando cadastro.
+ */
+export function preparationsFor(items, scenes) {
+  const text = scenes.map((s) => s.scene).join("\n");
+  return (Array.isArray(items) ? items : []).filter((p) => p?.cena && new RegExp(p.quando ?? ".", "i").test(text));
+}
+
+/** Nome do arquivo de log do dia, na data local do PC. */
+export function logFileName(date) {
+  const pad = (n) => String(n).padStart(2, "0");
+  return `worker-${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}.log`;
+}
+
+/** Arquivos de log com mais de `days` dias. Arquivo com outro nome fica. */
+export function oldLogs(files, now, days) {
+  const limit = now.getTime() - days * 86_400_000;
+  return files.filter((f) => {
+    const m = /^worker-(\d{4})-(\d{2})-(\d{2})\.log$/.exec(f);
+    return m && new Date(+m[1], +m[2] - 1, +m[3]).getTime() < limit;
+  });
+}
+
+/** Lê "medlynat1:corpo-forte": acabamento de cada voz no acabar-voz.py. Nome fora do padrão fica de fora. */
+export function parseVoiceFinish(value) {
+  const map = new Map();
+  for (const pair of String(value ?? "").split(",")) {
+    const [voice, finish] = pair.split(":").map((s) => s?.trim().toLowerCase());
+    if (voice && /^[a-z-]+$/.test(finish ?? "")) map.set(voice, finish);
+  }
+  return map;
+}
+
+/**
+ * Reel de passo a passo (06/11): quando toda cena é gravação de tela, o vídeo é um processo só, contínuo, com a voz
+ * inteira. Junta as gravações num bruto e devolve o plano do narrado-passo.mjs. Abertura vira gancho falado sobre os
+ * últimos segundos em movimento, até o resultado pronto, sem cartão; o título de cada passo sai numerado. Sem gravação em todo bloco: null.
+ */
+export function stepByStepPlan(roteiro, recordings, nome) {
+  const blocos = roteiro?.blocos ?? [];
+  if (!blocos.length || recordings.length !== blocos.length) return null;
+  const ordered = [...recordings].sort((a, b) => a.index - b.index);
+  if (ordered.some((r, i) => r.index !== i || !(r.duration > 1))) return null;
+  const round = (n) => Math.round(n * 100) / 100;
+  let offset = 0;
+  const steps = ordered.map((r) => {
+    const segment = [round(offset + Math.min(0.5, r.duration / 4)), round(offset + r.duration - 0.2)];
+    offset += r.duration;
+    return [segment];
+  });
+  const hasOpening = Array.isArray(roteiro.abertura) && !!roteiro.abertura[0];
+  const [lastStart, lastEnd] = steps.at(-1)[0];
+  const teaser = [[round(Math.max(lastStart, lastEnd - 5)), lastEnd], { hold: round(lastEnd - 0.05) }];
+  const numbered = blocos.map((b, i) => ({ ...b, titulo: `${i + 1}. ${b.titulo}` }));
+  const hook = { ...blocos[0], titulo: roteiro.abertura?.[0], sub: "" };
+  const { abertura: _unused, ...rest } = roteiro;
+  return {
+    source: `${nome}-completo`,
+    files: ordered.map((r) => r.source),
+    tela: { fonte: `${nome}-completo`, blocos: hasOpening ? [teaser, ...steps] : steps },
+    roteiro: { ...rest, blocos: hasOpening ? [hook, ...numbered] : numbered },
+  };
+}
+
 // --- Gravação de tela (RB-50, docs/GRAVACAO.md) ---
 
 /** Botões que a gravação nunca clica, mesmo que a IA peça: nada destrutivo, nada que saia ou mande algo de verdade. */

@@ -22,7 +22,7 @@ job com trechos "gravar-bloco-N"  ──►  worker abre o Chrome (sem janela, 5
 
 - **A chave da IA fica só no Railway.** O worker manda a foto e recebe o próximo passo; cada chamada grava custo em
   `AiUsage` (finalidade `screen-recording`).
-- **Limites por cena:** no máximo 25 passos e 90 s; passou disso, o bloco falha e vai pra revisão humana.
+- **Limites por cena:** no máximo 40 passos e 240 s; passou disso, o bloco falha e vai pra revisão humana.
 - **Preparo fora do vídeo:** cada cena abre uma sessão nova na tela inicial. A IA navega até o ponto de partida e responde
   `comecar`; os quadros anteriores são descartados. A espera pela IA também sai da linha do tempo.
 - **Diagnóstico:** cada passo vai pra `passos.txt` na pasta da gravação; quando falha, o motivo vai pro erro do job e a
@@ -30,6 +30,18 @@ job com trechos "gravar-bloco-N"  ──►  worker abre o Chrome (sem janela, 5
 - **Imagem e anexo:** `colar-imagem` cola `tools/studio-worker/demo/imagem-demo.png` no campo, e qualquer botão que abre
   a escolha de arquivo recebe essa mesma imagem. Nunca sai um arquivo de verdade do PC.
 - **Cursor desenhado na página** e marcas de tempo, como no gravador do MedlyCare.
+
+## Guia de uso do sistema
+
+Em Perfil da marca, a pessoa cola a documentação do sistema e a IA propõe um guia (`POST /product/screen-guide/draft`). A pessoa confere e salva (`PUT /product/screen-guide`). O guia vem no job e vai junto de cada cena da gravação. Nada é salvo sem confirmação, e o texto colado entra como dado, nunca como instrução.
+
+## Preparo da conta
+
+`guias/<marca>.preparo.json` lista o que a conta de demonstração precisa ter antes da gravação. Cada item tem `quando` (expressão regular sobre as cenas do job) e `cena`. O worker roda esses itens fora do vídeo, com a mesma IA e as mesmas travas. Se falhar, o job para com o motivo e nada é gravado.
+
+## Reel de passo a passo (06/11)
+
+Quando toda cena do job é gravação de tela, o worker junta as gravações num bruto (`<nome>-completo`), escreve `tela.json` e monta com `narrado-passo.mjs --pausar`: voz inteira, pausas só em silêncio real, tela contínua, títulos numerados, legenda abaixo da tela e sem cartão de abertura. Job com acervo ou cena sem gravação segue no `narrado-calmo.mjs`. Regras em `Fluxo de producao de reels.txt`.
 
 ## Segurança
 

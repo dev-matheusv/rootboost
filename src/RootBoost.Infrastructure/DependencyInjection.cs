@@ -66,6 +66,8 @@ public static class DependencyInjection
         services.AddSingleton<RootBoost.Application.Ai.IWebPageReader, RootBoost.Infrastructure.Ai.SafeWebPageReader>();
         services.AddScoped<RootBoost.Application.Ai.ProductInterviewer>();
         services.AddScoped<RootBoost.Application.Ai.ScreenAgent>();
+        services.AddScoped<RootBoost.Application.Ai.ScreenGuideWriter>();
+        services.AddSingleton<RootBoost.Application.Ai.IDocumentTextExtractor, RootBoost.Infrastructure.Documents.DocumentTextExtractor>();
         services.AddScoped<RootBoost.Application.Ai.MediaDescriber>();
         services.AddScoped<RootBoost.Application.Studio.INarrationVoiceStore, EfNarrationVoiceStore>();
         services.AddScoped<RootBoost.Application.Studio.IStudioStatusStore, EfStudioStatusStore>();

@@ -23,7 +23,7 @@ public sealed record ScreenAction(string Action, string? Target, string? Text, s
 /// </summary>
 public sealed class ScreenAgent
 {
-    public const int MaxSteps = 25;
+    public const int MaxSteps = 40;
     private static readonly string[] Actions = ["clicar", "digitar", "colar-imagem", "rolar", "esperar", "login", "comecar", "pronto", "desistir"];
     private readonly ILanguageModel _model;
     private readonly IAiUsageStore _usage;
