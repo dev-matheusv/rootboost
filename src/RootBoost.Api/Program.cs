@@ -370,6 +370,66 @@ brandProfile.MapPost("/publications/{id:guid}/unapprove", async (string key, Gui
     return Results.Ok(PublicationDto.From(publication));
 });
 
+// --- Campanha pela IA (RB-31): a IA propõe a partir de um vídeo pronto, a pessoa confere e aprova, nasce PAUSADA. ---
+brandProfile.MapGet("/ads/campaigns", async (string key, RootBoost.Application.Ads.IAdCampaignStore store, CancellationToken ct) =>
+    Results.Ok((await store.ListByBrandAsync(key.ToLowerInvariant(), ct)).Select(AdCampaignDto.From)));
+
+brandProfile.MapPost("/ads/campaigns", async (string key, AdCampaignProposeInput input, IBrandStore brands,
+    RootBoost.Application.Studio.ICreativeJobStore jobs, RootBoost.Application.Ai.IBrandProductStore products,
+    RootBoost.Application.Ads.CampaignProposer proposer, RootBoost.Application.Ads.IAdCampaignStore store, CancellationToken ct) =>
+{
+    var brandKey = key.ToLowerInvariant();
+    var brand = (await brands.ListAsync(ct)).FirstOrDefault(b => b.Key == brandKey);
+    if (brand is null) return Results.NotFound();
+    var job = await jobs.GetAsync(input.JobId, ct);
+    if (job is null || job.BrandKey != brandKey) return Results.NotFound();
+    // Anúncio usa a versão de demais canais (legenda mais baixa); sem ela, a do Instagram.
+    var video = job.Outputs.FirstOrDefault(o => o.Role == "video") ?? job.Outputs.FirstOrDefault(o => o.Role == "video-instagram");
+    if (video is null) return Results.BadRequest(new { error = "esse vídeo ainda não está pronto" });
+    var cover = job.Outputs.FirstOrDefault(o => o.Role == "cover-instagram")?.Url;
+    try
+    {
+        var proposal = await proposer.ProposeAsync(brandKey, brand.Name, await products.GetAsync(brandKey, ct), job, video.Url, cover, ct);
+        await store.AddAsync(proposal.Draft, ct);
+        return Results.Ok(AdCampaignDto.From(proposal.Draft));
+    }
+    catch (ArgumentException ex) { return Results.BadRequest(new { error = $"a proposta da IA não passou na conferência: {ex.Message}" }); }
+});
+
+brandProfile.MapPut("/ads/campaigns/{id:guid}", async (string key, Guid id, AdCampaignInput input,
+    RootBoost.Application.Ads.IAdCampaignStore store, TimeProvider time, CancellationToken ct) =>
+{
+    var draft = await store.GetAsync(id, ct);
+    if (draft is null || draft.BrandKey != key.ToLowerInvariant()) return Results.NotFound();
+    try
+    {
+        draft.Update(input.Name, input.Objective == "leads" ? AdObjective.Leads : AdObjective.Traffic, (long)Math.Round(input.DailyBudget * 100),
+            input.Countries ?? [], input.AgeMin, input.AgeMax, draft.VideoUrl, draft.ThumbnailUrl, input.PrimaryText, input.Headline,
+            input.CallToAction, input.LinkUrl, draft.Rationale, time.GetUtcNow());
+    }
+    catch (Exception ex) when (ex is ArgumentException or InvalidOperationException) { return Results.BadRequest(new { error = ex.Message }); }
+    await store.SaveAsync(draft, ct);
+    return Results.Ok(AdCampaignDto.From(draft));
+});
+
+// Aprovar e criar: a pessoa aprova e a plataforma cria tudo pausado. Falhou no meio, "criar de novo" continua de onde parou.
+brandProfile.MapPost("/ads/campaigns/{id:guid}/approve", async (string key, Guid id, System.Security.Claims.ClaimsPrincipal user,
+    RootBoost.Application.Ads.IAdCampaignStore store, RootBoost.Application.Ads.CreateApprovedCampaign create, TimeProvider time, CancellationToken ct) =>
+{
+    var draft = await store.GetAsync(id, ct);
+    if (draft is null || draft.BrandKey != key.ToLowerInvariant()) return Results.NotFound();
+    var who = user.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value ?? user.Identity?.Name ?? "desconhecido";
+    try
+    {
+        if (draft.Status == AdCampaignStatus.Draft) draft.Approve(who, time.GetUtcNow());
+        else if (draft.Status is not (AdCampaignStatus.Approved or AdCampaignStatus.Failed)) return Results.Conflict(new { error = "campanha já criada ou em criação" });
+    }
+    catch (InvalidOperationException ex) { return Results.BadRequest(new { error = ex.Message }); }
+    await store.SaveAsync(draft, ct);
+    var result = await create.RunAsync(draft, ct);
+    return result.Ok ? Results.Ok(AdCampaignDto.From(draft)) : Results.UnprocessableEntity(new { error = result.Error, campaign = AdCampaignDto.From(draft) });
+});
+
 brandProfile.MapGet("/ads/summary", async (string key, int? days, RootBoost.Application.Ads.IAdInsightStore store,
     RootBoost.Application.Ads.AdsStopRule rule, TimeProvider time, CancellationToken ct) =>
 {
@@ -1551,6 +1611,17 @@ record ProductDto(string Name, string Kind, string? Url, string? AppUrl, string 
         p.Differentials, p.Offer, p.UpdatedAt, p.ScreenGuide);
 }
 record ScreenGuideDraftInput(string? Documentation);
+record AdCampaignProposeInput(Guid JobId);
+record AdCampaignInput(string Name, string Objective, decimal DailyBudget, List<string>? Countries, int AgeMin, int AgeMax,
+    string PrimaryText, string Headline, string CallToAction, string LinkUrl);
+record AdCampaignDto(Guid Id, Guid? JobId, string Name, string Objective, decimal DailyBudget, IReadOnlyList<string> Countries, int AgeMin,
+    int AgeMax, string VideoUrl, string? ThumbnailUrl, string PrimaryText, string Headline, string CallToAction, string LinkUrl, string Rationale,
+    string Status, string? ApprovedBy, DateTimeOffset? ApprovedAt, string? ExternalCampaignId, string? ExternalAdId, string? Error, DateTimeOffset CreatedAt)
+{
+    public static AdCampaignDto From(AdCampaignDraft d) => new(d.Id, d.CreativeJobId, d.Name, d.Objective == AdObjective.Leads ? "leads" : "trafego",
+        d.DailyBudgetCents / 100m, d.Countries, d.AgeMin, d.AgeMax, d.VideoUrl, d.ThumbnailUrl, d.PrimaryText, d.Headline, d.CallToAction, d.LinkUrl,
+        d.Rationale, d.Status.ToString(), d.ApprovedBy, d.ApprovedAt, d.ExternalCampaignId, d.ExternalAdId, d.Error, d.CreatedAt);
+}
 record ScreenGuideInput(string? Guide);
 record CreativeJobInput(string Kind, string Theme, string? VoiceKey, string? Format = null);
 record ScriptInput(System.Text.Json.JsonElement Roteiro, System.Text.Json.JsonElement Falas);
