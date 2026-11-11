@@ -10,7 +10,7 @@ import { appendFileSync, copyFileSync, existsSync, mkdirSync, openAsBlob, readdi
 import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
-  applyLibrary, applyRecordings, buildArgs, buildPersonalSpec, libraryScenes, photoClipArgs, expectedOutputs, isScriptProblem, lastLine, parsePrivateVoices, logFileName, oldLogs, parseVoiceFinish, parseVoiceTones, preparationsFor, stepByStepPlan, voiceFolder, parseUnmatched, parseVoiceSteps, stepsFor, projectName, scenesToRecord,
+  applyLibrary, applyRecordings, buildArgs, buildPersonalSpec, libraryScenes, photoClipArgs, expectedOutputs, isScriptProblem, lastLine, parsePrivateVoices, logFileName, oldLogs, addPath, pathsText, parseVoiceFinish, parseVoiceTones, preparationsFor, stepByStepPlan, voiceFolder, parseUnmatched, parseVoiceSteps, stepsFor, projectName, scenesToRecord,
   seedFor, voiceProblem, warningsFrom,
 } from "./lib.mjs";
 import { recordScene } from "./recorder.mjs";
@@ -219,7 +219,10 @@ async function round() {
     // Mapa das telas do sistema da marca: sem ele a IA gasta os passos procurando onde cada coisa fica.
     const guidePath = join(here, "guias", `${job.brandKey}.md`);
     // O guia salvo no Console vem no job e vale pra qualquer cliente; o arquivo local fica de reserva.
-    const guideText = [existsSync(guidePath) ? readFileSync(guidePath, "utf8").trim() : "", job.screenGuide?.trim() ?? ""].filter(Boolean).join("\n\n");
+    const pathsFile = join(here, "guias", `${job.brandKey}.caminhos.json`);
+    const readPaths = () => { try { return JSON.parse(readFileSync(pathsFile, "utf8")); } catch { return []; } };
+    const learn = (scene, steps) => { try { writeFileSync(pathsFile, JSON.stringify(addPath(readPaths(), scene, steps), null, 1)); } catch (e) { console.log(`[${now()}] não guardei o caminho: ${e.message}`); } };
+    const guideText = [existsSync(guidePath) ? readFileSync(guidePath, "utf8").trim() : "", job.screenGuide?.trim() ?? "", pathsText(readPaths())].filter(Boolean).join("\n\n");
     const guide = guideText ? `${guideText}\n\nCena: ` : "";
     // Preparo da conta (fora do vídeo): o que a cena precisa já existir, como modelo de ficha.
     const prepPath = join(here, "guias", `${job.brandKey}.preparo.json`);
@@ -228,8 +231,9 @@ async function round() {
       await progress(job.id, 5, `preparando a conta de demonstração (${i + 1} de ${preps.length})`);
       const beat = setInterval(() => void progress(job.id, 5, "preparando a conta de demonstração").catch(() => {}), cfg.heartbeatSeconds * 1000);
       try {
-        await recordScene({ brandKey: job.brandKey, scene: p.cena, account, outDir: `${cfg.base}/brutos/${nome}-preparo-${i + 1}`, name: `${nome}-preparo-${i + 1}`, prepare: true,
-          ask: async (state) => (await call("POST", "/worker/ai/next-action", state)).data });
+        const r = await recordScene({ brandKey: job.brandKey, scene: p.cena, account, outDir: `${cfg.base}/brutos/${nome}-preparo-${i + 1}`, name: `${nome}-preparo-${i + 1}`, prepare: true,
+          ask: async (state) => (await call("POST", "/worker/ai/next-action", { ...state, scene: guide + state.scene })).data });
+        learn(`preparo: ${p.quando}`, r.steps);
       } catch (e) {
         return fail(job.id, `preparo da conta: ${e.message}`, !e.personalData);
       } finally {
@@ -246,6 +250,7 @@ async function round() {
         const r = await recordScene({ brandKey: job.brandKey, scene: s.scene, account, outDir: `${cfg.base}/brutos/${source}`, name: source,
           ask: async (state) => (await call("POST", "/worker/ai/next-action", { ...state, scene: guide + state.scene })).data });
         recordings.push({ index: s.index, source, duration: r.duration });
+        learn(s.scene, r.steps);
       } catch (e) {
         return fail(job.id, `gravação do bloco ${s.index + 1}: ${e.message}`, !e.personalData);
       } finally {

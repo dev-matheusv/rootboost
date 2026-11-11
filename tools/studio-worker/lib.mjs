@@ -150,6 +150,24 @@ export function oldLogs(files, now, days) {
   });
 }
 
+/**
+ * Caminhos que já funcionaram (07/11): cada cena gravada com sucesso guarda os passos, e a IA recebe os últimos
+ * junto do guia. A plataforma aprende o sistema do cliente com cada vídeo, em vez de improvisar do zero.
+ */
+export function addPath(paths, scene, steps, max = 15) {
+  const list = (Array.isArray(paths) ? paths : []).filter((p) => p.cena !== scene);
+  if (steps.length) list.push({ cena: scene, passos: steps.slice(0, 40) });
+  return list.slice(-max);
+}
+
+/** Texto dos caminhos pra ir no guia da IA. */
+export function pathsText(paths) {
+  const list = Array.isArray(paths) ? paths : [];
+  if (!list.length) return "";
+  return "Caminhos que já funcionaram neste sistema (siga o mesmo caminho quando a tarefa for parecida):\n" +
+    list.map((p) => `- ${p.cena.slice(0, 160)}: ${p.passos.join(" → ")}`).join("\n");
+}
+
 /** Lê "medlynat1:corpo-forte": acabamento de cada voz no acabar-voz.py. Nome fora do padrão fica de fora. */
 export function parseVoiceFinish(value) {
   const map = new Map();

@@ -90,6 +90,12 @@ const LIST_ELEMENTS = `(() => {
     const tag = el.tagName.toLowerCase();
     const role = tag === 'img' ? 'imagem' : tag === 'input' ? 'campo ' + (el.type || 'texto') : tag === 'textarea' ? 'campo texto' : tag === 'select' ? 'lista' : tag === 'a' ? 'link' : el.isContentEditable ? 'campo editor' : 'botão';
     const x = Math.round(r.left + r.width / 2), y = Math.round(r.top + r.height / 2);
+    // Elemento que não recebe o clique no centro (escondido atrás de outro, painel fechado com opacidade zero) fica de
+    // fora: em 07/11 a IA clicou 4 vezes num "Preencher ficha" fantasma que estava embaixo do seletor SOAP.
+    if (tag !== 'img' && y >= 0 && y < innerHeight && x >= 0 && x < innerWidth) {
+      const hit = document.elementFromPoint(x, y);
+      if (!hit || !(hit === el || el.contains(hit) || hit.contains(el))) continue;
+    }
     // Ícone sem texto (barra de baixo): a posição deixa a IA casar o id com o que ela vê na foto de 540x600.
     const text = (el.getAttribute('aria-label') || el.innerText || el.placeholder || el.value || el.title || '').trim().replace(/\\s+/g, ' ').slice(0, 80) || (tag === 'img' ? 'imagem de x=' + Math.round(r.left) + ' a ' + Math.round(r.right) + ', y=' + Math.round(r.top) + ' a ' + Math.round(r.bottom) : 'ícone sem texto em x=' + x + ' y=' + y);
     out.push({ id, role, text, x, y });
@@ -470,7 +476,9 @@ export async function recordScene({ brandKey, scene, account, outDir, name, ask,
       note(`parou: ${stopReason}`);
       throw new Error(`a IA parou: ${stopReason}. Tela final em ${await evaluate(cdp, "location.href")}. Passos em ${trail}`);
     }
-    if (prepare) return { path: null, duration: 0 };
+    // Caminho que deu certo, pra próxima gravação da mesma tarefa seguir sem tentativa e erro.
+    const steps = history.filter((h) => !/^(recusado|colar-imagem: este|login: esta|saiu do site)/.test(h));
+    if (prepare) return { path: null, duration: 0, steps };
     if (frames.length < 2) throw new Error("nenhum quadro gravado");
 
     const lines = [];
@@ -487,7 +495,7 @@ export async function recordScene({ brandKey, scene, account, outDir, name, ask,
       ff.on("exit", (c) => (c === 0 ? ok() : fail(new Error(`ffmpeg saiu com ${c}`))));
     });
     rmSync(join(outDir, "quadros"), { recursive: true, force: true });
-    return { path: out, duration: (frames.at(-1).t - frames[0].t) + 0.04 };
+    return { path: out, duration: (frames.at(-1).t - frames[0].t) + 0.04, steps };
   } finally {
     close();
   }
