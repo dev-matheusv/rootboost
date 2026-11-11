@@ -1,6 +1,15 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { logFileName, oldLogs, parseVoiceFinish, parseVoiceTones, preparationsFor, stepByStepPlan, voiceFolder } from "./lib.mjs";
+import { addPath, pathsText, logFileName, oldLogs, parseVoiceFinish, parseVoiceTones, preparationsFor, stepByStepPlan, voiceFolder } from "./lib.mjs";
+
+test("caminhos: guarda o último de cada cena e vira texto pro guia", () => {
+  let paths = addPath([], "Abrir a ficha", ["clicar Preencher ficha", "clicar Ficha de harmonização facial"]);
+  paths = addPath(paths, "Abrir a ficha", ["clicar Preencher ficha"]);
+  paths = addPath(paths, "Salvar", []);
+  assert.equal(paths.length, 1);
+  assert.match(pathsText(paths), /Abrir a ficha: clicar Preencher ficha$/m);
+  assert.equal(pathsText([]), "");
+});
 
 test("log do worker: um arquivo por dia e limpeza depois de 14 dias", () => {
   const now = new Date(2026, 10, 20);

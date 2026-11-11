@@ -476,7 +476,9 @@ export async function recordScene({ brandKey, scene, account, outDir, name, ask,
       note(`parou: ${stopReason}`);
       throw new Error(`a IA parou: ${stopReason}. Tela final em ${await evaluate(cdp, "location.href")}. Passos em ${trail}`);
     }
-    if (prepare) return { path: null, duration: 0 };
+    // Caminho que deu certo, pra próxima gravação da mesma tarefa seguir sem tentativa e erro.
+    const steps = history.filter((h) => !/^(recusado|colar-imagem: este|login: esta|saiu do site)/.test(h));
+    if (prepare) return { path: null, duration: 0, steps };
     if (frames.length < 2) throw new Error("nenhum quadro gravado");
 
     const lines = [];
@@ -493,7 +495,7 @@ export async function recordScene({ brandKey, scene, account, outDir, name, ask,
       ff.on("exit", (c) => (c === 0 ? ok() : fail(new Error(`ffmpeg saiu com ${c}`))));
     });
     rmSync(join(outDir, "quadros"), { recursive: true, force: true });
-    return { path: out, duration: (frames.at(-1).t - frames[0].t) + 0.04 };
+    return { path: out, duration: (frames.at(-1).t - frames[0].t) + 0.04, steps };
   } finally {
     close();
   }
