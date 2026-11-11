@@ -418,6 +418,14 @@ export async function recordScene({ brandKey, scene, account, outDir, name, ask,
         let seen = await evaluate(cdp, "(window.__rbClicks ?? []).splice(0).join(', ')");
         let changed = (await evaluate(cdp, SCREEN_SIGN)) !== before;
         note(`  clique em ${at.x},${at.y} sobre ${under}; a página viu: ${seen || "nada"}; tela ${changed ? "mudou" : "igual"}${problems.length ? `; problemas: ${problems.splice(0).slice(0, 6).join(" | ")}` : ""}`);
+        // Clique que não mudou nada: registra o alvo e o que está no ponto, com o caminho no HTML (11/11: o "Preencher
+        // ficha" da lista ficava no mesmo ponto do seletor SOAP e só o log mostra qual dos dois é).
+        if (!changed) note(`  alvo: ${await evaluate(cdp, `(() => {
+          const path = (e) => { const p = []; for (let n = e; n && n !== document.body && p.length < 6; n = n.parentElement) p.unshift(n.tagName.toLowerCase() + (n.id ? '#' + n.id : '') + '.' + String(n.className.baseVal ?? n.className).split(' ').slice(0, 2).join('.')); return p.join(' > '); };
+          const t = document.querySelector('[data-rb-id="${el.id}"]'), h = document.elementFromPoint(${at.x}, ${at.y});
+          const r = t?.getBoundingClientRect();
+          return 'lista=' + (t ? path(t) + ' [' + Math.round(r.left) + ',' + Math.round(r.top) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height) + '] texto="' + (t.innerText || '').trim().slice(0, 40) + '"' : 'sumiu') + ' | no ponto=' + (h ? path(h) + ' texto="' + (h.innerText || '').trim().slice(0, 40) + '"' : 'nada');
+        })()`)}`);
         if (!byScript && !seen && !changed) {
           note(`  o clique não chegou na página; estado: ${await evaluate(cdp, PAGE_STATE)}`);
           byScript = true;
