@@ -107,3 +107,24 @@ lê insights, cria e edita campanhas, usa o mesmo token de usuário do sistema e
 4. Opcional: `Ads__Accounts__0__ConversionAction` se a conversão não for o cadastro pelo Pixel;
    `Ads__StopRule__SpendWithoutConversion` (padrão 200).
 5. Conferir: `POST /admin/ads/sync` devolve `ok: true`; a tela Campanhas mostra os números.
+
+## Campanha pela IA (RB-31, 11/11/2026)
+
+A IA propõe a campanha a partir de um vídeo pronto do Estúdio (Campanhas, "Campanha com a IA"). A pessoa confere,
+edita e aprova; a plataforma cria **campanha, conjunto e anúncio, todos com `status=PAUSED`**. Gasto só começa
+quando a pessoa ativa no Gerenciador de Anúncios.
+
+- Campos conferidos na referência oficial (11/11): `campaigns` (`objective` OUTCOME_TRAFFIC ou OUTCOME_LEADS,
+  `special_ad_categories=[]`), `adsets` (`daily_budget` em centavos, `billing_event=IMPRESSIONS`, `optimization_goal`
+  LINK_CLICKS ou OFFSITE_CONVERSIONS com `promoted_object` {pixel_id, custom_event_type LEAD}, `targeting` com
+  `geo_locations.countries`, `age_min`, `age_max`), `advideos` (`file_url`), `adcreatives` (`object_story_spec` com
+  `page_id`, `instagram_user_id` e `video_data`), `ads` (`creative.creative_id`, `conversion_domain` em leads).
+- Não confirmado na doc: como consultar o fim do processamento do vídeo. O criativo tenta 6 vezes com 20 s de
+  intervalo; se não der, a campanha fica "Falhou" com o motivo da Meta e "Aprovar" de novo continua de onde parou.
+- Travas: orçamento entre R$ 6 e R$ 500 por dia (a IA propõe no máximo R$ 50), idade 18 a 65, link https.
+
+### Como ligar em produção (Railway)
+1. Token do usuário do sistema com **`ads_management`** (além de `ads_read`), em `Meta__AdsAccessToken`.
+   Dependências da permissão: `pages_read_engagement` e `pages_show_list`.
+2. `Ads__Creator=Meta` (sem isso fica no modo Fake e nada sai pra Meta).
+3. Página e Instagram vêm de `Social__Accounts` da marca. Pixel pra leads: `Ads__Accounts__0__PixelId`.

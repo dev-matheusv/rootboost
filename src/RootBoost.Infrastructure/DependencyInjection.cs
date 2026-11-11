@@ -116,6 +116,18 @@ public static class DependencyInjection
         config.GetSection(RootBoost.Application.Ads.AdsStopRule.Section).Bind(stopRule);
         services.AddSingleton(stopRule);
         services.AddScoped<RootBoost.Application.Ads.IAdInsightStore, EfAdInsightStore>();
+        // Campanha pela IA (RB-31): Ads:Creator=Meta cria de verdade (sempre pausada); padrão Fake, nada sai pra Meta.
+        services.AddScoped<RootBoost.Application.Ads.IAdCampaignStore, EfAdCampaignStore>();
+        services.AddScoped<RootBoost.Application.Ads.CampaignProposer>();
+        services.AddScoped<RootBoost.Application.Ads.CreateApprovedCampaign>();
+        if (string.Equals(config["Ads:Creator"], "Meta", StringComparison.OrdinalIgnoreCase))
+        {
+            Microsoft.Extensions.DependencyInjection.Extensions.ServiceCollectionDescriptorExtensions.TryAddSingleton(services,
+                new RootBoost.Infrastructure.Publishing.SocialAccounts(config));
+            services.AddSingleton<RootBoost.Application.Ads.IAdCampaignCreator, RootBoost.Infrastructure.Ads.MetaAdCampaignCreator>();
+        }
+        else
+            services.AddSingleton<RootBoost.Application.Ads.IAdCampaignCreator, RootBoost.Infrastructure.Ads.FakeAdCampaignCreator>();
         services.AddScoped<RootBoost.Application.Ads.SyncAdInsights>();
         if (!string.Equals(adsReader, "None", StringComparison.OrdinalIgnoreCase) &&
             !string.Equals(config["Ads:SyncEnabled"], "false", StringComparison.OrdinalIgnoreCase))
