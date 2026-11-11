@@ -59,6 +59,8 @@
 
       <q-table flat bordered class="card-rounded" :rows="summary?.campaigns ?? []" :columns="columns" row-key="campaignId"
         :loading="loading" :no-data-label="$t('pages.campaigns.empty')" :pagination="{ rowsPerPage: 0 }" hide-pagination />
+
+      <AiCampaignsPanel :key="brand.selected" :brand-key="brand.selected" />
     </template>
   </q-page>
 </template>
@@ -71,6 +73,7 @@ import { mdiRefresh, mdiInformationOutline, mdiAlertOctagonOutline } from '@quas
 import { api } from 'src/services/api';
 import type { AdMetrics, AdsAccounts, AdsAlert, AdsSummary } from 'src/types/api';
 import { useBrandStore } from 'src/stores/brandStore';
+import AiCampaignsPanel from 'src/components/AiCampaignsPanel.vue';
 import { connectionState, singleCurrency, spendBars } from 'src/utils/ads';
 import { formatDate, formatInt, formatMoney, formatPercent } from 'src/utils/format';
 
