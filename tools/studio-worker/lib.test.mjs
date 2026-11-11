@@ -1,6 +1,23 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { addPath, pathsText, logFileName, oldLogs, parseVoiceFinish, parseVoiceTones, preparationsFor, stepByStepPlan, voiceFolder } from "./lib.mjs";
+import { parseDetect, reviewVideo, addPath, pathsText, logFileName, oldLogs, parseVoiceFinish, parseVoiceTones, preparationsFor, stepByStepPlan, voiceFolder } from "./lib.mjs";
+
+test("revisão automática: silêncio longo e imagem parada viram aviso, cartão final não", () => {
+  const stderr = [
+    "[silencedetect @ 0] silence_start: 10.5", "[silencedetect @ 0] silence_end: 13.1 | silence_duration: 2.6",
+    "[silencedetect @ 0] silence_start: 80.2", "[silencedetect @ 0] silence_end: 81.6",
+    "lavfi.freezedetect.freeze_start: 20", "lavfi.freezedetect.freeze_end: 28.5",
+    "lavfi.freezedetect.freeze_start: 75", "lavfi.freezedetect.freeze_end: 82",
+  ].join("\n");
+  const d = parseDetect(stderr);
+  assert.equal(d.silences.length, 2);
+  assert.equal(d.freezes.length, 2);
+  const issues = reviewVideo({ duration: 82, ...d });
+  assert.equal(issues.length, 2);
+  assert.match(issues[0], /2\.6 s de silêncio em 0:10/);
+  assert.match(issues[1], /parada por 8\.5 s em 0:20/);
+  assert.deepEqual(reviewVideo({ duration: 15, silences: [], freezes: [] }).length, 1);
+});
 
 test("caminhos: guarda o último de cada cena e vira texto pro guia", () => {
   let paths = addPath([], "Abrir a ficha", ["clicar Preencher ficha", "clicar Ficha de harmonização facial"]);

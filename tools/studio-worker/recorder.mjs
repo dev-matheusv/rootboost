@@ -446,7 +446,19 @@ export async function recordScene({ brandKey, scene, account, outDir, name, ask,
         await wait(2000); // tempo do envio e de a imagem aparecer no vídeo
       } else if (next.action === "rolar") {
         const delta = next.text === "cima" ? -350 : 350;
-        if (byScript) await evaluate(cdp, `(() => { let e = document.elementFromPoint(270, 300); while (e && e.scrollHeight <= e.clientHeight + 1) e = e.parentElement; (e ?? document.scrollingElement).scrollBy({ top: ${delta}, behavior: 'smooth' }); })()`);
+        // Rola a PÁGINA, não o que está embaixo do cursor: em 11/11 o editor de texto do MedlyCare ocupava a tela e a roda
+        // do mouse só rolava o conteúdo dele, então a IA nunca chegava na seção Ficha. Animado, pra ficar natural no vídeo.
+        const pageScrolled = await evaluate(cdp, `(() => {
+          const ok = (e) => e && e.scrollHeight > e.clientHeight + 40 && e.clientHeight > innerHeight * 0.6 && (e === document.scrollingElement || /auto|scroll/.test(getComputedStyle(e).overflowY));
+          const list = [document.scrollingElement, ...document.querySelectorAll('body *')].filter(ok);
+          const page = list.sort((a, b) => b.clientHeight - a.clientHeight)[0];
+          if (!page) return false;
+          const from = page.scrollTop, to = Math.max(0, Math.min(from + ${delta}, page.scrollHeight - page.clientHeight)), t0 = performance.now();
+          if (to === from) return false;
+          return new Promise((done) => { const step = () => { const k = Math.min((performance.now() - t0) / 600, 1), q = k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2; page.scrollTop = from + (to - from) * q; k < 1 ? setTimeout(step, 16) : done(true); }; step(); });
+        })()`);
+        if (pageScrolled) await wait(300);
+        else if (byScript) await evaluate(cdp, `(() => { let e = document.elementFromPoint(270, 300); while (e && e.scrollHeight <= e.clientHeight + 1) e = e.parentElement; (e ?? document.scrollingElement).scrollBy({ top: ${delta}, behavior: 'smooth' }); })()`);
         else await cdp.send("Input.dispatchMouseEvent", { type: "mouseWheel", x: 270, y: 300, deltaX: 0, deltaY: delta });
       } else if (next.action === "login") {
         // Sessão caiu no meio (ou o primeiro login não pegou): tenta de novo; se não entrar, para com o motivo.

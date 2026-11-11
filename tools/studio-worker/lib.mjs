@@ -168,6 +168,51 @@ export function pathsText(paths) {
     list.map((p) => `- ${p.cena.slice(0, 160)}: ${p.passos.join(" → ")}`).join("\n");
 }
 
+/** Trechos do silencedetect e do freezedetect do ffmpeg: [{ start, end }] de cada um. */
+export function parseDetect(stderr) {
+  const pick = (kind) => {
+    const out = [];
+    let start = null;
+    for (const line of String(stderr).split(/\r?\n/)) {
+      const s = new RegExp(`${kind}_start: ?([\\d.]+)`).exec(line);
+      const e = new RegExp(`${kind}_end: ?([\\d.]+)`).exec(line);
+      if (s) start = Number(s[1]);
+      if (e && start !== null) { out.push({ start, end: Number(e[1]) }); start = null; }
+    }
+    return out;
+  };
+  const freezes = [];
+  let fs = null;
+  for (const line of String(stderr).split(/\r?\n/)) {
+    const s = /lavfi\.freezedetect\.freeze_start: ?([\d.]+)/.exec(line);
+    const e = /lavfi\.freezedetect\.freeze_end: ?([\d.]+)/.exec(line);
+    if (s) fs = Number(s[1]);
+    if (e && fs !== null) { freezes.push({ start: fs, end: Number(e[1]) }); fs = null; }
+  }
+  return { silences: pick("silence"), freezes };
+}
+
+/**
+ * Revisão automática do vídeo pronto (RB-47, 11/11): o que o Matheus reprovou no ouvido e no olho vira aviso no
+ * Console antes da aprovação. O cartão final é parado de propósito: os últimos segundos ficam fora da conta de imagem.
+ */
+export function reviewVideo({ duration, silences, freezes }, rules = {}) {
+  const r = { maxSilence: 1.2, maxFreeze: 6, minSeconds: 20, maxSeconds: 95, endCard: 8, ...rules };
+  const issues = [];
+  const fmt = (t) => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, "0")}`;
+  for (const s of silences) {
+    if (s.end > duration - 1) continue; // respiro no fim do vídeo
+    if (s.end - s.start > r.maxSilence) issues.push(`AVISO: ${(s.end - s.start).toFixed(1)} s de silêncio em ${fmt(s.start)}; a voz pode parecer cortada`);
+  }
+  for (const f of freezes) {
+    if (f.start >= duration - r.endCard) continue;
+    if (f.end - f.start > r.maxFreeze) issues.push(`AVISO: imagem parada por ${(f.end - f.start).toFixed(1)} s em ${fmt(f.start)}; pode parecer travado`);
+  }
+  if (duration < r.minSeconds) issues.push(`AVISO: vídeo com ${duration.toFixed(0)} s; curto demais para mostrar o passo a passo`);
+  if (duration > r.maxSeconds) issues.push(`AVISO: vídeo com ${duration.toFixed(0)} s; passa do tamanho bom para Reels`);
+  return issues;
+}
+
 /** Lê "medlynat1:corpo-forte": acabamento de cada voz no acabar-voz.py. Nome fora do padrão fica de fora. */
 export function parseVoiceFinish(value) {
   const map = new Map();
