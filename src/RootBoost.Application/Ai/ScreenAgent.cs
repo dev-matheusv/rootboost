@@ -72,8 +72,15 @@ public sealed class ScreenAgent
             return new ScreenAction("dado-pessoal", null, null, string.IsNullOrWhiteSpace(reason) ? "a tela mostrou dado pessoal real" : reason);
 
         if (!Actions.Contains(action)) return new ScreenAction("esperar", null, null, "passo desconhecido");
+        // Alvo dado pelo texto em vez do id (12/11: 15 passos perdidos com "Ficha de harmonização facial" que estava na
+        // tela). Casa pelo texto exato ou, se só um elemento contém o texto, por ele.
         if (action is "clicar" or "digitar" or "colar-imagem" && !state.Elements.Any(e => e.Id == target))
-            return new ScreenAction("esperar", null, null, $"elemento {target} não está na página");
+        {
+            var asked = target;
+            target = ResolveByText(state.Elements, target);
+            if (target is null)
+                return new ScreenAction("esperar", null, null, $"elemento {asked} não está na página; use o id da lista (ex.: e12)");
+        }
         return new ScreenAction(action, string.IsNullOrWhiteSpace(target) ? null : target, string.IsNullOrEmpty(text) ? null : text, reason);
     }
 
@@ -86,6 +93,17 @@ public sealed class ScreenAgent
         if (history.Count < 6) return false;
         var last = history.TakeLast(6).ToList();
         return last[0] != last[1] && Enumerable.Range(2, 4).All(i => last[i] == last[i % 2]);
+    }
+
+    /// <summary>Id do elemento cujo texto é o alvo (exato, sem diferenciar maiúscula) ou o único que contém o alvo.</summary>
+    public static string? ResolveByText(IReadOnlyList<ScreenElement> elements, string? target)
+    {
+        var t = target?.Trim();
+        if (string.IsNullOrEmpty(t)) return null;
+        var exact = elements.Where(e => string.Equals(e.Text.Trim(), t, StringComparison.OrdinalIgnoreCase)).ToList();
+        if (exact.Count >= 1) return exact[0].Id;
+        var partial = elements.Where(e => e.Text.Contains(t, StringComparison.OrdinalIgnoreCase)).ToList();
+        return partial.Count == 1 ? partial[0].Id : null;
     }
 
     private static string Clip(string s, int max) => s.Length <= max ? s : s[..max];
