@@ -77,6 +77,9 @@ const CURSOR = `(() => {
 const LIST_ELEMENTS = `(() => {
   const sel = 'a,button,input,select,textarea,[role=button],[role=link],[role=tab],[role=menuitem],[onclick],[tabindex]:not([tabindex="-1"]),[contenteditable="true"]';
   const out = []; let n = 0;
+  // Número de listas anteriores sai antes: em 11/11 o "e12" velho continuava no botão SOAP e o clique no "Preencher
+  // ficha" (e12 da lista nova) caía nele. Só o elemento que entra na lista recebe número.
+  for (const old of document.querySelectorAll('[data-rb-id]')) old.removeAttribute('data-rb-id');
   // Cartão clicável costuma ser só um div com cursor de mão; pega o de fora, não cada filho dele.
   const nodes = new Set(document.querySelectorAll(sel));
   for (const el of document.querySelectorAll('body *'))
@@ -86,7 +89,6 @@ const LIST_ELEMENTS = `(() => {
   for (const el of nodes) {
     const r = el.getBoundingClientRect();
     if (r.width < 4 || r.height < 4 || r.bottom < 0 || r.top > innerHeight || getComputedStyle(el).visibility === 'hidden') continue;
-    const id = 'e' + (++n); el.setAttribute('data-rb-id', id);
     const tag = el.tagName.toLowerCase();
     const role = tag === 'img' ? 'imagem' : tag === 'input' ? 'campo ' + (el.type || 'texto') : tag === 'textarea' ? 'campo texto' : tag === 'select' ? 'lista' : tag === 'a' ? 'link' : el.isContentEditable ? 'campo editor' : 'botão';
     const x = Math.round(r.left + r.width / 2), y = Math.round(r.top + r.height / 2);
@@ -96,6 +98,7 @@ const LIST_ELEMENTS = `(() => {
       const hit = document.elementFromPoint(x, y);
       if (!hit || !(hit === el || el.contains(hit) || hit.contains(el))) continue;
     }
+    const id = 'e' + (++n); el.setAttribute('data-rb-id', id);
     // Ícone sem texto (barra de baixo): a posição deixa a IA casar o id com o que ela vê na foto de 540x600.
     const text = (el.getAttribute('aria-label') || el.innerText || el.placeholder || el.value || el.title || '').trim().replace(/\\s+/g, ' ').slice(0, 80) || (tag === 'img' ? 'imagem de x=' + Math.round(r.left) + ' a ' + Math.round(r.right) + ', y=' + Math.round(r.top) + ' a ' + Math.round(r.bottom) : 'ícone sem texto em x=' + x + ' y=' + y);
     out.push({ id, role, text, x, y });
