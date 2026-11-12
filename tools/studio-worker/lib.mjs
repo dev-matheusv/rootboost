@@ -239,11 +239,21 @@ export function parseVoiceFinish(value) {
  * deixando 0,3 s de cada uma pra o olho acompanhar. Em 12/11 a montagem cortava o começo da cena pra caber na fala
  * e o vídeo perdia o caminho (os toques); tirar a espera guarda todos os toques.
  */
-export function activeSegments(duration, freezes = [], keep = 0.3) {
+export function activeSegments(duration, freezes = [], keep = 0.3, maxScreen = Infinity) {
   const start = Math.min(0.5, duration / 4), end = duration - 0.2;
+  // Só tira espera quando a tela não cabe na fala (12/11: tirar tudo deixou a tela curta e parada no fim de cada fala).
+  // Começa pela espera mais longa e para assim que couber.
+  const waits = [...(freezes ?? [])].filter((f) => f.end - f.start >= 1 && f.end > start && f.start < end);
+  let length = end - start;
+  const chosen = [];
+  for (const f of [...waits].sort((a, b) => (b.end - b.start) - (a.end - a.start))) {
+    if (length <= maxScreen) break;
+    chosen.push(f);
+    length -= Math.min(f.end, end) - Math.max(f.start, start) - keep;
+  }
   const out = [];
   let cur = start;
-  for (const f of [...(freezes ?? [])].sort((a, b) => a.start - b.start)) {
+  for (const f of chosen.sort((a, b) => a.start - b.start)) {
     if (f.end - f.start < 1 || f.end <= cur || f.start >= end) continue;
     const cut = Math.max(cur, f.start + keep);
     if (cut - cur >= 0.3) out.push([cur, cut]);
@@ -253,15 +263,17 @@ export function activeSegments(duration, freezes = [], keep = 0.3) {
   return out.length ? out : [[start, end]];
 }
 
-export function stepByStepPlan(roteiro, recordings, nome) {
+export function stepByStepPlan(roteiro, recordings, nome, durations = []) {
   const blocos = roteiro?.blocos ?? [];
   if (!blocos.length || recordings.length !== blocos.length) return null;
   const ordered = [...recordings].sort((a, b) => a.index - b.index);
   if (ordered.some((r, i) => r.index !== i || !(r.duration > 1))) return null;
   const round = (n) => Math.round(n * 100) / 100;
   let offset = 0;
-  const steps = ordered.map((r) => {
-    const segments = activeSegments(r.duration, r.freezes).map(([a, b]) => [round(offset + a), round(offset + b)]);
+  const steps = ordered.map((r, i) => {
+    // Tela cabe até 1,25x a fala do bloco (mesmo limite do narrado-passo); sem a duração, tira todas as esperas.
+    const maxScreen = durations[i] > 0 ? durations[i] * 1.25 : 0;
+    const segments = activeSegments(r.duration, r.freezes, 0.3, maxScreen).map(([a, b]) => [round(offset + a), round(offset + b)]);
     offset += r.duration;
     return segments;
   });

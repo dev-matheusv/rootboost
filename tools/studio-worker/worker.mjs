@@ -357,7 +357,14 @@ async function round() {
 
   // 4. Montagem. Toda cena gravada: passo a passo contínuo com a voz inteira (narrado-passo). Com acervo ou cena sem
   // gravação, segue o narrado-calmo, que reaproveita a voz e o alinhamento da semente aprovada.
-  const plan = stepByStepPlan(job.roteiro, recordings, nome);
+  // Duração de cada fala de bloco (alinhamento da voz aprovada): a montagem só corta espera quando a tela não cabe.
+  let blockDurations = [];
+  try {
+    const al = JSON.parse(readFileSync(`${voiceDir(seed)}/alinhamento.json`, "utf8")).falas;
+    const offset = Array.isArray(job.roteiro.abertura) && job.roteiro.abertura[0] ? 1 : 0;
+    blockDurations = (job.roteiro.blocos ?? []).map((_, i) => (al[i + offset + 1]?.s ?? al[i + offset]?.e ?? 0) - (al[i + offset]?.s ?? 0));
+  } catch { blockDurations = []; }
+  const plan = stepByStepPlan(job.roteiro, recordings, nome, blockDurations);
   const vars = { nome, voz: voice, seed, tools: cfg.tools, base: cfg.base };
   let pipelineArgs = [...buildArgs(cfg.args, vars), ...stepArgs];
   if (plan) {
