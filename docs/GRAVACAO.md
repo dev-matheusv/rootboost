@@ -43,6 +43,21 @@ Em Perfil da marca, a pessoa cola a documentação do sistema e a IA propõe um 
 
 Quando toda cena do job é gravação de tela, o worker junta as gravações num bruto (`<nome>-completo`), escreve `tela.json` e monta com `narrado-passo.mjs --pausar`: voz inteira, pausas só em silêncio real, tela contínua, títulos numerados, legenda abaixo da tela e sem cartão de abertura. Job com acervo ou cena sem gravação segue no `narrado-calmo.mjs`. Regras em `Fluxo de producao de reels.txt`.
 
+## Lições do vídeo do relatório (12/11)
+
+O primeiro vídeo montado sozinho do começo ao fim foi reprovado: uma tela só, caminho não gravado, datas que a fala
+não citou e voz travando. O que mudou:
+
+- **Caminho no vídeo:** `comecar` na tela de onde a cena parte; depois dele, ir pelo endereço é recusado. O roteiro
+  abre cada cena com "Começa em: <tela>" e lista cada toque com os valores exatos (datas, nomes, opções).
+- **Ação de verdade:** `pronto` é recusado se nada foi feito depois do `comecar` numa cena que pede ação. Campo já
+  preenchido com outro valor não conta: a IA troca pelo valor da cena.
+- **Voz por bloco** (método do chat de marketing): `falar-blocos.py` → `pausar-blocos.py` (pausa só depois de ponto
+  e interrogação, com a pontuação do roteiro e o fundo da própria gravação) → `acabar-blocos.py` (tom, corpo-forte,
+  marca por último) → `juntar-voz.py` (falas unidas com o fundo mais quieto, nunca silêncio digital) → `alinhar.py`.
+  O `narrado-passo` recebe essa pasta sem `--pausar`. `STUDIO_BLOCK_VOICE=0` volta pra voz contínua.
+- **Preparo** só dispara quando a cena precisa dele e não derruba o vídeo; cartões de lista entram como clicáveis.
+
 ## Segurança
 
 - **Conta de demonstração no PC** (`tools/studio-worker/contas.json`, fora do git; modelo em `contas.exemplo.json`): `{ "<marca>": { "url", "usuario",

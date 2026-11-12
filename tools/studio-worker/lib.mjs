@@ -234,6 +234,25 @@ export function parseVoiceFinish(value) {
  * inteira. Junta as gravações num bruto e devolve o plano do narrado-passo.mjs. Abertura vira gancho falado sobre os
  * últimos segundos em movimento, até o resultado pronto, sem cartão; o título de cada passo sai numerado. Sem gravação em todo bloco: null.
  */
+/**
+ * Trechos com movimento de uma gravação: tira as esperas (tela parada por 1 s ou mais: carregando, a IA pensando),
+ * deixando 0,3 s de cada uma pra o olho acompanhar. Em 12/11 a montagem cortava o começo da cena pra caber na fala
+ * e o vídeo perdia o caminho (os toques); tirar a espera guarda todos os toques.
+ */
+export function activeSegments(duration, freezes = [], keep = 0.3) {
+  const start = Math.min(0.5, duration / 4), end = duration - 0.2;
+  const out = [];
+  let cur = start;
+  for (const f of [...(freezes ?? [])].sort((a, b) => a.start - b.start)) {
+    if (f.end - f.start < 1 || f.end <= cur || f.start >= end) continue;
+    const cut = Math.max(cur, f.start + keep);
+    if (cut - cur >= 0.3) out.push([cur, cut]);
+    cur = Math.max(cur, f.end - 0.1);
+  }
+  if (end - cur >= 0.3) out.push([cur, end]);
+  return out.length ? out : [[start, end]];
+}
+
 export function stepByStepPlan(roteiro, recordings, nome) {
   const blocos = roteiro?.blocos ?? [];
   if (!blocos.length || recordings.length !== blocos.length) return null;
@@ -242,9 +261,9 @@ export function stepByStepPlan(roteiro, recordings, nome) {
   const round = (n) => Math.round(n * 100) / 100;
   let offset = 0;
   const steps = ordered.map((r) => {
-    const segment = [round(offset + Math.min(0.5, r.duration / 4)), round(offset + r.duration - 0.2)];
+    const segments = activeSegments(r.duration, r.freezes).map(([a, b]) => [round(offset + a), round(offset + b)]);
     offset += r.duration;
-    return [segment];
+    return segments;
   });
   const hasOpening = Array.isArray(roteiro.abertura) && !!roteiro.abertura[0];
   const [lastStart, lastEnd] = steps.at(-1)[0];
