@@ -125,9 +125,13 @@ public static class DependencyInjection
             Microsoft.Extensions.DependencyInjection.Extensions.ServiceCollectionDescriptorExtensions.TryAddSingleton(services,
                 new RootBoost.Infrastructure.Publishing.SocialAccounts(config));
             services.AddSingleton<RootBoost.Application.Ads.IAdCampaignCreator, RootBoost.Infrastructure.Ads.MetaAdCampaignCreator>();
+            services.AddSingleton<RootBoost.Application.Ads.IAdCampaignActuator, RootBoost.Infrastructure.Ads.MetaAdCampaignActuator>();
         }
         else
+        {
             services.AddSingleton<RootBoost.Application.Ads.IAdCampaignCreator, RootBoost.Infrastructure.Ads.FakeAdCampaignCreator>();
+            services.AddSingleton<RootBoost.Application.Ads.IAdCampaignActuator, RootBoost.Infrastructure.Ads.FakeAdCampaignActuator>();
+        }
         services.AddScoped<RootBoost.Application.Ads.SyncAdInsights>();
         if (!string.Equals(adsReader, "None", StringComparison.OrdinalIgnoreCase) &&
             !string.Equals(config["Ads:SyncEnabled"], "false", StringComparison.OrdinalIgnoreCase))

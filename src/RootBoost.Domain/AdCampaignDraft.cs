@@ -146,6 +146,18 @@ public sealed class AdCampaignDraft
         UpdatedAt = now;
     }
 
+    /// <summary>Pausada pela plataforma a pedido da pessoa (RB-52). Ativar de novo é no Gerenciador de Anúncios.</summary>
+    public DateTimeOffset? PausedAt { get; private set; }
+    public string? PausedBy { get; private set; }
+
+    public void MarkPaused(string by, DateTimeOffset now)
+    {
+        if (Status != AdCampaignStatus.Created) throw new InvalidOperationException("só campanha criada pode ser pausada");
+        PausedAt = now;
+        PausedBy = by;
+        UpdatedAt = now;
+    }
+
     public void Fail(string error, DateTimeOffset now)
     {
         Status = AdCampaignStatus.Failed;

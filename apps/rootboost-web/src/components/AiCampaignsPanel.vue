@@ -46,7 +46,19 @@
           R$ {{ c.dailyBudget.toFixed(2) }}/{{ $t('aiCampaigns.day') }} · {{ c.countries.join(', ') }} · {{ c.ageMin }} a {{ c.ageMax }} anos
           <template v-if="c.externalCampaignId"> · {{ $t('aiCampaigns.metaId') }} {{ c.externalCampaignId }}</template>
         </div>
-        <div v-if="c.status === 'Created'" class="text-caption text-positive q-mt-xs">{{ $t('aiCampaigns.createdNote') }}</div>
+        <div v-if="c.status === 'Created' && !c.advice" class="text-caption text-positive q-mt-xs">{{ $t('aiCampaigns.createdNote') }}</div>
+        <!-- Acompanhamento (RB-52): o que fazer agora, com os números que sustentam. Nada é aplicado sozinho. -->
+        <q-banner v-if="c.advice" dense rounded class="q-mt-sm" :class="adviceClass(c.advice.kind)">
+          <div class="text-weight-medium">{{ $t(`aiCampaigns.advice.${c.advice.kind}`) }}</div>
+          <div class="text-caption">{{ c.advice.message }}</div>
+          <div class="text-caption text-grey-8">
+            R$ {{ c.advice.spend.toFixed(2) }} · {{ c.advice.impressions }} {{ $t('aiCampaigns.impressions') }} · {{ c.advice.clicks }} {{ $t('aiCampaigns.clicks') }}
+            <template v-if="c.objective === 'leads'"> · {{ c.advice.conversions }} {{ $t('aiCampaigns.results') }}</template>
+          </div>
+          <template v-if="c.status === 'Created' && !c.pausedAt" #action>
+            <q-btn flat no-caps color="negative" :label="$t('aiCampaigns.pause')" :loading="busy === c.id + 'pause'" @click="pause(c)" />
+          </template>
+        </q-banner>
       </div>
     </q-card>
   </div>
@@ -66,7 +78,9 @@ interface AdCampaign {
   id: string; jobId: string | null; name: string; objective: 'trafego' | 'leads'; dailyBudget: number; countries: string[];
   ageMin: number; ageMax: number; videoUrl: string; thumbnailUrl: string | null; primaryText: string; headline: string;
   callToAction: string; linkUrl: string; rationale: string; status: 'Draft' | 'Approved' | 'Creating' | 'Created' | 'Failed';
-  externalCampaignId: string | null; externalAdId: string | null; error: string | null;
+  externalCampaignId: string | null; externalAdId: string | null; error: string | null; pausedAt: string | null;
+  advice: { kind: 'Wait' | 'Keep' | 'Scale' | 'ReviewCreative' | 'Pause'; message: string; suggestedDailyBudget: number | null;
+    spend: number; impressions: number; clicks: number; conversions: number; ctr: number | null } | null;
 }
 type Form = Pick<AdCampaign, 'name' | 'objective' | 'dailyBudget' | 'ageMin' | 'ageMax' | 'primaryText' | 'headline' | 'callToAction' | 'linkUrl'>;
 
@@ -92,6 +106,8 @@ const readyJobs = computed(() => jobs.value
   .map((j) => ({ label: j.theme, value: j.id })));
 
 const editable = (c: AdCampaign) => c.status === 'Draft' || c.status === 'Failed' || c.status === 'Approved';
+const adviceClass = (k: NonNullable<AdCampaign['advice']>['kind']) =>
+  ({ Wait: 'bg-blue-1 text-primary', Keep: 'bg-grey-2 text-grey-9', Scale: 'bg-green-1 text-positive', ReviewCreative: 'bg-amber-1 text-brown-9', Pause: 'bg-red-1 text-negative' })[k];
 const chipColor = (s: AdCampaign['status']) => ({ Draft: 'grey-7', Approved: 'primary', Creating: 'primary', Created: 'positive', Failed: 'negative' })[s];
 
 function fail(e: unknown) {
@@ -153,6 +169,17 @@ async function createPaused(c: AdCampaign) {
         if (isAxiosError(e) && e.response?.data?.campaign) upsert(e.response.data.campaign as AdCampaign);
         fail(e);
       } finally { busy.value = null; }
+}
+
+function pause(c: AdCampaign) {
+  $q.dialog({ title: t('aiCampaigns.pauseTitle'), message: t('aiCampaigns.pauseText'), cancel: true }).onOk(() => void doPause(c));
+}
+
+async function doPause(c: AdCampaign) {
+  busy.value = c.id + 'pause';
+  try {
+    upsert((await api.post<AdCampaign>(`/admin/brands/${props.brandKey}/ads/campaigns/${c.id}/pause`)).data);
+  } catch (e) { fail(e); } finally { busy.value = null; }
 }
 
 watch(() => props.brandKey, () => void load().catch(fail));

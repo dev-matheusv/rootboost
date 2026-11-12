@@ -371,8 +371,40 @@ brandProfile.MapPost("/publications/{id:guid}/unapprove", async (string key, Gui
 });
 
 // --- Campanha pela IA (RB-31): a IA propõe a partir de um vídeo pronto, a pessoa confere e aprova, nasce PAUSADA. ---
-brandProfile.MapGet("/ads/campaigns", async (string key, RootBoost.Application.Ads.IAdCampaignStore store, CancellationToken ct) =>
-    Results.Ok((await store.ListByBrandAsync(key.ToLowerInvariant(), ct)).Select(AdCampaignDto.From)));
+brandProfile.MapGet("/ads/campaigns", async (string key, RootBoost.Application.Ads.IAdCampaignStore store,
+    RootBoost.Application.Ads.IAdInsightStore insights, RootBoost.Application.Ads.AdsStopRule rule, TimeProvider time, CancellationToken ct) =>
+{
+    var brandKey = key.ToLowerInvariant();
+    var list = await store.ListByBrandAsync(brandKey, ct);
+    var today = DateOnly.FromDateTime(time.GetUtcNow().UtcDateTime);
+    // Acompanhamento (RB-52): métricas da campanha criada, últimos 30 dias, e o que fazer agora.
+    var rows = list.Any(c => c.ExternalCampaignId is not null)
+        ? await insights.ListAsync(brandKey, today.AddDays(-30), today, AdLevel.Campaign, ct) : [];
+    return Results.Ok(list.Select(c => AdCampaignDto.From(c) with
+    {
+        Advice = c.Status == AdCampaignStatus.Created && c.ExternalCampaignId is { } id
+            ? AdviceDto.From(RootBoost.Application.Ads.CampaignAdvisor.Advise(c, rows.Where(r => r.ObjectId == id).ToList(), rule, today)) : null,
+    }));
+});
+
+brandProfile.MapPost("/ads/campaigns/{id:guid}/pause", async (string key, Guid id, System.Security.Claims.ClaimsPrincipal user,
+    RootBoost.Application.Ads.IAdCampaignStore store, RootBoost.Application.Ads.IAdCampaignActuator actuator, TimeProvider time,
+    ILoggerFactory lf, CancellationToken ct) =>
+{
+    var draft = await store.GetAsync(id, ct);
+    if (draft is null || draft.BrandKey != key.ToLowerInvariant()) return Results.NotFound();
+    if (draft.Status != AdCampaignStatus.Created || draft.ExternalCampaignId is null) return Results.BadRequest(new { error = "campanha ainda não foi criada" });
+    var who = user.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value ?? user.Identity?.Name ?? "desconhecido";
+    try { await actuator.PauseAsync(draft.ExternalCampaignId, ct); }
+    catch (InvalidOperationException ex)
+    {
+        lf.CreateLogger("Ads").LogWarning(ex, "pausar campanha {Campaign} da marca {Brand} falhou", draft.ExternalCampaignId, draft.BrandKey);
+        return Results.UnprocessableEntity(new { error = ex.Message });
+    }
+    draft.MarkPaused(who, time.GetUtcNow());
+    await store.SaveAsync(draft, ct);
+    return Results.Ok(AdCampaignDto.From(draft));
+});
 
 brandProfile.MapPost("/ads/campaigns", async (string key, AdCampaignProposeInput input, IBrandStore brands,
     RootBoost.Application.Studio.ICreativeJobStore jobs, RootBoost.Application.Ai.IBrandProductStore products,
@@ -1616,11 +1648,17 @@ record AdCampaignInput(string Name, string Objective, decimal DailyBudget, List<
     string PrimaryText, string Headline, string CallToAction, string LinkUrl);
 record AdCampaignDto(Guid Id, Guid? JobId, string Name, string Objective, decimal DailyBudget, IReadOnlyList<string> Countries, int AgeMin,
     int AgeMax, string VideoUrl, string? ThumbnailUrl, string PrimaryText, string Headline, string CallToAction, string LinkUrl, string Rationale,
-    string Status, string? ApprovedBy, DateTimeOffset? ApprovedAt, string? ExternalCampaignId, string? ExternalAdId, string? Error, DateTimeOffset CreatedAt)
+    string Status, string? ApprovedBy, DateTimeOffset? ApprovedAt, string? ExternalCampaignId, string? ExternalAdId, string? Error, DateTimeOffset CreatedAt,
+    DateTimeOffset? PausedAt = null, AdviceDto? Advice = null)
 {
     public static AdCampaignDto From(AdCampaignDraft d) => new(d.Id, d.CreativeJobId, d.Name, d.Objective == AdObjective.Leads ? "leads" : "trafego",
         d.DailyBudgetCents / 100m, d.Countries, d.AgeMin, d.AgeMax, d.VideoUrl, d.ThumbnailUrl, d.PrimaryText, d.Headline, d.CallToAction, d.LinkUrl,
-        d.Rationale, d.Status.ToString(), d.ApprovedBy, d.ApprovedAt, d.ExternalCampaignId, d.ExternalAdId, d.Error, d.CreatedAt);
+        d.Rationale, d.Status.ToString(), d.ApprovedBy, d.ApprovedAt, d.ExternalCampaignId, d.ExternalAdId, d.Error, d.CreatedAt, d.PausedAt);
+}
+record AdviceDto(string Kind, string Message, decimal? SuggestedDailyBudget, decimal Spend, long Impressions, long Clicks, long Conversions, decimal? Ctr)
+{
+    public static AdviceDto From(RootBoost.Application.Ads.CampaignAdvice a) => new(a.Kind.ToString(), a.Message, a.SuggestedDailyBudget,
+        a.Metrics.Spend, a.Metrics.Impressions, a.Metrics.Clicks, a.Metrics.Conversions, a.Metrics.Ctr);
 }
 record ScreenGuideInput(string? Guide);
 record CreativeJobInput(string Kind, string Theme, string? VoiceKey, string? Format = null);
