@@ -88,6 +88,10 @@
             <template v-if="job.error.includes('Acervo')" #action>
               <q-btn flat no-caps color="negative" :icon="mdiImageMultipleOutline" :label="$t('studio.openAcervo')" to="/acervo" />
             </template>
+            <!-- Falha por causa do roteiro (cena impossível, tela que não existe): refazer não adianta, reescrever sim (12/11). -->
+            <template v-else-if="scriptFault(job.error) && aiEnabled" #action>
+              <q-btn flat no-caps color="negative" :icon="mdiCreationOutline" :label="$t('studio.ai.rewrite')" :loading="busy" @click="writeWithAi()" />
+            </template>
           </q-banner>
 
           <!-- Revisão da voz: duas versões, a pessoa escolhe pelo ouvido antes de gravar e montar. -->
@@ -376,6 +380,8 @@ const selectedId = ref<string | null>(null);
 const job = computed(() => jobs.value.find((j) => j.id === selectedId.value) ?? null);
 const base = computed(() => `/admin/brands/${brand.selected}/creative-jobs`);
 
+// Erro que pede roteiro novo: a gravação desistiu porque a cena pede o que a tela não tem.
+const scriptFault = (error: string) => /reescreva o roteiro|não permite|não existe|nao existe|sequência que a tela/i.test(error);
 const steps = ['script', 'queue', 'voice', 'render', 'review', 'posts'] as const;
 const step = computed(() => (job.value ? jobStep(job.value.status, job.value.voiceApproved) : 0));
 const segments = computed(() => (job.value ? scriptSegments(job.value.roteiro, job.value.falas) : []));
