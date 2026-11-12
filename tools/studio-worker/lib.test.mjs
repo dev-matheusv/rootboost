@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mapIsStale, parseDetect, reviewVideo, addPath, pathsText, logFileName, oldLogs, parseVoiceFinish, parseVoiceTones, preparationsFor, stepByStepPlan, voiceFolder } from "./lib.mjs";
+import { mapIsStale, parseDetect, reviewVideo, addPath, pathsText, logFileName, oldLogs, parseVoiceFinish, parseVoiceTones, preparationsFor, stepByStepPlan, voiceFolder , activeSegments } from "./lib.mjs";
 
 test("mapa do sistema: refaz sem mapa, sem guia ou com mais de 7 dias", () => {
   const now = new Date("2026-11-12T10:00:00Z");
@@ -270,4 +270,12 @@ test("vídeo pessoal: tela cheia, fala original e narração só onde há fala",
   assert.equal(warm.look, "quente");
   const silent = buildPersonalSpec({ name: "x", brandKey: "b", voice: null, seed: 1, roteiro: { blocos: [{ trechos: [["acervo-a", 0, 3]], audio: "musica" }] }, falas: ["", ""], media: { "acervo-a": { path: "a.jpg" } } });
   assert.equal(silent.captions, undefined);
+});
+
+test("activeSegments tira as esperas e guarda os toques", () => {
+  // 12 s de gravação com espera de 3 a 7 s: fica 0,5 a 3,3 e 6,9 a 11,8.
+  assert.deepEqual(activeSegments(12, [{ start: 3, end: 7 }]).map(([a, b]) => [+a.toFixed(1), +b.toFixed(1)]), [[0.5, 3.3], [6.9, 11.8]]);
+  // Espera curta (menos de 1 s) fica; sem esperas, o trecho inteiro.
+  assert.deepEqual(activeSegments(10, [{ start: 2, end: 2.6 }]), [[0.5, 9.8]]);
+  assert.deepEqual(activeSegments(10), [[0.5, 9.8]]);
 });
