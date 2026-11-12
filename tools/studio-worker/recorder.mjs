@@ -9,6 +9,8 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { isDestructive, sameSite } from "./lib.mjs";
 
+// Verbos de cena que pedem ação na tela (não só mostrar o que já está lá).
+const ACTION_WORDS = /\b(toque|toca|clique|clica|escolha|escolhe|selecione|digite|preencha|abra|gere|marque|troque|mude)\b/i;
 const CHROME = process.env.CHROME_PATH ?? "C:/Program Files/Google/Chrome/Application/chrome.exe";
 const FFMPEG = process.env.FFMPEG_PATH ?? "C:/DMaker/bin/ffmpeg/bin/ffmpeg.exe";
 // Imagem fictícia que a gravação cola ou anexa: nunca um arquivo de verdade do PC.
@@ -355,6 +357,7 @@ export async function recordScene({ brandKey, scene, account, outDir, name, ask,
     let stopReason = `passou de ${MAX_SECONDS} s sem terminar`;
     let deadClicks = 0;
     let started_scene = false;
+    let acted = 0;
     let personalDetours = 0; // dado real visto no preparo: troca de paciente até 2 vezes
     let byScript = false; // o clique do navegador não chegou na página: segue clicando por dentro dela
     await evaluate(cdp, WATCH_CLICKS);
@@ -377,6 +380,13 @@ export async function recordScene({ brandKey, scene, account, outDir, name, ask,
       if (!prepare && next.action === "pronto" && shown < MIN_SCENE_SECONDS && step < 20) {
         note(`  pronto recusado: só ${shown.toFixed(1)} s de cena`);
         history.push(`recusado: a cena tem só ${shown.toFixed(1)} s; mostre a ação acontecendo antes de encerrar`);
+        continue;
+      }
+      // Cena que pede ação (tocar, escolher, digitar) só termina depois de a ação acontecer na tela (12/11: a IA dizia
+      // "a data já está preenchida" e encerrava; o vídeo ficou com datas que a fala não citou e tela parada).
+      if (!prepare && next.action === "pronto" && started_scene && acted === 0 && ACTION_WORDS.test(scene) && step < 30) {
+        note("  pronto recusado: nenhuma ação feita depois do comecar");
+        history.push("recusado: a cena pede ação e nada foi feito depois do comecar. Faça na tela cada passo que a cena descreve, mesmo que o campo já tenha valor (troque pelo valor da cena)");
         continue;
       }
       if (next.action === "pronto" || next.action === "desistir") { outcome = next.action; stopReason = next.reason; break; }
@@ -411,6 +421,11 @@ export async function recordScene({ brandKey, scene, account, outDir, name, ask,
       }
       const el = elements.find((e) => e.id === next.target);
       // Texto começando com "/": vai direto pra esse endereço do sistema (tela que não cabe na barra do celular).
+      // Depois do comecar o caminho tem de aparecer: pular pelo endereço deixaria o vídeo sem o passo a passo (12/11).
+      if (!prepare && started_scene && next.action === "clicar" && /^\/[\w/-]*$/.test(next.text ?? "")) {
+        history.push("recusado: a cena já começou; chegue na tela tocando no menu, como a pessoa faria");
+        continue;
+      }
       if (next.action === "clicar" && /^\/[\w/-]*$/.test(next.text ?? "")) {
         await evaluate(cdp, `location.assign(${JSON.stringify(next.text)})`);
         await wait(3000);
@@ -502,6 +517,7 @@ export async function recordScene({ brandKey, scene, account, outDir, name, ask,
         loggedIn = true;
       }
       history.push(`${next.action} ${el?.text ?? next.text ?? ""}`.trim());
+      if (started_scene && ["clicar", "digitar", "colar-imagem", "rolar"].includes(next.action)) acted++;
       await wait(900);
       const now = await evaluate(cdp, "location.href");
       if (!sameSite(now, account.url)) { outcome = "desistir"; history.push(`saiu do site: ${now}`); break; }
