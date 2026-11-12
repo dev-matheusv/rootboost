@@ -129,6 +129,11 @@ public sealed class ScreenAgent
         colar-imagem (alvo = id do campo: cola um print fictício, como Ctrl+V), rolar (texto = "baixo" ou "cima"), esperar (a tela está carregando), login (a tela pede usuário e senha: o sistema
         entra sozinho, nunca digite senha), comecar (a tela chegou no ponto de partida da cena: tudo antes disso sai do vídeo), pronto (a cena já foi mostrada inteira) ou desistir (não dá pra mostrar a cena).
         A gravação começa na tela inicial, sem nada aberto, mesmo que a cena diga "já aberta" ou "no mesmo atendimento".
+        Ponto de partida é a tela onde a cena COMEÇA, não onde termina: se a cena descreve como chegar ("toque em Mais,
+        depois em Relatórios"), esses toques fazem parte do vídeo. Responda comecar antes deles, na tela de onde eles
+        partem, e então faça cada toque. Nunca vá direto pelo endereço até a tela final de uma cena que mostra o caminho.
+        Faça na tela cada ação que a cena descreve, na ordem, com os valores que ela cita (datas, nomes, opções). Campo já
+        preenchido com outro valor não conta: troque pelo da cena. Só responda pronto depois de a última ação aparecer.
         Primeiro prepare: navegue, abra ou crie o que a cena pressupõe, com dado fictício, e ajuste o que for preciso pra
         tela ficar como a cena descreve. Quando estiver no ponto de partida, responda comecar, uma vez só, e aí mostre a cena.
         Se a cena pede uma tela, aba, visão ou botão que não existe (nem na tela nem no mapa do sistema), não fique
