@@ -318,7 +318,10 @@ async function round() {
       try {
         const r = await recordScene({ brandKey: job.brandKey, scene: s.scene, account, outDir: `${cfg.base}/brutos/${source}`, name: source,
           ask: async (state) => (await call("POST", "/worker/ai/next-action", { ...state, scene: guide + state.scene })).data });
-        recordings.push({ index: s.index, source, duration: r.duration });
+        // Esperas dentro da gravação (tela parada 1 s ou mais) saem na montagem; os toques ficam (12/11).
+        const fz = r.path ? spawnSync(FFMPEG, ["-hide_banner", "-i", r.path, "-vf", "freezedetect=n=0.003:d=1,metadata=mode=print", "-an", "-f", "null", "-"],
+          { encoding: "utf8", maxBuffer: 64 << 20 }) : null;
+        recordings.push({ index: s.index, source, duration: r.duration, freezes: fz ? parseDetect(`${fz.stdout}\n${fz.stderr}`).freezes : [] });
         await learn(s.scene, r.steps);
       } catch (e) {
         return fail(job.id, `gravação do bloco ${s.index + 1}: ${e.message}`, !e.personalData);
