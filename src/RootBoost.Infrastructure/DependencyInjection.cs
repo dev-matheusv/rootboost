@@ -47,6 +47,7 @@ public static class DependencyInjection
         services.AddHttpClient<RootBoost.Application.Push.IPushTransport, RootBoost.Infrastructure.Push.WebPushTransport>();
         services.AddScoped<RootBoost.Application.Push.PushNotifier>();
         services.AddScoped<RootBoost.Application.Push.RemindPendingApprovals>();
+        services.AddScoped<RootBoost.Application.Reports.WeeklyDigest>();
         services.AddScoped<RootBoost.Application.Alerts.AlertService>();
         // IA (decisão de 28/10: Claude agora atrás da porta ILanguageModel, Root AI depois). Ai:Mode=Off por padrão.
         var ai = new RootBoost.Application.Ai.AiOptions();
@@ -104,6 +105,7 @@ public static class DependencyInjection
         {
             services.AddHostedService<RootBoost.Infrastructure.Publishing.PublicationScheduler>();
             services.AddHostedService<RootBoost.Infrastructure.Push.ApprovalReminderScheduler>();
+            services.AddHostedService<RootBoost.Infrastructure.Push.WeeklyDigestScheduler>();
         }
 
         // --- Anúncios (RB-13): só leitura. Ads:Reader=None (padrão) não chama nada; Fake = dados de mentira. ---

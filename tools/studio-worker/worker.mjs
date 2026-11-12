@@ -215,8 +215,10 @@ async function round() {
     // Versão limpa primeiro; se a mesma palavra nunca casa no Whisper (ex.: termo técnico), até 3 palavras a conferir
     // vão pra pessoa ouvir, com o aviso. Quem decide é o ouvido, não o alinhamento.
     const MAX_TO_CHECK = 3;
+    // Para na primeira versão aceitável (12/11: buscava zero palavras sem par e gerou três versões de 25 min cada;
+    // termo como "Médico um" nunca casa no Whisper e quem decide é o ouvido).
     const candidates = [];
-    for (let tries = 0; candidates.filter((c) => c.unmatched === 0).length < VOICE_TAKES && tries < 3; tries++, seed++) {
+    for (let tries = 0; candidates.length < VOICE_TAKES && tries < 3; tries++, seed++) {
       const r = await makeVoice(seed, `gerando a voz (semente ${seed})`);
       if (r.error) return fail(job.id, r.error, r.retry);
       if (r.unmatched > MAX_TO_CHECK) { console.log(`[${now()}] semente ${seed}: ${r.unmatched} palavra(s) sem par, pulando`); continue; }
@@ -324,7 +326,9 @@ async function round() {
         recordings.push({ index: s.index, source, duration: r.duration, freezes: fz ? parseDetect(`${fz.stdout}\n${fz.stderr}`).freezes : [] });
         await learn(s.scene, r.steps);
       } catch (e) {
-        return fail(job.id, `gravação do bloco ${s.index + 1}: ${e.message}`, !e.personalData);
+        // A IA desistiu (cena impossível, dado que falta na conta): repetir o mesmo roteiro dá no mesmo (12/11: três
+        // tentativas de 15 min no relatório vazio). Falha de vez com o motivo; o Console oferece reescrever.
+        return fail(job.id, `gravação do bloco ${s.index + 1}: ${e.message}`, !e.personalData && !e.aiGaveUp);
       } finally {
         clearInterval(beat);
       }
