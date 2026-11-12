@@ -115,6 +115,20 @@ reversíveis, registro e desfazer). Publicar conteúdo novo sempre com aprovaç�
 **RB-31** campanha montada pela IA (tudo pausado, Matheus ativa) → **RB-52** métricas por anúncio e
 aprendizado → **RB-25** insights orgânicos. Google Ads depois.
 
+### Onda 4b: Nativa Ads inteligente (pedido do Matheus, 12/11/2026)
+A IA é especialista em marketing digital (tráfego pago, criativo, copy) e decide com base em TUDO que dá pra medir,
+pra qualquer cliente (sistema, loja ou serviço), não só o MedlyCare. Ordem:
+1. **Métricas orgânicas (RB-25):** por post publicado no Instagram e no Facebook: alcance, visualizações, retenção,
+   salvamentos, compartilhamentos, comentários, curtidas e visitas ao perfil. Campos conferidos na doc oficial.
+2. **Ranking de criativos por marca:** junta orgânico e anúncio (CTR, custo por resultado, retenção de 3 s) e mostra
+   quais vídeos funcionam e por quê (gancho, formato, tema, duração, voz).
+3. **Campanha a partir do ranking:** a IA escolhe os vídeos que provaram funcionar (do Estúdio ou já publicados),
+   propõe público, texto e orçamento com o número que sustenta cada escolha. Continua nascendo pausada.
+4. **Aprendizado contínuo:** o resultado de cada campanha e post volta pro conhecimento da marca e da plataforma
+   (`knowledge/`, só agregado entre marcas), e pesa nos próximos roteiros, criativos e campanhas.
+5. **Conhecimento de marketing da IA:** playbook de tráfego, criativo e copy versionado em `knowledge/`, junto do
+   conhecimento do negócio do cliente (produto, mapa do sistema, documentos, acervo).
+
 ### Onda 5: experiência e avisos
 ~~**RB-30/RB-14**~~ PWA e visual no molde do MedlyCare (roxo Ametista; Publicações com Fila, Semana e Mês, arrastar, Ctrl+K, Visão geral com "hoje", PWA sem cache: feito 28/10) → **RB-37** notificação de pendência
 (push da PWA primeiro) → **RB-32** aprovação pelo WhatsApp (extensão do Chrome agora, API oficial com
