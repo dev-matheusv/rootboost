@@ -1,6 +1,14 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { parseDetect, reviewVideo, addPath, pathsText, logFileName, oldLogs, parseVoiceFinish, parseVoiceTones, preparationsFor, stepByStepPlan, voiceFolder } from "./lib.mjs";
+import { mapIsStale, parseDetect, reviewVideo, addPath, pathsText, logFileName, oldLogs, parseVoiceFinish, parseVoiceTones, preparationsFor, stepByStepPlan, voiceFolder } from "./lib.mjs";
+
+test("mapa do sistema: refaz sem mapa, sem guia ou com mais de 7 dias", () => {
+  const now = new Date("2026-11-12T10:00:00Z");
+  assert.equal(mapIsStale(null, now), true);
+  assert.equal(mapIsStale({ at: "2026-11-10T10:00:00Z", guide: "" }, now), true);
+  assert.equal(mapIsStale({ at: "2026-11-10T10:00:00Z", guide: "- Agenda" }, now), false);
+  assert.equal(mapIsStale({ at: "2026-11-01T10:00:00Z", guide: "- Agenda" }, now), true);
+});
 
 test("revisão automática: silêncio longo e imagem parada viram aviso, cartão final não", () => {
   const stderr = [

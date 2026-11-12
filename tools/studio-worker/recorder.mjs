@@ -576,7 +576,9 @@ export async function exploreSystem({ account, maxPages = 40, log = console.log 
     // itens da barra de baixo e do menu lateral são tocados um a um e o endereço que abre entra na fila.
     const routerPaths = await evaluate(cdp, `(() => { try { const app = document.querySelector('#q-app, #app, [data-v-app]')?.__vue_app__;
       const r = app?.config?.globalProperties?.$router; return r ? r.getRoutes().map((x) => x.path).filter((p) => !p.includes(':') && !p.includes('*')) : []; } catch { return []; } })()`);
-    for (const p of routerPaths ?? []) if (!/login|sair|logout|reset|senha|cadastro|signup|registrar/i.test(p)) queue.push(p);
+    // Fora: login, cadastro e telas públicas (termos, portal do paciente, página de busca): não são do uso do dia a dia.
+    const skip = /login|entrar|sair|logout|reset|senha|password|cadastro|signup|registrar|termo|politica|privacidade|paciente\/|encontre|suspended|convite|confirmar/i;
+    for (const p of routerPaths ?? []) if (!skip.test(p)) queue.push(p);
     const navCount = await evaluate(cdp, `document.querySelectorAll('.q-footer .q-tab, .q-footer .q-btn, .q-footer a, .q-drawer .q-item, nav a, nav button').length`);
     for (let i = 0; i < Math.min(navCount ?? 0, 15); i++) {
       const before = await evaluate(cdp, "location.pathname");
@@ -589,7 +591,7 @@ export async function exploreSystem({ account, maxPages = 40, log = console.log 
     const visited = new Set();
     while (queue.length && pages.length < maxPages) {
       const path = queue.shift();
-      if (visited.has(path)) continue;
+      if (visited.has(path) || (visited.size > 0 && skip.test(path))) continue;
       visited.add(path);
       await cdp.send("Page.navigate", { url: origin + path });
       await wait(2500);

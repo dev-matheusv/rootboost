@@ -1223,6 +1223,21 @@ worker.MapPut("/brands/{brandKey}/screen-knowledge", async (string brandKey, Scr
     return Results.NoContent();
 });
 
+// Mapa do sistema (11/11): o worker manda as telas exploradas; mudou desde a última vez, a IA reescreve o guia.
+worker.MapPut("/brands/{brandKey}/system-map", async (string brandKey, SystemMapInput input,
+    RootBoost.Application.Ai.IBrandProductStore products, RootBoost.Application.Ai.SystemMapper mapper, TimeProvider time, CancellationToken ct) =>
+{
+    var product = await products.GetAsync(brandKey.ToLowerInvariant(), ct);
+    if (product is null) return Results.NotFound(new { error = $"a marca {brandKey} não tem produto cadastrado" });
+    var json = input.Map.GetRawText();
+    var hash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(json)))[..32];
+    var changed = product.SystemMapHash != hash || string.IsNullOrWhiteSpace(product.SystemMap);
+    if (changed) product.SetSystemMap(await mapper.SummarizeAsync(product.BrandKey, json, ct), hash, time.GetUtcNow());
+    else product.TouchSystemMap(time.GetUtcNow());
+    await products.SaveAsync(product, ct);
+    return Results.Ok(new { guide = product.SystemMap, changed });
+});
+
 worker.MapPut("/media/{brandKey}/details", async (string brandKey, MediaDetailsInput input, HttpRequest req,
     RootBoost.Application.Media.IMediaAssetStore assets, RootBoost.Application.Media.MediaOptions options, CancellationToken ct) =>
 {
@@ -1672,6 +1687,7 @@ record ProductDto(string Name, string Kind, string? Url, string? AppUrl, string 
 }
 record ScreenGuideDraftInput(string? Documentation);
 record ScreenKnowledgeInput(string? Text);
+record SystemMapInput(System.Text.Json.JsonElement Map);
 record AdCampaignProposeInput(Guid JobId);
 record AdCampaignInput(string Name, string Objective, decimal DailyBudget, List<string>? Countries, int AgeMin, int AgeMax,
     string PrimaryText, string Headline, string CallToAction, string LinkUrl);

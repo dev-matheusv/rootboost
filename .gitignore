@@ -48,3 +48,4 @@ tools/studio-worker/acervo-enviados.json
 tools/studio-worker/worker.lock
 tools/studio-worker/logs/
 tools/studio-worker/guias/*.caminhos.json
+tools/studio-worker/guias/*.mapa.json

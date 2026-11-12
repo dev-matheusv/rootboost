@@ -266,6 +266,9 @@ public sealed class RootBoostDbContext : DbContext
         product.Property(x => x.ScreenGuide).HasMaxLength(BrandProduct.MaxScreenGuideChars);
         product.Property(x => x.ScreenKnowledge).HasMaxLength(BrandProduct.MaxScreenGuideChars * 2);
         product.Property(x => x.ScreenKnowledgeAt).HasConversion(Utc);
+        product.Property(x => x.SystemMap).HasMaxLength(BrandProduct.MaxScreenGuideChars);
+        product.Property(x => x.SystemMapHash).HasMaxLength(64);
+        product.Property(x => x.SystemMapAt).HasConversion(Utc);
         product.Property(x => x.CreatedAt).HasConversion(Utc);
         product.Property(x => x.UpdatedAt).HasConversion(Utc);
         product.Ignore(x => x.Features);

@@ -10,10 +10,10 @@ import { appendFileSync, copyFileSync, existsSync, mkdirSync, openAsBlob, readdi
 import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
-  applyLibrary, applyRecordings, buildArgs, buildPersonalSpec, libraryScenes, photoClipArgs, expectedOutputs, isScriptProblem, lastLine, parsePrivateVoices, logFileName, oldLogs, addPath, pathsText, parseDetect, reviewVideo, parseVoiceFinish, parseVoiceTones, preparationsFor, stepByStepPlan, voiceFolder, parseUnmatched, parseVoiceSteps, stepsFor, projectName, scenesToRecord,
+  applyLibrary, applyRecordings, buildArgs, buildPersonalSpec, libraryScenes, photoClipArgs, expectedOutputs, isScriptProblem, lastLine, parsePrivateVoices, logFileName, oldLogs, addPath, mapIsStale, pathsText, parseDetect, reviewVideo, parseVoiceFinish, parseVoiceTones, preparationsFor, stepByStepPlan, voiceFolder, parseUnmatched, parseVoiceSteps, stepsFor, projectName, scenesToRecord,
   seedFor, voiceProblem, warningsFrom,
 } from "./lib.mjs";
-import { recordScene } from "./recorder.mjs";
+import { exploreSystem, recordScene } from "./recorder.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 loadEnvFile(join(here, "worker.env"));
@@ -232,7 +232,27 @@ async function round() {
       await share();
     };
     await share();
-    const guideText = [existsSync(guidePath) ? readFileSync(guidePath, "utf8").trim() : "", job.screenGuide?.trim() ?? "", pathsText(readPaths())].filter(Boolean).join("\n\n");
+    // Mapa do sistema (11/11): a IA explora o sistema sozinha (só navegando) e a API escreve o guia. Refaz a cada 7 dias;
+    // se as telas mudaram, o guia é reescrito. Falha aqui não derruba o vídeo: segue com o que já sabe.
+    const mapFile = join(here, "guias", `${job.brandKey}.mapa.json`);
+    let savedMap = null;
+    try { savedMap = JSON.parse(readFileSync(mapFile, "utf8")); } catch { /* sem mapa ainda */ }
+    if (mapIsStale(savedMap, new Date())) {
+      await progress(job.id, 4, "conhecendo o sistema: explorando as telas (só navega, não altera nada)");
+      try {
+        const explored = await exploreSystem({ account, maxPages: 40, log: (l) => console.log(`[${now()}] ${l}`) });
+        const r = await call("PUT", `/worker/brands/${job.brandKey}/system-map`, { map: explored });
+        if (r.status === 200 && r.data?.guide) {
+          savedMap = { at: new Date().toISOString(), guide: r.data.guide, telas: explored.pages.length };
+          writeFileSync(mapFile, JSON.stringify(savedMap, null, 1));
+          console.log(`[${now()}] mapa do sistema: ${explored.pages.length} telas, ${r.data.changed ? "guia reescrito" : "sem mudança"}`);
+        } else console.log(`[${now()}] mapa do sistema não foi pra API: ${r.status}`);
+      } catch (e) {
+        console.log(`[${now()}] exploração do sistema falhou, sigo com o que já sei: ${e.message}`);
+      }
+    }
+    const guideText = [savedMap?.guide ? `Mapa do sistema (telas reais):\n${savedMap.guide}` : "", existsSync(guidePath) ? readFileSync(guidePath, "utf8").trim() : "",
+      job.screenGuide?.trim() ?? "", pathsText(readPaths())].filter(Boolean).join("\n\n");
     const guide = guideText ? `${guideText}\n\nCena: ` : "";
     // Preparo da conta (fora do vídeo): o que a cena precisa já existir, como modelo de ficha.
     const prepPath = join(here, "guias", `${job.brandKey}.preparo.json`);

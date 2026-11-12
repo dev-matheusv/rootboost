@@ -213,6 +213,12 @@ export function reviewVideo({ duration, silences, freezes }, rules = {}) {
   return issues;
 }
 
+/** Mapa do sistema guardado no PC: refaz a exploração quando não existe ou passou de `days` dias. */
+export function mapIsStale(saved, now, days = 7) {
+  const at = Date.parse(saved?.at ?? "");
+  return !saved?.guide || !Number.isFinite(at) || now.getTime() - at > days * 86_400_000;
+}
+
 /** Lê "medlynat1:corpo-forte": acabamento de cada voz no acabar-voz.py. Nome fora do padrão fica de fora. */
 export function parseVoiceFinish(value) {
   const map = new Map();
