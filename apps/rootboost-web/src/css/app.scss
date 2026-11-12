@@ -44,3 +44,10 @@ body.body--dark .q-banner.bg-red-1 { background: rgba($negative, 0.14) !importan
 
 // Linha fina acima do título da página (marca escolhida, data).
 .page-eyebrow { font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.6; }
+
+// Celular (12/11, pedido do Matheus): menos margem lateral e nada vazando da largura.
+@media (max-width: 599.98px) {
+  .q-page.q-pa-lg { padding: 16px 12px; }
+  .q-page .text-h5 { font-size: 1.35rem; }
+  .q-table__grid-content .q-table__grid-item { width: 100%; }
+}

@@ -1,7 +1,7 @@
 <template>
   <q-page class="q-pa-lg">
-    <div class="row items-end q-mb-lg">
-      <div class="col">
+    <div class="row items-end q-mb-lg q-col-gutter-sm">
+      <div class="col-12 col-sm">
         <div class="page-eyebrow">{{ brand.selectedName || $t('nav.allBrands') }}</div>
         <div class="text-h5 sora-bold">{{ $t('pages.orders.title') }}</div>
         <div class="text-grey-7">{{ $t('pages.orders.subtitle') }}</div>
@@ -16,7 +16,7 @@
       <template #action><q-btn flat :label="$t('common.actions.retry')" @click="load" /></template>
     </q-banner>
 
-    <q-table flat bordered class="card-rounded" :rows="orders" :columns="columns" row-key="paymentId"
+    <q-table flat bordered class="card-rounded" :grid="$q.screen.lt.sm" :rows="orders" :columns="columns" row-key="paymentId"
       :loading="loading" :no-data-label="$t('common.empty')" :rows-per-page-options="[25, 50, 100]">
       <template #body-cell-status="props">
         <q-td :props="props">
