@@ -319,7 +319,7 @@ public sealed class ScriptWriter
                 sb.AppendLine(how);
                 sb.AppendLine("</sistema>");
                 sb.AppendLine("Regras das cenas: use só telas, campos, botões e opções que aparecem acima, com o nome exato que o sistema usa. " +
-                    "Nunca peça um campo que o guia não cita. Se o recurso tem um caminho que já deu certo, a cena segue esse caminho, na mesma ordem. " +
+                    "Nunca peça um campo, aba, visão ou filtro que o guia não cita (se a tela tem só as abas Lista e Calendário, não existe visão por mês; pra mostrar o mês, use o filtro de período que existir). Se o recurso tem um caminho que já deu certo, a cena segue esse caminho, na mesma ordem. " +
                     "A fala também só descreve o que existe nessas telas.");
             }
         }

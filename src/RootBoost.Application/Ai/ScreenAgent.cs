@@ -45,6 +45,12 @@ public sealed class ScreenAgent
         user.AppendLine($"Página atual: {state.Url}");
         user.AppendLine($"Passo {state.Step + 1} de no máximo {MaxSteps}.");
         if (state.History.Count > 0) user.AppendLine("Passos já feitos: " + string.Join(" | ", state.History.TakeLast(8)));
+        // Gravação do relatório (12/11): a cena pedia uma visão "mês" que não existe e a IA alternou Lista e Calendário
+        // oito vezes até desistir. Ao ver o círculo, ela é avisada pra adaptar a cena em vez de repetir.
+        if (IsLooping(state.History))
+            user.AppendLine("ATENÇÃO: você está repetindo os mesmos passos sem chegar na cena. O que a cena pede pode não existir " +
+                "nesse sistema. Pare de alternar: mostre o que existe de mais próximo que cumpre o objetivo da cena (ex.: a lista do " +
+                "período em vez de uma visão que não existe) e siga, ou responda pronto se o essencial já apareceu. Diga no motivo o que adaptou.");
         user.AppendLine($"Dados de demonstração conhecidos da marca (fictícios): {state.FictionalMarkers ?? "nenhum informado"}");
         user.AppendLine("Elementos da página (id: tipo: texto):");
         foreach (var e in state.Elements.Take(150)) user.AppendLine($"{e.Id}: {e.Role}: {Clip(e.Text, 80)}");
@@ -71,6 +77,17 @@ public sealed class ScreenAgent
         return new ScreenAction(action, string.IsNullOrWhiteSpace(target) ? null : target, string.IsNullOrEmpty(text) ? null : text, reason);
     }
 
+    /// <summary>
+    /// Os últimos passos andam em círculo: o mesmo passo 3 vezes seguidas ou dois passos se alternando (A B A B A B).
+    /// </summary>
+    public static bool IsLooping(IReadOnlyList<string> history)
+    {
+        if (history.Count >= 3 && history.TakeLast(3).Distinct().Count() == 1) return true;
+        if (history.Count < 6) return false;
+        var last = history.TakeLast(6).ToList();
+        return last[0] != last[1] && Enumerable.Range(2, 4).All(i => last[i] == last[i % 2]);
+    }
+
     private static string Clip(string s, int max) => s.Length <= max ? s : s[..max];
 
     private const string System = """
@@ -82,6 +99,8 @@ public sealed class ScreenAgent
         A gravação começa na tela inicial, sem nada aberto, mesmo que a cena diga "já aberta" ou "no mesmo atendimento".
         Primeiro prepare: navegue, abra ou crie o que a cena pressupõe, com dado fictício, e ajuste o que for preciso pra
         tela ficar como a cena descreve. Quando estiver no ponto de partida, responda comecar, uma vez só, e aí mostre a cena.
+        Se a cena pede uma tela, aba, visão ou botão que não existe (nem na tela nem no mapa do sistema), não fique
+        procurando nem alternando: mostre o que existe de mais próximo que cumpre o objetivo da cena e siga.
         Só desista depois de tentar outro caminho, e diga no motivo o que faltou.
         Pra anexar arquivo ou inserir imagem, clique no botão: o sistema escolhe sozinho um arquivo fictício, sem janela.
         Nunca exclua, cancele, pague, envie mensagem de verdade ou saia do sistema. Só mude configuração ou preferência
