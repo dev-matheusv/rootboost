@@ -35,11 +35,11 @@ public sealed class SystemMapper
     }
 
     private const string System = """
-        Você recebe o mapa de um sistema web, coletado navegando nele: cada tela com rota, títulos, abas, campos e botões.
+        Você recebe o mapa de um sistema web, coletado navegando nele: cada tela com rota, títulos, abas, campos, botões e seletores (com as opções que cada um abre).
         Escreva o guia que uma IA vai usar para escrever roteiros de vídeo e operar esse sistema. Português do Brasil,
         linhas curtas começando com hífen, nesta ordem:
         - Telas principais: o nome da tela, a rota e para que serve, deduzido só pelos títulos, campos e botões vistos.
-        - Para cada tela: as abas, os campos e os botões com o nome exato.
+        - Para cada tela: as abas, os campos, os botões e os seletores com as opções, com o nome exato (ex.: seletor de visão com Mês, Semana e Dia).
         - Fluxos prováveis (ex.: abrir atendimento, preencher ficha), só quando as telas vistas sustentam.
         - Telas públicas, de login ou de paciente ficam de fora.
         Nunca invente tela, campo ou botão que não está no mapa. Sem dado de pessoa.

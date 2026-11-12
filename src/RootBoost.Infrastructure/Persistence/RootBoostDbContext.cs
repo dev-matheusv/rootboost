@@ -30,6 +30,7 @@ public sealed class RootBoostDbContext : DbContext
 
     /// <summary>Snapshot diário de métricas de anúncio (Meta e o que vier). Uma linha por objeto e dia.</summary>
     public DbSet<AdInsightDaily> AdInsights => Set<AdInsightDaily>();
+    public DbSet<OrganicPost> OrganicPosts => Set<OrganicPost>();
 
     /// <summary>Avisos de operação pro humano (post que falhou, sync de anúncio, conexão da Meta). RB-58.</summary>
     public DbSet<OpsAlert> OpsAlerts => Set<OpsAlert>();
@@ -121,6 +122,23 @@ public sealed class RootBoostDbContext : DbContext
         ad.HasIndex(x => new { x.Platform, x.AccountId, x.Level, x.ObjectId, x.Date }).IsUnique();
         ad.HasIndex(x => new { x.BrandKey, x.Level, x.Date });
         ad.Property(x => x.FetchedAt).HasConversion(Utc);
+
+        var org = b.Entity<OrganicPost>();
+        org.HasKey(x => x.Id);
+        org.Property(x => x.BrandKey).HasMaxLength(64).IsRequired();
+        org.Property(x => x.Channel).HasConversion<string>().HasMaxLength(16);
+        org.Property(x => x.ExternalId).HasMaxLength(64).IsRequired();
+        org.Property(x => x.ProductType).HasMaxLength(16).IsRequired();
+        org.Property(x => x.MediaType).HasMaxLength(24).IsRequired();
+        org.Property(x => x.Caption).HasMaxLength(2200).IsRequired();
+        org.Property(x => x.Permalink).HasMaxLength(512);
+        org.Property(x => x.ThumbnailUrl).HasMaxLength(2048);
+        org.Property(x => x.PostedAt).HasConversion(Utc);
+        org.Property(x => x.FetchedAt).HasConversion(Utc);
+        org.Ignore(x => x.IsVideo);
+        // Chave natural: um post do canal é uma linha só, reler atualiza.
+        org.HasIndex(x => new { x.Channel, x.ExternalId }).IsUnique();
+        org.HasIndex(x => new { x.BrandKey, x.PostedAt });
 
         var cred = b.Entity<ConsoleCredential>();
         cred.HasKey(x => x.Email);

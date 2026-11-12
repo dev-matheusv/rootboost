@@ -52,6 +52,9 @@ public sealed class MetaAdCampaignCreator : IAdCampaignCreator
                 ["objective"] = draft.Objective == AdObjective.Leads ? "OUTCOME_LEADS" : "OUTCOME_TRAFFIC",
                 ["status"] = "PAUSED",
                 ["special_ad_categories"] = "[]",
+                // Orçamento fica só no conjunto (sem compartilhar com outros conjuntos). A Meta passou a exigir o campo quando
+                // a campanha não tem orçamento próprio (erro 100 no teste de 12/11); a referência de campanha manda 0 no exemplo.
+                ["is_adset_budget_sharing_enabled"] = "false",
             }, ct));
             await progress();
         }

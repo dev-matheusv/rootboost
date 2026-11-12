@@ -295,6 +295,16 @@ public class ScreenAgentTests : IClassFixture<StudioAiWebApplicationFactory>
     }
 
     [Fact]
+    public void Going_in_circles_is_detected()
+    {
+        // Caso real de 12/11: a cena pedia a visão "mês" e a IA alternou as abas até desistir.
+        Assert.True(ScreenAgent.IsLooping(["clicar Agenda", "clicar Lista", "clicar Calendário", "clicar Lista", "clicar Calendário", "clicar Lista", "clicar Calendário"]));
+        Assert.True(ScreenAgent.IsLooping(["rolar baixo", "rolar baixo", "rolar baixo"]));
+        Assert.False(ScreenAgent.IsLooping(["clicar Agenda", "clicar Lista", "rolar baixo", "clicar Lista", "rolar baixo"]));
+        Assert.False(ScreenAgent.IsLooping(["clicar Agenda", "clicar Lista", "clicar Calendário", "digitar Nome", "clicar Salvar", "rolar baixo"]));
+    }
+
+    [Fact]
     public async Task Worker_asks_the_api_for_the_next_step_with_its_key()
     {
         var anon = _factory.CreateClient();
