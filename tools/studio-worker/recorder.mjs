@@ -384,6 +384,12 @@ export async function recordScene({ brandKey, scene, account, outDir, name, ask,
       }
       // Cena que pede ação (tocar, escolher, digitar) só termina depois de a ação acontecer na tela (12/11: a IA dizia
       // "a data já está preenchida" e encerrava; o vídeo ficou com datas que a fala não citou e tela parada).
+      // Sem comecar, o preparo inteiro entraria no vídeo (12/11: o caminho e as datas apareciam de novo em cada bloco).
+      if (!prepare && next.action === "pronto" && !started_scene && step < 30) {
+        note("  pronto recusado: a cena não foi marcada com comecar");
+        history.push("recusado: responda comecar no ponto de partida da cena antes de mostrar as ações; o que veio antes é preparo e sai do vídeo");
+        continue;
+      }
       if (!prepare && next.action === "pronto" && started_scene && acted === 0 && ACTION_WORDS.test(scene) && step < 30) {
         note("  pronto recusado: nenhuma ação feita depois do comecar");
         history.push("recusado: a cena pede ação e nada foi feito depois do comecar. Faça na tela cada passo que a cena descreve, mesmo que o campo já tenha valor (troque pelo valor da cena)");
@@ -530,7 +536,9 @@ export async function recordScene({ brandKey, scene, account, outDir, name, ask,
       const shot = await cdp.send("Page.captureScreenshot", { format: "jpeg", quality: 70 });
       writeFileSync(join(outDir, "falhou.jpg"), Buffer.from(shot.data, "base64"));
       note(`parou: ${stopReason}`);
-      throw new Error(`a IA parou: ${stopReason}. Tela final em ${await evaluate(cdp, "location.href")}. Passos em ${trail}`);
+      const gaveUp = new Error(`a IA parou: ${stopReason}. Tela final em ${await evaluate(cdp, "location.href")}. Passos em ${trail}`);
+      gaveUp.aiGaveUp = true;
+      throw gaveUp;
     }
     // Caminho que deu certo, pra próxima gravação da mesma tarefa seguir sem tentativa e erro.
     const steps = history.filter((h) => !/^(recusado|colar-imagem: este|login: esta|saiu do site)/.test(h));

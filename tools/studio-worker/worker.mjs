@@ -326,7 +326,9 @@ async function round() {
         recordings.push({ index: s.index, source, duration: r.duration, freezes: fz ? parseDetect(`${fz.stdout}\n${fz.stderr}`).freezes : [] });
         await learn(s.scene, r.steps);
       } catch (e) {
-        return fail(job.id, `gravação do bloco ${s.index + 1}: ${e.message}`, !e.personalData);
+        // A IA desistiu (cena impossível, dado que falta na conta): repetir o mesmo roteiro dá no mesmo (12/11: três
+        // tentativas de 15 min no relatório vazio). Falha de vez com o motivo; o Console oferece reescrever.
+        return fail(job.id, `gravação do bloco ${s.index + 1}: ${e.message}`, !e.personalData && !e.aiGaveUp);
       } finally {
         clearInterval(beat);
       }
