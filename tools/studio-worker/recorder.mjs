@@ -346,6 +346,7 @@ export async function recordScene({ brandKey, scene, account, outDir, name, ask,
     let stopReason = `passou de ${MAX_SECONDS} s sem terminar`;
     let deadClicks = 0;
     let started_scene = false;
+    let personalDetours = 0; // dado real visto no preparo: troca de paciente até 2 vezes
     let byScript = false; // o clique do navegador não chegou na página: segue clicando por dentro dela
     await evaluate(cdp, WATCH_CLICKS);
     for (let step = 0; Date.now() - started < (prepare ? 2 * MAX_SECONDS : MAX_SECONDS) * 1000; step++) {
@@ -378,6 +379,16 @@ export async function recordScene({ brandKey, scene, account, outDir, name, ask,
         frames.length = 0;
         await grab();
         history.push("comecar: gravação da cena valendo a partir daqui");
+        continue;
+      }
+      if (next.action === "dado-pessoal" && !started_scene && ++personalDetours <= 2) {
+        // Ainda no preparo (nada disso entra no vídeo): apaga os quadros e manda trocar de paciente, em vez de perder o
+        // vídeo inteiro (pedido do Matheus, 11/11). Depois de comecar, ou na terceira vez, para como sempre.
+        frames.length = 0;
+        rmSync(join(outDir, "quadros"), { recursive: true, force: true });
+        mkdirSync(join(outDir, "quadros"), { recursive: true });
+        note(`  dado que não parece de demonstração no preparo: quadros apagados, trocando de paciente (${next.reason})`);
+        history.push("recusado: este paciente mostra dado que não parece de demonstração; volte, não abra este paciente de novo e use outro atendimento ou outro paciente da fila");
         continue;
       }
       if (next.action === "dado-pessoal") {

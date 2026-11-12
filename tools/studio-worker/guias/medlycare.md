@@ -13,4 +13,5 @@ Como chegar nas telas do MedlyCare (no celular):
 - Dentro da ficha: os campos Região, tipo de marcação e quantidade por clique ficam acima da imagem do rosto. A tabela com a soma por região fica abaixo da imagem. Salve a ficha pelo botão de salvar.
 - Marcar um ponto na imagem do rosto: use clicar com alvo = id da imagem e texto = "x,y", a posição em pixels na foto da tela (exemplo: "270,210"). Cada clique abre um editor pequeno com produto e quantidade; preencha e feche antes do próximo ponto. Escolha sempre o lugar certo do rosto olhando a foto.
 - Não toque em "Finalizar atendimento".
+- Paciente da conta de demonstração tem CPF de mentira (999.000.00x ou só zeros). Se aparecer paciente com CPF, telefone ou data de nascimento que não parecem de demonstração, não abra o cadastro dele: volte e use outro atendimento ou outro paciente da fila.
 - O modelo "Ficha de harmonização facial" é criado antes da gravação, no preparo da conta. Se ele não aparecer na lista, responda desistir e diga no motivo que o modelo falta.
