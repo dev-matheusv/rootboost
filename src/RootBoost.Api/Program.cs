@@ -408,20 +408,36 @@ brandProfile.MapPost("/ads/campaigns/{id:guid}/pause", async (string key, Guid i
 
 brandProfile.MapPost("/ads/campaigns", async (string key, AdCampaignProposeInput input, IBrandStore brands,
     RootBoost.Application.Studio.ICreativeJobStore jobs, RootBoost.Application.Ai.IBrandProductStore products,
-    RootBoost.Application.Ads.CampaignProposer proposer, RootBoost.Application.Ads.IAdCampaignStore store, CancellationToken ct) =>
+    RootBoost.Application.Ads.CampaignProposer proposer, RootBoost.Application.Ads.IAdCampaignStore store,
+    RootBoost.Application.Publishing.IPublicationStore pubs, CancellationToken ct) =>
 {
     var brandKey = key.ToLowerInvariant();
     var brand = (await brands.ListAsync(ct)).FirstOrDefault(b => b.Key == brandKey);
     if (brand is null) return Results.NotFound();
-    var job = await jobs.GetAsync(input.JobId, ct);
-    if (job is null || job.BrandKey != brandKey) return Results.NotFound();
-    // Anúncio usa a versão de demais canais (legenda mais baixa); sem ela, a do Instagram.
-    var video = job.Outputs.FirstOrDefault(o => o.Role == "video") ?? job.Outputs.FirstOrDefault(o => o.Role == "video-instagram");
-    if (video is null) return Results.BadRequest(new { error = "esse vídeo ainda não está pronto" });
-    var cover = job.Outputs.FirstOrDefault(o => o.Role == "cover-instagram")?.Url;
+    var product = await products.GetAsync(brandKey, ct);
     try
     {
-        var proposal = await proposer.ProposeAsync(brandKey, brand.Name, await products.GetAsync(brandKey, ct), job, video.Url, cover, ct);
+        RootBoost.Application.Ads.CampaignProposal proposal;
+        if (input.PublicationId is { } pubId)
+        {
+            // Vídeo já publicado (importado ou do Estúdio): o que já provou engajar pode virar anúncio.
+            var pub = await pubs.GetAsync(pubId, ct);
+            if (pub is null || pub.BrandKey != brandKey) return Results.NotFound();
+            if (!pub.MediaUrl.EndsWith(".mp4", StringComparison.OrdinalIgnoreCase) && !pub.MediaUrl.EndsWith(".mov", StringComparison.OrdinalIgnoreCase))
+                return Results.BadRequest(new { error = "esse post não é vídeo" });
+            var theme = pub.Caption.Split('\n', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? pub.Caption;
+            proposal = await proposer.ProposeAsync(brandKey, brand.Name, product, null, theme, pub.Caption, pub.MediaUrl, pub.CoverUrl, ct);
+        }
+        else
+        {
+            var job = input.JobId is { } jid ? await jobs.GetAsync(jid, ct) : null;
+            if (job is null || job.BrandKey != brandKey) return Results.NotFound();
+            // Anúncio usa a versão de demais canais (legenda mais baixa); sem ela, a do Instagram.
+            var video = job.Outputs.FirstOrDefault(o => o.Role == "video") ?? job.Outputs.FirstOrDefault(o => o.Role == "video-instagram");
+            if (video is null) return Results.BadRequest(new { error = "esse vídeo ainda não está pronto" });
+            var cover = job.Outputs.FirstOrDefault(o => o.Role == "cover-instagram")?.Url;
+            proposal = await proposer.ProposeAsync(brandKey, brand.Name, product, job, video.Url, cover, ct);
+        }
         await store.AddAsync(proposal.Draft, ct);
         return Results.Ok(AdCampaignDto.From(proposal.Draft));
     }
@@ -1688,7 +1704,7 @@ record ProductDto(string Name, string Kind, string? Url, string? AppUrl, string 
 record ScreenGuideDraftInput(string? Documentation);
 record ScreenKnowledgeInput(string? Text);
 record SystemMapInput(System.Text.Json.JsonElement Map);
-record AdCampaignProposeInput(Guid JobId);
+record AdCampaignProposeInput(Guid? JobId, Guid? PublicationId = null);
 record AdCampaignInput(string Name, string Objective, decimal DailyBudget, List<string>? Countries, int AgeMin, int AgeMax,
     string PrimaryText, string Headline, string CallToAction, string LinkUrl);
 record AdCampaignDto(Guid Id, Guid? JobId, string Name, string Objective, decimal DailyBudget, IReadOnlyList<string> Countries, int AgeMin,

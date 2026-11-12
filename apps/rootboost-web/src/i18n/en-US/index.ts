@@ -150,6 +150,8 @@ export default {
     nextSteps: 'What to do now',
   },
   aiCampaigns: {
+    fromStudio: 'Studio',
+    fromPost: 'Published',
     impressions: 'impressions',
     clicks: 'clicks',
     results: 'results',
