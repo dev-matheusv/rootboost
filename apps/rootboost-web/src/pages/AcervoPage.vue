@@ -41,7 +41,7 @@
             <q-input v-model="m.description" dense borderless autogrow :placeholder="$t('acervo.describeHint')"
               @blur="saveDescription(m)" />
             <q-input v-model="m.tags" dense borderless :placeholder="$t('acervo.tags')" class="text-caption" @blur="saveDescription(m)" />
-            <div class="row items-center no-wrap">
+            <div class="row items-center">
               <q-btn v-if="!m.isVideo && aiEnabled" flat dense no-caps size="sm" color="primary" :icon="mdiCreationOutline"
                 :label="$t('acervo.describe')" :loading="busy === m.id" @click="describe(m)" />
               <q-toggle v-if="m.isVideo" :model-value="m.finished" dense size="sm" :label="$t('acervo.finished')" @update:model-value="setFinished(m, $event)">
@@ -189,7 +189,7 @@ watch(() => brand.selected, () => void load());
 .item, .empty { border: 1px solid rgba(0, 0, 0, 0.08); background: #fff; overflow: hidden; height: 100%; }
 .item > div, .item .q-field { min-width: 0; max-width: 100%; }
 .item .q-chip { max-width: 100%; height: auto; min-height: 24px; white-space: normal; }
-.item .row.no-wrap { flex-wrap: wrap; }
+.item :deep(.q-chip__content) { white-space: normal; flex-wrap: wrap; }
 .body--dark .item, .body--dark .empty { border-color: rgba(255, 255, 255, 0.08); background: $dark; }
 .empty { border-style: dashed; }
 .tip { background: rgba(122, 76, 224, 0.08); }
