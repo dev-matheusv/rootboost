@@ -168,6 +168,19 @@ guardar só o necessário, com acesso por marca. Cada canal confere a doc oficia
    chegam pra virar conteúdo e copy (alimenta o Estúdio e o Nativa Ads).
 Começar pelo Instagram Direct (maior volume e mesma conta Meta), depois e-mail.
 
+**Pesquisa na doc oficial (12/11, v27.0):**
+- Aviso de mensagem nova na hora (webhook, campo `messages`) exige o app publicado (Live) e a verificação do negócio;
+  callback em HTTPS, conferir `X-Hub-Signature-256` com o App Secret, repetição por até 36 h (tratar duplicada).
+  Permissões no login do Facebook: `instagram_basic`, `instagram_manage_messages`, `pages_manage_metadata`,
+  `pages_read_engagement`, `pages_show_list` (já estão no token novo).
+- Sem webhook dá pra começar lendo por consulta periódica: `GET /me/conversations?platform=instagram`, depois
+  `GET /{conversa}?fields=messages` e `GET /{mensagem}?fields=id,created_time,from,to,message`. Só as 20 mensagens
+  mais recentes de cada conversa saem com detalhe. Acesso padrão vale pras contas que são nossas.
+- Responder: `POST /me/messages` com `recipient.id` e `message.text` (até 1000 bytes), dentro da janela de 24 h
+  depois da última mensagem da pessoa (7 dias com a marca de atendimento humano).
+- A doc atual descreve conversa e envio no login do Instagram (graph.instagram.com). Antes de codar, conferir a
+  página equivalente do login do Facebook (Page token), que é o que o RootBoost usa.
+
 ### Onda 5: experiência e avisos
 ~~**RB-30/RB-14**~~ PWA e visual no molde do MedlyCare (roxo Ametista; Publicações com Fila, Semana e Mês, arrastar, Ctrl+K, Visão geral com "hoje", PWA sem cache: feito 28/10) → **RB-37** notificação de pendência
 (push da PWA primeiro) → **RB-32** aprovação pelo WhatsApp (extensão do Chrome agora, API oficial com
