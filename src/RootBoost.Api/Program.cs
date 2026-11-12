@@ -462,6 +462,23 @@ brandProfile.MapPost("/ads/campaigns/{id:guid}/approve", async (string key, Guid
     return result.Ok ? Results.Ok(AdCampaignDto.From(draft)) : Results.UnprocessableEntity(new { error = result.Error, campaign = AdCampaignDto.From(draft) });
 });
 
+// Resumo da semana (RB-34): posts, vídeos, anúncios e o que fazer agora, só com dado do banco.
+brandProfile.MapGet("/report", async (string key, int? days, RootBoost.Application.Publishing.IPublicationStore pubs,
+    RootBoost.Application.Studio.ICreativeJobStore jobs, RootBoost.Application.Ads.IAdInsightStore insights,
+    RootBoost.Application.Ads.IAdCampaignStore campaigns, RootBoost.Application.Ads.AdsStopRule rule, TimeProvider time, CancellationToken ct) =>
+{
+    var brandKey = key.ToLowerInvariant();
+    var period = Math.Clamp(days ?? 7, 1, 31);
+    var now = time.GetUtcNow();
+    var today = DateOnly.FromDateTime(now.UtcDateTime);
+    var rows = await insights.ListAsync(brandKey, today.AddDays(-30), today, AdLevel.Campaign, ct);
+    var created = (await campaigns.ListByBrandAsync(brandKey, ct)).Where(c => c.Status == AdCampaignStatus.Created && c.ExternalCampaignId is not null)
+        .Select(c => (c, RootBoost.Application.Ads.CampaignAdvisor.Advise(c, rows.Where(r => r.ObjectId == c.ExternalCampaignId).ToList(), rule, today))).ToList();
+    var report = RootBoost.Application.Reports.WeeklyReport.Build(brandKey, now, period,
+        await pubs.ListByBrandAsync(brandKey, now.AddDays(-period), now.AddDays(7), ct), await jobs.ListByBrandAsync(brandKey, ct), rows, created);
+    return Results.Ok(report);
+});
+
 brandProfile.MapGet("/ads/summary", async (string key, int? days, RootBoost.Application.Ads.IAdInsightStore store,
     RootBoost.Application.Ads.AdsStopRule rule, TimeProvider time, CancellationToken ct) =>
 {
