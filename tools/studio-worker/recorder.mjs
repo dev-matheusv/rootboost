@@ -86,6 +86,9 @@ const LIST_ELEMENTS = `(() => {
     if (getComputedStyle(el).cursor === 'pointer' && getComputedStyle(el.parentElement).cursor !== 'pointer') nodes.add(el);
   // Imagem grande entra na lista: é onde a IA marca um ponto exato (clicar com texto "x,y").
   for (const el of document.querySelectorAll('img')) if (el.getBoundingClientRect().width >= 150) nodes.add(el);
+  // Cartão de lista (q-card, q-item) costuma abrir com clique sem ter cursor de mão nem papel de botão: em 12/11 o
+  // modelo da ficha estava na tela e não na lista, e a IA esperou 17 passos. Cartão grande demais (painel) fica de fora.
+  for (const el of document.querySelectorAll('.q-card,.q-item')) if (el.getBoundingClientRect().height <= 240) nodes.add(el);
   for (const el of nodes) {
     const r = el.getBoundingClientRect();
     if (r.width < 4 || r.height < 4 || r.bottom < 0 || r.top > innerHeight || getComputedStyle(el).visibility === 'hidden') continue;

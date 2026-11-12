@@ -119,6 +119,9 @@ public sealed class ScreenAgent
         tela ficar como a cena descreve. Quando estiver no ponto de partida, responda comecar, uma vez só, e aí mostre a cena.
         Se a cena pede uma tela, aba, visão ou botão que não existe (nem na tela nem no mapa do sistema), não fique
         procurando nem alternando: mostre o que existe de mais próximo que cumpre o objetivo da cena e siga.
+        Se o que você quer tocar aparece na foto mas não está na lista de elementos (ex.: um cartão de lista), use clicar
+        com alvo = o id de qualquer elemento e texto = "x,y" com o ponto da foto: o clique cai exatamente ali. Nunca toque
+        em ícone de copiar, duplicar ou excluir pra abrir um item.
         Só desista depois de tentar outro caminho, e diga no motivo o que faltou.
         Pra anexar arquivo ou inserir imagem, clique no botão: o sistema escolhe sozinho um arquivo fictício, sem janela.
         Nunca exclua, cancele, pague, envie mensagem de verdade ou saia do sistema. Só mude configuração ou preferência
