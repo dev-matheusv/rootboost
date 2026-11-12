@@ -8,7 +8,7 @@
     </div>
 
     <div class="row q-col-gutter-md q-mb-lg">
-      <div class="col-12 col-sm-6 col-lg-3">
+      <div class="col-6 col-lg-3">
         <router-link :to="{ name: 'publications' }" class="today-card card-rounded column q-pa-md" :class="{ attention: needs > 0 }">
           <q-icon :name="mdiCheckDecagramOutline" size="26px" :color="needs > 0 ? 'warning' : 'positive'" />
           <div class="kpi-value q-mt-sm">{{ brand.selected ? needs : '·' }}</div>
@@ -16,7 +16,7 @@
           <div class="text-caption text-grey-7">{{ needsHint }}</div>
         </router-link>
       </div>
-      <div class="col-12 col-sm-6 col-lg-3">
+      <div class="col-6 col-lg-3">
         <router-link :to="{ name: 'publications' }" class="today-card card-rounded column q-pa-md">
           <q-icon :name="mdiRocketLaunchOutline" size="26px" color="primary" />
           <div class="text-subtitle1 text-weight-bold q-mt-sm ellipsis">{{ next ? next.title : $t('pages.overview.today.nothingNext') }}</div>
@@ -24,7 +24,7 @@
           <div class="text-caption text-grey-7">{{ nextHint }}</div>
         </router-link>
       </div>
-      <div class="col-12 col-sm-6 col-lg-3">
+      <div class="col-6 col-lg-3">
         <router-link :to="{ name: 'campaigns' }" class="today-card card-rounded column q-pa-md">
           <q-icon :name="mdiBullhornVariantOutline" size="26px" color="accent" />
           <div class="kpi-value q-mt-sm">{{ adsSpend ?? '·' }}</div>
@@ -32,7 +32,7 @@
           <div class="text-caption text-grey-7">{{ adsHint }}</div>
         </router-link>
       </div>
-      <div class="col-12 col-sm-6 col-lg-3">
+      <div class="col-6 col-lg-3">
         <button type="button" class="today-card card-rounded column q-pa-md text-left" :class="{ danger: alerts > 0 }" @click="openAlerts">
           <q-icon :name="alerts > 0 ? mdiBellAlertOutline : mdiShieldCheckOutline" size="26px" :color="alerts > 0 ? 'negative' : 'positive'" />
           <div class="kpi-value q-mt-sm">{{ alerts }}</div>
@@ -61,7 +61,7 @@
     </q-banner>
 
     <div class="row q-col-gutter-md q-mb-lg">
-      <div v-for="kpi in kpis" :key="kpi.label" class="col-12 col-sm-6 col-lg-3">
+      <div v-for="kpi in kpis" :key="kpi.label" class="col-6 col-lg-3">
         <q-card flat class="card-rounded q-pa-md" :class="$q.dark.isActive ? 'card-bordered-dark' : 'card-bordered-light'">
           <div class="row items-center no-wrap">
             <q-avatar rounded size="44px" :class="$q.dark.isActive ? 'dark-focus' : 'light-focus'">
