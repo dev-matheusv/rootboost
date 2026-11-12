@@ -145,6 +145,17 @@ export default {
     error: 'Could not turn on alerts on this device.',
   },
   weeklyReport: {
+    organic: 'Organic (Instagram)',
+    paid: 'Paid (ads)',
+    advice: {
+      title: 'AI suggestions',
+      subtitle: 'The AI reads this week and past numbers and tells what to improve for better results.',
+      ask: 'Ask for suggestions',
+      again: 'Ask again',
+      none: 'The AI found nothing to suggest right now.',
+      error: 'Could not generate suggestions right now.',
+      area: { organico: 'Organic', pago: 'Paid', conteudo: 'Content', geral: 'General' },
+    },
     title: 'Week summary',
     highlights: 'What happened',
     nextSteps: 'What to do now',

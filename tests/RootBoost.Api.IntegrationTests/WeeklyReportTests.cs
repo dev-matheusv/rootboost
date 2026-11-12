@@ -46,4 +46,40 @@ public class WeeklyReportTests
         var r = WeeklyReport.Build(BrandKeys.MedlyCare, Now, 7, [Post(2)], [], [], [(c, advice)]);
         Assert.Contains(r.NextSteps, l => l.Text.Contains("Teste ficha") && l.Kind == "bad");
     }
+
+    private static OrganicPost Organic(string id, int daysAgo, long reach, long saves, Guid? pub = null)
+    {
+        var p = new OrganicPost(BrandKeys.MedlyCare, SocialChannel.Instagram, id, Now.AddDays(-daysAgo));
+        p.Describe("REELS", "VIDEO", $"Vídeo {id}\nresto da legenda", null, null);
+        p.SetMetrics(reach * 2, reach, reach / 20, 2, saves / 2, saves, reach / 20 + saves, 9000, Now);
+        p.LinkPublication(pub);
+        return p;
+    }
+
+    [Fact]
+    public void Organic_and_paid_are_separate_and_the_best_video_becomes_an_ad_suggestion()
+    {
+        var pub = Post(-30, true);
+        var posts = new[] { Organic("a", 30, 3000, 300, pub.Id), Organic("b", 2, 1500, 20), Organic("c", 3, 800, 5), Organic("d", 40, 900, 4) };
+        var r = WeeklyReport.Build(BrandKeys.MedlyCare, Now, 7, [pub], [], [], [], posts, []);
+        Assert.Contains(r.Organic, l => l.Text.StartsWith("2 post(s) no Instagram"));
+        Assert.Contains(r.Organic, l => l.Text.Contains("Melhor da semana: \"Vídeo b\""));
+        Assert.Contains(r.Paid, l => l.Text.Contains("Nenhum anúncio rodou"));
+        Assert.Contains(r.NextSteps, l => l.Text.StartsWith("Anunciar \"Vídeo a\""));
+
+        // Já anunciado: não sugere de novo.
+        var again = WeeklyReport.Build(BrandKeys.MedlyCare, Now, 7, [pub], [], [], [], posts, [pub.MediaUrl]);
+        Assert.DoesNotContain(again.NextSteps, l => l.Text.StartsWith("Anunciar"));
+    }
+
+    [Fact]
+    public void Lessons_list_best_and_worst_without_little_data_posts()
+    {
+        var ranked = RootBoost.Application.Organic.CreativeRanking.Rank([Organic("a", 1, 3000, 300), Organic("b", 2, 1500, 20), Organic("z", 1, 40, 30)]);
+        var text = RootBoost.Application.Organic.ContentLessons.From(ranked, best: 1, worst: 1)!;
+        Assert.Contains("\"Vídeo a\"", text);
+        Assert.Contains("menos engajaram", text);
+        Assert.DoesNotContain("Vídeo z", text);
+        Assert.Null(RootBoost.Application.Organic.ContentLessons.From([]));
+    }
 }
