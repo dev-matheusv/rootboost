@@ -732,6 +732,10 @@ brandProfile.MapPost("/voices/design", async (string key, VoiceDesignInput input
 });
 
 // Banco de vozes prontas: o catálogo (a amostra de cada uma é arquivo do Console) e "usar esta voz" nesta marca.
+// Vozes que existem no PC do worker pra esta marca (12/11): entram no seletor do "Novo vídeo".
+brandProfile.MapGet("/voices/local", (string key, RootBoost.Application.Studio.LocalVoiceRegistry registry) =>
+    Results.Ok(registry.ForBrand(key.ToLowerInvariant())));
+
 brandProfile.MapGet("/voices/bank", () => Results.Ok(RootBoost.Application.Studio.VoiceBank.All));
 
 brandProfile.MapPost("/voices/bank", async (string key, VoiceBankInput input, IBrandStore brands,
@@ -1340,6 +1344,15 @@ worker.MapPost("/heartbeat", async (WorkerProgressInput input, RootBoost.Applica
     return Results.NoContent();
 });
 
+// O worker informa as vozes que tem no PC (perfis do DMaker por marca), pro seletor do Console.
+worker.MapPost("/local-voices", (LocalVoicesInput input, RootBoost.Application.Studio.LocalVoiceRegistry registry) =>
+{
+    if (string.IsNullOrWhiteSpace(input.WorkerId) || input.WorkerId.Length > 100) return Results.BadRequest(new { error = "workerId obrigatório" });
+    registry.Set(input.WorkerId, (input.Voices ?? []).Select(v => new RootBoost.Application.Studio.LocalVoice(
+        (v.Key ?? "").Trim().ToLowerInvariant(), (v.BrandKey ?? "").Trim().ToLowerInvariant(), v.IsDefault)));
+    return Results.NoContent();
+});
+
 // Vozes (RB-59): o worker pega a próxima, baixa a gravação por aqui (nunca por link público), cria no DMaker e
 // devolve as amostras.
 worker.MapPost("/voices/claim", async (WorkerClaimInput input, RootBoost.Application.Studio.INarrationVoiceStore voices,
@@ -1769,6 +1782,8 @@ record SystemMapInput(System.Text.Json.JsonElement Map);
 record OrganicRankDto(int Position, int Score, bool EnoughData, decimal EngagementPercent, string Reason, string Channel,
     string ExternalId, string ProductType, string Caption, string? Permalink, string? ThumbnailUrl, DateTimeOffset PostedAt, Guid? PublicationId,
     long Views, long Reach, long Likes, long Comments, long Shares, long Saves, long? AvgWatchMs, DateTimeOffset FetchedAt);
+record LocalVoiceInput(string? Key, string? BrandKey, bool IsDefault);
+record LocalVoicesInput(string? WorkerId, List<LocalVoiceInput>? Voices);
 record AdCampaignProposeInput(Guid? JobId, Guid? PublicationId = null);
 record AdCampaignInput(string Name, string Objective, decimal DailyBudget, List<string>? Countries, int AgeMin, int AgeMax,
     string PrimaryText, string Headline, string CallToAction, string LinkUrl);

@@ -121,6 +121,7 @@ public static class DependencyInjection
         services.AddScoped<RootBoost.Application.Ads.IAdCampaignStore, EfAdCampaignStore>();
         services.AddScoped<RootBoost.Application.Ads.CampaignProposer>();
         services.AddScoped<RootBoost.Application.Reports.WeeklyAdvisor>();
+        services.AddSingleton<RootBoost.Application.Studio.LocalVoiceRegistry>();
         services.AddScoped<RootBoost.Application.Ads.CreateApprovedCampaign>();
         if (string.Equals(config["Ads:Creator"], "Meta", StringComparison.OrdinalIgnoreCase))
         {

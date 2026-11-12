@@ -392,7 +392,14 @@ const readyVoices = ref<PickableVoice[]>([]);
 async function loadVoices() {
   try {
     const { data } = await api.get<(PickableVoice & { status: string })[]>(`/admin/brands/${brand.selected}/voices`);
-    readyVoices.value = data.filter((v) => v.status === 'Ready');
+    // Vozes do PC do worker (ex.: medlynat1): aparecem no seletor pra ninguém precisar lembrar o código (12/11).
+    const local = await api.get<{ key: string; isDefault: boolean }[]>(`/admin/brands/${brand.selected}/voices/local`)
+      .then((r) => r.data).catch(() => []);
+    readyVoices.value = [
+      ...local.map((v): PickableVoice => ({ id: `local:${v.key}`, key: v.key, name: v.key, kind: 'Local', isDefault: v.isDefault,
+        instruct: null, samples: [], chosenSeed: null })),
+      ...data.filter((v) => v.status === 'Ready'),
+    ];
   } catch {
     readyVoices.value = [];
   }
