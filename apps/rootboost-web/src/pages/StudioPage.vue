@@ -52,14 +52,16 @@
       <div class="col-12 col-md-8">
         <div v-if="!job" class="empty card-rounded q-pa-xl text-center text-grey-6">{{ $t('studio.pick') }}</div>
         <div v-else class="detail card-rounded q-pa-lg column no-wrap q-gutter-y-md">
-          <div class="row items-start q-gutter-sm">
-            <div class="col">
-              <div class="text-h6 sora-bold">{{ job.theme }}</div>
+          <!-- Celular: o título ocupa a linha e o selo e as ações descem (12/11: espremia uma palavra por linha). -->
+          <div class="row items-start q-col-gutter-sm">
+            <div class="col-12 col-sm">
+              <div class="text-h6 sora-bold detail-title">{{ job.theme }}</div>
               <div class="text-caption text-grey-7">
                 {{ $t(`studio.kind.${job.kind}`) }}<span v-if="job.voiceKey"> · {{ $t('studio.voice') }}: {{ job.voiceKey }}</span>
                 <span v-if="job.seed !== null"> · {{ $t('studio.seed') }} {{ job.seed }}</span>
               </div>
             </div>
+            <div class="col-12 col-sm-auto row items-center no-wrap q-gutter-xs">
             <q-chip :color="jobColor(job.status)" text-color="white">{{ $t(`studio.status.${job.status}`) }}</q-chip>
             <q-btn v-if="job.status === 'Review' || job.status === 'Failed'" flat dense no-caps color="primary" :icon="mdiArrowULeftTop"
               :label="$t('studio.reject')" :loading="busy" @click="rejectJob">
@@ -68,6 +70,7 @@
             <q-btn v-if="job.status !== 'Rendering'" flat round dense color="negative" :icon="mdiDeleteOutline" @click="deleteJob">
               <q-tooltip>{{ $t('studio.delete') }}</q-tooltip>
             </q-btn>
+            </div>
           </div>
 
           <!-- Etapas -->
@@ -800,6 +803,7 @@ watch(() => brand.selected, () => {
 </script>
 
 <style lang="scss" scoped>
+.detail-title { overflow-wrap: anywhere; }
 .job-row, .detail, .empty, .segment, .output { border: 1px solid rgba(0, 0, 0, 0.08); background: #fff; }
 .body--dark .job-row, .body--dark .detail, .body--dark .empty, .body--dark .segment, .body--dark .output {
   border-color: rgba(255, 255, 255, 0.08); background: $dark;
