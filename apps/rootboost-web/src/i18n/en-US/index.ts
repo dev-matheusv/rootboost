@@ -145,6 +145,13 @@ export default {
     error: 'Could not turn on alerts on this device.',
   },
   aiCampaigns: {
+    impressions: 'impressions',
+    clicks: 'clicks',
+    results: 'results',
+    pause: 'Pause campaign',
+    pauseTitle: 'Pause the campaign on Meta?',
+    pauseText: 'The campaign stops spending now. To resume, turn it on in Ads Manager.',
+    advice: { Wait: 'Wait', Keep: 'Keep', Scale: 'Raise budget', ReviewCreative: 'Change the video', Pause: 'Pause' },
     title: 'Campaign with AI',
     subtitle: 'The AI builds the campaign from a finished video. You check, approve and it is created paused on Meta.',
     fromVideo: 'Studio video',

@@ -92,6 +92,51 @@ public class AdCampaignTests
         Assert.Single(usage.Items, u => u.Purpose == "ads-campaign");
     }
 
+    private static List<AdInsightDaily> Rows(int days, decimal spendPerDay, long impressionsPerDay, long clicksPerDay, long conversionsPerDay)
+    {
+        var rows = new List<AdInsightDaily>();
+        for (var i = 0; i < days; i++)
+        {
+            var r = new AdInsightDaily(BrandKeys.MedlyCare, "meta", "act_1", AdLevel.Campaign, "c1", "Teste", null, new DateOnly(2026, 11, 1).AddDays(i), "BRL", Now);
+            r.SetMetrics("Teste", spendPerDay, impressionsPerDay, clicksPerDay, impressionsPerDay, conversionsPerDay, "BRL", Now);
+            rows.Add(r);
+        }
+        return rows;
+    }
+
+    private static AdCampaignDraft Created(AdObjective objective = AdObjective.Traffic)
+    {
+        var d = new AdCampaignDraft(BrandKeys.MedlyCare, null, Now);
+        d.Update("Teste", objective, 2000, ["BR"], 25, 55, "https://cdn.example.com/v.mp4", null, "Texto.", "Título", "LEARN_MORE", "https://medlycare.com.br", null, Now);
+        d.Approve("dono@x", Now);
+        d.StartCreating(Now);
+        d.SetCampaign("c1");
+        d.Created("a1", Now);
+        return d;
+    }
+
+    [Theory]
+    [InlineData(1, 10, 300, 3, 0, "Wait")]          // cedo: poucos dias e impressões
+    [InlineData(4, 10, 500, 1, 0, "ReviewCreative")] // CTR 0,2%: vídeo não chama atenção
+    [InlineData(4, 10, 500, 10, 0, "Scale")]        // CTR 2%: sobe orçamento
+    [InlineData(4, 10, 500, 5, 0, "Keep")]          // CTR 1%: deixa rodar
+    public void Advisor_for_traffic(int days, decimal spend, long imp, long clicks, long conv, string expected)
+    {
+        var a = CampaignAdvisor.Advise(Created(), Rows(days, spend, imp, clicks, conv), new AdsStopRule(), new DateOnly(2026, 11, 10));
+        Assert.Equal(expected, a.Kind.ToString());
+        if (a.Kind == AdviceKind.Scale) Assert.Equal(24m, a.SuggestedDailyBudget);
+    }
+
+    [Fact]
+    public void Advisor_pauses_leads_campaign_that_spent_without_result_and_respects_manual_pause()
+    {
+        var c = Created(AdObjective.Leads);
+        var a = CampaignAdvisor.Advise(c, Rows(5, 50, 2000, 40, 0), new AdsStopRule(), new DateOnly(2026, 11, 10));
+        Assert.Equal(AdviceKind.Pause, a.Kind);
+        c.MarkPaused("dono@x", Now);
+        Assert.Equal(AdviceKind.Keep, CampaignAdvisor.Advise(c, Rows(5, 50, 2000, 40, 0), new AdsStopRule(), new DateOnly(2026, 11, 10)).Kind);
+    }
+
     private sealed class Store : IAdCampaignStore
     {
         private readonly List<AdCampaignDraft> _items = new();

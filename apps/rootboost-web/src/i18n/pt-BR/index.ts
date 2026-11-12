@@ -145,6 +145,13 @@ export default {
     error: 'Não consegui ligar os avisos neste aparelho.',
   },
   aiCampaigns: {
+    impressions: 'impressões',
+    clicks: 'cliques',
+    results: 'resultados',
+    pause: 'Pausar campanha',
+    pauseTitle: 'Pausar a campanha na Meta?',
+    pauseText: 'A campanha para de gastar agora. Para voltar, ative no Gerenciador de Anúncios.',
+    advice: { Wait: 'Aguardar', Keep: 'Manter', Scale: 'Subir orçamento', ReviewCreative: 'Trocar o vídeo', Pause: 'Pausar' },
     title: 'Campanha com a IA',
     subtitle: 'A IA monta a campanha a partir de um vídeo pronto. Você confere, aprova e ela nasce pausada na Meta.',
     fromVideo: 'Vídeo do Estúdio',

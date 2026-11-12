@@ -244,6 +244,8 @@ public sealed class RootBoostDbContext : DbContext
         foreach (var f in new[] { "ExternalVideoId", "ExternalCampaignId", "ExternalAdSetId", "ExternalCreativeId", "ExternalAdId" })
             camp.Property(f).HasMaxLength(64);
         camp.Property(x => x.ApprovedAt).HasConversion(Utc);
+        camp.Property(x => x.PausedAt).HasConversion(Utc);
+        camp.Property(x => x.PausedBy).HasMaxLength(200);
         camp.Property(x => x.CreatedAt).HasConversion(Utc);
         camp.Property(x => x.UpdatedAt).HasConversion(Utc);
         camp.Ignore(x => x.Countries);

@@ -26,6 +26,50 @@ public interface IAdCampaignCreator
 
 public sealed record CampaignProposal(AdCampaignDraft Draft, decimal CostUsd);
 
+/// <summary>Mexe numa campanha já criada. Só o que a referência oficial confirma: pausar pelo status da campanha.</summary>
+public interface IAdCampaignActuator
+{
+    string Platform { get; }
+    Task PauseAsync(string campaignId, CancellationToken ct = default);
+}
+
+public enum AdviceKind { Wait, Keep, Scale, ReviewCreative, Pause }
+
+/// <summary>O que fazer com a campanha agora, com o motivo em linguagem simples e, quando cabe, o orçamento sugerido.</summary>
+public sealed record CampaignAdvice(AdviceKind Kind, string Message, decimal? SuggestedDailyBudget, AdMetrics Metrics);
+
+/// <summary>
+/// Acompanhamento da campanha criada pela plataforma (RB-52). Regras simples e explicáveis, conservadoras de propósito:
+/// cedo demais, espera; gasto sem resultado, pausa; anúncio que não chama atenção, troca o vídeo; o que vai bem, sobe
+/// 20% de orçamento. Nada é aplicado sozinho: a pessoa decide.
+/// </summary>
+public static class CampaignAdvisor
+{
+    public const long MinImpressions = 1000;
+    public const int MinDays = 3;
+
+    public static CampaignAdvice Advise(AdCampaignDraft c, IReadOnlyList<AdInsightDaily> rows, AdsStopRule rule, DateOnly today)
+    {
+        var m = AdMetrics.Sum(rows);
+        var days = rows.Select(r => r.Date).Distinct().Count();
+        var budget = c.DailyBudgetCents / 100m;
+        if (c.PausedAt is not null) return new(AdviceKind.Keep, "Pausada. Para voltar a rodar, ative no Gerenciador de Anúncios.", null, m);
+        if (m.Impressions == 0) return new(AdviceKind.Wait, "Ainda sem dados. Se já ativou, os números chegam em até um dia.", null, m);
+        if (c.Objective == AdObjective.Leads && m.Conversions == 0 && m.Spend >= rule.SpendWithoutConversion)
+            return new(AdviceKind.Pause, $"Gastou {m.Spend:0.00} sem nenhum cadastro. Pause e teste outro vídeo ou outro público.", null, m);
+        if (m.Impressions < MinImpressions || days < MinDays)
+            return new(AdviceKind.Wait, $"Cedo para decidir: {m.Impressions} impressões em {days} dia(s). Espere ao menos {MinImpressions} impressões e {MinDays} dias.", null, m);
+        var ctr = m.Ctr ?? 0;
+        if (ctr < 0.005m)
+            return new(AdviceKind.ReviewCreative, $"Pouca gente clica (CTR {ctr:P1}). O vídeo não está chamando atenção: troque o começo ou o vídeo.", null, m);
+        var good = c.Objective == AdObjective.Leads ? m.Conversions >= 3 && ctr >= 0.01m : ctr >= 0.015m;
+        if (good)
+            return new(AdviceKind.Scale, $"Vai bem (CTR {ctr:P1}{(m.Conversions > 0 ? $", {m.Conversions} resultado(s)" : "")}). Dá para subir o orçamento em 20%, no Gerenciador de Anúncios.",
+                Math.Round(budget * 1.2m, 2), m);
+        return new(AdviceKind.Keep, $"Dentro do esperado (CTR {ctr:P1}). Deixe rodar mais uns dias.", null, m);
+    }
+}
+
 /// <summary>
 /// A IA propõe a campanha de teste a partir de um vídeo pronto do Estúdio (RB-31): nome, objetivo, orçamento pequeno,
 /// público, texto, título e chamada. Nada vai pra plataforma aqui: a pessoa confere, edita e aprova no Console.
