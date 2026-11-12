@@ -1212,6 +1212,17 @@ worker.MapPost("/jobs/{id:guid}/fail", async (Guid id, WorkerFailInput input, Ro
 });
 
 // Atualiza descrição e momentos de um vídeo já no acervo, pelo nome do arquivo (lista de brutos do PC, sem senha).
+// O worker manda o que a gravação sabe do sistema da marca (guia do PC + caminhos aprendidos): vai pro roteiro (11/11).
+worker.MapPut("/brands/{brandKey}/screen-knowledge", async (string brandKey, ScreenKnowledgeInput input,
+    RootBoost.Application.Ai.IBrandProductStore products, TimeProvider time, CancellationToken ct) =>
+{
+    var product = await products.GetAsync(brandKey.ToLowerInvariant(), ct);
+    if (product is null) return Results.NotFound(new { error = $"a marca {brandKey} não tem produto cadastrado" });
+    product.SetScreenKnowledge(input.Text, time.GetUtcNow());
+    await products.SaveAsync(product, ct);
+    return Results.NoContent();
+});
+
 worker.MapPut("/media/{brandKey}/details", async (string brandKey, MediaDetailsInput input, HttpRequest req,
     RootBoost.Application.Media.IMediaAssetStore assets, RootBoost.Application.Media.MediaOptions options, CancellationToken ct) =>
 {
@@ -1660,6 +1671,7 @@ record ProductDto(string Name, string Kind, string? Url, string? AppUrl, string 
         p.Differentials, p.Offer, p.UpdatedAt, p.ScreenGuide);
 }
 record ScreenGuideDraftInput(string? Documentation);
+record ScreenKnowledgeInput(string? Text);
 record AdCampaignProposeInput(Guid JobId);
 record AdCampaignInput(string Name, string Objective, decimal DailyBudget, List<string>? Countries, int AgeMin, int AgeMax,
     string PrimaryText, string Headline, string CallToAction, string LinkUrl);

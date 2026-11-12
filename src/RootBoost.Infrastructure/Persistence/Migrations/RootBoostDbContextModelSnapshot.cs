@@ -389,6 +389,13 @@ namespace RootBoost.Infrastructure.Persistence.Migrations
                         .HasMaxLength(12000)
                         .HasColumnType("character varying(12000)");
 
+                    b.Property<string>("ScreenKnowledge")
+                        .HasMaxLength(24000)
+                        .HasColumnType("character varying(24000)");
+
+                    b.Property<DateTimeOffset?>("ScreenKnowledgeAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("Summary")
                         .IsRequired()
                         .HasMaxLength(1000)
