@@ -1,6 +1,40 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { logFileName, oldLogs, parseVoiceFinish, parseVoiceTones, preparationsFor, stepByStepPlan, voiceFolder } from "./lib.mjs";
+import { mapIsStale, parseDetect, reviewVideo, addPath, pathsText, logFileName, oldLogs, parseVoiceFinish, parseVoiceTones, preparationsFor, stepByStepPlan, voiceFolder } from "./lib.mjs";
+
+test("mapa do sistema: refaz sem mapa, sem guia ou com mais de 7 dias", () => {
+  const now = new Date("2026-11-12T10:00:00Z");
+  assert.equal(mapIsStale(null, now), true);
+  assert.equal(mapIsStale({ at: "2026-11-10T10:00:00Z", guide: "" }, now), true);
+  assert.equal(mapIsStale({ at: "2026-11-10T10:00:00Z", guide: "- Agenda" }, now), false);
+  assert.equal(mapIsStale({ at: "2026-11-01T10:00:00Z", guide: "- Agenda" }, now), true);
+});
+
+test("revisão automática: silêncio longo e imagem parada viram aviso, cartão final não", () => {
+  const stderr = [
+    "[silencedetect @ 0] silence_start: 10.5", "[silencedetect @ 0] silence_end: 13.1 | silence_duration: 2.6",
+    "[silencedetect @ 0] silence_start: 80.2", "[silencedetect @ 0] silence_end: 81.6",
+    "lavfi.freezedetect.freeze_start: 20", "lavfi.freezedetect.freeze_end: 28.5",
+    "lavfi.freezedetect.freeze_start: 75", "lavfi.freezedetect.freeze_end: 82",
+  ].join("\n");
+  const d = parseDetect(stderr);
+  assert.equal(d.silences.length, 2);
+  assert.equal(d.freezes.length, 2);
+  const issues = reviewVideo({ duration: 82, ...d });
+  assert.equal(issues.length, 2);
+  assert.match(issues[0], /2\.6 s de silêncio em 0:10/);
+  assert.match(issues[1], /parada por 8\.5 s em 0:20/);
+  assert.deepEqual(reviewVideo({ duration: 15, silences: [], freezes: [] }).length, 1);
+});
+
+test("caminhos: guarda o último de cada cena e vira texto pro guia", () => {
+  let paths = addPath([], "Abrir a ficha", ["clicar Preencher ficha", "clicar Ficha de harmonização facial"]);
+  paths = addPath(paths, "Abrir a ficha", ["clicar Preencher ficha"]);
+  paths = addPath(paths, "Salvar", []);
+  assert.equal(paths.length, 1);
+  assert.match(pathsText(paths), /Abrir a ficha: clicar Preencher ficha$/m);
+  assert.equal(pathsText([]), "");
+});
 
 test("log do worker: um arquivo por dia e limpeza depois de 14 dias", () => {
   const now = new Date(2026, 10, 20);

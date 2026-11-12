@@ -77,6 +77,9 @@ const CURSOR = `(() => {
 const LIST_ELEMENTS = `(() => {
   const sel = 'a,button,input,select,textarea,[role=button],[role=link],[role=tab],[role=menuitem],[onclick],[tabindex]:not([tabindex="-1"]),[contenteditable="true"]';
   const out = []; let n = 0;
+  // Número de listas anteriores sai antes: em 11/11 o "e12" velho continuava no botão SOAP e o clique no "Preencher
+  // ficha" (e12 da lista nova) caía nele. Só o elemento que entra na lista recebe número.
+  for (const old of document.querySelectorAll('[data-rb-id]')) old.removeAttribute('data-rb-id');
   // Cartão clicável costuma ser só um div com cursor de mão; pega o de fora, não cada filho dele.
   const nodes = new Set(document.querySelectorAll(sel));
   for (const el of document.querySelectorAll('body *'))
@@ -86,10 +89,16 @@ const LIST_ELEMENTS = `(() => {
   for (const el of nodes) {
     const r = el.getBoundingClientRect();
     if (r.width < 4 || r.height < 4 || r.bottom < 0 || r.top > innerHeight || getComputedStyle(el).visibility === 'hidden') continue;
-    const id = 'e' + (++n); el.setAttribute('data-rb-id', id);
     const tag = el.tagName.toLowerCase();
     const role = tag === 'img' ? 'imagem' : tag === 'input' ? 'campo ' + (el.type || 'texto') : tag === 'textarea' ? 'campo texto' : tag === 'select' ? 'lista' : tag === 'a' ? 'link' : el.isContentEditable ? 'campo editor' : 'botão';
     const x = Math.round(r.left + r.width / 2), y = Math.round(r.top + r.height / 2);
+    // Elemento que não recebe o clique no centro (escondido atrás de outro, painel fechado com opacidade zero) fica de
+    // fora: em 07/11 a IA clicou 4 vezes num "Preencher ficha" fantasma que estava embaixo do seletor SOAP.
+    if (tag !== 'img' && y >= 0 && y < innerHeight && x >= 0 && x < innerWidth) {
+      const hit = document.elementFromPoint(x, y);
+      if (!hit || !(hit === el || el.contains(hit) || hit.contains(el))) continue;
+    }
+    const id = 'e' + (++n); el.setAttribute('data-rb-id', id);
     // Ícone sem texto (barra de baixo): a posição deixa a IA casar o id com o que ela vê na foto de 540x600.
     const text = (el.getAttribute('aria-label') || el.innerText || el.placeholder || el.value || el.title || '').trim().replace(/\\s+/g, ' ').slice(0, 80) || (tag === 'img' ? 'imagem de x=' + Math.round(r.left) + ' a ' + Math.round(r.right) + ', y=' + Math.round(r.top) + ' a ' + Math.round(r.bottom) : 'ícone sem texto em x=' + x + ' y=' + y);
     out.push({ id, role, text, x, y });
@@ -340,6 +349,7 @@ export async function recordScene({ brandKey, scene, account, outDir, name, ask,
     let stopReason = `passou de ${MAX_SECONDS} s sem terminar`;
     let deadClicks = 0;
     let started_scene = false;
+    let personalDetours = 0; // dado real visto no preparo: troca de paciente até 2 vezes
     let byScript = false; // o clique do navegador não chegou na página: segue clicando por dentro dela
     await evaluate(cdp, WATCH_CLICKS);
     for (let step = 0; Date.now() - started < (prepare ? 2 * MAX_SECONDS : MAX_SECONDS) * 1000; step++) {
@@ -372,6 +382,16 @@ export async function recordScene({ brandKey, scene, account, outDir, name, ask,
         frames.length = 0;
         await grab();
         history.push("comecar: gravação da cena valendo a partir daqui");
+        continue;
+      }
+      if (next.action === "dado-pessoal" && !started_scene && ++personalDetours <= 2) {
+        // Ainda no preparo (nada disso entra no vídeo): apaga os quadros e manda trocar de paciente, em vez de perder o
+        // vídeo inteiro (pedido do Matheus, 11/11). Depois de comecar, ou na terceira vez, para como sempre.
+        frames.length = 0;
+        rmSync(join(outDir, "quadros"), { recursive: true, force: true });
+        mkdirSync(join(outDir, "quadros"), { recursive: true });
+        note(`  dado que não parece de demonstração no preparo: quadros apagados, trocando de paciente (${next.reason})`);
+        history.push("recusado: este paciente mostra dado que não parece de demonstração; volte, não abra este paciente de novo e use outro atendimento ou outro paciente da fila");
         continue;
       }
       if (next.action === "dado-pessoal") {
@@ -412,6 +432,14 @@ export async function recordScene({ brandKey, scene, account, outDir, name, ask,
         let seen = await evaluate(cdp, "(window.__rbClicks ?? []).splice(0).join(', ')");
         let changed = (await evaluate(cdp, SCREEN_SIGN)) !== before;
         note(`  clique em ${at.x},${at.y} sobre ${under}; a página viu: ${seen || "nada"}; tela ${changed ? "mudou" : "igual"}${problems.length ? `; problemas: ${problems.splice(0).slice(0, 6).join(" | ")}` : ""}`);
+        // Clique que não mudou nada: registra o alvo e o que está no ponto, com o caminho no HTML (11/11: o "Preencher
+        // ficha" da lista ficava no mesmo ponto do seletor SOAP e só o log mostra qual dos dois é).
+        if (!changed) note(`  alvo: ${await evaluate(cdp, `(() => {
+          const path = (e) => { const p = []; for (let n = e; n && n !== document.body && p.length < 6; n = n.parentElement) p.unshift(n.tagName.toLowerCase() + (n.id ? '#' + n.id : '') + '.' + String(n.className.baseVal ?? n.className).split(' ').slice(0, 2).join('.')); return p.join(' > '); };
+          const t = document.querySelector('[data-rb-id="${el.id}"]'), h = document.elementFromPoint(${at.x}, ${at.y});
+          const r = t?.getBoundingClientRect();
+          return 'lista=' + (t ? path(t) + ' [' + Math.round(r.left) + ',' + Math.round(r.top) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height) + '] texto="' + (t.innerText || '').trim().slice(0, 40) + '"' : 'sumiu') + ' | no ponto=' + (h ? path(h) + ' texto="' + (h.innerText || '').trim().slice(0, 40) + '"' : 'nada');
+        })()`)}`);
         if (!byScript && !seen && !changed) {
           note(`  o clique não chegou na página; estado: ${await evaluate(cdp, PAGE_STATE)}`);
           byScript = true;
@@ -440,7 +468,19 @@ export async function recordScene({ brandKey, scene, account, outDir, name, ask,
         await wait(2000); // tempo do envio e de a imagem aparecer no vídeo
       } else if (next.action === "rolar") {
         const delta = next.text === "cima" ? -350 : 350;
-        if (byScript) await evaluate(cdp, `(() => { let e = document.elementFromPoint(270, 300); while (e && e.scrollHeight <= e.clientHeight + 1) e = e.parentElement; (e ?? document.scrollingElement).scrollBy({ top: ${delta}, behavior: 'smooth' }); })()`);
+        // Rola a PÁGINA, não o que está embaixo do cursor: em 11/11 o editor de texto do MedlyCare ocupava a tela e a roda
+        // do mouse só rolava o conteúdo dele, então a IA nunca chegava na seção Ficha. Animado, pra ficar natural no vídeo.
+        const pageScrolled = await evaluate(cdp, `(() => {
+          const ok = (e) => e && e.scrollHeight > e.clientHeight + 40 && e.clientHeight > innerHeight * 0.6 && (e === document.scrollingElement || /auto|scroll/.test(getComputedStyle(e).overflowY));
+          const list = [document.scrollingElement, ...document.querySelectorAll('body *')].filter(ok);
+          const page = list.sort((a, b) => b.clientHeight - a.clientHeight)[0];
+          if (!page) return false;
+          const from = page.scrollTop, to = Math.max(0, Math.min(from + ${delta}, page.scrollHeight - page.clientHeight)), t0 = performance.now();
+          if (to === from) return false;
+          return new Promise((done) => { const step = () => { const k = Math.min((performance.now() - t0) / 600, 1), q = k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2; page.scrollTop = from + (to - from) * q; k < 1 ? setTimeout(step, 16) : done(true); }; step(); });
+        })()`);
+        if (pageScrolled) await wait(300);
+        else if (byScript) await evaluate(cdp, `(() => { let e = document.elementFromPoint(270, 300); while (e && e.scrollHeight <= e.clientHeight + 1) e = e.parentElement; (e ?? document.scrollingElement).scrollBy({ top: ${delta}, behavior: 'smooth' }); })()`);
         else await cdp.send("Input.dispatchMouseEvent", { type: "mouseWheel", x: 270, y: 300, deltaX: 0, deltaY: delta });
       } else if (next.action === "login") {
         // Sessão caiu no meio (ou o primeiro login não pegou): tenta de novo; se não entrar, para com o motivo.
@@ -470,7 +510,9 @@ export async function recordScene({ brandKey, scene, account, outDir, name, ask,
       note(`parou: ${stopReason}`);
       throw new Error(`a IA parou: ${stopReason}. Tela final em ${await evaluate(cdp, "location.href")}. Passos em ${trail}`);
     }
-    if (prepare) return { path: null, duration: 0 };
+    // Caminho que deu certo, pra próxima gravação da mesma tarefa seguir sem tentativa e erro.
+    const steps = history.filter((h) => !/^(recusado|colar-imagem: este|login: esta|saiu do site)/.test(h));
+    if (prepare) return { path: null, duration: 0, steps };
     if (frames.length < 2) throw new Error("nenhum quadro gravado");
 
     const lines = [];
@@ -487,7 +529,94 @@ export async function recordScene({ brandKey, scene, account, outDir, name, ask,
       ff.on("exit", (c) => (c === 0 ? ok() : fail(new Error(`ffmpeg saiu com ${c}`))));
     });
     rmSync(join(outDir, "quadros"), { recursive: true, force: true });
-    return { path: out, duration: (frames.at(-1).t - frames[0].t) + 0.04 };
+    return { path: out, duration: (frames.at(-1).t - frames[0].t) + 0.04, steps };
+  } finally {
+    close();
+  }
+}
+
+// --- Exploração do sistema (11/11): a IA aprende o sistema do cliente sozinha. ---------------------------------------
+// Só NAVEGA: abre telas pelo endereço e toca em abas. Não digita, não salva, não envia, não exclui. Anota o que cada tela
+// tem (títulos, abas, campos, botões), nunca o conteúdo de listas, e tira texto com cara de nome ou número de pessoa.
+const PAGE_MAP = `(() => {
+  const seen = (els, max) => [...new Set([...els].map((e) => (e.getAttribute?.('aria-label') || e.innerText || e.placeholder || e.textContent || '').trim().replace(/\s+/g, ' '))
+    .filter((t) => t && t.length <= 40 && !/\d{3}|@/.test(t) && !/^[A-ZÀ-Ú][a-zà-ú]+( [A-ZÀ-Ú][a-zà-ú]+)+$/.test(t)))].slice(0, max);
+  const visible = (e) => { const r = e.getBoundingClientRect(); return r.width > 2 && r.height > 2 && getComputedStyle(e).visibility !== 'hidden'; };
+  const q = (sel) => [...document.querySelectorAll(sel)].filter(visible);
+  const route = location.pathname.split('/').map((s) => /[0-9a-f]{8}-|^\d+$/i.test(s) ? ':id' : s).join('/') || '/';
+  const detail = route.includes(':id');
+  const links = [...document.querySelectorAll('a[href]')].map((a) => { try { return new URL(a.href, location.href); } catch { return null; } })
+    .filter((u) => u && u.origin === location.origin && !/sair|logout|excluir|delete|remover/i.test(u.pathname)).map((u) => u.pathname);
+  return {
+    route,
+    titulos: detail ? [] : seen(q('h1,h2,h3,.text-h5,.text-h6,.q-toolbar__title'), 8),
+    abas: seen(q('[role=tab]'), 15),
+    campos: seen(q('.q-field__label,label,[placeholder]'), 30),
+    botoes: seen(q('button,[role=button],a.q-btn'), 30),
+    menu: seen(q('.q-footer [aria-label],.q-footer .q-tab,.q-drawer .q-item'), 20),
+    links: [...new Set(links)].slice(0, 60),
+  };
+})()`;
+
+/** Passa pelas telas do sistema com a conta de demonstração e devolve o mapa (uma entrada por tipo de tela). */
+export async function exploreSystem({ account, maxPages = 40, log = console.log }) {
+  const { cdp, close } = await openChrome();
+  const pages = [];
+  try {
+    await cdp.send("Page.navigate", { url: account.url });
+    await wait(2500);
+    const fields = await loginFields(cdp);
+    if (fields) {
+      const r = await login(cdp, fields, account);
+      if (!r.ok) throw Object.assign(new Error(`exploração: não entrou com a conta de demonstração (${r.error})`), { personalData: true });
+    }
+    const origin = new URL(await evaluate(cdp, "location.href")).origin;
+    const queue = [new URL(await evaluate(cdp, "location.href")).pathname];
+    // Rotas do app: SPA (Vue, React) quase não usa link de verdade. No Vue, o roteador lista as telas; no resto, os
+    // itens da barra de baixo e do menu lateral são tocados um a um e o endereço que abre entra na fila.
+    const routerPaths = await evaluate(cdp, `(() => { try { const app = document.querySelector('#q-app, #app, [data-v-app]')?.__vue_app__;
+      const r = app?.config?.globalProperties?.$router; return r ? r.getRoutes().map((x) => x.path).filter((p) => !p.includes(':') && !p.includes('*')) : []; } catch { return []; } })()`);
+    // Fora: login, cadastro e telas públicas (termos, portal do paciente, página de busca): não são do uso do dia a dia.
+    const skip = /login|entrar|sair|logout|reset|senha|password|cadastro|signup|registrar|termo|politica|privacidade|paciente\/|encontre|suspended|convite|confirmar/i;
+    for (const p of routerPaths ?? []) if (!skip.test(p)) queue.push(p);
+    const navCount = await evaluate(cdp, `document.querySelectorAll('.q-footer .q-tab, .q-footer .q-btn, .q-footer a, .q-drawer .q-item, nav a, nav button').length`);
+    for (let i = 0; i < Math.min(navCount ?? 0, 15); i++) {
+      const before = await evaluate(cdp, "location.pathname");
+      await evaluate(cdp, `document.querySelectorAll('.q-footer .q-tab, .q-footer .q-btn, .q-footer a, .q-drawer .q-item, nav a, nav button')[${i}]?.click()`);
+      await wait(1200);
+      const after = await evaluate(cdp, "location.pathname");
+      if (after !== before) { queue.push(after); await cdp.send("Page.navigate", { url: origin + before }); await wait(1800); }
+    }
+    const routes = new Set();
+    const visited = new Set();
+    while (queue.length && pages.length < maxPages) {
+      const path = queue.shift();
+      if (visited.has(path) || (visited.size > 0 && skip.test(path))) continue;
+      visited.add(path);
+      await cdp.send("Page.navigate", { url: origin + path });
+      await wait(2500);
+      const now = await evaluate(cdp, "location.href");
+      if (!sameSite(now, account.url)) continue;
+      const map = await evaluate(cdp, PAGE_MAP);
+      // Detalhe (/x/:id) entra uma vez só por tipo de tela: o que importa é a estrutura, não cada registro.
+      if (routes.has(map.route)) continue;
+      routes.add(map.route);
+      // Abas mudam o que aparece: toca em cada uma (aba só navega) e soma campos e botões.
+      const tabs = [];
+      for (const tab of map.abas.slice(0, 8)) {
+        const ok = await evaluate(cdp, `(() => { const t = [...document.querySelectorAll('[role=tab]')].find((e) => (e.getAttribute('aria-label') || e.innerText || '').trim().replace(/\s+/g, ' ') === ${JSON.stringify(tab)}); if (!t) return false; t.click(); return true; })()`);
+        if (!ok) continue;
+        await wait(1200);
+        const inner = await evaluate(cdp, PAGE_MAP);
+        tabs.push({ aba: tab, campos: inner.campos.filter((c) => !map.campos.includes(c)), botoes: inner.botoes.filter((b) => !map.botoes.includes(b)) });
+        for (const l of inner.links) if (!visited.has(l)) queue.push(l);
+      }
+      const { links, ...rest } = map;
+      pages.push({ ...rest, abas: tabs.length ? tabs : map.abas });
+      log(`exploração: ${map.route} (${map.campos.length} campos, ${map.botoes.length} botões, ${map.abas.length} abas)`);
+      for (const l of links) if (!visited.has(l)) queue.push(l);
+    }
+    return { origin, pages };
   } finally {
     close();
   }

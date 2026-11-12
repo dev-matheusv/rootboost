@@ -20,6 +20,7 @@ public sealed class RootBoostDbContext : DbContext
     public DbSet<CustomerPhrase> CustomerPhrases => Set<CustomerPhrase>();
 
     public DbSet<Publication> Publications => Set<Publication>();
+    public DbSet<AdCampaignDraft> AdCampaignDrafts => Set<AdCampaignDraft>();
 
     /// <summary>Senha do dono do Console (só o hash). Ver ConsoleCredential.</summary>
     public DbSet<ConsoleCredential> ConsoleCredentials => Set<ConsoleCredential>();
@@ -222,6 +223,33 @@ public sealed class RootBoostDbContext : DbContext
         usage.Property(x => x.CreatedAt).HasConversion(Utc);
         usage.HasIndex(x => new { x.BrandKey, x.CreatedAt });
 
+        // Campanha proposta pela IA (RB-31): rascunho, aprovação e ids criados na plataforma, sempre pausada.
+        var camp = b.Entity<AdCampaignDraft>();
+        camp.HasKey(x => x.Id);
+        camp.HasIndex(x => new { x.BrandKey, x.CreatedAt });
+        camp.Property(x => x.BrandKey).HasMaxLength(64).IsRequired();
+        camp.Property(x => x.Name).HasMaxLength(200).IsRequired();
+        camp.Property(x => x.Objective).HasConversion<string>().HasMaxLength(16);
+        camp.Property(x => x.Status).HasConversion<string>().HasMaxLength(16);
+        camp.Property(x => x.CountriesCsv).HasMaxLength(200).IsRequired();
+        camp.Property(x => x.VideoUrl).HasMaxLength(1000).IsRequired();
+        camp.Property(x => x.ThumbnailUrl).HasMaxLength(1000);
+        camp.Property(x => x.PrimaryText).HasMaxLength(2000).IsRequired();
+        camp.Property(x => x.Headline).HasMaxLength(255).IsRequired();
+        camp.Property(x => x.CallToAction).HasMaxLength(32).IsRequired();
+        camp.Property(x => x.LinkUrl).HasMaxLength(1000).IsRequired();
+        camp.Property(x => x.Rationale).HasMaxLength(2000).IsRequired();
+        camp.Property(x => x.ApprovedBy).HasMaxLength(200);
+        camp.Property(x => x.Error).HasMaxLength(1000);
+        foreach (var f in new[] { "ExternalVideoId", "ExternalCampaignId", "ExternalAdSetId", "ExternalCreativeId", "ExternalAdId" })
+            camp.Property(f).HasMaxLength(64);
+        camp.Property(x => x.ApprovedAt).HasConversion(Utc);
+        camp.Property(x => x.PausedAt).HasConversion(Utc);
+        camp.Property(x => x.PausedBy).HasMaxLength(200);
+        camp.Property(x => x.CreatedAt).HasConversion(Utc);
+        camp.Property(x => x.UpdatedAt).HasConversion(Utc);
+        camp.Ignore(x => x.Countries);
+
         // Produto da marca (RB-60): um por marca, montado na conversa com a IA.
         var product = b.Entity<BrandProduct>();
         product.HasKey(x => x.Id);
@@ -236,6 +264,11 @@ public sealed class RootBoostDbContext : DbContext
         product.Property(x => x.DifferentialsJson).HasColumnType("jsonb").IsRequired();
         product.Property(x => x.Offer).HasMaxLength(300);
         product.Property(x => x.ScreenGuide).HasMaxLength(BrandProduct.MaxScreenGuideChars);
+        product.Property(x => x.ScreenKnowledge).HasMaxLength(BrandProduct.MaxScreenGuideChars * 2);
+        product.Property(x => x.ScreenKnowledgeAt).HasConversion(Utc);
+        product.Property(x => x.SystemMap).HasMaxLength(BrandProduct.MaxScreenGuideChars);
+        product.Property(x => x.SystemMapHash).HasMaxLength(64);
+        product.Property(x => x.SystemMapAt).HasConversion(Utc);
         product.Property(x => x.CreatedAt).HasConversion(Utc);
         product.Property(x => x.UpdatedAt).HasConversion(Utc);
         product.Ignore(x => x.Features);

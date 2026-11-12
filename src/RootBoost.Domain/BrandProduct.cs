@@ -24,6 +24,38 @@ public sealed class BrandProduct
 
     /// <summary>Como usar o sistema do cliente, conferido pela pessoa (RB-50): vai junto de cada cena da gravação.</summary>
     public string? ScreenGuide { get; private set; }
+
+    /// <summary>
+    /// O que a gravação aprendeu do sistema (guia do PC + caminhos que deram certo), mandado pelo worker. Vai pro
+    /// roteiro junto do guia: a IA só escreve cena com tela, campo e botão que existem de verdade (11/11).
+    /// </summary>
+    public string? ScreenKnowledge { get; private set; }
+    public DateTimeOffset? ScreenKnowledgeAt { get; private set; }
+
+    /// <summary>Mapa do sistema feito pela exploração automática (11/11): guia escrito pela IA a partir das telas reais.</summary>
+    public string? SystemMap { get; private set; }
+    /// <summary>Impressão digital das telas exploradas: muda quando o sistema muda, e aí o guia é refeito.</summary>
+    public string? SystemMapHash { get; private set; }
+    public DateTimeOffset? SystemMapAt { get; private set; }
+
+    public void SetSystemMap(string guide, string hash, DateTimeOffset now)
+    {
+        var t = guide.Trim();
+        SystemMap = t.Length > MaxScreenGuideChars ? t[..MaxScreenGuideChars] : t;
+        SystemMapHash = hash.Length > 64 ? hash[..64] : hash;
+        SystemMapAt = now;
+    }
+
+    /// <summary>Exploração repetida sem mudança no sistema: só registra que conferiu.</summary>
+    public void TouchSystemMap(DateTimeOffset now) => SystemMapAt = now;
+
+    public void SetScreenKnowledge(string? text, DateTimeOffset now)
+    {
+        var t = text?.Trim();
+        if (t is { Length: > MaxScreenGuideChars * 2 }) t = t[..(MaxScreenGuideChars * 2)];
+        ScreenKnowledge = string.IsNullOrEmpty(t) ? null : t;
+        ScreenKnowledgeAt = now;
+    }
     public DateTimeOffset CreatedAt { get; private set; }
     public DateTimeOffset UpdatedAt { get; private set; }
 

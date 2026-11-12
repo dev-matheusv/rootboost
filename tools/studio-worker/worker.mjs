@@ -5,15 +5,15 @@
 // Uso:  node worker.mjs            (fica rodando, uma rodada a cada STUDIO_POLL_SECONDS)
 //       node worker.mjs --once     (uma rodada e sai)
 // Config por variável de ambiente ou num worker.env ao lado (ver worker.env.example). A chave nunca vai pro repo.
-import { execFileSync, spawn } from "node:child_process";
+import { execFileSync, spawn, spawnSync } from "node:child_process";
 import { appendFileSync, copyFileSync, existsSync, mkdirSync, openAsBlob, readdirSync, readFileSync, rmSync, statSync, unlinkSync, writeFileSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
-  applyLibrary, applyRecordings, buildArgs, buildPersonalSpec, libraryScenes, photoClipArgs, expectedOutputs, isScriptProblem, lastLine, parsePrivateVoices, logFileName, oldLogs, parseVoiceFinish, parseVoiceTones, preparationsFor, stepByStepPlan, voiceFolder, parseUnmatched, parseVoiceSteps, stepsFor, projectName, scenesToRecord,
+  applyLibrary, applyRecordings, buildArgs, buildPersonalSpec, libraryScenes, photoClipArgs, expectedOutputs, isScriptProblem, lastLine, parsePrivateVoices, logFileName, oldLogs, addPath, mapIsStale, pathsText, parseDetect, reviewVideo, parseVoiceFinish, parseVoiceTones, preparationsFor, stepByStepPlan, voiceFolder, parseUnmatched, parseVoiceSteps, stepsFor, projectName, scenesToRecord,
   seedFor, voiceProblem, warningsFrom,
 } from "./lib.mjs";
-import { recordScene } from "./recorder.mjs";
+import { exploreSystem, recordScene } from "./recorder.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 loadEnvFile(join(here, "worker.env"));
@@ -219,7 +219,40 @@ async function round() {
     // Mapa das telas do sistema da marca: sem ele a IA gasta os passos procurando onde cada coisa fica.
     const guidePath = join(here, "guias", `${job.brandKey}.md`);
     // O guia salvo no Console vem no job e vale pra qualquer cliente; o arquivo local fica de reserva.
-    const guideText = [existsSync(guidePath) ? readFileSync(guidePath, "utf8").trim() : "", job.screenGuide?.trim() ?? ""].filter(Boolean).join("\n\n");
+    const pathsFile = join(here, "guias", `${job.brandKey}.caminhos.json`);
+    const readPaths = () => { try { return JSON.parse(readFileSync(pathsFile, "utf8")); } catch { return []; } };
+    // O que a gravação sabe vai também pra API: o roteiro dos próximos vídeos usa o mesmo conhecimento (11/11).
+    const share = async () => {
+      const text = [existsSync(guidePath) ? readFileSync(guidePath, "utf8").trim() : "", pathsText(readPaths())].filter(Boolean).join("\n\n");
+      const r = await call("PUT", `/worker/brands/${job.brandKey}/screen-knowledge`, { text }).catch((e) => ({ status: e.message }));
+      if (r.status !== 204) console.log(`[${now()}] não mandei o conhecimento do sistema pra API: ${r.status}`);
+    };
+    const learn = async (scene, steps) => {
+      try { writeFileSync(pathsFile, JSON.stringify(addPath(readPaths(), scene, steps), null, 1)); } catch (e) { console.log(`[${now()}] não guardei o caminho: ${e.message}`); }
+      await share();
+    };
+    await share();
+    // Mapa do sistema (11/11): a IA explora o sistema sozinha (só navegando) e a API escreve o guia. Refaz a cada 7 dias;
+    // se as telas mudaram, o guia é reescrito. Falha aqui não derruba o vídeo: segue com o que já sabe.
+    const mapFile = join(here, "guias", `${job.brandKey}.mapa.json`);
+    let savedMap = null;
+    try { savedMap = JSON.parse(readFileSync(mapFile, "utf8")); } catch { /* sem mapa ainda */ }
+    if (mapIsStale(savedMap, new Date())) {
+      await progress(job.id, 4, "conhecendo o sistema: explorando as telas (só navega, não altera nada)");
+      try {
+        const explored = await exploreSystem({ account, maxPages: 40, log: (l) => console.log(`[${now()}] ${l}`) });
+        const r = await call("PUT", `/worker/brands/${job.brandKey}/system-map`, { map: explored });
+        if (r.status === 200 && r.data?.guide) {
+          savedMap = { at: new Date().toISOString(), guide: r.data.guide, telas: explored.pages.length };
+          writeFileSync(mapFile, JSON.stringify(savedMap, null, 1));
+          console.log(`[${now()}] mapa do sistema: ${explored.pages.length} telas, ${r.data.changed ? "guia reescrito" : "sem mudança"}`);
+        } else console.log(`[${now()}] mapa do sistema não foi pra API: ${r.status}`);
+      } catch (e) {
+        console.log(`[${now()}] exploração do sistema falhou, sigo com o que já sei: ${e.message}`);
+      }
+    }
+    const guideText = [savedMap?.guide ? `Mapa do sistema (telas reais):\n${savedMap.guide}` : "", existsSync(guidePath) ? readFileSync(guidePath, "utf8").trim() : "",
+      job.screenGuide?.trim() ?? "", pathsText(readPaths())].filter(Boolean).join("\n\n");
     const guide = guideText ? `${guideText}\n\nCena: ` : "";
     // Preparo da conta (fora do vídeo): o que a cena precisa já existir, como modelo de ficha.
     const prepPath = join(here, "guias", `${job.brandKey}.preparo.json`);
@@ -228,8 +261,9 @@ async function round() {
       await progress(job.id, 5, `preparando a conta de demonstração (${i + 1} de ${preps.length})`);
       const beat = setInterval(() => void progress(job.id, 5, "preparando a conta de demonstração").catch(() => {}), cfg.heartbeatSeconds * 1000);
       try {
-        await recordScene({ brandKey: job.brandKey, scene: p.cena, account, outDir: `${cfg.base}/brutos/${nome}-preparo-${i + 1}`, name: `${nome}-preparo-${i + 1}`, prepare: true,
-          ask: async (state) => (await call("POST", "/worker/ai/next-action", state)).data });
+        const r = await recordScene({ brandKey: job.brandKey, scene: p.cena, account, outDir: `${cfg.base}/brutos/${nome}-preparo-${i + 1}`, name: `${nome}-preparo-${i + 1}`, prepare: true,
+          ask: async (state) => (await call("POST", "/worker/ai/next-action", { ...state, scene: guide + state.scene })).data });
+        await learn(`preparo: ${p.quando}`, r.steps);
       } catch (e) {
         return fail(job.id, `preparo da conta: ${e.message}`, !e.personalData);
       } finally {
@@ -246,6 +280,7 @@ async function round() {
         const r = await recordScene({ brandKey: job.brandKey, scene: s.scene, account, outDir: `${cfg.base}/brutos/${source}`, name: source,
           ask: async (state) => (await call("POST", "/worker/ai/next-action", { ...state, scene: guide + state.scene })).data });
         recordings.push({ index: s.index, source, duration: r.duration });
+        await learn(s.scene, r.steps);
       } catch (e) {
         return fail(job.id, `gravação do bloco ${s.index + 1}: ${e.message}`, !e.personalData);
       } finally {
@@ -303,8 +338,23 @@ async function round() {
   await progress(job.id, 90, `subindo ${found.length} arquivos`);
   const outputs = [];
   for (const o of found) outputs.push({ role: o.role, url: await upload(job.brandKey, o.path) });
-  const done = await call("POST", `/worker/jobs/${job.id}/deliver`, { workerId: cfg.workerId, outputs, warnings: warningsFrom(log), seed });
+  const review = inspectVideo(found.find((o) => o.role === "video-instagram")?.path);
+  for (const w of review) console.log(`[${now()}] ${w}`);
+  const done = await call("POST", `/worker/jobs/${job.id}/deliver`, { workerId: cfg.workerId, outputs, warnings: [...review, ...warningsFrom(log)].slice(0, 20), seed });
   console.log(`[${now()}] entregue: ${done.status}`);
+}
+
+/** Revisão automática do vídeo pronto (RB-47): silêncio longo, imagem parada e duração. Falha ao medir vira aviso, nunca derruba a entrega. */
+function inspectVideo(path) {
+  if (!path) return [];
+  try {
+    const probe = spawnSync(FFMPEG.replace(/ffmpeg(\.exe)?$/, "ffprobe$1"), ["-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", path], { encoding: "utf8" });
+    const duration = Number(probe.stdout.trim());
+    const run = spawnSync(FFMPEG, ["-hide_banner", "-i", path, "-af", "silencedetect=n=-45dB:d=1.2", "-vf", "crop=iw*0.8:ih*0.5:iw*0.1:ih*0.2,freezedetect=n=0.003:d=6,metadata=mode=print", "-f", "null", "-"], { encoding: "utf8", maxBuffer: 64 << 20 });
+    return reviewVideo({ duration, ...parseDetect(run.stderr) });
+  } catch (e) {
+    return [`AVISO: a revisão automática não rodou (${e.message})`];
+  }
 }
 
 /**

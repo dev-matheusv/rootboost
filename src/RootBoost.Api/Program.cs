@@ -370,6 +370,115 @@ brandProfile.MapPost("/publications/{id:guid}/unapprove", async (string key, Gui
     return Results.Ok(PublicationDto.From(publication));
 });
 
+// --- Campanha pela IA (RB-31): a IA propõe a partir de um vídeo pronto, a pessoa confere e aprova, nasce PAUSADA. ---
+brandProfile.MapGet("/ads/campaigns", async (string key, RootBoost.Application.Ads.IAdCampaignStore store,
+    RootBoost.Application.Ads.IAdInsightStore insights, RootBoost.Application.Ads.AdsStopRule rule, TimeProvider time, CancellationToken ct) =>
+{
+    var brandKey = key.ToLowerInvariant();
+    var list = await store.ListByBrandAsync(brandKey, ct);
+    var today = DateOnly.FromDateTime(time.GetUtcNow().UtcDateTime);
+    // Acompanhamento (RB-52): métricas da campanha criada, últimos 30 dias, e o que fazer agora.
+    var rows = list.Any(c => c.ExternalCampaignId is not null)
+        ? await insights.ListAsync(brandKey, today.AddDays(-30), today, AdLevel.Campaign, ct) : [];
+    return Results.Ok(list.Select(c => AdCampaignDto.From(c) with
+    {
+        Advice = c.Status == AdCampaignStatus.Created && c.ExternalCampaignId is { } id
+            ? AdviceDto.From(RootBoost.Application.Ads.CampaignAdvisor.Advise(c, rows.Where(r => r.ObjectId == id).ToList(), rule, today)) : null,
+    }));
+});
+
+brandProfile.MapPost("/ads/campaigns/{id:guid}/pause", async (string key, Guid id, System.Security.Claims.ClaimsPrincipal user,
+    RootBoost.Application.Ads.IAdCampaignStore store, RootBoost.Application.Ads.IAdCampaignActuator actuator, TimeProvider time,
+    ILoggerFactory lf, CancellationToken ct) =>
+{
+    var draft = await store.GetAsync(id, ct);
+    if (draft is null || draft.BrandKey != key.ToLowerInvariant()) return Results.NotFound();
+    if (draft.Status != AdCampaignStatus.Created || draft.ExternalCampaignId is null) return Results.BadRequest(new { error = "campanha ainda não foi criada" });
+    var who = user.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value ?? user.Identity?.Name ?? "desconhecido";
+    try { await actuator.PauseAsync(draft.ExternalCampaignId, ct); }
+    catch (InvalidOperationException ex)
+    {
+        lf.CreateLogger("Ads").LogWarning(ex, "pausar campanha {Campaign} da marca {Brand} falhou", draft.ExternalCampaignId, draft.BrandKey);
+        return Results.UnprocessableEntity(new { error = ex.Message });
+    }
+    draft.MarkPaused(who, time.GetUtcNow());
+    await store.SaveAsync(draft, ct);
+    return Results.Ok(AdCampaignDto.From(draft));
+});
+
+brandProfile.MapPost("/ads/campaigns", async (string key, AdCampaignProposeInput input, IBrandStore brands,
+    RootBoost.Application.Studio.ICreativeJobStore jobs, RootBoost.Application.Ai.IBrandProductStore products,
+    RootBoost.Application.Ads.CampaignProposer proposer, RootBoost.Application.Ads.IAdCampaignStore store, CancellationToken ct) =>
+{
+    var brandKey = key.ToLowerInvariant();
+    var brand = (await brands.ListAsync(ct)).FirstOrDefault(b => b.Key == brandKey);
+    if (brand is null) return Results.NotFound();
+    var job = await jobs.GetAsync(input.JobId, ct);
+    if (job is null || job.BrandKey != brandKey) return Results.NotFound();
+    // Anúncio usa a versão de demais canais (legenda mais baixa); sem ela, a do Instagram.
+    var video = job.Outputs.FirstOrDefault(o => o.Role == "video") ?? job.Outputs.FirstOrDefault(o => o.Role == "video-instagram");
+    if (video is null) return Results.BadRequest(new { error = "esse vídeo ainda não está pronto" });
+    var cover = job.Outputs.FirstOrDefault(o => o.Role == "cover-instagram")?.Url;
+    try
+    {
+        var proposal = await proposer.ProposeAsync(brandKey, brand.Name, await products.GetAsync(brandKey, ct), job, video.Url, cover, ct);
+        await store.AddAsync(proposal.Draft, ct);
+        return Results.Ok(AdCampaignDto.From(proposal.Draft));
+    }
+    catch (ArgumentException ex) { return Results.BadRequest(new { error = $"a proposta da IA não passou na conferência: {ex.Message}" }); }
+});
+
+brandProfile.MapPut("/ads/campaigns/{id:guid}", async (string key, Guid id, AdCampaignInput input,
+    RootBoost.Application.Ads.IAdCampaignStore store, TimeProvider time, CancellationToken ct) =>
+{
+    var draft = await store.GetAsync(id, ct);
+    if (draft is null || draft.BrandKey != key.ToLowerInvariant()) return Results.NotFound();
+    try
+    {
+        draft.Update(input.Name, input.Objective == "leads" ? AdObjective.Leads : AdObjective.Traffic, (long)Math.Round(input.DailyBudget * 100),
+            input.Countries ?? [], input.AgeMin, input.AgeMax, draft.VideoUrl, draft.ThumbnailUrl, input.PrimaryText, input.Headline,
+            input.CallToAction, input.LinkUrl, draft.Rationale, time.GetUtcNow());
+    }
+    catch (Exception ex) when (ex is ArgumentException or InvalidOperationException) { return Results.BadRequest(new { error = ex.Message }); }
+    await store.SaveAsync(draft, ct);
+    return Results.Ok(AdCampaignDto.From(draft));
+});
+
+// Aprovar e criar: a pessoa aprova e a plataforma cria tudo pausado. Falhou no meio, "criar de novo" continua de onde parou.
+brandProfile.MapPost("/ads/campaigns/{id:guid}/approve", async (string key, Guid id, System.Security.Claims.ClaimsPrincipal user,
+    RootBoost.Application.Ads.IAdCampaignStore store, RootBoost.Application.Ads.CreateApprovedCampaign create, TimeProvider time, CancellationToken ct) =>
+{
+    var draft = await store.GetAsync(id, ct);
+    if (draft is null || draft.BrandKey != key.ToLowerInvariant()) return Results.NotFound();
+    var who = user.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value ?? user.Identity?.Name ?? "desconhecido";
+    try
+    {
+        if (draft.Status == AdCampaignStatus.Draft) draft.Approve(who, time.GetUtcNow());
+        else if (draft.Status is not (AdCampaignStatus.Approved or AdCampaignStatus.Failed)) return Results.Conflict(new { error = "campanha já criada ou em criação" });
+    }
+    catch (InvalidOperationException ex) { return Results.BadRequest(new { error = ex.Message }); }
+    await store.SaveAsync(draft, ct);
+    var result = await create.RunAsync(draft, ct);
+    return result.Ok ? Results.Ok(AdCampaignDto.From(draft)) : Results.UnprocessableEntity(new { error = result.Error, campaign = AdCampaignDto.From(draft) });
+});
+
+// Resumo da semana (RB-34): posts, vídeos, anúncios e o que fazer agora, só com dado do banco.
+brandProfile.MapGet("/report", async (string key, int? days, RootBoost.Application.Publishing.IPublicationStore pubs,
+    RootBoost.Application.Studio.ICreativeJobStore jobs, RootBoost.Application.Ads.IAdInsightStore insights,
+    RootBoost.Application.Ads.IAdCampaignStore campaigns, RootBoost.Application.Ads.AdsStopRule rule, TimeProvider time, CancellationToken ct) =>
+{
+    var brandKey = key.ToLowerInvariant();
+    var period = Math.Clamp(days ?? 7, 1, 31);
+    var now = time.GetUtcNow();
+    var today = DateOnly.FromDateTime(now.UtcDateTime);
+    var rows = await insights.ListAsync(brandKey, today.AddDays(-30), today, AdLevel.Campaign, ct);
+    var created = (await campaigns.ListByBrandAsync(brandKey, ct)).Where(c => c.Status == AdCampaignStatus.Created && c.ExternalCampaignId is not null)
+        .Select(c => (c, RootBoost.Application.Ads.CampaignAdvisor.Advise(c, rows.Where(r => r.ObjectId == c.ExternalCampaignId).ToList(), rule, today))).ToList();
+    var report = RootBoost.Application.Reports.WeeklyReport.Build(brandKey, now, period,
+        await pubs.ListByBrandAsync(brandKey, now.AddDays(-period), now.AddDays(7), ct), await jobs.ListByBrandAsync(brandKey, ct), rows, created);
+    return Results.Ok(report);
+});
+
 brandProfile.MapGet("/ads/summary", async (string key, int? days, RootBoost.Application.Ads.IAdInsightStore store,
     RootBoost.Application.Ads.AdsStopRule rule, TimeProvider time, CancellationToken ct) =>
 {
@@ -1103,6 +1212,32 @@ worker.MapPost("/jobs/{id:guid}/fail", async (Guid id, WorkerFailInput input, Ro
 });
 
 // Atualiza descrição e momentos de um vídeo já no acervo, pelo nome do arquivo (lista de brutos do PC, sem senha).
+// O worker manda o que a gravação sabe do sistema da marca (guia do PC + caminhos aprendidos): vai pro roteiro (11/11).
+worker.MapPut("/brands/{brandKey}/screen-knowledge", async (string brandKey, ScreenKnowledgeInput input,
+    RootBoost.Application.Ai.IBrandProductStore products, TimeProvider time, CancellationToken ct) =>
+{
+    var product = await products.GetAsync(brandKey.ToLowerInvariant(), ct);
+    if (product is null) return Results.NotFound(new { error = $"a marca {brandKey} não tem produto cadastrado" });
+    product.SetScreenKnowledge(input.Text, time.GetUtcNow());
+    await products.SaveAsync(product, ct);
+    return Results.NoContent();
+});
+
+// Mapa do sistema (11/11): o worker manda as telas exploradas; mudou desde a última vez, a IA reescreve o guia.
+worker.MapPut("/brands/{brandKey}/system-map", async (string brandKey, SystemMapInput input,
+    RootBoost.Application.Ai.IBrandProductStore products, RootBoost.Application.Ai.SystemMapper mapper, TimeProvider time, CancellationToken ct) =>
+{
+    var product = await products.GetAsync(brandKey.ToLowerInvariant(), ct);
+    if (product is null) return Results.NotFound(new { error = $"a marca {brandKey} não tem produto cadastrado" });
+    var json = input.Map.GetRawText();
+    var hash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(json)))[..32];
+    var changed = product.SystemMapHash != hash || string.IsNullOrWhiteSpace(product.SystemMap);
+    if (changed) product.SetSystemMap(await mapper.SummarizeAsync(product.BrandKey, json, ct), hash, time.GetUtcNow());
+    else product.TouchSystemMap(time.GetUtcNow());
+    await products.SaveAsync(product, ct);
+    return Results.Ok(new { guide = product.SystemMap, changed });
+});
+
 worker.MapPut("/media/{brandKey}/details", async (string brandKey, MediaDetailsInput input, HttpRequest req,
     RootBoost.Application.Media.IMediaAssetStore assets, RootBoost.Application.Media.MediaOptions options, CancellationToken ct) =>
 {
@@ -1551,6 +1686,25 @@ record ProductDto(string Name, string Kind, string? Url, string? AppUrl, string 
         p.Differentials, p.Offer, p.UpdatedAt, p.ScreenGuide);
 }
 record ScreenGuideDraftInput(string? Documentation);
+record ScreenKnowledgeInput(string? Text);
+record SystemMapInput(System.Text.Json.JsonElement Map);
+record AdCampaignProposeInput(Guid JobId);
+record AdCampaignInput(string Name, string Objective, decimal DailyBudget, List<string>? Countries, int AgeMin, int AgeMax,
+    string PrimaryText, string Headline, string CallToAction, string LinkUrl);
+record AdCampaignDto(Guid Id, Guid? JobId, string Name, string Objective, decimal DailyBudget, IReadOnlyList<string> Countries, int AgeMin,
+    int AgeMax, string VideoUrl, string? ThumbnailUrl, string PrimaryText, string Headline, string CallToAction, string LinkUrl, string Rationale,
+    string Status, string? ApprovedBy, DateTimeOffset? ApprovedAt, string? ExternalCampaignId, string? ExternalAdId, string? Error, DateTimeOffset CreatedAt,
+    DateTimeOffset? PausedAt = null, AdviceDto? Advice = null)
+{
+    public static AdCampaignDto From(AdCampaignDraft d) => new(d.Id, d.CreativeJobId, d.Name, d.Objective == AdObjective.Leads ? "leads" : "trafego",
+        d.DailyBudgetCents / 100m, d.Countries, d.AgeMin, d.AgeMax, d.VideoUrl, d.ThumbnailUrl, d.PrimaryText, d.Headline, d.CallToAction, d.LinkUrl,
+        d.Rationale, d.Status.ToString(), d.ApprovedBy, d.ApprovedAt, d.ExternalCampaignId, d.ExternalAdId, d.Error, d.CreatedAt, d.PausedAt);
+}
+record AdviceDto(string Kind, string Message, decimal? SuggestedDailyBudget, decimal Spend, long Impressions, long Clicks, long Conversions, decimal? Ctr)
+{
+    public static AdviceDto From(RootBoost.Application.Ads.CampaignAdvice a) => new(a.Kind.ToString(), a.Message, a.SuggestedDailyBudget,
+        a.Metrics.Spend, a.Metrics.Impressions, a.Metrics.Clicks, a.Metrics.Conversions, a.Metrics.Ctr);
+}
 record ScreenGuideInput(string? Guide);
 record CreativeJobInput(string Kind, string Theme, string? VoiceKey, string? Format = null);
 record ScriptInput(System.Text.Json.JsonElement Roteiro, System.Text.Json.JsonElement Falas);
