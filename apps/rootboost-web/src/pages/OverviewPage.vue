@@ -77,7 +77,7 @@
       </div>
     </div>
 
-    <q-table flat bordered class="card-rounded" :rows="report?.products ?? []" :columns="columns" row-key="productKey"
+    <q-table flat bordered class="card-rounded" :grid="$q.screen.lt.sm" :rows="report?.products ?? []" :columns="columns" row-key="productKey"
       :loading="loading" :no-data-label="$t('common.empty')" :pagination="{ rowsPerPage: 0 }" hide-pagination>
       <template #body-cell-productKey="props">
         <q-td :props="props">

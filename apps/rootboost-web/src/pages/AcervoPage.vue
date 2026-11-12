@@ -187,6 +187,9 @@ watch(() => brand.selected, () => void load());
 <style lang="scss" scoped>
 .upload { min-width: 280px; }
 .item, .empty { border: 1px solid rgba(0, 0, 0, 0.08); background: #fff; overflow: hidden; height: 100%; }
+.item > div, .item .q-field { min-width: 0; max-width: 100%; }
+.item .q-chip { max-width: 100%; height: auto; min-height: 24px; white-space: normal; }
+.item .row.no-wrap { flex-wrap: wrap; }
 .body--dark .item, .body--dark .empty { border-color: rgba(255, 255, 255, 0.08); background: $dark; }
 .empty { border-style: dashed; }
 .tip { background: rgba(122, 76, 224, 0.08); }

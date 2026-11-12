@@ -1,7 +1,7 @@
 <template>
   <q-page class="q-pa-lg">
-    <div class="row items-end q-mb-lg q-gutter-sm">
-      <div class="col">
+    <div class="row items-end q-mb-lg q-col-gutter-sm">
+      <div class="col-12 col-sm">
         <div class="page-eyebrow">{{ brand.selectedName || $t('nav.allBrands') }}</div>
         <div class="text-h5 sora-bold">{{ $t('pages.campaigns.title') }}</div>
         <div class="text-grey-7">{{ $t('pages.campaigns.subtitle') }}</div>
@@ -57,7 +57,7 @@
         </div>
       </q-card>
 
-      <q-table flat bordered class="card-rounded" :rows="summary?.campaigns ?? []" :columns="columns" row-key="campaignId"
+      <q-table flat bordered class="card-rounded" :grid="$q.screen.lt.sm" :rows="summary?.campaigns ?? []" :columns="columns" row-key="campaignId"
         :loading="loading" :no-data-label="$t('pages.campaigns.empty')" :pagination="{ rowsPerPage: 0 }" hide-pagination />
 
       <AiCampaignsPanel :key="brand.selected" :brand-key="brand.selected" />
