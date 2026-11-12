@@ -39,6 +39,11 @@ public sealed class ScreenAgent
     public async Task<ScreenAction> NextAsync(ScreenState state, CancellationToken ct = default)
     {
         if (state.Step >= MaxSteps) return new ScreenAction("desistir", null, null, $"passou de {MaxSteps} passos");
+        // Círculo que não sai nem com aviso (12/11: Lista e Calendário 30 vezes, 4 minutos perdidos): para logo, com o
+        // motivo, em vez de gastar passo e IA. A cena provavelmente pede uma ordem que a tela não permite.
+        if (IsStuck(state.History))
+            return new ScreenAction("desistir", null, null,
+                "a cena pede uma sequência que a tela não permite (a gravação ficou alternando os mesmos passos). Reescreva o roteiro: ele vai usar o mapa do sistema");
 
         var user = new StringBuilder();
         user.AppendLine($"Cena a mostrar: {state.Scene}");
@@ -104,6 +109,15 @@ public sealed class ScreenAgent
         if (exact.Count >= 1) return exact[0].Id;
         var partial = elements.Where(e => e.Text.Contains(t, StringComparison.OrdinalIgnoreCase)).ToList();
         return partial.Count == 1 ? partial[0].Id : null;
+    }
+
+    /// <summary>Nos últimos 12 passos, 10 ou mais são os mesmos dois cliques: o aviso de círculo não adiantou.</summary>
+    public static bool IsStuck(IReadOnlyList<string> history)
+    {
+        if (history.Count < 12) return false;
+        var last = history.TakeLast(12).Where(h => h.StartsWith("clicar ", StringComparison.Ordinal)).ToList();
+        var top = last.GroupBy(h => h).OrderByDescending(g => g.Count()).Take(2).Sum(g => g.Count());
+        return top >= 10;
     }
 
     private static string Clip(string s, int max) => s.Length <= max ? s : s[..max];

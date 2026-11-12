@@ -308,6 +308,10 @@ public class ScreenAgentTests : IClassFixture<StudioAiWebApplicationFactory>
     [Fact]
     public void Going_in_circles_is_detected()
     {
+        var stuck = Enumerable.Range(0, 12).Select(i => i % 2 == 0 ? "clicar Lista" : "clicar Calendário").ToList();
+        Assert.True(ScreenAgent.IsStuck(stuck));
+        stuck[3] = "rolar baixo"; stuck[7] = "digitar Nome"; stuck[9] = "clicar Salvar";
+        Assert.False(ScreenAgent.IsStuck(stuck));
         // Caso real de 12/11: a cena pedia a visão "mês" e a IA alternou as abas até desistir.
         Assert.True(ScreenAgent.IsLooping(["clicar Agenda", "clicar Lista", "clicar Calendário", "clicar Lista", "clicar Calendário", "clicar Lista", "clicar Calendário"]));
         Assert.True(ScreenAgent.IsLooping(["rolar baixo", "rolar baixo", "rolar baixo"]));
