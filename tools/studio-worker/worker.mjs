@@ -613,7 +613,6 @@ async function apiFetch(url, options) {
 
 // Falha passageira da API (deploy subindo, 502/503/504, rede caiu) tenta de novo com espera crescente. Em 12/11 um
 // 502 no meio do deploy derrubou o vídeo inteiro.
-const TRANSIENT = new Set([502, 503, 504]);
 
 async function call(method, path, body) {
   let res;
@@ -624,7 +623,7 @@ async function call(method, path, body) {
         headers: { "Content-Type": "application/json", "X-Worker-Key": cfg.key },
         body: body ? JSON.stringify(body) : undefined,
       });
-      if (!TRANSIENT.has(res.status) || attempt >= 5) break;
+      if (![502, 503, 504].includes(res.status) || attempt >= 5) break;
       console.log(`[${now()}] ${method} ${path}: ${res.status}, tentando de novo (${attempt} de 4)`);
     } catch (e) {
       if (attempt >= 5) throw e;
