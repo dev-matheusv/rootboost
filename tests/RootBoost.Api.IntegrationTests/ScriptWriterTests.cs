@@ -295,6 +295,17 @@ public class ScreenAgentTests : IClassFixture<StudioAiWebApplicationFactory>
     }
 
     [Fact]
+    public void Target_given_by_text_is_found_by_its_text()
+    {
+        // Caso de 12/11: a IA mandou o nome do modelo como alvo e o passo virou "esperar" 15 vezes.
+        ScreenElement[] els = [new("e1", "botão", "Ficha"), new("e2", "botão", "Ficha de harmonização facial"), new("e3", "botão", "Salvar")];
+        Assert.Equal("e2", ScreenAgent.ResolveByText(els, "ficha de harmonização facial"));
+        Assert.Equal("e3", ScreenAgent.ResolveByText(els, "salv"));
+        Assert.Null(ScreenAgent.ResolveByText(els, "Fich")); // dois contêm: ambíguo, não chuta
+        Assert.Null(ScreenAgent.ResolveByText(els, "Excluir"));
+    }
+
+    [Fact]
     public void Going_in_circles_is_detected()
     {
         // Caso real de 12/11: a cena pedia a visão "mês" e a IA alternou as abas até desistir.
