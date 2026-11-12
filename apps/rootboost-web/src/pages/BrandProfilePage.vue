@@ -1,7 +1,7 @@
 <template>
   <q-page class="q-pa-lg">
-    <div class="row items-end q-mb-lg">
-      <div class="col">
+    <div class="row items-end q-mb-lg q-col-gutter-sm">
+      <div class="col-12 col-sm">
         <div class="page-eyebrow">{{ brand.selectedName || $t('nav.allBrands') }}</div>
         <div class="text-h5 sora-bold">{{ $t('pages.brandProfile.title') }}</div>
         <div class="text-grey-7">{{ $t('pages.brandProfile.subtitle') }}</div>
