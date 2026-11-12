@@ -132,7 +132,9 @@ pra qualquer cliente (sistema, loja ou serviço), não só o MedlyCare. Ordem:
 **Andamento (12/11):** passo 1 feito pro Instagram (`Organic:Reader=Meta`, releitura a cada 12 h, `GET /organic/ranking`
 com nota e motivo, e a proposta de campanha de vídeo publicado já recebe os números). Facebook fica pra depois: a doc
 diz que `GET /{page-id}/video_reels` não lê; o caminho é `/{video-id}/video_insights` dos vídeos publicados por aqui.
-Falta a tela do ranking no Console.
+Tela do ranking feita (Campanhas). Leitura real ligada em 12/11: 32 posts do MedlyCare.
+
+**Aprendizado (12/11):** roteirista e proposta de campanha recebem os vídeos que mais e menos funcionaram; o resumo da semana separa Orgânico e Pago, sugere anunciar o vídeo campeão e tem "Pedir sugestões" (IA, sob demanda). Falta: assistente de conversa geral no Console (molde do assistente do MedlyCare v14) que use esses mesmos números; envio do resumo por push ou e-mail toda segunda; números de anúncio por vídeo entrando no ranking (passo 2).
 
 **Pendências achadas no teste do Matheus (12/11, fazer primeiro na volta):**
 - **Campanha falhou na Meta:** `is_adset_budget_sharing_enabled` obrigatório quando o orçamento fica no conjunto
