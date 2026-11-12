@@ -70,7 +70,7 @@ import { useI18n } from 'vue-i18n';
 import { useQuasar } from 'quasar';
 import { isAxiosError } from 'axios';
 import { api } from 'src/services/api';
-import type { CreativeJob } from 'src/types/api';
+import type { CreativeJob, Publication } from 'src/types/api';
 
 defineOptions({ name: 'AiCampaignsPanel' });
 
@@ -90,6 +90,7 @@ const $q = useQuasar();
 
 const campaigns = ref<AdCampaign[]>([]);
 const jobs = ref<CreativeJob[]>([]);
+const published = ref<Publication[]>([]);
 const jobId = ref<string | null>(null);
 const proposing = ref(false);
 const busy = ref<string | null>(null);
@@ -101,9 +102,15 @@ const objectives = computed(() => [
   { label: t('aiCampaigns.objective.leads'), value: 'leads' },
 ]);
 const ctas = ['LEARN_MORE', 'SIGN_UP', 'SHOP_NOW', 'CONTACT_US', 'BOOK_NOW', 'GET_OFFER', 'SUBSCRIBE'];
-const readyJobs = computed(() => jobs.value
-  .filter((j) => (j.status === 'Review' || j.status === 'Done') && j.outputs.some((o) => o.role.startsWith('video')))
-  .map((j) => ({ label: j.theme, value: j.id })));
+// Fonte do anúncio: vídeo pronto do Estúdio ou vídeo já publicado (importado ou não), 12/11.
+const readyJobs = computed(() => [
+  ...jobs.value
+    .filter((j) => (j.status === 'Review' || j.status === 'Done') && j.outputs.some((o) => o.role.startsWith('video')))
+    .map((j) => ({ label: `${t('aiCampaigns.fromStudio')}: ${j.theme}`, value: `job:${j.id}` })),
+  ...published.value
+    .filter((p) => p.status === 'Published' && /\.(mp4|mov)(\?|$)/i.test(p.mediaUrl))
+    .map((p) => ({ label: `${t('aiCampaigns.fromPost')} (${p.channel}): ${p.caption.split('\n')[0]?.slice(0, 70) ?? ''}`, value: `pub:${p.id}` })),
+]);
 
 const editable = (c: AdCampaign) => c.status === 'Draft' || c.status === 'Failed' || c.status === 'Approved';
 const adviceClass = (k: NonNullable<AdCampaign['advice']>['kind']) =>
@@ -122,12 +129,15 @@ function fill(c: AdCampaign) {
 }
 
 async function load() {
-  const [cs, js] = await Promise.all([
+  const from = new Date(Date.now() - 180 * 864e5).toISOString();
+  const [cs, js, ps] = await Promise.all([
     api.get<AdCampaign[]>(`/admin/brands/${props.brandKey}/ads/campaigns`),
     api.get<CreativeJob[]>(`/admin/brands/${props.brandKey}/creative-jobs`),
+    api.get<Publication[]>(`/admin/brands/${props.brandKey}/publications`, { params: { from, to: new Date().toISOString() } }),
   ]);
   campaigns.value = cs.data;
   jobs.value = js.data;
+  published.value = ps.data;
   campaigns.value.forEach(fill);
 }
 
@@ -140,7 +150,9 @@ function upsert(c: AdCampaign) {
 async function propose() {
   proposing.value = true;
   try {
-    upsert((await api.post<AdCampaign>(`/admin/brands/${props.brandKey}/ads/campaigns`, { jobId: jobId.value }, { timeout: 120_000 })).data);
+    const [kind, id] = (jobId.value ?? '').split(':');
+    const body = kind === 'pub' ? { publicationId: id } : { jobId: id };
+    upsert((await api.post<AdCampaign>(`/admin/brands/${props.brandKey}/ads/campaigns`, body, { timeout: 120_000 })).data);
   } catch (e) { fail(e); } finally { proposing.value = false; }
 }
 
