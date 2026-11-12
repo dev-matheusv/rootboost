@@ -1,17 +1,58 @@
 <template>
   <!-- Campanha pela IA (RB-31): a IA propõe a partir de um vídeo pronto, a pessoa confere e aprova, nasce PAUSADA na Meta. -->
   <div class="q-mt-xl">
-    <div class="row items-center q-mb-sm">
-      <div class="col">
+    <!-- Em tela estreita o título ocupa a linha toda e o seletor desce (12/11: quebrava uma palavra por linha). -->
+    <div class="row items-center q-col-gutter-sm q-mb-sm">
+      <div class="col-12 col-md">
         <div class="text-h6 sora-bold">{{ $t('aiCampaigns.title') }}</div>
         <div class="text-grey-7">{{ $t('aiCampaigns.subtitle') }}</div>
       </div>
-      <q-select v-model="jobId" outlined dense emit-value map-options :options="readyJobs" style="min-width: 260px"
-        :label="$t('aiCampaigns.fromVideo')" :disable="!readyJobs.length" />
-      <q-btn unelevated color="primary" no-caps class="q-ml-sm" :label="$t('aiCampaigns.propose')" :loading="proposing"
-        :disable="!jobId" @click="propose" />
+      <div class="col-12 col-sm col-md-5">
+        <q-select v-model="jobId" outlined dense emit-value map-options :options="readyJobs"
+          :label="$t('aiCampaigns.fromVideo')" :disable="!readyJobs.length" />
+      </div>
+      <div class="col-12 col-sm-auto">
+        <q-btn unelevated color="primary" no-caps class="full-width" :label="$t('aiCampaigns.propose')" :loading="proposing"
+          :disable="!jobId" @click="propose()" />
+      </div>
     </div>
     <div v-if="!readyJobs.length" class="text-caption text-grey-7 q-mb-md">{{ $t('aiCampaigns.noVideo') }}</div>
+
+    <!-- Ranking orgânico (RB-25): os vídeos que o público mais salvou, compartilhou e assistiu, com o motivo. -->
+    <q-card flat bordered class="card-rounded q-pa-md q-mb-md">
+      <div class="row items-center q-col-gutter-sm q-mb-sm">
+        <div class="col-12 col-sm">
+          <div class="text-subtitle1 text-weight-bold">{{ $t('aiCampaigns.ranking.title') }}</div>
+          <div class="text-caption text-grey-7">{{ $t('aiCampaigns.ranking.subtitle') }}</div>
+        </div>
+        <div class="col-12 col-sm-auto">
+          <q-btn outline color="primary" no-caps class="full-width" :icon="mdiRefresh" :label="$t('aiCampaigns.ranking.refresh')"
+            :loading="syncing" @click="syncRanking" />
+        </div>
+      </div>
+      <div v-if="!ranking.length" class="text-caption text-grey-7">{{ $t('aiCampaigns.ranking.empty') }}</div>
+      <div v-for="r in ranking.slice(0, showAll ? 30 : 5)" :key="r.externalId" class="row items-start no-wrap q-py-sm rank-row">
+        <div class="rank-pos text-h6 sora-bold q-mr-md" :class="r.enoughData ? 'text-primary' : 'text-grey-6'">{{ r.position }}</div>
+        <div class="col" style="min-width: 0">
+          <div class="row items-center q-gutter-xs">
+            <q-chip dense :color="r.enoughData ? 'primary' : 'grey-6'" text-color="white">
+              {{ r.enoughData ? $t('aiCampaigns.ranking.score', { score: r.score }) : $t('aiCampaigns.ranking.fewData') }}
+            </q-chip>
+            <span class="text-caption text-grey-7">{{ r.channel }} · {{ new Date(r.postedAt).toLocaleDateString() }}</span>
+          </div>
+          <div class="text-body2 ellipsis-2-lines">{{ r.caption.split('\n')[0] || '—' }}</div>
+          <div class="text-caption text-grey-7">{{ r.reason }}</div>
+          <div class="row items-center q-gutter-sm q-mt-xs">
+            <a v-if="r.permalink" :href="r.permalink" target="_blank" rel="noopener" class="text-caption text-primary">{{ $t('aiCampaigns.ranking.open') }}</a>
+            <q-btn v-if="canAdvertise(r)" dense flat no-caps color="primary" :label="$t('aiCampaigns.ranking.advertise')"
+              :loading="proposing && jobId === `pub:${r.publicationId}`" @click="propose(`pub:${r.publicationId}`)" />
+            <span v-else-if="r.enoughData" class="text-caption text-grey-6">{{ $t('aiCampaigns.ranking.notHere') }}</span>
+          </div>
+        </div>
+      </div>
+      <q-btn v-if="ranking.length > 5" flat dense no-caps color="primary" class="q-mt-xs"
+        :label="showAll ? $t('aiCampaigns.ranking.less') : $t('aiCampaigns.ranking.more', { n: ranking.length })" @click="showAll = !showAll" />
+    </q-card>
 
     <q-card v-for="c in campaigns" :key="c.id" flat bordered class="card-rounded q-pa-md q-mb-md">
       <div class="row items-center q-mb-sm">
@@ -71,6 +112,7 @@ import { useQuasar } from 'quasar';
 import { isAxiosError } from 'axios';
 import { api } from 'src/services/api';
 import type { CreativeJob, Publication } from 'src/types/api';
+import { mdiRefresh } from '@quasar/extras/mdi-v7';
 
 defineOptions({ name: 'AiCampaignsPanel' });
 
@@ -82,6 +124,11 @@ interface AdCampaign {
   advice: { kind: 'Wait' | 'Keep' | 'Scale' | 'ReviewCreative' | 'Pause'; message: string; suggestedDailyBudget: number | null;
     spend: number; impressions: number; clicks: number; conversions: number; ctr: number | null } | null;
 }
+interface RankedPost {
+  position: number; score: number; enoughData: boolean; engagementPercent: number; reason: string; channel: string;
+  externalId: string; productType: string; caption: string; permalink: string | null; thumbnailUrl: string | null;
+  postedAt: string; publicationId: string | null; views: number; reach: number; saves: number; shares: number;
+}
 type Form = Pick<AdCampaign, 'name' | 'objective' | 'dailyBudget' | 'ageMin' | 'ageMax' | 'primaryText' | 'headline' | 'callToAction' | 'linkUrl'>;
 
 const props = defineProps<{ brandKey: string }>();
@@ -92,6 +139,9 @@ const campaigns = ref<AdCampaign[]>([]);
 const jobs = ref<CreativeJob[]>([]);
 const published = ref<Publication[]>([]);
 const jobId = ref<string | null>(null);
+const ranking = ref<RankedPost[]>([]);
+const syncing = ref(false);
+const showAll = ref(false);
 const proposing = ref(false);
 const busy = ref<string | null>(null);
 const forms = reactive<Record<string, Form>>({});
@@ -139,6 +189,24 @@ async function load() {
   jobs.value = js.data;
   published.value = ps.data;
   campaigns.value.forEach(fill);
+  await loadRanking();
+}
+
+async function loadRanking() {
+  try {
+    ranking.value = (await api.get<RankedPost[]>(`/admin/brands/${props.brandKey}/organic/ranking`, { params: { days: 180 } })).data;
+  } catch { ranking.value = []; }
+}
+
+// Só dá pra anunciar o que saiu pela plataforma: é o arquivo do vídeo que vai pra Meta.
+const canAdvertise = (r: RankedPost) => !!r.publicationId && readyJobs.value.some((o) => o.value === `pub:${r.publicationId}`);
+
+async function syncRanking() {
+  syncing.value = true;
+  try {
+    await api.post(`/admin/brands/${props.brandKey}/organic/sync`, null, { timeout: 120_000 });
+    await loadRanking();
+  } catch (e) { fail(e); } finally { syncing.value = false; }
 }
 
 function upsert(c: AdCampaign) {
@@ -147,7 +215,8 @@ function upsert(c: AdCampaign) {
   fill(c);
 }
 
-async function propose() {
+async function propose(source?: string) {
+  if (source) jobId.value = source;
   proposing.value = true;
   try {
     const [kind, id] = (jobId.value ?? '').split(':');
@@ -197,3 +266,8 @@ async function doPause(c: AdCampaign) {
 watch(() => props.brandKey, () => void load().catch(fail));
 onMounted(() => void load().catch(fail));
 </script>
+
+<style scoped>
+.rank-pos { width: 28px; text-align: center; flex-shrink: 0; }
+.rank-row + .rank-row { border-top: 1px solid rgba(127, 127, 127, 0.15); }
+</style>
