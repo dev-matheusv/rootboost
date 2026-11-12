@@ -129,6 +129,43 @@ pra qualquer cliente (sistema, loja ou serviço), não só o MedlyCare. Ordem:
 5. **Conhecimento de marketing da IA:** playbook de tráfego, criativo e copy versionado em `knowledge/`, junto do
    conhecimento do negócio do cliente (produto, mapa do sistema, documentos, acervo).
 
+**Andamento (12/11):** passo 1 feito pro Instagram (`Organic:Reader=Meta`, releitura a cada 12 h, `GET /organic/ranking`
+com nota e motivo, e a proposta de campanha de vídeo publicado já recebe os números). Facebook fica pra depois: a doc
+diz que `GET /{page-id}/video_reels` não lê; o caminho é `/{video-id}/video_insights` dos vídeos publicados por aqui.
+Falta a tela do ranking no Console.
+
+**Pendências achadas no teste do Matheus (12/11, fazer primeiro na volta):**
+- **Campanha falhou na Meta:** `is_adset_budget_sharing_enabled` obrigatório quando o orçamento fica no conjunto
+  (erro código 100). Conferir o campo na referência oficial de campanha e mandar `false` (orçamento só do conjunto),
+  ou decidir pelo orçamento na campanha. Estudar se a Nativa controla o orçamento por aqui.
+- **Gravação do relatório de atendimentos falhou:** a IA procurou a visão mensal na Agenda (só tem Lista e
+  Calendário) e desistiu. Conferir onde fica o relatório no mapa do sistema, por que o roteiro mandou pra Agenda e
+  se o mapa tem a tela de relatórios; regra: quando o caminho não existe, voltar ao mapa antes de repetir.
+
+### Onda 5b: cara de produto (pedido do Matheus, 12/11/2026)
+- **Responsividade do Console:** está ruim no celular e em tela estreita (ex.: "Campanha com a IA" quebra palavra por
+  linha). Revisar todas as páginas em 375 px, 768 px e desktop.
+- **UI e UX do front:** revisão geral de layout, hierarquia, estados vazios e de erro, rótulos (ex.: o seletor diz
+  "Vídeo do Estúdio" mesmo com post publicado).
+- **Logo:** fechar a marca Nativa (Nativa Studio, Nativa Ads, Nativa IA). Decidir entre reaproveitar o logo da Nativa
+  Labs ou criar um próprio da plataforma.
+
+### Onda 5c: Caixa de entrada única (ideia do Douglas, 12/11/2026)
+Toda conversa com cliente num lugar só, no Console: mensagem do Instagram, da Página do Facebook, e-mail da marca e,
+depois, WhatsApp. A pessoa lê e responde dali, e a conversa fica ligada ao contato (gestão de clientes).
+Nada sai sem a pessoa mandar; a IA pode sugerir resposta, mas quem envia é humano. Mensagem de cliente é dado pessoal:
+guardar só o necessário, com acesso por marca. Cada canal confere a doc oficial antes de codar (nada inventado):
+1. **Instagram Direct:** API de mensagens do Instagram (permissão de mensagens da conta profissional, webhook de
+   mensagem recebida, regra da janela pra responder). Mesmo app da Meta que já publica.
+2. **Messenger da Página do Facebook:** plataforma do Messenger, webhook da Página.
+3. **E-mail da marca:** ler a caixa (IMAP ou API do provedor do e-mail do MedlyCare) e responder pelo mesmo endereço;
+   envio pode seguir pelo Resend se o domínio permitir.
+4. **WhatsApp:** API oficial (Cloud API), junto com o RB-32 e o RB-39.
+5. **LinkedIn:** mensagens e publicação automática dependem de acesso de parceiro; hoje é manual e deve esperar o CNPJ.
+6. **Depois:** contato único juntando os canais, etiquetas, quem atende, histórico, e a IA lendo as dúvidas que mais
+   chegam pra virar conteúdo e copy (alimenta o Estúdio e o Nativa Ads).
+Começar pelo Instagram Direct (maior volume e mesma conta Meta), depois e-mail.
+
 ### Onda 5: experiência e avisos
 ~~**RB-30/RB-14**~~ PWA e visual no molde do MedlyCare (roxo Ametista; Publicações com Fila, Semana e Mês, arrastar, Ctrl+K, Visão geral com "hoje", PWA sem cache: feito 28/10) → **RB-37** notificação de pendência
 (push da PWA primeiro) → **RB-32** aprovação pelo WhatsApp (extensão do Chrome agora, API oficial com

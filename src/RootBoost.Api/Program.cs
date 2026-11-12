@@ -409,7 +409,8 @@ brandProfile.MapPost("/ads/campaigns/{id:guid}/pause", async (string key, Guid i
 brandProfile.MapPost("/ads/campaigns", async (string key, AdCampaignProposeInput input, IBrandStore brands,
     RootBoost.Application.Studio.ICreativeJobStore jobs, RootBoost.Application.Ai.IBrandProductStore products,
     RootBoost.Application.Ads.CampaignProposer proposer, RootBoost.Application.Ads.IAdCampaignStore store,
-    RootBoost.Application.Publishing.IPublicationStore pubs, CancellationToken ct) =>
+    RootBoost.Application.Publishing.IPublicationStore pubs, RootBoost.Application.Organic.IOrganicPostStore organic,
+    TimeProvider time, CancellationToken ct) =>
 {
     var brandKey = key.ToLowerInvariant();
     var brand = (await brands.ListAsync(ct)).FirstOrDefault(b => b.Key == brandKey);
@@ -426,7 +427,16 @@ brandProfile.MapPost("/ads/campaigns", async (string key, AdCampaignProposeInput
             if (!pub.MediaUrl.EndsWith(".mp4", StringComparison.OrdinalIgnoreCase) && !pub.MediaUrl.EndsWith(".mov", StringComparison.OrdinalIgnoreCase))
                 return Results.BadRequest(new { error = "esse post não é vídeo" });
             var theme = pub.Caption.Split('\n', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? pub.Caption;
-            proposal = await proposer.ProposeAsync(brandKey, brand.Name, product, null, theme, pub.Caption, pub.MediaUrl, pub.CoverUrl, ct);
+            // Números do post no canal e posição no ranking da marca (RB-25): a IA justifica a campanha com eles.
+            string? performance = null;
+            if (pub.ExternalId is { } ext)
+            {
+                var ranked = RootBoost.Application.Organic.CreativeRanking.Rank(
+                    await organic.ListByBrandAsync(brandKey, time.GetUtcNow().AddDays(-365), ct));
+                var pos = ranked.ToList().FindIndex(r => r.Post.Channel == pub.Channel && r.Post.ExternalId == ext);
+                if (pos >= 0) performance = RootBoost.Application.Organic.CreativeRanking.Describe(ranked[pos], pos + 1, ranked.Count);
+            }
+            proposal = await proposer.ProposeAsync(brandKey, brand.Name, product, null, theme, pub.Caption, pub.MediaUrl, pub.CoverUrl, performance, ct);
         }
         else
         {
@@ -493,6 +503,26 @@ brandProfile.MapGet("/report", async (string key, int? days, RootBoost.Applicati
     var report = RootBoost.Application.Reports.WeeklyReport.Build(brandKey, now, period,
         await pubs.ListByBrandAsync(brandKey, now.AddDays(-period), now.AddDays(7), ct), await jobs.ListByBrandAsync(brandKey, ct), rows, created);
     return Results.Ok(report);
+});
+
+// Ranking dos vídeos pelo que o público fez no orgânico (RB-25): nota, motivo e, quando o post saiu daqui, a publicação
+// pra virar campanha. Só leitura do que a sincronização gravou.
+brandProfile.MapGet("/organic/ranking", async (string key, int? days, RootBoost.Application.Organic.IOrganicPostStore store,
+    TimeProvider time, CancellationToken ct) =>
+{
+    var since = time.GetUtcNow().AddDays(-Math.Clamp(days ?? 90, 1, 365));
+    var ranked = RootBoost.Application.Organic.CreativeRanking.Rank(await store.ListByBrandAsync(key.ToLowerInvariant(), since, ct));
+    return Results.Ok(ranked.Select((r, i) => new OrganicRankDto(i + 1, r.Score, r.EnoughData, Math.Round(r.EngagementRate * 100, 2), r.Reason,
+        r.Post.Channel.ToString(), r.Post.ExternalId, r.Post.ProductType, r.Post.Caption, r.Post.Permalink, r.Post.ThumbnailUrl, r.Post.PostedAt,
+        r.Post.PublicationId, r.Post.Views, r.Post.Reach, r.Post.Likes, r.Post.Comments, r.Post.Shares, r.Post.Saves, r.Post.AvgWatchMs, r.Post.FetchedAt)));
+});
+
+// Relê agora as métricas orgânicas da marca (o agendador já faz a cada 12 h).
+brandProfile.MapPost("/organic/sync", async (string key, RootBoost.Application.Organic.SyncOrganicInsights sync, CancellationToken ct) =>
+{
+    var results = await sync.RunAsync(key.ToLowerInvariant(), ct: ct);
+    if (results.Count == 0) return Results.BadRequest(new { error = "leitura de métricas orgânicas desligada ou a marca não tem conta do Instagram configurada" });
+    return Results.Ok(results.Select(r => new { channel = r.Channel.ToString(), r.Ok, r.Inserted, r.Updated, r.Error }));
 });
 
 brandProfile.MapGet("/ads/summary", async (string key, int? days, RootBoost.Application.Ads.IAdInsightStore store,
@@ -1704,6 +1734,9 @@ record ProductDto(string Name, string Kind, string? Url, string? AppUrl, string 
 record ScreenGuideDraftInput(string? Documentation);
 record ScreenKnowledgeInput(string? Text);
 record SystemMapInput(System.Text.Json.JsonElement Map);
+record OrganicRankDto(int Position, int Score, bool EnoughData, decimal EngagementPercent, string Reason, string Channel,
+    string ExternalId, string ProductType, string Caption, string? Permalink, string? ThumbnailUrl, DateTimeOffset PostedAt, Guid? PublicationId,
+    long Views, long Reach, long Likes, long Comments, long Shares, long Saves, long? AvgWatchMs, DateTimeOffset FetchedAt);
 record AdCampaignProposeInput(Guid? JobId, Guid? PublicationId = null);
 record AdCampaignInput(string Name, string Objective, decimal DailyBudget, List<string>? Countries, int AgeMin, int AgeMax,
     string PrimaryText, string Headline, string CallToAction, string LinkUrl);
