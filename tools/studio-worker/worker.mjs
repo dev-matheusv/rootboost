@@ -56,6 +56,8 @@ const cfg = {
   args: process.env.STUDIO_PIPELINE_ARGS ?? "{tools}/narrado-calmo.mjs {nome} --voz {voz} --semente {seed}",
   // Voz quando o job não escolhe: só pra marca dona dela (ver privateVoices). Vazio = sem padrão.
   defaultVoice: process.env.STUDIO_DEFAULT_VOICE ?? "",
+  // Voz por bloco no passo a passo (método do marketing, 12/11). STUDIO_BLOCK_VOICE=0 volta pra voz contínua.
+  blockVoice: process.env.STUDIO_BLOCK_VOICE !== "0",
   // Vozes clonadas de pessoas: voz:marca. A do Matheus só narra o MedlyCare.
   privateVoices: parsePrivateVoices(process.env.STUDIO_PRIVATE_VOICES ?? "matheus2a:medlycare,matheus2b:medlycare,medlyfem:medlycare,medlyfem2:medlycare,medlynat1:medlycare"),
   // Passos da síntese por voz (voz:passos), pra sair igual à amostra aprovada. Sem entrada: 32.
@@ -168,9 +170,38 @@ async function round() {
   const stepArgs = [...(steps === 32 ? [] : ["--passos", String(steps)]), ...(tone ? ["--semitons", String(tone)] : []),
     ...(finish ? ["--acabamento", finish, "--mais-lenta"] : [])];
   const voiceArgs = (sd) => [...buildArgs(cfg.args, { nome, voz: voice, seed: sd, tools: cfg.tools, base: cfg.base }), ...stepArgs, "--so-voz"];
-  const voiceDir = (sd) => `${projectDir}/voz-continua/${voiceFolder(voice, steps, sd, tone, finish)}`;
+  // Voz por bloco (12/11, método do chat de marketing que acabou com as travadas): uma fala por arquivo, pausa
+  // alongada só depois de ponto e interrogação, acabamento e marca por último, e as falas juntadas com o fundo da
+  // própria gravação. Vale pro passo a passo (toda cena gravada); o resto segue a voz contínua.
+  const allRecorded = scenes.length > 0 && scenes.length === (job.roteiro.blocos ?? []).length;
+  const blockMode = allRecorded && cfg.blockVoice;
+  const voiceDir = (sd) => `${projectDir}/${blockMode ? "voz-blocos" : "voz-continua"}/${voiceFolder(voice, steps, sd, tone, finish)}`;
+  async function makeBlockVoice(sd) {
+    const dir = voiceDir(sd);
+    mkdirSync(dir, { recursive: true });
+    const falas = JSON.parse(readFileSync(`${projectDir}/falas.json`, "utf8"));
+    const spec = { nome, voz: voice, seed: sd, semitons: tone, ...(finish ? { acabamento: finish, mais_lenta: true } : {}), pausas: true,
+      blocos: falas.map((fala) => ({ fala })) };
+    writeFileSync(`${dir}/spec.json`, JSON.stringify(spec, null, 1));
+    process.env.MARCA = job.brandKey;
+    process.env.OMP_NUM_THREADS ??= "6";
+    const runs = [
+      [`${cfg.tools}/falar-blocos.py`, `${dir}/spec.json`, String(steps)],
+      [`${cfg.tools}/pausar-blocos.py`, `${dir}/spec.json`],
+      [`${cfg.tools}/acabar-blocos.py`, `${dir}/spec.json`],
+      [join(here, "juntar-voz.py"), `${dir}/spec.json`, dir],
+      [`${cfg.tools}/alinhar.py`, `${dir}/16k.wav`, `${dir}/falas.json`, `${dir}/alinhamento.json`],
+    ];
+    for (const args of runs) {
+      const { code, log } = await runPipeline(job.id, PY, ["-X", "utf8", ...args]);
+      if (code !== 0) return { error: `voz por bloco (${args[0].split("/").pop()}): ${lastLine(log)}`, retry: false };
+    }
+    const unmatched = readUnmatched(dir);
+    return unmatched === null ? { error: "não achei a contagem de palavras sem par da voz", retry: false } : { unmatched };
+  }
   async function makeVoice(sd, note) {
     await progress(job.id, 3, note);
+    if (blockMode) return makeBlockVoice(sd);
     const { code, log } = await runPipeline(job.id, cfg.bin, voiceArgs(sd));
     if (code !== 0) return { error: `voz saiu com código ${code}: ${lastLine(log)}`, retry: !isScriptProblem(log) };
     const unmatched = readUnmatched(voiceDir(sd)) ?? parseUnmatched(log);
@@ -195,13 +226,12 @@ async function round() {
     let takes = 0;
     for (const c of chosenTakes) {
       const m4a = `${voiceDir(c.seed)}/revisao.m4a`;
-      // Passo a passo: a pessoa ouve a voz com as pausas finais, a mesma que vai pro vídeo.
-      const allRecorded = scenes.length === (job.roteiro.blocos ?? []).length;
-      if (allRecorded) {
+      // Passo a passo: a pessoa ouve a voz com as pausas finais, a mesma que vai pro vídeo. Voz por bloco já sai pausada.
+      if (allRecorded && !blockMode) {
         const paused = await runPipeline(job.id, cfg.bin, [`${cfg.tools}/narrado-passo.mjs`, nome, "--voz-dir", voiceDir(c.seed), "--pausar", "--so-voz"]);
         if (paused.code !== 0) return fail(job.id, `pausas da voz: ${lastLine(paused.log)}`, false);
       }
-      const review = `${voiceDir(c.seed)}${allRecorded ? "-final" : ""}/tratado.wav`;
+      const review = `${voiceDir(c.seed)}${allRecorded && !blockMode ? "-final" : ""}/tratado.wav`;
       execFileSync(FFMPEG, ["-y", "-i", review, "-c:a", "aac", "-b:a", "128k", m4a], { stdio: "ignore" });
       parts.push([`take-${c.seed}`, { path: m4a, filename: `voz-${c.seed}.m4a` }], [`unmatched-${c.seed}`, String(c.unmatched)]);
       takes++;
@@ -327,7 +357,7 @@ async function round() {
     joinRecordings(plan);
     writeFileSync(`${projectDir}/roteiro.json`, JSON.stringify(plan.roteiro, null, 1));
     writeFileSync(`${projectDir}/tela.json`, JSON.stringify(plan.tela));
-    pipelineArgs = [`${cfg.tools}/narrado-passo.mjs`, nome, "--voz-dir", voiceDir(seed), "--pausar"];
+    pipelineArgs = [`${cfg.tools}/narrado-passo.mjs`, nome, "--voz-dir", voiceDir(seed), ...(blockMode ? [] : ["--pausar"])];
   }
   const { code, log } = await runPipeline(job.id, cfg.bin, pipelineArgs);
   if (code !== 0) {
