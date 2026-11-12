@@ -150,6 +150,8 @@ export default {
     nextSteps: 'O que fazer agora',
   },
   aiCampaigns: {
+    fromStudio: 'Estúdio',
+    fromPost: 'Publicado',
     impressions: 'impressões',
     clicks: 'cliques',
     results: 'resultados',
@@ -161,7 +163,7 @@ export default {
     subtitle: 'A IA monta a campanha a partir de um vídeo pronto. Você confere, aprova e ela nasce pausada na Meta.',
     fromVideo: 'Vídeo do Estúdio',
     propose: 'Montar campanha',
-    noVideo: 'Nenhum vídeo pronto no Estúdio ainda. A campanha sai de um vídeo aprovado.',
+    noVideo: 'Nenhum vídeo pronto no Estúdio nem publicado ainda.',
     save: 'Salvar',
     approve: 'Aprovar e criar pausada',
     pausedNote: 'Nada é gasto até você ativar no Gerenciador de Anúncios.',
