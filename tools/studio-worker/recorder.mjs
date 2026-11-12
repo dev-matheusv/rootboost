@@ -534,3 +534,90 @@ export async function recordScene({ brandKey, scene, account, outDir, name, ask,
     close();
   }
 }
+
+// --- Exploração do sistema (11/11): a IA aprende o sistema do cliente sozinha. ---------------------------------------
+// Só NAVEGA: abre telas pelo endereço e toca em abas. Não digita, não salva, não envia, não exclui. Anota o que cada tela
+// tem (títulos, abas, campos, botões), nunca o conteúdo de listas, e tira texto com cara de nome ou número de pessoa.
+const PAGE_MAP = `(() => {
+  const seen = (els, max) => [...new Set([...els].map((e) => (e.getAttribute?.('aria-label') || e.innerText || e.placeholder || e.textContent || '').trim().replace(/\s+/g, ' '))
+    .filter((t) => t && t.length <= 40 && !/\d{3}|@/.test(t) && !/^[A-ZÀ-Ú][a-zà-ú]+( [A-ZÀ-Ú][a-zà-ú]+)+$/.test(t)))].slice(0, max);
+  const visible = (e) => { const r = e.getBoundingClientRect(); return r.width > 2 && r.height > 2 && getComputedStyle(e).visibility !== 'hidden'; };
+  const q = (sel) => [...document.querySelectorAll(sel)].filter(visible);
+  const route = location.pathname.split('/').map((s) => /[0-9a-f]{8}-|^\d+$/i.test(s) ? ':id' : s).join('/') || '/';
+  const detail = route.includes(':id');
+  const links = [...document.querySelectorAll('a[href]')].map((a) => { try { return new URL(a.href, location.href); } catch { return null; } })
+    .filter((u) => u && u.origin === location.origin && !/sair|logout|excluir|delete|remover/i.test(u.pathname)).map((u) => u.pathname);
+  return {
+    route,
+    titulos: detail ? [] : seen(q('h1,h2,h3,.text-h5,.text-h6,.q-toolbar__title'), 8),
+    abas: seen(q('[role=tab]'), 15),
+    campos: seen(q('.q-field__label,label,[placeholder]'), 30),
+    botoes: seen(q('button,[role=button],a.q-btn'), 30),
+    menu: seen(q('.q-footer [aria-label],.q-footer .q-tab,.q-drawer .q-item'), 20),
+    links: [...new Set(links)].slice(0, 60),
+  };
+})()`;
+
+/** Passa pelas telas do sistema com a conta de demonstração e devolve o mapa (uma entrada por tipo de tela). */
+export async function exploreSystem({ account, maxPages = 40, log = console.log }) {
+  const { cdp, close } = await openChrome();
+  const pages = [];
+  try {
+    await cdp.send("Page.navigate", { url: account.url });
+    await wait(2500);
+    const fields = await loginFields(cdp);
+    if (fields) {
+      const r = await login(cdp, fields, account);
+      if (!r.ok) throw Object.assign(new Error(`exploração: não entrou com a conta de demonstração (${r.error})`), { personalData: true });
+    }
+    const origin = new URL(await evaluate(cdp, "location.href")).origin;
+    const queue = [new URL(await evaluate(cdp, "location.href")).pathname];
+    // Rotas do app: SPA (Vue, React) quase não usa link de verdade. No Vue, o roteador lista as telas; no resto, os
+    // itens da barra de baixo e do menu lateral são tocados um a um e o endereço que abre entra na fila.
+    const routerPaths = await evaluate(cdp, `(() => { try { const app = document.querySelector('#q-app, #app, [data-v-app]')?.__vue_app__;
+      const r = app?.config?.globalProperties?.$router; return r ? r.getRoutes().map((x) => x.path).filter((p) => !p.includes(':') && !p.includes('*')) : []; } catch { return []; } })()`);
+    // Fora: login, cadastro e telas públicas (termos, portal do paciente, página de busca): não são do uso do dia a dia.
+    const skip = /login|entrar|sair|logout|reset|senha|password|cadastro|signup|registrar|termo|politica|privacidade|paciente\/|encontre|suspended|convite|confirmar/i;
+    for (const p of routerPaths ?? []) if (!skip.test(p)) queue.push(p);
+    const navCount = await evaluate(cdp, `document.querySelectorAll('.q-footer .q-tab, .q-footer .q-btn, .q-footer a, .q-drawer .q-item, nav a, nav button').length`);
+    for (let i = 0; i < Math.min(navCount ?? 0, 15); i++) {
+      const before = await evaluate(cdp, "location.pathname");
+      await evaluate(cdp, `document.querySelectorAll('.q-footer .q-tab, .q-footer .q-btn, .q-footer a, .q-drawer .q-item, nav a, nav button')[${i}]?.click()`);
+      await wait(1200);
+      const after = await evaluate(cdp, "location.pathname");
+      if (after !== before) { queue.push(after); await cdp.send("Page.navigate", { url: origin + before }); await wait(1800); }
+    }
+    const routes = new Set();
+    const visited = new Set();
+    while (queue.length && pages.length < maxPages) {
+      const path = queue.shift();
+      if (visited.has(path) || (visited.size > 0 && skip.test(path))) continue;
+      visited.add(path);
+      await cdp.send("Page.navigate", { url: origin + path });
+      await wait(2500);
+      const now = await evaluate(cdp, "location.href");
+      if (!sameSite(now, account.url)) continue;
+      const map = await evaluate(cdp, PAGE_MAP);
+      // Detalhe (/x/:id) entra uma vez só por tipo de tela: o que importa é a estrutura, não cada registro.
+      if (routes.has(map.route)) continue;
+      routes.add(map.route);
+      // Abas mudam o que aparece: toca em cada uma (aba só navega) e soma campos e botões.
+      const tabs = [];
+      for (const tab of map.abas.slice(0, 8)) {
+        const ok = await evaluate(cdp, `(() => { const t = [...document.querySelectorAll('[role=tab]')].find((e) => (e.getAttribute('aria-label') || e.innerText || '').trim().replace(/\s+/g, ' ') === ${JSON.stringify(tab)}); if (!t) return false; t.click(); return true; })()`);
+        if (!ok) continue;
+        await wait(1200);
+        const inner = await evaluate(cdp, PAGE_MAP);
+        tabs.push({ aba: tab, campos: inner.campos.filter((c) => !map.campos.includes(c)), botoes: inner.botoes.filter((b) => !map.botoes.includes(b)) });
+        for (const l of inner.links) if (!visited.has(l)) queue.push(l);
+      }
+      const { links, ...rest } = map;
+      pages.push({ ...rest, abas: tabs.length ? tabs : map.abas });
+      log(`exploração: ${map.route} (${map.campos.length} campos, ${map.botoes.length} botões, ${map.abas.length} abas)`);
+      for (const l of links) if (!visited.has(l)) queue.push(l);
+    }
+    return { origin, pages };
+  } finally {
+    close();
+  }
+}

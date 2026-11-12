@@ -89,6 +89,8 @@ public sealed class FakeLanguageModel : ILanguageModel
                 titulo = "Ficha de harmonização no sistema", chamada = "LEARN_MORE", link = "https://medlycare.com.br",
                 motivo = "Orçamento pequeno pra medir o interesse. Público amplo no Brasil, a Meta acha quem responde.",
             }), "fake", 0, 0, 0m));
+        if (request.Purpose == "system-map")
+            return Task.FromResult(new LanguageModelResult(JsonSerializer.Serialize(new { guia = "- Agenda: rota /agenda, abas Dia e Semana." }), "fake", 0, 0, 0m));
         if (request.Purpose == "screen-guide")
             return Task.FromResult(new LanguageModelResult(JsonSerializer.Serialize(new { guia = "- Para abrir a agenda, toque em Agenda na barra de baixo." }), "fake", 0, 0, 0m));
         if (request.Purpose == "media-describe")

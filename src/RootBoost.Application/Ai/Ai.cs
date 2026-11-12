@@ -310,7 +310,7 @@ public sealed class ScriptWriter
             if (product.Differentials.Count > 0) sb.AppendLine($"Diferenciais: {string.Join("; ", product.Differentials)}");
             if (!string.IsNullOrWhiteSpace(product.Offer)) sb.AppendLine($"Oferta atual: {product.Offer}");
             // Como o sistema funciona de verdade (11/11): roteiro que pede tela ou campo que não existe faz a gravação travar.
-            var how = string.Join("\n\n", new[] { product.ScreenGuide, product.ScreenKnowledge }.Where(s => !string.IsNullOrWhiteSpace(s)));
+            var how = string.Join("\n\n", new[] { product.SystemMap, product.ScreenGuide, product.ScreenKnowledge }.Where(s => !string.IsNullOrWhiteSpace(s)));
             if (how.Length > 0)
             {
                 sb.AppendLine();
