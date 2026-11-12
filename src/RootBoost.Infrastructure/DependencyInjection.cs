@@ -120,6 +120,7 @@ public static class DependencyInjection
         // Campanha pela IA (RB-31): Ads:Creator=Meta cria de verdade (sempre pausada); padrão Fake, nada sai pra Meta.
         services.AddScoped<RootBoost.Application.Ads.IAdCampaignStore, EfAdCampaignStore>();
         services.AddScoped<RootBoost.Application.Ads.CampaignProposer>();
+        services.AddScoped<RootBoost.Application.Reports.WeeklyAdvisor>();
         services.AddScoped<RootBoost.Application.Ads.CreateApprovedCampaign>();
         if (string.Equals(config["Ads:Creator"], "Meta", StringComparison.OrdinalIgnoreCase))
         {

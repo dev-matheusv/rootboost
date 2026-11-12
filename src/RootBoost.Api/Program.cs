@@ -416,6 +416,7 @@ brandProfile.MapPost("/ads/campaigns", async (string key, AdCampaignProposeInput
     var brand = (await brands.ListAsync(ct)).FirstOrDefault(b => b.Key == brandKey);
     if (brand is null) return Results.NotFound();
     var product = await products.GetAsync(brandKey, ct);
+    var lessons = await RootBoost.Application.Organic.ContentLessons.ForBrandAsync(organic, brandKey, time.GetUtcNow(), ct);
     try
     {
         RootBoost.Application.Ads.CampaignProposal proposal;
@@ -436,7 +437,8 @@ brandProfile.MapPost("/ads/campaigns", async (string key, AdCampaignProposeInput
                 var pos = ranked.ToList().FindIndex(r => r.Post.Channel == pub.Channel && r.Post.ExternalId == ext);
                 if (pos >= 0) performance = RootBoost.Application.Organic.CreativeRanking.Describe(ranked[pos], pos + 1, ranked.Count);
             }
-            proposal = await proposer.ProposeAsync(brandKey, brand.Name, product, null, theme, pub.Caption, pub.MediaUrl, pub.CoverUrl, performance, ct);
+            proposal = await proposer.ProposeAsync(brandKey, brand.Name, product, null, theme, pub.Caption, pub.MediaUrl, pub.CoverUrl,
+                Join(performance, lessons), ct);
         }
         else
         {
@@ -446,10 +448,15 @@ brandProfile.MapPost("/ads/campaigns", async (string key, AdCampaignProposeInput
             var video = job.Outputs.FirstOrDefault(o => o.Role == "video") ?? job.Outputs.FirstOrDefault(o => o.Role == "video-instagram");
             if (video is null) return Results.BadRequest(new { error = "esse vídeo ainda não está pronto" });
             var cover = job.Outputs.FirstOrDefault(o => o.Role == "cover-instagram")?.Url;
-            proposal = await proposer.ProposeAsync(brandKey, brand.Name, product, job, video.Url, cover, ct);
+            proposal = await proposer.ProposeAsync(brandKey, brand.Name, product, job.Id, job.Theme, job.Lines, video.Url, cover,
+                Join(null, lessons), ct);
         }
         await store.AddAsync(proposal.Draft, ct);
         return Results.Ok(AdCampaignDto.From(proposal.Draft));
+
+        static string? Join(string? video, string? brandLessons) =>
+            video is null && brandLessons is null ? null
+            : string.Join(" ", new[] { video, brandLessons is null ? null : $"Histórico da marca: {brandLessons}" }.Where(x => x is not null));
     }
     catch (ArgumentException ex) { return Results.BadRequest(new { error = $"a proposta da IA não passou na conferência: {ex.Message}" }); }
 });
@@ -491,7 +498,28 @@ brandProfile.MapPost("/ads/campaigns/{id:guid}/approve", async (string key, Guid
 // Resumo da semana (RB-34): posts, vídeos, anúncios e o que fazer agora, só com dado do banco.
 brandProfile.MapGet("/report", async (string key, int? days, RootBoost.Application.Publishing.IPublicationStore pubs,
     RootBoost.Application.Studio.ICreativeJobStore jobs, RootBoost.Application.Ads.IAdInsightStore insights,
-    RootBoost.Application.Ads.IAdCampaignStore campaigns, RootBoost.Application.Ads.AdsStopRule rule, TimeProvider time, CancellationToken ct) =>
+    RootBoost.Application.Ads.IAdCampaignStore campaigns, RootBoost.Application.Ads.AdsStopRule rule,
+    RootBoost.Application.Organic.IOrganicPostStore organic, TimeProvider time, CancellationToken ct) =>
+    Results.Ok(await BuildWeeklyReport(key, days, pubs, jobs, insights, campaigns, rule, organic, time, ct)));
+
+// Sugestões da IA sobre a semana (12/11): lê o resumo (orgânico e pago) e o histórico dos vídeos e devolve de 3 a 5
+// melhorias com o porquê. Custa uma chamada de IA, por isso só roda quando a pessoa pede.
+brandProfile.MapPost("/report/advice", async (string key, int? days, RootBoost.Application.Publishing.IPublicationStore pubs,
+    RootBoost.Application.Studio.ICreativeJobStore jobs, RootBoost.Application.Ads.IAdInsightStore insights,
+    RootBoost.Application.Ads.IAdCampaignStore campaigns, RootBoost.Application.Ads.AdsStopRule rule,
+    RootBoost.Application.Organic.IOrganicPostStore organic, RootBoost.Application.Reports.WeeklyAdvisor advisor,
+    RootBoost.Application.Ai.IBrandProductStore products, TimeProvider time, CancellationToken ct) =>
+{
+    var brandKey = key.ToLowerInvariant();
+    var report = await BuildWeeklyReport(brandKey, days, pubs, jobs, insights, campaigns, rule, organic, time, ct);
+    var lessons = await RootBoost.Application.Organic.ContentLessons.ForBrandAsync(organic, brandKey, time.GetUtcNow(), ct);
+    return Results.Ok(await advisor.AdviseAsync(report, lessons, await products.GetAsync(brandKey, ct), ct));
+});
+
+static async Task<RootBoost.Application.Reports.WeeklyReport> BuildWeeklyReport(string key, int? days,
+    RootBoost.Application.Publishing.IPublicationStore pubs, RootBoost.Application.Studio.ICreativeJobStore jobs,
+    RootBoost.Application.Ads.IAdInsightStore insights, RootBoost.Application.Ads.IAdCampaignStore campaigns,
+    RootBoost.Application.Ads.AdsStopRule rule, RootBoost.Application.Organic.IOrganicPostStore organic, TimeProvider time, CancellationToken ct)
 {
     var brandKey = key.ToLowerInvariant();
     var period = Math.Clamp(days ?? 7, 1, 31);
@@ -500,10 +528,12 @@ brandProfile.MapGet("/report", async (string key, int? days, RootBoost.Applicati
     var rows = await insights.ListAsync(brandKey, today.AddDays(-30), today, AdLevel.Campaign, ct);
     var created = (await campaigns.ListByBrandAsync(brandKey, ct)).Where(c => c.Status == AdCampaignStatus.Created && c.ExternalCampaignId is not null)
         .Select(c => (c, RootBoost.Application.Ads.CampaignAdvisor.Advise(c, rows.Where(r => r.ObjectId == c.ExternalCampaignId).ToList(), rule, today))).ToList();
-    var report = RootBoost.Application.Reports.WeeklyReport.Build(brandKey, now, period,
-        await pubs.ListByBrandAsync(brandKey, now.AddDays(-period), now.AddDays(7), ct), await jobs.ListByBrandAsync(brandKey, ct), rows, created);
-    return Results.Ok(report);
-});
+    var all = await campaigns.ListByBrandAsync(brandKey, ct);
+    // Publicações de 180 dias: o candidato a anúncio pode ser um vídeo antigo que segue no topo do ranking.
+    return RootBoost.Application.Reports.WeeklyReport.Build(brandKey, now, period,
+        await pubs.ListByBrandAsync(brandKey, now.AddDays(-180), now.AddDays(7), ct), await jobs.ListByBrandAsync(brandKey, ct), rows, created,
+        await organic.ListByBrandAsync(brandKey, now.AddDays(-180), ct), all.Select(c => c.VideoUrl).ToHashSet());
+}
 
 // Ranking dos vídeos pelo que o público fez no orgânico (RB-25): nota, motivo e, quando o post saiu daqui, a publicação
 // pra virar campanha. Só leitura do que a sincronização gravou.
@@ -904,7 +934,8 @@ brandProfile.MapPut("/creative-jobs/{id:guid}/script", async (string key, Guid i
 // A IA escreve roteiro e falas com o perfil, as provas e o playbook (RB-45); passa pelos mesmos portões.
 brandProfile.MapPost("/creative-jobs/{id:guid}/write-script", async (string key, Guid id, WriteScriptInput? input,
     RootBoost.Application.Studio.ICreativeJobStore store, IBrandProfileStore profiles, RootBoost.Application.Ai.ScriptWriter writer,
-    RootBoost.Application.Ai.IBrandProductStore products, RootBoost.Application.Media.IMediaAssetStore assets, TimeProvider time, CancellationToken ct) =>
+    RootBoost.Application.Ai.IBrandProductStore products, RootBoost.Application.Media.IMediaAssetStore assets,
+    RootBoost.Application.Organic.IOrganicPostStore organic, TimeProvider time, CancellationToken ct) =>
 {
     var job = await store.GetAsync(id, ct);
     if (job is null || job.BrandKey != key.ToLowerInvariant()) return Results.NotFound();
@@ -914,7 +945,8 @@ brandProfile.MapPost("/creative-jobs/{id:guid}/write-script", async (string key,
         var policy = profile?.Brand.Privacy ?? PersonalDataPolicy.Blur;
         // Mídia com dado pessoal sem borrar (ou real, em marca só fictício) nem aparece pra IA.
         var library = (await assets.ListByBrandAsync(job.BrandKey, 100, ct)).Where(m => m.BlockedReason(policy) is null && !m.Finished).ToList();
-        var (ok, failed) = await writer.WriteAsync(job, profile, input?.Instructions, ct, await products.GetAsync(job.BrandKey, ct), library);
+        var lessons = await RootBoost.Application.Organic.ContentLessons.ForBrandAsync(organic, job.BrandKey, time.GetUtcNow(), ct);
+        var (ok, failed) = await writer.WriteAsync(job, profile, input?.Instructions, ct, await products.GetAsync(job.BrandKey, ct), library, lessons);
         if (ok is null) return Results.UnprocessableEntity(new { error = "a IA não acertou o roteiro em duas tentativas", errors = failed!.Errors });
         job.SetScript(ok.Script.GetRawText(), ok.Lines.GetRawText(), time.GetUtcNow(),
             ok.Warnings.Select(w => CreativeJob.ScriptWarningPrefix + w).ToList());

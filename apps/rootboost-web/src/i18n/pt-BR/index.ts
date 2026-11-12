@@ -145,6 +145,17 @@ export default {
     error: 'Não consegui ligar os avisos neste aparelho.',
   },
   weeklyReport: {
+    organic: 'Orgânico (Instagram)',
+    paid: 'Pago (anúncios)',
+    advice: {
+      title: 'Sugestões da IA',
+      subtitle: 'A IA lê os números da semana e do histórico e diz o que melhorar para ter mais retorno.',
+      ask: 'Pedir sugestões',
+      again: 'Pedir de novo',
+      none: 'A IA não achou nada para sugerir agora.',
+      error: 'Não deu para gerar as sugestões agora.',
+      area: { organico: 'Orgânico', pago: 'Pago', conteudo: 'Conteúdo', geral: 'Geral' },
+    },
     title: 'Resumo da semana',
     highlights: 'O que aconteceu',
     nextSteps: 'O que fazer agora',
