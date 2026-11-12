@@ -886,6 +886,93 @@ namespace RootBoost.Infrastructure.Persistence.Migrations
                     b.ToTable("Orders");
                 });
 
+            modelBuilder.Entity("RootBoost.Domain.OrganicPost", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<long?>("AvgWatchMs")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("BrandKey")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("Caption")
+                        .IsRequired()
+                        .HasMaxLength(2200)
+                        .HasColumnType("character varying(2200)");
+
+                    b.Property<string>("Channel")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.Property<long>("Comments")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("ExternalId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<DateTimeOffset>("FetchedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<long>("Interactions")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("Likes")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("MediaType")
+                        .IsRequired()
+                        .HasMaxLength(24)
+                        .HasColumnType("character varying(24)");
+
+                    b.Property<string>("Permalink")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)");
+
+                    b.Property<DateTimeOffset>("PostedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ProductType")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.Property<Guid?>("PublicationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<long>("Reach")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("Saves")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("Shares")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("ThumbnailUrl")
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)");
+
+                    b.Property<long>("Views")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BrandKey", "PostedAt");
+
+                    b.HasIndex("Channel", "ExternalId")
+                        .IsUnique();
+
+                    b.ToTable("OrganicPosts");
+                });
+
             modelBuilder.Entity("RootBoost.Domain.ProofItem", b =>
                 {
                     b.Property<Guid>("Id")
