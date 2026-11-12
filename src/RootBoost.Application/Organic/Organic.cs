@@ -177,3 +177,36 @@ public static class CreativeRanking
         $"Posição {position} de {total} no ranking orgânico da marca (nota {r.Score}/100). {r.Reason} " +
         $"Visualizações {r.Post.Views}, curtidas {r.Post.Likes}, comentários {r.Post.Comments}.";
 }
+
+/// <summary>
+/// O que a marca aprendeu com o público (12/11, pedido do Matheus): os vídeos que mais e menos funcionaram, em texto
+/// pronto pra IA usar como referência no roteiro, na campanha e nas sugestões. É DADO; quem lê decide o que copiar.
+/// </summary>
+public static class ContentLessons
+{
+    public static string? From(IReadOnlyList<RankedPost> ranked, int best = 5, int worst = 3)
+    {
+        var ok = ranked.Where(r => r.EnoughData).ToList();
+        if (ok.Count == 0) return null;
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine($"{ok.Count} vídeos com números suficientes. Os que o público mais salvou, compartilhou e assistiu:");
+        foreach (var r in ok.Take(best)) sb.AppendLine($"- nota {r.Score}: \"{Title(r.Post)}\". {r.Reason}");
+        var low = ok.Skip(best).TakeLast(worst).ToList();
+        if (low.Count > 0)
+        {
+            sb.AppendLine("Os que menos engajaram:");
+            foreach (var r in low) sb.AppendLine($"- nota {r.Score}: \"{Title(r.Post)}\". {r.Reason}");
+        }
+        return sb.ToString().TrimEnd();
+    }
+
+    /// <summary>Lições dos últimos 180 dias da marca, ou nulo sem números.</summary>
+    public static async Task<string?> ForBrandAsync(IOrganicPostStore store, string brandKey, DateTimeOffset now, CancellationToken ct = default) =>
+        From(CreativeRanking.Rank(await store.ListByBrandAsync(brandKey, now.AddDays(-180), ct)));
+
+    public static string Title(OrganicPost p)
+    {
+        var line = p.Caption.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).FirstOrDefault() ?? "";
+        return line.Length > 110 ? line[..110] + "..." : line;
+    }
+}
