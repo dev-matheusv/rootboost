@@ -19,12 +19,14 @@
       <div v-for="v in shown" :key="v.key" class="voice card-rounded q-pa-sm" :class="{ selected: modelValue === v.key, playing: playing === v.key }"
         role="radio" tabindex="0" :aria-checked="modelValue === v.key" @click="emit('update:modelValue', v.key)" @keyup.enter="emit('update:modelValue', v.key)">
         <div class="row items-center no-wrap q-gutter-x-xs">
-          <q-btn round dense flat size="sm" color="primary" :icon="playing === v.key ? mdiStop : mdiPlay" :loading="loadingKey === v.key"
-            :aria-label="$t('voicePicker.play')" @click.stop="toggle(v)" />
+          <q-btn v-if="v.samples.length || v.chosenSeed" round dense flat size="sm" color="primary" :icon="playing === v.key ? mdiStop : mdiPlay"
+            :loading="loadingKey === v.key" :aria-label="$t('voicePicker.play')" @click.stop="toggle(v)" />
+          <q-icon v-else :name="mdiDesktopClassic" color="primary" size="18px" class="q-mx-xs" />
           <div class="text-weight-bold ellipsis col">{{ v.name }}</div>
         </div>
         <div class="row q-gutter-xs q-mt-xs">
-          <q-badge outline color="primary">{{ $t(v.kind === 'Clone' ? 'voicePicker.brandVoice' : 'voicePicker.bank') }}</q-badge>
+          <q-badge outline color="primary">{{ $t(v.kind === 'Clone' ? 'voicePicker.brandVoice' : v.kind === 'Local' ? 'voicePicker.local' : 'voicePicker.bank') }}</q-badge>
+          <q-badge v-if="v.isDefault" color="primary">{{ $t('voicePicker.isDefault') }}</q-badge>
           <q-badge v-for="tag in tags(v)" :key="tag" outline color="grey-7">{{ tag }}</q-badge>
         </div>
         <div v-if="playing === v.key" class="wave q-mt-xs" aria-hidden="true"><span v-for="n in 12" :key="n" /></div>
@@ -42,7 +44,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { mdiMicrophoneOutline, mdiPlay, mdiStarOutline, mdiStop } from '@quasar/extras/mdi-v7';
+import { mdiDesktopClassic, mdiMicrophoneOutline, mdiPlay, mdiStarOutline, mdiStop } from '@quasar/extras/mdi-v7';
 import { api } from 'src/services/api';
 import type { PickableVoice } from 'src/types/api';
 

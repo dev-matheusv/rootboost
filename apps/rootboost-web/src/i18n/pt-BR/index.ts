@@ -71,12 +71,12 @@ export default {
     openAcervo: 'Abrir o Acervo',
     voiceReview: {
       title: 'Ouça a voz antes de montar',
-      hint: 'Duas versões da mesma fala. Escolha a mais natural pelo ouvido; só então a tela é gravada e o vídeo montado.',
+      hint: 'Ouça a fala. Se ficou natural, use esta; só então a tela é gravada e o vídeo montado.',
       version: 'Versão {n}',
       listen: 'Ouvir',
       toCheck: '{n} palavra pra conferir | {n} palavras pra conferir',
       use: 'Usar esta',
-      redo: 'Nenhuma ficou boa: gerar outras duas',
+      redo: 'Não ficou boa: gerar outra versão',
       chosen: 'Voz escolhida. O vídeo volta pra fila pra ser montado.',
     },
     reject: 'Reprovar e refazer',
@@ -258,6 +258,8 @@ export default {
     play: 'Ouvir amostra',
     brandVoice: 'Voz da marca',
     bank: 'Banco',
+    local: 'No computador',
+    isDefault: 'padrão',
   },
   voices: {
     title: 'Vozes',

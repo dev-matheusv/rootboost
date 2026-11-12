@@ -258,6 +258,8 @@ export default {
     play: 'Play sample',
     brandVoice: 'Brand voice',
     bank: 'Bank',
+    local: 'On the computer',
+    isDefault: 'default',
   },
   voices: {
     title: 'Voices',

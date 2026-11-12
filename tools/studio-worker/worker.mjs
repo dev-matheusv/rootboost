@@ -42,6 +42,9 @@ const DMAKER_PROJECTS = process.env.DMAKER_PROJECTS ?? "C:/DMaker/projects";
 // Frase das amostras de voz: curta, neutra, com pergunta e pausa (mostra a entonação).
 const SAMPLE_TEXT = "Oi! Esta é uma amostra da voz para os vídeos da marca. Dá pra ouvir com calma, e se gostar, é só escolher esta.";
 
+// Versões de voz por rodada de revisão (12/11: uma só; duas dobravam o tempo).
+const VOICE_TAKES = Number(process.env.STUDIO_VOICE_TAKES ?? 1);
+
 const cfg = {
   api: (process.env.ROOTBOOST_API ?? "").replace(/\/+$/, ""),
   key: process.env.ROOTBOOST_WORKER_KEY ?? "",
@@ -108,6 +111,7 @@ do {
   try {
     // Sinal de vida a cada rodada: o Console avisa "nenhum computador ligado" quando ele some.
     await call("POST", "/worker/heartbeat", { workerId: cfg.workerId, note: "livre" }).catch(() => {});
+    await announceVoices();
     await voiceRound();
     await round();
   } catch (e) {
@@ -174,19 +178,20 @@ async function round() {
   }
 
   if (!job.voiceApproved) {
-    // Revisão da voz (29/10): duas versões limpas (até 4 sementes), a pessoa ouve no Console e escolhe; o job para aqui.
+    // Revisão da voz (29/10): a pessoa ouve no Console e aprova; o job para aqui. Uma versão só por padrão (12/11:
+    // cada versão leva ~25 min no processador); "gerar outra" no Console pede a próxima semente.
     const parts = [["workerId", cfg.workerId]];
     // Versão limpa primeiro; se a mesma palavra nunca casa no Whisper (ex.: termo técnico), até 3 palavras a conferir
     // vão pra pessoa ouvir, com o aviso. Quem decide é o ouvido, não o alinhamento.
     const MAX_TO_CHECK = 3;
     const candidates = [];
-    for (let tries = 0; candidates.filter((c) => c.unmatched === 0).length < 2 && tries < 4; tries++, seed++) {
-      const r = await makeVoice(seed, `gerando a voz, versão ${Math.min(candidates.length + 1, 2)} de 2 (semente ${seed})`);
+    for (let tries = 0; candidates.filter((c) => c.unmatched === 0).length < VOICE_TAKES && tries < 3; tries++, seed++) {
+      const r = await makeVoice(seed, `gerando a voz (semente ${seed})`);
       if (r.error) return fail(job.id, r.error, r.retry);
       if (r.unmatched > MAX_TO_CHECK) { console.log(`[${now()}] semente ${seed}: ${r.unmatched} palavra(s) sem par, pulando`); continue; }
       candidates.push({ seed, unmatched: r.unmatched });
     }
-    const chosenTakes = candidates.sort((a, b) => a.unmatched - b.unmatched).slice(0, 2);
+    const chosenTakes = candidates.sort((a, b) => a.unmatched - b.unmatched).slice(0, VOICE_TAKES);
     let takes = 0;
     for (const c of chosenTakes) {
       const m4a = `${voiceDir(c.seed)}/revisao.m4a`;
@@ -608,6 +613,20 @@ async function apiFetch(url, options) {
       console.error(`[${now()}] conexão caiu (${e.cause?.code ?? e.message}), tentando de novo`);
       await sleep(2000 * i);
     }
+  }
+}
+
+// Vozes que este PC tem, por marca, pro seletor do Console (a voz do Matheus fica de fora na API e aqui).
+
+async function announceVoices() {
+  if (Date.now() - (announceVoices.at ?? 0) < 10 * 60_000) return;
+  const voices = [...cfg.privateVoices].filter(([key]) => !key.startsWith("matheus"))
+    .map(([key, brandKey]) => ({ key, brandKey, isDefault: key === cfg.defaultVoice.toLowerCase() }));
+  try {
+    await call("POST", "/worker/local-voices", { workerId: cfg.workerId, voices });
+    announceVoices.at = Date.now();
+  } catch (e) {
+    console.log(`[${now()}] não deu pra informar as vozes: ${e.message}`);
   }
 }
 
