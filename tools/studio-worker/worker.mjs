@@ -265,7 +265,11 @@ async function round() {
           ask: async (state) => (await call("POST", "/worker/ai/next-action", { ...state, scene: guide + state.scene })).data });
         await learn(`preparo: ${p.quando}`, r.steps);
       } catch (e) {
-        return fail(job.id, `preparo da conta: ${e.message}`, !e.personalData);
+        // Preparo que não deu certo não derruba o vídeo (12/11: seis tentativas perdidas no modelo da ficha num vídeo
+        // de relatório). Dado pessoal real continua parando tudo. Se a cena precisar mesmo, a gravação dela avisa.
+        if (e.personalData) return fail(job.id, `preparo da conta: ${e.message}`, false);
+        console.log(`[${now()}] preparo não concluído, seguindo pra gravação: ${e.message}`);
+        await progress(job.id, 5, `preparo não concluído (${String(e.message).slice(0, 120)}); seguindo`).catch(() => {});
       } finally {
         clearInterval(beat);
       }
@@ -607,12 +611,27 @@ async function apiFetch(url, options) {
   }
 }
 
+// Falha passageira da API (deploy subindo, 502/503/504, rede caiu) tenta de novo com espera crescente. Em 12/11 um
+// 502 no meio do deploy derrubou o vídeo inteiro.
+const TRANSIENT = new Set([502, 503, 504]);
+
 async function call(method, path, body) {
-  const res = await apiFetch(cfg.api + path, {
-    method,
-    headers: { "Content-Type": "application/json", "X-Worker-Key": cfg.key },
-    body: body ? JSON.stringify(body) : undefined,
-  });
+  let res;
+  for (let attempt = 1; ; attempt++) {
+    try {
+      res = await apiFetch(cfg.api + path, {
+        method,
+        headers: { "Content-Type": "application/json", "X-Worker-Key": cfg.key },
+        body: body ? JSON.stringify(body) : undefined,
+      });
+      if (!TRANSIENT.has(res.status) || attempt >= 5) break;
+      console.log(`[${now()}] ${method} ${path}: ${res.status}, tentando de novo (${attempt} de 4)`);
+    } catch (e) {
+      if (attempt >= 5) throw e;
+      console.log(`[${now()}] ${method} ${path}: ${e.message}, tentando de novo (${attempt} de 4)`);
+    }
+    await new Promise((r) => setTimeout(r, 5000 * attempt));
+  }
   const text = await res.text();
   let data = null;
   try {

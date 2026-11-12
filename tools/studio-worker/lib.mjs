@@ -263,7 +263,7 @@ export function stepByStepPlan(roteiro, recordings, nome) {
 // --- Gravação de tela (RB-50, docs/GRAVACAO.md) ---
 
 /** Botões que a gravação nunca clica, mesmo que a IA peça: nada destrutivo, nada que saia ou mande algo de verdade. */
-const DESTRUCTIVE = /\b(excluir|apagar|deletar|remover|cancelar assinatura|encerrar conta|pagar|comprar|finalizar compra|enviar mensagem|disparar|sair|logout|desconectar|redefinir|resetar|delete|remove|pay|buy|sign out|log out)\b/i;
+const DESTRUCTIVE = /\b(excluir|duplicar|duplicate|apagar|deletar|remover|cancelar assinatura|encerrar conta|pagar|comprar|finalizar compra|enviar mensagem|disparar|sair|logout|desconectar|redefinir|resetar|delete|remove|pay|buy|sign out|log out)\b/i;
 
 export function isDestructive(label) {
   return DESTRUCTIVE.test(String(label ?? ""));
