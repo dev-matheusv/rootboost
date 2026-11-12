@@ -90,7 +90,10 @@ const LIST_ELEMENTS = `(() => {
     const r = el.getBoundingClientRect();
     if (r.width < 4 || r.height < 4 || r.bottom < 0 || r.top > innerHeight || getComputedStyle(el).visibility === 'hidden') continue;
     const tag = el.tagName.toLowerCase();
-    const role = tag === 'img' ? 'imagem' : tag === 'input' ? 'campo ' + (el.type || 'texto') : tag === 'textarea' ? 'campo texto' : tag === 'select' ? 'lista' : tag === 'a' ? 'link' : el.isContentEditable ? 'campo editor' : 'botão';
+    // Seletor (q-select, combobox) mostra só o valor atual, mas abre opções. Em 12/11 a IA viu "botão Semana" na Agenda
+    // e não percebeu que ali troca pra Mês.
+    const isSelect = tag === 'select' || el.getAttribute('role') === 'combobox' || !!el.closest('.q-select');
+    const role = tag === 'img' ? 'imagem' : isSelect ? 'seletor (valor atual; clique abre as opções)' : tag === 'input' ? 'campo ' + (el.type || 'texto') : tag === 'textarea' ? 'campo texto' : tag === 'a' ? 'link' : el.isContentEditable ? 'campo editor' : 'botão';
     const x = Math.round(r.left + r.width / 2), y = Math.round(r.top + r.height / 2);
     // Elemento que não recebe o clique no centro (escondido atrás de outro, painel fechado com opacidade zero) fica de
     // fora: em 07/11 a IA clicou 4 vezes num "Preencher ficha" fantasma que estava embaixo do seletor SOAP.
@@ -536,10 +539,29 @@ export async function recordScene({ brandKey, scene, account, outDir, name, ask,
 }
 
 // --- Exploração do sistema (11/11): a IA aprende o sistema do cliente sozinha. ---------------------------------------
+// Opções de cada seletor da tela: abre, lê o menu e fecha com Esc, sem escolher nada (12/11: o "Mês" da Agenda só
+// aparece dentro do seletor). Só o texto das opções, no máximo 5 seletores e 12 opções cada.
+const SELECT_OPTIONS = `(async () => {
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+  const out = [];
+  for (const sel of [...document.querySelectorAll('.q-select')].filter((e) => e.getBoundingClientRect().width > 0).slice(0, 5)) {
+    const label = (sel.querySelector('.q-field__label')?.innerText || '').trim();
+    const value = (sel.querySelector('.q-field__native')?.innerText || '').trim().replace(/\\s+/g, ' ');
+    (sel.querySelector('.q-field__control') || sel).click();
+    await wait(500);
+    const opts = [...document.querySelectorAll('.q-menu .q-item')].map((i) => i.innerText.trim().replace(/\\s+/g, ' ')).filter(Boolean).slice(0, 12);
+    document.activeElement?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', keyCode: 27, bubbles: true }));
+    document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', keyCode: 27, bubbles: true }));
+    await wait(300);
+    if (opts.length) out.push((label || value || 'seletor') + (value && label ? ' (agora: ' + value + ')' : '') + ': ' + opts.join(', '));
+  }
+  return out;
+})()`;
+
 // Só NAVEGA: abre telas pelo endereço e toca em abas. Não digita, não salva, não envia, não exclui. Anota o que cada tela
 // tem (títulos, abas, campos, botões), nunca o conteúdo de listas, e tira texto com cara de nome ou número de pessoa.
 const PAGE_MAP = `(() => {
-  const seen = (els, max) => [...new Set([...els].map((e) => (e.getAttribute?.('aria-label') || e.innerText || e.placeholder || e.textContent || '').trim().replace(/\s+/g, ' '))
+  const seen = (els, max) => [...new Set([...els].map((e) => (e.getAttribute?.('aria-label') || e.innerText || e.placeholder || e.textContent || '').trim().replace(/\\s+/g, ' '))
     .filter((t) => t && t.length <= 40 && !/\d{3}|@/.test(t) && !/^[A-ZÀ-Ú][a-zà-ú]+( [A-ZÀ-Ú][a-zà-ú]+)+$/.test(t)))].slice(0, max);
   const visible = (e) => { const r = e.getBoundingClientRect(); return r.width > 2 && r.height > 2 && getComputedStyle(e).visibility !== 'hidden'; };
   const q = (sel) => [...document.querySelectorAll(sel)].filter(visible);
@@ -604,15 +626,17 @@ export async function exploreSystem({ account, maxPages = 40, log = console.log 
       // Abas mudam o que aparece: toca em cada uma (aba só navega) e soma campos e botões.
       const tabs = [];
       for (const tab of map.abas.slice(0, 8)) {
-        const ok = await evaluate(cdp, `(() => { const t = [...document.querySelectorAll('[role=tab]')].find((e) => (e.getAttribute('aria-label') || e.innerText || '').trim().replace(/\s+/g, ' ') === ${JSON.stringify(tab)}); if (!t) return false; t.click(); return true; })()`);
+        const ok = await evaluate(cdp, `(() => { const t = [...document.querySelectorAll('[role=tab]')].find((e) => (e.getAttribute('aria-label') || e.innerText || '').trim().replace(/\\s+/g, ' ') === ${JSON.stringify(tab)}); if (!t) return false; t.click(); return true; })()`);
         if (!ok) continue;
         await wait(1200);
         const inner = await evaluate(cdp, PAGE_MAP);
-        tabs.push({ aba: tab, campos: inner.campos.filter((c) => !map.campos.includes(c)), botoes: inner.botoes.filter((b) => !map.botoes.includes(b)) });
+        const seletores = await evaluate(cdp, SELECT_OPTIONS).catch(() => []);
+        tabs.push({ aba: tab, campos: inner.campos.filter((c) => !map.campos.includes(c)), botoes: inner.botoes.filter((b) => !map.botoes.includes(b)), seletores });
         for (const l of inner.links) if (!visited.has(l)) queue.push(l);
       }
       const { links, ...rest } = map;
-      pages.push({ ...rest, abas: tabs.length ? tabs : map.abas });
+      const seletores = tabs.length ? [] : await evaluate(cdp, SELECT_OPTIONS).catch(() => []);
+      pages.push({ ...rest, seletores, abas: tabs.length ? tabs : map.abas });
       log(`exploração: ${map.route} (${map.campos.length} campos, ${map.botoes.length} botões, ${map.abas.length} abas)`);
       for (const l of links) if (!visited.has(l)) queue.push(l);
     }

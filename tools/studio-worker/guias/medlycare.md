@@ -15,3 +15,4 @@ Como chegar nas telas do MedlyCare (no celular):
 - Não toque em "Finalizar atendimento".
 - Paciente da conta de demonstração tem CPF de mentira (999.000.00x ou só zeros). Se aparecer paciente com CPF, telefone ou data de nascimento que não parecem de demonstração, não abra o cadastro dele: volte e use outro atendimento ou outro paciente da fila.
 - O modelo "Ficha de harmonização facial" é criado antes da gravação, no preparo da conta. Se ele não aparecer na lista, responda desistir e diga no motivo que o modelo falta.
+- Agenda: a aba Calendário tem, no canto direito do cabeçalho, um seletor sem borda que mostra a visão atual ("Semana"); clicar nele abre Mês, Semana e Dia. Visão mensal = aba Calendário > seletor > Mês. A aba Lista mostra um dia por vez.
