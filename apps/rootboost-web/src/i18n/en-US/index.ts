@@ -144,6 +144,11 @@ export default {
     denied: 'The browser blocked notifications. Allow them in the site settings.',
     error: 'Could not turn on alerts on this device.',
   },
+  weeklyReport: {
+    title: 'Week summary',
+    highlights: 'What happened',
+    nextSteps: 'What to do now',
+  },
   aiCampaigns: {
     impressions: 'impressions',
     clicks: 'clicks',

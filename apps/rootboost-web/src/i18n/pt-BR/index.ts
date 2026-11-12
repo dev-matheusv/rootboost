@@ -144,6 +144,11 @@ export default {
     denied: 'O navegador bloqueou as notificações. Libere nas configurações do site.',
     error: 'Não consegui ligar os avisos neste aparelho.',
   },
+  weeklyReport: {
+    title: 'Resumo da semana',
+    highlights: 'O que aconteceu',
+    nextSteps: 'O que fazer agora',
+  },
   aiCampaigns: {
     impressions: 'impressões',
     clicks: 'cliques',

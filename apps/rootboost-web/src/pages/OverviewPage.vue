@@ -7,7 +7,7 @@
       <div v-if="aiCost" class="text-caption text-grey-7 q-mt-xs">{{ aiCost }}</div>
     </div>
 
-    <div class="row q-col-gutter-md q-mb-xl">
+    <div class="row q-col-gutter-md q-mb-lg">
       <div class="col-12 col-sm-6 col-lg-3">
         <router-link :to="{ name: 'publications' }" class="today-card card-rounded column q-pa-md" :class="{ attention: needs > 0 }">
           <q-icon :name="mdiCheckDecagramOutline" size="26px" :color="needs > 0 ? 'warning' : 'positive'" />
@@ -41,6 +41,8 @@
         </button>
       </div>
     </div>
+
+    <WeeklyReportCard v-if="brand.selected" :key="brand.selected" :brand-key="brand.selected" />
 
     <div class="row items-end q-mb-md q-gutter-sm">
       <div class="col">
@@ -118,6 +120,7 @@ import { singleCurrency } from 'src/utils/ads';
 import { OPEN_ALERTS_EVENT, firstName, greetingKey } from 'src/utils/overview';
 import { formatInt, formatMoney, formatPercent, sumByCurrency } from 'src/utils/format';
 import { brandParams, useBrandStore } from 'src/stores/brandStore';
+import WeeklyReportCard from 'src/components/WeeklyReportCard.vue';
 
 defineOptions({ name: 'OverviewPage' });
 
