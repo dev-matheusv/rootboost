@@ -11,6 +11,7 @@ public interface IAdCampaignStore
     Task<AdCampaignDraft?> GetAsync(Guid id, CancellationToken ct = default);
     Task SaveAsync(AdCampaignDraft draft, CancellationToken ct = default);
     Task<IReadOnlyList<AdCampaignDraft>> ListByBrandAsync(string brandKey, CancellationToken ct = default);
+    Task RemoveAsync(AdCampaignDraft draft, CancellationToken ct = default);
 }
 
 /// <summary>

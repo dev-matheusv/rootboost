@@ -136,6 +136,13 @@ public sealed class AdCampaignDraft
 
     public void SetEndsAt(DateTimeOffset endsAt) => EndsAt = endsAt;
 
+    /// <summary>
+    /// Sai da lista do Console (13/11): rascunho, aprovada, com falha ou já pausada. Nunca a que está sendo criada nem a
+    /// criada sem pausa (pode estar gastando: essa se pausa primeiro). Remover não apaga nada na plataforma.
+    /// </summary>
+    public bool CanRemove => Status is AdCampaignStatus.Draft or AdCampaignStatus.Approved or AdCampaignStatus.Failed
+        || (Status == AdCampaignStatus.Created && PausedAt is not null);
+
     /// <summary>Aprovação humana: só a partir daqui a plataforma pode criar a campanha (sempre pausada).</summary>
     public void Approve(string approvedBy, DateTimeOffset now)
     {
