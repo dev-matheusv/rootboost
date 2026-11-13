@@ -65,6 +65,9 @@ public sealed class MetaAdCampaignCreator : IAdCampaignCreator
                 geo_locations = new { countries = draft.Countries },
                 age_min = draft.AgeMin,
                 age_max = draft.AgeMax,
+                // Desde a v23 a Meta exige dizer se o público Advantage+ está ligado (erro 100 no teste de 12/11). Ligado,
+                // ela fixa idade máxima em 65 e mínima entre 18 e 25: desligado (0) respeita o público que a pessoa aprovou.
+                targeting_automation = new { advantage_audience = 0 },
             });
             var form = new Dictionary<string, string>
             {
