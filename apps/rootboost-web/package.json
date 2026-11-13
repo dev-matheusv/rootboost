@@ -2,7 +2,7 @@
   "name": "rootboost-console",
   "version": "0.1.0",
   "description": "Console do RootBoost: criar, publicar, medir e otimizar.",
-  "productName": "RootBoost",
+  "productName": "Nativa",
   "type": "module",
   "private": true,
   "scripts": {

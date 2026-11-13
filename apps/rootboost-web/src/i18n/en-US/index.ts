@@ -1,5 +1,5 @@
 export default {
-  app: { name: 'RootBoost', tagline: 'Create, publish, measure and optimize.' },
+  app: { name: 'Nativa', tagline: 'Create, publish, measure and optimize.' },
   common: {
     actions: { login: 'Sign in', logout: 'Sign out', refresh: 'Refresh', retry: 'Try again', save: 'Save', cancel: 'Cancel', close: 'Close' },
     saved: 'Saved.',

@@ -7,7 +7,7 @@
         <q-btn flat round dense :icon="mdiMenu" @click="isMini = !isMini" />
         <div v-if="!isMini" class="row items-center no-wrap q-ml-sm">
           <img src="/favicon.svg" alt="" width="26" height="26" />
-          <div class="text-h6 sora-bold q-ml-sm">RootBoost</div>
+          <div class="text-h6 sora-bold q-ml-sm">Nativa</div>
         </div>
       </div>
 
