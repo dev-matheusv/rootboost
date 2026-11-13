@@ -39,6 +39,9 @@ public sealed class ClaudeLanguageModel : ILanguageModel
         {
             // O corpo da resposta diz o motivo (modelo, imagem, limite); vai pro log, nunca a chave nem o conteúdo enviado.
             _logger.LogWarning(ex, "Claude recusou a chamada {Purpose}: {Status} {Body}", request.Purpose, ex.StatusCode, ex.ResponseBody);
+            // Sem crédito na conta da Anthropic (13/11): a mensagem tem de dizer isso, não "tente de novo".
+            if (ex.ResponseBody?.Contains("credit balance", StringComparison.OrdinalIgnoreCase) == true)
+                throw new AiRequestFailedException("acabou o crédito da IA (Anthropic): recarregue em console.anthropic.com, em Billing, e tente de novo", ex);
             throw new AiRequestFailedException($"a IA não aceitou o pedido ({(int)ex.StatusCode}); tente de novo ou avise o suporte", ex);
         }
 
