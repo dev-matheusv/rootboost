@@ -23,7 +23,7 @@ public sealed record ScreenAction(string Action, string? Target, string? Text, s
 /// </summary>
 public sealed class ScreenAgent
 {
-    public const int MaxSteps = 40;
+    public const int MaxSteps = 120; // vídeo contínuo: o processo inteiro numa sessão (13/11)
     private static readonly string[] Actions = ["clicar", "digitar", "colar-imagem", "rolar", "esperar", "login", "comecar", "pronto", "desistir"];
     private readonly ILanguageModel _model;
     private readonly IAiUsageStore _usage;

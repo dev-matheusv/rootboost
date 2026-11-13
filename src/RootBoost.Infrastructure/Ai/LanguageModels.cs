@@ -84,6 +84,16 @@ public sealed class FakeLanguageModel : ILanguageModel
     {
         if (request.Purpose == "onboarding-chat") return Task.FromResult(Interview(request));
         if (request.Purpose == "screen-recording") return Task.FromResult(Screen(request));
+        if (request.Purpose == "clean-path")
+        {
+            // Fake: mantém toda ação que mudou a tela, na cena em que aconteceu.
+            var lines = request.User.Split('\n');
+            var scenes = lines.Count(l => l.StartsWith("Cena ", StringComparison.Ordinal));
+            var keep = Enumerable.Range(0, scenes).Select(_ => new List<int>()).ToList();
+            foreach (var parts in lines.Select(l => l.Split(" | ")).Where(p => p.Length >= 6 && int.TryParse(p[0], out _)))
+                if (parts[5].Trim() == "sim" && int.TryParse(parts[1], out var sc) && sc >= 1 && sc <= scenes) keep[sc - 1].Add(int.Parse(parts[0]));
+            return Task.FromResult(new LanguageModelResult(JsonSerializer.Serialize(new { cenas = keep.Select(k => new { acoes = k }) }), "fake", 0, 0, 0m));
+        }
         if (request.Purpose == "marketing-assistant")
             return Task.FromResult(new LanguageModelResult(JsonSerializer.Serialize(new
             {
