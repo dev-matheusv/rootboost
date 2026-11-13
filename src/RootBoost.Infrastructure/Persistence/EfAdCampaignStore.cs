@@ -21,6 +21,12 @@ public sealed class EfAdCampaignStore : IAdCampaignStore
 
     public Task SaveAsync(AdCampaignDraft draft, CancellationToken ct = default) => _db.SaveChangesAsync(ct);
 
+    public Task RemoveAsync(AdCampaignDraft draft, CancellationToken ct = default)
+    {
+        _db.AdCampaignDrafts.Remove(draft);
+        return _db.SaveChangesAsync(ct);
+    }
+
     public async Task<IReadOnlyList<AdCampaignDraft>> ListByBrandAsync(string brandKey, CancellationToken ct = default) =>
         await _db.AdCampaignDrafts.AsNoTracking().Where(d => d.BrandKey == brandKey).OrderByDescending(d => d.CreatedAt).Take(50).ToListAsync(ct);
 }
