@@ -163,6 +163,25 @@ public static class DependencyInjection
             !string.Equals(config["Organic:SyncEnabled"], "false", StringComparison.OrdinalIgnoreCase))
             services.AddHostedService<RootBoost.Infrastructure.Organic.OrganicInsightsScheduler>();
 
+        // --- Caixa de entrada (Onda 5c): Inbox:Reader=Meta lê o Instagram Direct (só leitura), Fake = conversas
+        // fictícias, None (padrão) não chama nada. ---
+        services.AddScoped<RootBoost.Application.Inbox.IInboxStore, RootBoost.Infrastructure.Inbox.EfInboxStore>();
+        services.AddScoped<RootBoost.Application.Inbox.SyncInbox>();
+        var inboxReader = config["Inbox:Reader"] ?? "None";
+        if (string.Equals(inboxReader, "Fake", StringComparison.OrdinalIgnoreCase))
+            services.AddSingleton<RootBoost.Application.Inbox.IInboxReader>(sp => new RootBoost.Infrastructure.Inbox.FakeInboxReader(
+                (config["Inbox:FakeBrands"] ?? "medlycare").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries),
+                sp.GetRequiredService<TimeProvider>()));
+        else if (string.Equals(inboxReader, "Meta", StringComparison.OrdinalIgnoreCase))
+        {
+            Microsoft.Extensions.DependencyInjection.Extensions.ServiceCollectionDescriptorExtensions.TryAddSingleton(services,
+                new RootBoost.Infrastructure.Publishing.SocialAccounts(config));
+            services.AddSingleton<RootBoost.Application.Inbox.IInboxReader, RootBoost.Infrastructure.Inbox.InstagramInboxReader>();
+        }
+        if (!string.Equals(inboxReader, "None", StringComparison.OrdinalIgnoreCase) &&
+            !string.Equals(config["Inbox:SyncEnabled"], "false", StringComparison.OrdinalIgnoreCase))
+            services.AddHostedService<RootBoost.Infrastructure.Inbox.InboxScheduler>();
+
         // --- Mídia (RB-33): bucket S3 do Railway em produção (Media__Storage=S3), pasta local no dev e nos testes. ---
         var mediaOptions = new RootBoost.Application.Media.MediaOptions();
         config.GetSection(RootBoost.Application.Media.MediaOptions.Section).Bind(mediaOptions);

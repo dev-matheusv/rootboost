@@ -31,6 +31,7 @@ public sealed class RootBoostDbContext : DbContext
     /// <summary>Snapshot diário de métricas de anúncio (Meta e o que vier). Uma linha por objeto e dia.</summary>
     public DbSet<AdInsightDaily> AdInsights => Set<AdInsightDaily>();
     public DbSet<OrganicPost> OrganicPosts => Set<OrganicPost>();
+    public DbSet<InboxMessage> InboxMessages => Set<InboxMessage>();
 
     /// <summary>Avisos de operação pro humano (post que falhou, sync de anúncio, conexão da Meta). RB-58.</summary>
     public DbSet<OpsAlert> OpsAlerts => Set<OpsAlert>();
@@ -139,6 +140,22 @@ public sealed class RootBoostDbContext : DbContext
         // Chave natural: um post do canal é uma linha só, reler atualiza.
         org.HasIndex(x => new { x.Channel, x.ExternalId }).IsUnique();
         org.HasIndex(x => new { x.BrandKey, x.PostedAt });
+
+        var inbox = b.Entity<InboxMessage>();
+        inbox.HasKey(x => x.Id);
+        inbox.Property(x => x.BrandKey).HasMaxLength(64).IsRequired();
+        inbox.Property(x => x.Channel).HasConversion<string>().HasMaxLength(16);
+        inbox.Property(x => x.ConversationId).HasMaxLength(256).IsRequired();
+        inbox.Property(x => x.ExternalId).HasMaxLength(256).IsRequired();
+        inbox.Property(x => x.ContactId).HasMaxLength(128).IsRequired();
+        inbox.Property(x => x.ContactName).HasMaxLength(128);
+        inbox.Property(x => x.Text).HasMaxLength(InboxMessage.MaxText).IsRequired();
+        inbox.Property(x => x.SentAt).HasConversion(Utc);
+        inbox.Property(x => x.FetchedAt).HasConversion(Utc);
+        // Chave natural: reler a conversa nunca duplica mensagem.
+        inbox.HasIndex(x => new { x.Channel, x.ExternalId }).IsUnique();
+        inbox.HasIndex(x => new { x.BrandKey, x.SentAt });
+        inbox.HasIndex(x => new { x.BrandKey, x.ConversationId });
 
         var cred = b.Entity<ConsoleCredential>();
         cred.HasKey(x => x.Email);
