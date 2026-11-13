@@ -33,6 +33,8 @@ public class MetaAdCampaignCreatorTests
         var campaign = handler.Bodies.Single(b => b.Path.EndsWith("/campaigns")).Form;
         Assert.Contains("is_adset_budget_sharing_enabled=false", campaign);
         Assert.Contains("status=PAUSED", campaign);
+        var adset = Uri.UnescapeDataString(handler.Bodies.Single(b => b.Path.EndsWith("/adsets")).Form.Replace("+", " "));
+        Assert.Contains("\"targeting_automation\":{\"advantage_audience\":0}", adset);
         Assert.All(handler.Bodies.Where(b => !b.Path.EndsWith("/advideos") && !b.Path.EndsWith("/adcreatives")),
             b => Assert.Contains("status=PAUSED", b.Form));
     }
