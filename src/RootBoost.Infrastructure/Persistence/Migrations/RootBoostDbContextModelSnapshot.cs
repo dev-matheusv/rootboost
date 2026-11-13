@@ -276,6 +276,27 @@ namespace RootBoost.Infrastructure.Persistence.Migrations
                     b.ToTable("AdInsights");
                 });
 
+            modelBuilder.Entity("RootBoost.Domain.AiBudget", b =>
+                {
+                    b.Property<string>("Key")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<int>("AlertPercent")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal?>("MonthlyLimitUsd")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Key");
+
+                    b.ToTable("AiBudgets");
+                });
+
             modelBuilder.Entity("RootBoost.Domain.Brand", b =>
                 {
                     b.Property<string>("Key")

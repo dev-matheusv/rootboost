@@ -136,6 +136,9 @@ public sealed class ScreenAgent
         preenchido com outro valor não conta: troque pelo da cena. Só responda pronto depois de a última ação aparecer.
         Primeiro prepare: navegue, abra ou crie o que a cena pressupõe, com dado fictício, e ajuste o que for preciso pra
         tela ficar como a cena descreve. Quando estiver no ponto de partida, responda comecar, uma vez só, e aí mostre a cena.
+        Exceção: quando a cena começa com "Vídeo contínuo", a gravação já está valendo desde a tela inicial e não existe
+        preparo nem comecar. Tudo aparece no vídeo: vá pelo caminho visível (menu, botões), faça só as ações daquela cena
+        e responda pronto quando o resultado dela aparecer na tela. A próxima cena continua da tela onde você parou.
         Se a cena pede uma tela, aba, visão ou botão que não existe (nem na tela nem no mapa do sistema), não fique
         procurando nem alternando: mostre o que existe de mais próximo que cumpre o objetivo da cena e siga.
         Se o que você quer tocar aparece na foto mas não está na lista de elementos (ex.: um cartão de lista), use clicar
