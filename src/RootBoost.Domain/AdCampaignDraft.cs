@@ -33,6 +33,15 @@ public sealed class AdCampaignDraft
     public AdObjective Objective { get; private set; }
     /// <summary>Orçamento diário em centavos da moeda da conta.</summary>
     public long DailyBudgetCents { get; private set; }
+    /// <summary>
+    /// Teste com prazo (13/11, dinheiro contado): com dias, a campanha vai com orçamento total (diário x dias) e data de
+    /// fim, e a Meta não passa do total. Nulo = sem fim, orçamento diário.
+    /// </summary>
+    public int? TestDays { get; private set; }
+    /// <summary>Quando o conjunto termina, gravado ao criar na plataforma.</summary>
+    public DateTimeOffset? EndsAt { get; private set; }
+    public const int MaxTestDays = 30;
+    public long? TotalBudgetCents => TestDays is int d ? DailyBudgetCents * d : null;
     public string CountriesCsv { get; private set; } = "BR";
     public int AgeMin { get; private set; } = 18;
     public int AgeMax { get; private set; } = 65;
@@ -111,6 +120,21 @@ public sealed class AdCampaignDraft
         ApprovedAt = null;
         UpdatedAt = now;
     }
+
+    /// <summary>Dias do teste (1 a 30) ou nulo pra sem fim. Mudar depois de aprovar volta pra rascunho.</summary>
+    public void SetTestDays(int? days, DateTimeOffset now)
+    {
+        if (Status is AdCampaignStatus.Creating or AdCampaignStatus.Created) throw new InvalidOperationException("campanha já enviada pra plataforma");
+        if (days is < 1 or > MaxTestDays) throw new ArgumentException($"dias do teste entre 1 e {MaxTestDays}", nameof(days));
+        if (days == TestDays) return;
+        TestDays = days;
+        if (Status is AdCampaignStatus.Approved or AdCampaignStatus.Failed) Status = AdCampaignStatus.Draft;
+        ApprovedBy = null;
+        ApprovedAt = null;
+        UpdatedAt = now;
+    }
+
+    public void SetEndsAt(DateTimeOffset endsAt) => EndsAt = endsAt;
 
     /// <summary>Aprovação humana: só a partir daqui a plataforma pode criar a campanha (sempre pausada).</summary>
     public void Approve(string approvedBy, DateTimeOffset now)

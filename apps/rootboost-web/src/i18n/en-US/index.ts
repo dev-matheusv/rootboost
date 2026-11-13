@@ -161,6 +161,10 @@ export default {
     nextSteps: 'What to do now',
   },
   aiCampaigns: {
+    totalFor: 'R$ {total} over {days} days',
+    endsAt: 'ends {date}',
+    perDay: 'per day',
+    confirmTextTotal: 'Campaign, ad set and ad are created paused, with R$ {total} in total over {days} days counted from now. Meta never spends more than the total. Nothing is spent until you activate it.',
     ranking: {
       title: 'Best performing videos',
       subtitle: 'Score from what people did: saves and shares weigh most, then watch time and reach.',
@@ -198,7 +202,7 @@ export default {
     metaId: 'campaign',
     objective: { trafego: 'Website traffic', leads: 'Sign ups (Pixel)' },
     status: { Draft: 'Draft', Approved: 'Approved', Creating: 'Creating', Created: 'Created paused', Failed: 'Failed' },
-    f: { name: 'Name', objective: 'Objective', budget: 'Daily budget', countries: 'Countries (BR, PT...)', ageMin: 'Min age',
+    f: { modeTotal: 'Test total', modeDaily: 'Per day', total: 'Test total', days: 'Days', name: 'Name', objective: 'Objective', budget: 'Daily budget', countries: 'Countries (BR, PT...)', ageMin: 'Min age',
       ageMax: 'Max age', cta: 'Button', text: 'Ad text', headline: 'Headline', link: 'Link' },
   },
   screenGuide: {

@@ -161,6 +161,10 @@ export default {
     nextSteps: 'O que fazer agora',
   },
   aiCampaigns: {
+    totalFor: 'R$ {total} em {days} dias',
+    endsAt: 'termina em {date}',
+    perDay: 'por dia',
+    confirmTextTotal: 'A campanha, o conjunto e o anúncio são criados pausados, com R$ {total} no total por {days} dias, contados a partir de agora. A Meta não passa do total. Nada é gasto até você ativar.',
     ranking: {
       title: 'Vídeos que mais funcionaram',
       subtitle: 'Nota pelo que o público fez: salvar e compartilhar pesam mais, depois tempo assistido e alcance.',
@@ -198,7 +202,7 @@ export default {
     metaId: 'campanha',
     objective: { trafego: 'Levar ao site', leads: 'Cadastros (Pixel)' },
     status: { Draft: 'Rascunho', Approved: 'Aprovada', Creating: 'Criando', Created: 'Criada pausada', Failed: 'Falhou' },
-    f: { name: 'Nome', objective: 'Objetivo', budget: 'Orçamento por dia', countries: 'Países (BR, PT...)', ageMin: 'Idade mín.',
+    f: { modeTotal: 'Total do teste', modeDaily: 'Por dia', total: 'Total do teste', days: 'Dias', name: 'Nome', objective: 'Objetivo', budget: 'Orçamento por dia', countries: 'Países (BR, PT...)', ageMin: 'Idade mín.',
       ageMax: 'Idade máx.', cta: 'Botão', text: 'Texto do anúncio', headline: 'Título', link: 'Link' },
   },
   screenGuide: {
