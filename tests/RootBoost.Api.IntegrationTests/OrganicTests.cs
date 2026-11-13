@@ -57,6 +57,24 @@ public class OrganicRankingTests
     }
 
     [Fact]
+    public void Facebook_insights_accept_numbers_and_per_type_objects()
+    {
+        using var doc = JsonDocument.Parse("""
+            {"data":[
+              {"name":"blue_reels_play_count","period":"lifetime","values":[{"value":812}]},
+              {"name":"post_video_social_actions","values":[{"value":{"COMMENT":3,"SHARE":5}}]},
+              {"name":"post_video_likes_by_reaction_type","values":[{"value":{"REACTION_LIKE":20,"REACTION_LOVE":4,"x":"y"}}]},
+              {"name":"post_video_avg_time_watched","values":[]}
+            ]}
+            """);
+        var m = FacebookInsightsReader.Parse(doc.RootElement);
+        Assert.Equal(812, m["blue_reels_play_count"]);
+        Assert.Equal(8, m["post_video_social_actions"]);
+        Assert.Equal(24, m["post_video_likes_by_reaction_type"]);
+        Assert.False(m.ContainsKey("post_video_avg_time_watched"));
+    }
+
+    [Fact]
     public void Negative_metric_is_refused()
     {
         var p = new OrganicPost(BrandKeys.MedlyCare, SocialChannel.Instagram, "x", Now);

@@ -155,6 +155,8 @@ public static class DependencyInjection
             Microsoft.Extensions.DependencyInjection.Extensions.ServiceCollectionDescriptorExtensions.TryAddSingleton(services,
                 new RootBoost.Infrastructure.Publishing.SocialAccounts(config));
             services.AddSingleton<RootBoost.Application.Organic.IOrganicInsightsReader, RootBoost.Infrastructure.Organic.InstagramInsightsReader>();
+            // Facebook (13/11): lê os Reels publicados pela plataforma; depende das publicações, por isso por requisição.
+            services.AddScoped<RootBoost.Application.Organic.IOrganicInsightsReader, RootBoost.Infrastructure.Organic.FacebookInsightsReader>();
         }
         if (!string.Equals(organicReader, "None", StringComparison.OrdinalIgnoreCase) &&
             !string.Equals(config["Organic:SyncEnabled"], "false", StringComparison.OrdinalIgnoreCase))
