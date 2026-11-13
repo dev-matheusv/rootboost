@@ -1525,6 +1525,21 @@ worker.MapPost("/ai/next-action", async (ScreenStateInput input, RootBoost.Appli
     catch (InvalidOperationException ex) { return Results.BadRequest(new { error = ex.Message }); }
 });
 
+// Caminho limpo (13/11): depois do ensaio, a IA escolhe as ações que vão pra gravação de verdade.
+worker.MapPost("/ai/clean-path", async (CleanPathInput input, RootBoost.Application.Ai.PathCleaner cleaner, CancellationToken ct) =>
+{
+    if (input.Scenes is not { Count: > 0 } || input.Actions is not { Count: > 0 } || input.Actions.Count > 400)
+        return Results.BadRequest(new { error = "cenas e ações (até 400) são obrigatórias" });
+    try
+    {
+        var plan = await cleaner.CleanAsync(input.BrandKey ?? string.Empty, input.Scenes, input.Actions.Select(a =>
+            new RootBoost.Application.Ai.RehearsalAction(a.Index, a.Scene, a.Action ?? "", a.Text, a.Typed, a.Changed, a.Reason)).ToList(), ct);
+        return Results.Ok(new { scenes = plan });
+    }
+    catch (RootBoost.Application.Ai.AiDisabledException ex) { return Results.Conflict(new { error = ex.Message }); }
+    catch (InvalidOperationException ex) { return Results.BadRequest(new { error = ex.Message }); }
+});
+
 // O worker sobe vídeo, capa e grade pelo mesmo bucket do Console e recebe o link público pra entregar no job.
 worker.MapPost("/media/{brandKey}", async (string brandKey, IFormFile file, HttpRequest req, IBrandStore brands,
     RootBoost.Application.Media.UploadMedia upload, RootBoost.Application.Media.IMediaAssetStore assets, RootBoost.Application.Media.MediaOptions options, CancellationToken ct) =>
@@ -1956,3 +1971,5 @@ record TrackViewRequest(string ProductKey, string? Lang = null);
 public partial class Program { }
 
 public sealed record AiBudgetInput(decimal? MonthlyLimitUsd, int? AlertPercent);
+record CleanPathInput(string? BrandKey, List<string>? Scenes, List<CleanPathActionInput>? Actions);
+record CleanPathActionInput(int Index, int Scene, string? Action, string? Text, string? Typed, bool Changed, string? Reason);

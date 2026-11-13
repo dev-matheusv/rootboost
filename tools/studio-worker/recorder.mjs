@@ -19,7 +19,9 @@ const DEMO_FACE = join(dirname(fileURLToPath(import.meta.url)), "demo", "rosto-r
 // Janela estreita de Reels se apresenta como celular: sistema que escolhe o menu pelo aparelho (MedlyCare) mostra a barra
 // de baixo; com Chrome de computador nessa largura a tela fica sem menu nenhum e a IA não tem por onde navegar.
 const MOBILE_UA = "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36";
-const VIEW = { width: 540, height: 600, scale: 2 };
+// Tela de celular de verdade (13/11, método do marketing): em 540x600 o relatório não cabia e o resultado ficava
+// espremido numa faixa embaixo. STUDIO_VIEW=540x600 volta ao tamanho antigo.
+const VIEW = (() => { const [w, h] = (process.env.STUDIO_VIEW ?? "430x760").split("x").map(Number); return { width: w || 430, height: h || 760, scale: 2 }; })();
 // Tempo total da cena, contando a espera pela IA (essa espera não entra no vídeo).
 const MAX_SECONDS = 240;
 const MIN_SCENE_SECONDS = 8; // abaixo disso não dá pra cobrir a fala com ação
@@ -295,7 +297,7 @@ async function loginFields(cdp) {
  * @param ask (state) => Promise<{ action, target, text, reason }>, a chamada à API.
  */
 /** prepare: passo fora do vídeo (preparo da conta). Vale o mesmo controle da IA, sem tempo mínimo e sem gerar mp4. */
-export async function recordScene({ brandKey, scene, scenes, account, outDir, name, ask, prepare = false, log = console.log }) {
+export async function recordScene({ brandKey, scene, scenes, account, outDir, name, ask, prepare = false, rehearse = false, log = console.log }) {
   // Gravação contínua (13/11): com `scenes`, uma sessão só grava o processo inteiro, da tela inicial ao resultado, e cada
   // "pronto" marca o fim de uma cena. Gravar cena por cena deixava a IA preparar a tela fora da câmera (caminho e datas
   // sumiam) e o vídeo ficava travado na mesma tela do começo ao fim.
@@ -308,6 +310,9 @@ export async function recordScene({ brandKey, scene, scenes, account, outDir, na
 ${list[i]}`;
   scene = flow ? flowScene(0) : scene;
   const marks = []; // fim de cada cena, em segundos desde o primeiro quadro (só no contínuo)
+  // Ensaio (13/11): a IA acha o caminho sem gravar; cada ação feita fica anotada pra virar o caminho limpo.
+  const actions = [];
+  const noFilm = prepare || rehearse;
   mkdirSync(join(outDir, "quadros"), { recursive: true });
   const { cdp, close } = await openChrome();
   const frames = [];
@@ -362,8 +367,8 @@ ${list[i]}`;
       loggedIn = true;
     }
 
-    recording = true;
-    await cdp.send("Page.startScreencast", { format: "jpeg", quality: 90, maxWidth: VIEW.width * VIEW.scale, maxHeight: VIEW.height * VIEW.scale });
+    recording = !rehearse;
+    if (!rehearse) await cdp.send("Page.startScreencast", { format: "jpeg", quality: 90, maxWidth: VIEW.width * VIEW.scale, maxHeight: VIEW.height * VIEW.scale });
     const started = Date.now();
     let outcome = "desistir";
     let stopReason = `passou de ${MAX_SECONDS} s sem terminar`;
@@ -385,12 +390,12 @@ ${list[i]}`;
       const asked = Date.now();
       const next = await ask({ brandKey, scene, url, elements: elements.map(({ id, role, text }) => ({ id, role, text })), history, step, image: shot.data });
       skipped += (Date.now() - asked) / 1000;
-      recording = true;
+      recording = !rehearse;
       const chosen = elements.find((e) => e.id === next.target);
       note(`passo ${step + 1} em ${url}: ${next.action} ${chosen ? `"${chosen.text}"` : next.target ?? ""} ${next.text ?? ""} (${next.reason})`);
       // Cena de dois segundos vira imagem parada no vídeo: manda mostrar a ação antes de encerrar.
       const shown = frames.length ? frames.at(-1).t - frames[0].t - (marks.at(-1) ?? 0) : 0;
-      if (!prepare && next.action === "pronto" && shown < (flow ? 3 : MIN_SCENE_SECONDS) && step - sceneStart < 20) {
+      if (!noFilm && next.action === "pronto" && shown < (flow ? 3 : MIN_SCENE_SECONDS) && step - sceneStart < 20) {
         note(`  pronto recusado: só ${shown.toFixed(1)} s de cena`);
         history.push(`recusado: a cena tem só ${shown.toFixed(1)} s; mostre a ação acontecendo antes de encerrar`);
         continue;
@@ -410,10 +415,15 @@ ${list[i]}`;
       }
       if (flow && next.action === "pronto" && sceneIndex + 1 < list.length) {
         // Fim de uma cena no contínuo: marca o ponto de corte e segue pra próxima sem parar a gravação.
-        await wait(1200); // segura o resultado da cena um instante
-        await grab();
-        marks.push(frames.at(-1).t - frames[0].t);
-        note(`  cena ${sceneIndex + 1} concluída em ${marks.at(-1).toFixed(1)} s`);
+        if (rehearse) {
+          marks.push(actions.length);
+          note(`  cena ${sceneIndex + 1} concluída no ensaio (${actions.length} ações até aqui)`);
+        } else {
+          await wait(1200); // segura o resultado da cena um instante
+          await grab();
+          marks.push(frames.at(-1).t - frames[0].t);
+          note(`  cena ${sceneIndex + 1} concluída em ${marks.at(-1).toFixed(1)} s`);
+        }
         sceneIndex++;
         scene = flowScene(sceneIndex);
         acted = 0;
@@ -504,6 +514,7 @@ ${list[i]}`;
           note(`  clique por dentro da página; ela viu: ${seen || "nada"}; tela ${changed ? "mudou" : "igual"}${problems.length ? `; problemas: ${problems.splice(0).slice(0, 6).join(" | ")}` : ""}`);
           if (!changed) note(`  teste das rotas: ${await evaluate(cdp, ROUTER_TEST)}`);
         }
+        actions.push({ scene: sceneIndex, action: "clicar", text: el.text, role: el.role, x: at.x, y: at.y, spot: !!spot, url, changed, reason: next.reason });
         deadClicks = changed ? 0 : deadClicks + 1;
         if (deadClicks >= MAX_DEAD_CLICKS) {
           stopReason = `${deadClicks} cliques seguidos sem mudar a tela`;
@@ -514,11 +525,13 @@ ${list[i]}`;
         const focused = await evaluate(cdp, `(() => { const n = document.querySelector('[data-rb-id="${el.id}"]'), a = document.activeElement; return !!(n && a && a !== document.body && (n === a || n.contains(a) || a.contains(n))); })()`);
         if (!focused) await click(cdp, el, byScript);
         await type(cdp, next.text ?? "");
+        actions.push({ scene: sceneIndex, action: "digitar", text: el.text, role: el.role, x: el.x, y: el.y, typed: next.text ?? "", url, changed: true, reason: next.reason });
         deadClicks = 0;
       } else if (next.action === "colar-imagem" && el) {
         await click(cdp, el);
         await wait(500);
         if (!(await pasteImage(cdp))) history.push("colar-imagem: este campo não recebeu a imagem; procure o botão de inserir imagem");
+        else actions.push({ scene: sceneIndex, action: "colar-imagem", text: el.text, role: el.role, x: el.x, y: el.y, url, changed: true, reason: next.reason });
         await wait(2000); // tempo do envio e de a imagem aparecer no vídeo
       } else if (next.action === "rolar") {
         const delta = next.text === "cima" ? -350 : 350;
@@ -533,6 +546,7 @@ ${list[i]}`;
           if (to === from) return false;
           return new Promise((done) => { const step = () => { const k = Math.min((performance.now() - t0) / 600, 1), q = k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2; page.scrollTop = from + (to - from) * q; k < 1 ? setTimeout(step, 16) : done(true); }; step(); });
         })()`);
+        actions.push({ scene: sceneIndex, action: "rolar", typed: next.text === "cima" ? "cima" : "baixo", url, changed: !!pageScrolled, reason: next.reason });
         if (pageScrolled) await wait(300);
         else if (byScript) await evaluate(cdp, `(() => { let e = document.elementFromPoint(270, 300); while (e && e.scrollHeight <= e.clientHeight + 1) e = e.parentElement; (e ?? document.scrollingElement).scrollBy({ top: ${delta}, behavior: 'smooth' }); })()`);
         else await cdp.send("Input.dispatchMouseEvent", { type: "mouseWheel", x: 270, y: 300, deltaX: 0, deltaY: delta });
@@ -555,10 +569,12 @@ ${list[i]}`;
       const now = await evaluate(cdp, "location.href");
       if (!sameSite(now, account.url)) { outcome = "desistir"; history.push(`saiu do site: ${now}`); break; }
     }
-    await wait(2000); // segura o resultado na tela
-    recording = false;
-    await grab();
-    await cdp.send("Page.stopScreencast");
+    if (!rehearse) {
+      await wait(2000); // segura o resultado na tela
+      recording = false;
+      await grab();
+      await cdp.send("Page.stopScreencast");
+    }
     if (outcome !== "pronto") {
       const shot = await cdp.send("Page.captureScreenshot", { format: "jpeg", quality: 70 });
       writeFileSync(join(outDir, "falhou.jpg"), Buffer.from(shot.data, "base64"));
@@ -570,6 +586,7 @@ ${list[i]}`;
     // Caminho que deu certo, pra próxima gravação da mesma tarefa seguir sem tentativa e erro.
     const steps = history.filter((h) => !/^(recusado|colar-imagem: este|login: esta|saiu do site)/.test(h));
     if (prepare) return { path: null, duration: 0, steps };
+    if (rehearse) return { path: null, duration: 0, steps, actions, sceneEnds: marks };
     if (frames.length < 2) throw new Error("nenhum quadro gravado");
 
     const lines = [];
@@ -590,6 +607,126 @@ ${list[i]}`;
     // Contínuo: trechos [início, fim] de cada cena, pra montagem cortar o vídeo inteiro nos pontos certos.
     const segments = flow ? list.map((_, i) => ({ start: i === 0 ? 0 : marks[i - 1], end: i < marks.length ? marks[i] : duration })) : null;
     return { path: out, duration, steps, segments };
+  } finally {
+    close();
+  }
+}
+
+// --- Gravação limpa (13/11, método do marketing) -----------------------------------------------------------------
+// Toca o caminho limpo que saiu do ensaio, sem IA no meio: cursor desliza, toca, a tela respira e segue. Cada cena
+// termina com o resultado parado um instante e vira um ponto de corte exato.
+const PAGE_SCROLL = (delta) => `(() => {
+  const ok = (e) => e && e.scrollHeight > e.clientHeight + 40 && e.clientHeight > innerHeight * 0.3 && (e === document.scrollingElement || /auto|scroll/.test(getComputedStyle(e).overflowY));
+  const list = [document.scrollingElement, ...document.querySelectorAll('body *')].filter(ok);
+  const page = list.sort((a, b) => b.clientHeight - a.clientHeight)[0];
+  if (!page) return false;
+  const from = page.scrollTop, to = Math.max(0, Math.min(from + ${delta}, page.scrollHeight - page.clientHeight)), t0 = performance.now();
+  if (to === from) return false;
+  return new Promise((done) => { const step = () => { const k = Math.min((performance.now() - t0) / 900, 1), q = k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2; page.scrollTop = from + (to - from) * q; k < 1 ? setTimeout(step, 16) : done(true); }; step(); });
+})()`;
+
+const byPoint = (step) => step.spot || /^ícone sem texto/.test(step.text ?? "");
+
+/** Acha na tela o elemento do passo: mesmo texto e papel; com vários, o mais perto de onde estava no ensaio. */
+export function matchElement(elements, step) {
+  const norm = (t) => String(t ?? "").trim().replace(/\s+/g, " ").toLowerCase();
+  const want = norm(step.text);
+  if (!want || byPoint(step)) return null;
+  let found = elements.filter((e) => norm(e.text) === want && (!step.role || e.role === step.role));
+  if (!found.length) found = elements.filter((e) => norm(e.text) === want);
+  if (!found.length && want.length >= 4) found = elements.filter((e) => norm(e.text).includes(want));
+  if (!found.length) return null;
+  return found.sort((a, b) => Math.hypot(a.x - step.x, a.y - step.y) - Math.hypot(b.x - step.x, b.y - step.y))[0];
+}
+
+export async function replayPath({ brandKey, account, plan, outDir, name, log = console.log }) {
+  mkdirSync(join(outDir, "quadros"), { recursive: true });
+  const { cdp, close } = await openChrome();
+  const frames = [];
+  const trail = join(outDir, "passos.txt");
+  writeFileSync(trail, `Gravação limpa: ${plan.length} cenas\n`);
+  const note = (line) => { log(line); appendFileSync(trail, `${new Date().toISOString()} ${line}\n`); };
+  let recording = false;
+  const grab = async () => {
+    const shot = await cdp.send("Page.captureScreenshot", { format: "jpeg", quality: 90 });
+    const file = `q${String(frames.length).padStart(5, "0")}.jpg`;
+    writeFileSync(join(outDir, "quadros", file), Buffer.from(shot.data, "base64"));
+    frames.push({ file, t: Date.now() / 1000 });
+  };
+  cdp.on("Page.screencastFrame", (p) => {
+    cdp.send("Page.screencastFrameAck", { sessionId: p.sessionId }).catch(() => {});
+    if (!recording) return;
+    const file = `q${String(frames.length).padStart(5, "0")}.jpg`;
+    writeFileSync(join(outDir, "quadros", file), Buffer.from(p.data, "base64"));
+    frames.push({ file, t: p.metadata.timestamp });
+  });
+  try {
+    const css = join(dirname(fileURLToPath(import.meta.url)), "guias", `${brandKey}.css`);
+    if (existsSync(css)) await cdp.send("Page.addScriptToEvaluateOnNewDocument", { source: `addEventListener('DOMContentLoaded', () => { const s = document.createElement('style'); s.textContent = ${JSON.stringify(readFileSync(css, "utf8"))}; document.head.append(s); });` });
+    await cdp.send("Page.navigate", { url: account.url });
+    await wait(2500);
+    const fields = await loginFields(cdp);
+    if (fields) {
+      const r = await login(cdp, fields, account);
+      if (!r.ok) throw Object.assign(new Error(`não entrou no sistema com a conta de demonstração (${r.error}); confira contas.json`), { personalData: true });
+      note("entrou com a conta de demonstração");
+    }
+    await wait(1500);
+    recording = true;
+    await cdp.send("Page.startScreencast", { format: "jpeg", quality: 90, maxWidth: VIEW.width * VIEW.scale, maxHeight: VIEW.height * VIEW.scale });
+    await grab();
+    await wait(1000); // a tela de partida aparece antes do primeiro toque
+    const marks = [];
+    for (const [si, scene] of plan.entries()) {
+      for (const step of scene.steps) {
+        if (step.action === "rolar") {
+          await evaluate(cdp, PAGE_SCROLL(step.typed === "cima" ? -320 : 320));
+          note(`cena ${si + 1}: rolar ${step.typed}`);
+          await wait(700);
+          continue;
+        }
+        let el = null;
+        for (let i = 0; i < 6 && !el && !byPoint(step); i++) {
+          el = matchElement(await evaluate(cdp, LIST_ELEMENTS), step);
+          if (!el) await wait(700);
+        }
+        if (!el && !byPoint(step)) note(`cena ${si + 1}: "${step.text}" não apareceu; toco no ponto do ensaio`);
+        if (isDestructive(el?.text ?? step.text)) throw new Error(`o caminho pedia "${step.text}", que a gravação nunca toca`);
+        await click(cdp, el ?? { x: step.x, y: step.y });
+        if (step.action === "digitar") { await wait(300); await type(cdp, step.typed ?? "", 70); }
+        if (step.action === "colar-imagem") { await wait(400); await pasteImage(cdp); await wait(1500); }
+        note(`cena ${si + 1}: ${step.action} "${step.text ?? ""}"${step.action === "digitar" ? ` = ${step.typed}` : ""}`);
+        await wait(900); // a tela respira depois de cada ação
+      }
+      await wait(1200); // resultado da cena parado um instante
+      await grab();
+      marks.push(frames.at(-1).t - frames[0].t);
+      note(`cena ${si + 1} termina em ${marks.at(-1).toFixed(1)} s`);
+      const now = await evaluate(cdp, "location.href");
+      if (!sameSite(now, account.url)) throw new Error(`a gravação saiu do sistema: ${now}`);
+    }
+    await wait(800);
+    recording = false;
+    await grab();
+    await cdp.send("Page.stopScreencast");
+    if (frames.length < 2) throw new Error("nenhum quadro gravado");
+    const lines = [];
+    frames.forEach((f, i) => {
+      const next = i + 1 < frames.length ? frames[i + 1].t : f.t + 0.04;
+      lines.push(`file 'quadros/${f.file}'`, `duration ${Math.max(next - f.t, 0.001).toFixed(4)}`);
+    });
+    lines.push(`file 'quadros/${frames.at(-1).file}'`);
+    writeFileSync(join(outDir, "quadros.txt"), lines.join("\n"));
+    const out = join(outDir, `${name}.mp4`);
+    await new Promise((ok, fail) => {
+      const ff = spawn(FFMPEG, ["-y", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", "quadros.txt", "-vf", "fps=30,format=yuv420p",
+        "-c:v", "libx264", "-preset", "medium", "-crf", "16", "-movflags", "+faststart", out], { cwd: outDir, stdio: "inherit" });
+      ff.on("exit", (c) => (c === 0 ? ok() : fail(new Error(`ffmpeg saiu com ${c}`))));
+    });
+    rmSync(join(outDir, "quadros"), { recursive: true, force: true });
+    const duration = (frames.at(-1).t - frames[0].t) + 0.04;
+    const segments = plan.map((_, i) => ({ start: i === 0 ? 0 : marks[i - 1], end: marks[i] ?? duration }));
+    return { path: out, duration, segments };
   } finally {
     close();
   }

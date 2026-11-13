@@ -13,7 +13,7 @@ import {
   applyLibrary, applyRecordings, buildArgs, buildPersonalSpec, libraryScenes, photoClipArgs, expectedOutputs, isScriptProblem, lastLine, parsePrivateVoices, logFileName, oldLogs, addPath, mapIsStale, pathsText, parseDetect, reviewVideo, parseVoiceFinish, parseVoiceTones, preparationsFor, stepByStepPlan, voiceFolder, parseUnmatched, parseVoiceSteps, stepsFor, projectName, scenesToRecord,
   seedFor, voiceProblem, warningsFrom,
 } from "./lib.mjs";
-import { exploreSystem, recordScene } from "./recorder.mjs";
+import { exploreSystem, recordScene, replayPath } from "./recorder.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 loadEnvFile(join(here, "worker.env"));
@@ -323,8 +323,22 @@ async function round() {
       const beat = setInterval(() => void progress(job.id, 6, "gravando a tela: o processo inteiro").catch(() => {}), cfg.heartbeatSeconds * 1000);
       try {
         const whole = `${nome}-continuo`;
-        const r = await recordScene({ brandKey: job.brandKey, scenes: scenes.map((x) => x.scene), account, outDir: `${cfg.base}/brutos/${whole}`, name: whole,
+        const sceneTexts = scenes.map((x) => x.scene);
+        // Método do marketing (13/11): 1) ensaio sem gravar, a IA acha o caminho; 2) a IA limpa o caminho (sem idas e
+        // voltas); 3) gravação de verdade toca só o caminho limpo, com cursor e pausa, sem IA no meio.
+        await progress(job.id, 6, `ensaiando o caminho das ${scenes.length} cenas (sem gravar)`);
+        const rehearsal = await recordScene({ brandKey: job.brandKey, scenes: sceneTexts, account, outDir: `${cfg.base}/brutos/${whole}-ensaio`, name: `${whole}-ensaio`, rehearse: true,
           ask: async (state) => (await call("POST", "/worker/ai/next-action", { ...state, scene: guide + state.scene })).data });
+        const acts = rehearsal.actions.map((a, index) => ({ index, scene: a.scene, action: a.action, text: a.text ?? null, typed: a.typed ?? null, changed: !!a.changed, reason: a.reason ?? null }));
+        await progress(job.id, 12, "limpando o caminho do ensaio");
+        const cleaned = await call("POST", "/worker/ai/clean-path", { brandKey: job.brandKey, scenes: sceneTexts, actions: acts });
+        if (cleaned.status !== 200) throw new Error(`caminho limpo: ${cleaned.status} ${cleaned.data?.error ?? ""}`);
+        const plan = cleaned.data.scenes.map((idx) => ({ steps: idx.map((i) => rehearsal.actions[i]) }));
+        writeFileSync(`${cfg.base}/brutos/${whole}-ensaio/caminho-limpo.json`, JSON.stringify({ ensaio: rehearsal.actions, plano: cleaned.data.scenes }, null, 1));
+        console.log(`[${now()}] caminho limpo: ${rehearsal.actions.length} ações no ensaio, ${plan.reduce((t, p) => t + p.steps.length, 0)} na gravação`);
+        await progress(job.id, 15, "gravando o caminho limpo");
+        const r = await replayPath({ brandKey: job.brandKey, account, plan, outDir: `${cfg.base}/brutos/${whole}`, name: whole,
+          log: (l) => console.log(`[${now()}] ${l}`) });
         for (const [i, s] of scenes.entries()) {
           const source = `${nome}-bloco-${s.index + 1}`;
           const seg = r.segments[i];
@@ -407,7 +421,7 @@ ${fz.stderr}`).freezes });
     joinRecordings(plan);
     writeFileSync(`${projectDir}/roteiro.json`, JSON.stringify(plan.roteiro, null, 1));
     writeFileSync(`${projectDir}/tela.json`, JSON.stringify(plan.tela));
-    pipelineArgs = [`${cfg.tools}/narrado-passo.mjs`, nome, "--voz-dir", voiceDir(seed), ...(blockMode ? [] : ["--pausar"]), "--legenda", "frase"];
+    pipelineArgs = [`${cfg.tools}/narrado-passo.mjs`, nome, "--voz-dir", voiceDir(seed), ...(blockMode ? [] : ["--pausar"]), "--legenda", "frase", ...(blockMode && cfg.continuousRecording ? ["--tela-alta"] : [])];
   }
   const { code, log } = await runPipeline(job.id, cfg.bin, pipelineArgs);
   if (code !== 0) {
