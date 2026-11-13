@@ -549,13 +549,22 @@ static async Task<RootBoost.Application.Reports.WeeklyReport> BuildWeeklyReport(
 // Ranking dos vídeos pelo que o público fez no orgânico (RB-25): nota, motivo e, quando o post saiu daqui, a publicação
 // pra virar campanha. Só leitura do que a sincronização gravou.
 brandProfile.MapGet("/organic/ranking", async (string key, int? days, RootBoost.Application.Organic.IOrganicPostStore store,
-    TimeProvider time, CancellationToken ct) =>
+    RootBoost.Application.Publishing.IPublicationStore pubs, RootBoost.Application.Ads.IAdCampaignStore campaigns,
+    RootBoost.Application.Ads.IAdInsightStore insights, TimeProvider time, CancellationToken ct) =>
 {
-    var since = time.GetUtcNow().AddDays(-Math.Clamp(days ?? 90, 1, 365));
-    var ranked = RootBoost.Application.Organic.CreativeRanking.Rank(await store.ListByBrandAsync(key.ToLowerInvariant(), since, ct));
+    var brandKey = key.ToLowerInvariant();
+    var now = time.GetUtcNow();
+    var since = now.AddDays(-Math.Clamp(days ?? 90, 1, 365));
+    var posts = await store.ListByBrandAsync(brandKey, since, ct);
+    var ranked = RootBoost.Application.Organic.CreativeRanking.Rank(posts);
+    // Pago ao lado do orgânico: vídeo que virou anúncio soma os números dos anúncios dele (13/11).
+    var today = DateOnly.FromDateTime(now.UtcDateTime);
+    var ads = RootBoost.Application.Organic.VideoAds.ForPosts(posts, await pubs.ListByBrandAsync(brandKey, since.AddDays(-7), now, ct),
+        await campaigns.ListByBrandAsync(brandKey, ct), await insights.ListAsync(brandKey, today.AddDays(-90), today, AdLevel.Ad, ct));
     return Results.Ok(ranked.Select((r, i) => new OrganicRankDto(i + 1, r.Score, r.EnoughData, Math.Round(r.EngagementRate * 100, 2), r.Reason,
         r.Post.Channel.ToString(), r.Post.ExternalId, r.Post.ProductType, r.Post.Caption, r.Post.Permalink, r.Post.ThumbnailUrl, r.Post.PostedAt,
-        r.Post.PublicationId, r.Post.Views, r.Post.Reach, r.Post.Likes, r.Post.Comments, r.Post.Shares, r.Post.Saves, r.Post.AvgWatchMs, r.Post.FetchedAt)));
+        r.Post.PublicationId, r.Post.Views, r.Post.Reach, r.Post.Likes, r.Post.Comments, r.Post.Shares, r.Post.Saves, r.Post.AvgWatchMs, r.Post.FetchedAt,
+        ads.TryGetValue(r.Post.ExternalId, out var m) ? RootBoost.Application.Organic.VideoAds.Describe(m) : null)));
 });
 
 // Relê agora as métricas orgânicas da marca (o agendador já faz a cada 12 h).
@@ -1792,7 +1801,7 @@ record ScreenKnowledgeInput(string? Text);
 record SystemMapInput(System.Text.Json.JsonElement Map);
 record OrganicRankDto(int Position, int Score, bool EnoughData, decimal EngagementPercent, string Reason, string Channel,
     string ExternalId, string ProductType, string Caption, string? Permalink, string? ThumbnailUrl, DateTimeOffset PostedAt, Guid? PublicationId,
-    long Views, long Reach, long Likes, long Comments, long Shares, long Saves, long? AvgWatchMs, DateTimeOffset FetchedAt);
+    long Views, long Reach, long Likes, long Comments, long Shares, long Saves, long? AvgWatchMs, DateTimeOffset FetchedAt, string? Ads = null);
 record LocalVoiceInput(string? Key, string? BrandKey, bool IsDefault);
 record LocalVoicesInput(string? WorkerId, List<LocalVoiceInput>? Voices);
 record AdCampaignProposeInput(Guid? JobId, Guid? PublicationId = null);

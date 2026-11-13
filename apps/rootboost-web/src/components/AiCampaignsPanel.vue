@@ -42,6 +42,7 @@
           </div>
           <div class="text-body2 ellipsis-2-lines">{{ r.caption.split('\n')[0] || '—' }}</div>
           <div class="text-caption text-grey-7">{{ r.reason }}</div>
+          <div v-if="r.ads" class="text-caption text-primary">{{ r.ads }}</div>
           <div class="row items-center q-gutter-sm q-mt-xs">
             <a v-if="r.permalink" :href="r.permalink" target="_blank" rel="noopener" class="text-caption text-primary">{{ $t('aiCampaigns.ranking.open') }}</a>
             <q-btn v-if="canAdvertise(r)" dense flat no-caps color="primary" :label="$t('aiCampaigns.ranking.advertise')"
@@ -143,7 +144,7 @@ interface AdCampaign {
 interface RankedPost {
   position: number; score: number; enoughData: boolean; engagementPercent: number; reason: string; channel: string;
   externalId: string; productType: string; caption: string; permalink: string | null; thumbnailUrl: string | null;
-  postedAt: string; publicationId: string | null; views: number; reach: number; saves: number; shares: number;
+  postedAt: string; publicationId: string | null; views: number; reach: number; saves: number; shares: number; ads: string | null;
 }
 type Form = Pick<AdCampaign, 'name' | 'objective' | 'dailyBudget' | 'ageMin' | 'ageMax' | 'primaryText' | 'headline' | 'callToAction' | 'linkUrl'>
   & { mode: 'daily' | 'total'; total: number; days: number };
