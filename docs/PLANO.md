@@ -181,6 +181,12 @@ Começar pelo Instagram Direct (maior volume e mesma conta Meta), depois e-mail.
 - A doc atual descreve conversa e envio no login do Instagram (graph.instagram.com). Antes de codar, conferir a
   página equivalente do login do Facebook (Page token), que é o que o RootBoost usa.
 
+**Feito em 13/11 (passo 1, só leitura):** tela Mensagens no Console com as conversas do Instagram Direct, lidas a
+cada 10 minutos pelo token da Página (`GET /{page-id}/conversations?platform=instagram`, depois `fields=messages` e o
+detalhe das 20 mais recentes; doc conferida em 13/11). Liga com `Inbox__Reader=Meta` no Railway. Mostra quem está
+esperando resposta e até quando a janela de 24 h deixa responder. Próximo: responder pelo Console (`POST /me/messages`),
+com a IA sugerindo o texto e a pessoa enviando.
+
 ### Onda 5: experiência e avisos
 ~~**RB-30/RB-14**~~ PWA e visual no molde do MedlyCare (roxo Ametista; Publicações com Fila, Semana e Mês, arrastar, Ctrl+K, Visão geral com "hoje", PWA sem cache: feito 28/10) → **RB-37** notificação de pendência
 (push da PWA primeiro) → **RB-32** aprovação pelo WhatsApp (extensão do Chrome agora, API oficial com

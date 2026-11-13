@@ -86,7 +86,7 @@ import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 import {
-  mdiAccountCircleOutline, mdiBellAlertOutline, mdiBellOutline, mdiBullhornOutline, mdiCalendarMonthOutline, mdiChartBar, mdiImageMultipleOutline, mdiLogout, mdiMagnify, mdiMenu, mdiMicrophoneOutline, mdiMovieOpenPlayOutline, mdiPackageVariantClosed, mdiRestore, mdiStorefrontOutline, mdiTestTube, mdiViewDashboardOutline, mdiWeatherNight, mdiWeatherSunny,
+  mdiAccountCircleOutline, mdiBellAlertOutline, mdiBellOutline, mdiBullhornOutline, mdiCalendarMonthOutline, mdiChartBar, mdiImageMultipleOutline, mdiInboxOutline, mdiLogout, mdiMagnify, mdiMenu, mdiMicrophoneOutline, mdiMovieOpenPlayOutline, mdiPackageVariantClosed, mdiRestore, mdiStorefrontOutline, mdiTestTube, mdiViewDashboardOutline, mdiWeatherNight, mdiWeatherSunny,
 } from '@quasar/extras/mdi-v7';
 import { api } from 'src/services/api';
 import { useQuasar } from 'quasar';
@@ -156,6 +156,7 @@ const items = [
   { name: 'orders', label: 'nav.orders', icon: mdiPackageVariantClosed },
   { name: 'campaigns', label: 'nav.campaigns', icon: mdiChartBar },
   { name: 'publications', label: 'nav.publications', icon: mdiCalendarMonthOutline },
+  { name: 'mensagens', label: 'nav.mensagens', icon: mdiInboxOutline },
   { name: 'studio', label: 'nav.studio', icon: mdiMovieOpenPlayOutline },
   { name: 'acervo', label: 'nav.acervo', icon: mdiImageMultipleOutline },
   { name: 'vozes', label: 'nav.vozes', icon: mdiMicrophoneOutline },
