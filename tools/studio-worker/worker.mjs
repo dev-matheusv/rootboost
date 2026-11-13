@@ -331,7 +331,7 @@ async function round() {
       } catch (e) {
         // A IA desistiu (cena impossível, dado que falta na conta): repetir o mesmo roteiro dá no mesmo (12/11: três
         // tentativas de 15 min no relatório vazio). Falha de vez com o motivo; o Console oferece reescrever.
-        return fail(job.id, `gravação do bloco ${s.index + 1}: ${e.message}`, !e.personalData && !e.aiGaveUp);
+        return fail(job.id, `gravação do bloco ${s.index + 1}: ${e.message}`, !e.personalData && !e.aiGaveUp && !/crédito da IA/.test(e.message));
       } finally {
         clearInterval(beat);
       }
