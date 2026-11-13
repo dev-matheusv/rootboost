@@ -280,6 +280,21 @@ export default {
     local: 'No computador',
     isDefault: 'padrão',
   },
+  inbox: {
+    title: 'Mensagens',
+    subtitle: 'As conversas do Instagram Direct da marca num lugar só. Atualiza sozinho a cada 10 minutos.',
+    sync: 'Atualizar agora',
+    pickBrand: 'Escolha uma marca no menu para ver as mensagens.',
+    empty: 'Nenhuma conversa nos últimos 30 dias. Quando alguém mandar mensagem no Instagram da marca, ela aparece aqui.',
+    unknown: 'Pessoa sem nome de usuário',
+    you: 'Você',
+    attachment: 'Foto, áudio ou compartilhamento (abra no Instagram para ver)',
+    waiting: 'Aguardando resposta',
+    replySoon: 'Responder por aqui chega no próximo passo. Por enquanto responda no app do Instagram, até {until}.',
+    windowClosed: 'Passaram 24 horas da última mensagem da pessoa: o Instagram só deixa responder depois que ela escrever de novo.',
+    synced: '{n} mensagens novas.',
+    error: 'Não deu para ler as mensagens agora.',
+  },
   voices: {
     title: 'Vozes',
     subtitle: 'A voz que narra os vídeos da marca: a sua, gravada aqui, ou uma do banco.',
@@ -376,7 +391,7 @@ export default {
     changed: 'Senha trocada. Use a nova no próximo login.',
   },
   form: { email: 'E-mail', password: 'Senha' },
-  nav: { overview: 'Visão geral', orders: 'Pedidos', brand: 'Marca', allBrands: 'Todas as marcas', darkMode: 'Modo escuro', brandProfile: 'Perfil da marca', campaigns: 'Campanhas', publications: 'Publicações', studio: 'Estúdio', acervo: 'Acervo', vozes: 'Vozes' },
+  nav: { overview: 'Visão geral', orders: 'Pedidos', brand: 'Marca', allBrands: 'Todas as marcas', darkMode: 'Modo escuro', brandProfile: 'Perfil da marca', campaigns: 'Campanhas', publications: 'Publicações', studio: 'Estúdio', acervo: 'Acervo', vozes: 'Vozes', mensagens: 'Mensagens' },
   pages: {
     login: {
       title: 'Entrar no Console',

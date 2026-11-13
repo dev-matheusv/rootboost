@@ -600,6 +600,36 @@ brandProfile.MapPost("/organic/sync", async (string key, RootBoost.Application.O
     return Results.Ok(results.Select(r => new { channel = r.Channel.ToString(), r.Ok, r.Inserted, r.Updated, r.Error }));
 });
 
+// --- Caixa de entrada (Onda 5c): conversas do Instagram Direct, só leitura por enquanto. ---
+brandProfile.MapGet("/inbox", async (string key, int? days, RootBoost.Application.Inbox.IInboxStore store, TimeProvider time,
+    CancellationToken ct) =>
+{
+    var now = time.GetUtcNow();
+    var messages = await store.ListAsync(key.ToLowerInvariant(), now.AddDays(-Math.Clamp(days ?? 30, 1, 365)), ct);
+    return Results.Ok(RootBoost.Application.Inbox.InboxThreads.From(messages).Select(t => new
+    {
+        channel = t.Channel.ToString(), t.ConversationId, t.ContactName, t.LastText, t.LastHasAttachment, t.LastFromBusiness,
+        t.LastAt, t.Count, t.ReplyUntil, canReply = t.ReplyUntil > now,
+    }));
+});
+
+brandProfile.MapGet("/inbox/{conversationId}", async (string key, string conversationId, RootBoost.Application.Inbox.IInboxStore store,
+    CancellationToken ct) =>
+{
+    var messages = await store.ConversationAsync(key.ToLowerInvariant(), conversationId, ct);
+    return messages.Count == 0
+        ? Results.NotFound(new { error = "conversa não encontrada" })
+        : Results.Ok(messages.Select(m => new { m.Id, channel = m.Channel.ToString(), m.ContactName, m.FromBusiness, m.Text, m.HasAttachment, m.SentAt }));
+});
+
+// Lê agora as mensagens novas da marca (o agendador já faz a cada 10 min).
+brandProfile.MapPost("/inbox/sync", async (string key, RootBoost.Application.Inbox.SyncInbox sync, CancellationToken ct) =>
+{
+    var results = await sync.RunAsync(key.ToLowerInvariant(), ct: ct);
+    if (results.Count == 0) return Results.BadRequest(new { error = "leitura de mensagens desligada ou a marca não tem Página e Instagram configurados" });
+    return Results.Ok(results.Select(r => new { channel = r.Channel.ToString(), r.Ok, r.Inserted, r.Error }));
+});
+
 brandProfile.MapGet("/ads/summary", async (string key, int? days, RootBoost.Application.Ads.IAdInsightStore store,
     RootBoost.Application.Ads.AdsStopRule rule, TimeProvider time, CancellationToken ct) =>
 {

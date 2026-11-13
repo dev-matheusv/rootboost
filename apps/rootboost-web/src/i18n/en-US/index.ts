@@ -280,6 +280,21 @@ export default {
     local: 'On the computer',
     isDefault: 'default',
   },
+  inbox: {
+    title: 'Messages',
+    subtitle: 'The brand Instagram Direct conversations in one place. Refreshes every 10 minutes.',
+    sync: 'Refresh now',
+    pickBrand: 'Pick a brand in the menu to see the messages.',
+    empty: 'No conversations in the last 30 days. When someone messages the brand on Instagram, it shows up here.',
+    unknown: 'Person without username',
+    you: 'You',
+    attachment: 'Photo, audio or share (open Instagram to see it)',
+    waiting: 'Waiting for reply',
+    replySoon: 'Replying from here comes next. For now reply in the Instagram app, until {until}.',
+    windowClosed: '24 hours passed since the last message from this person: Instagram only allows a reply after they write again.',
+    synced: '{n} new messages.',
+    error: 'Could not read the messages right now.',
+  },
   voices: {
     title: 'Voices',
     subtitle: 'The voice that narrates the brand videos: yours, recorded here, or one from the bank.',
@@ -376,7 +391,7 @@ export default {
     changed: 'Password changed. Use the new one next time you sign in.',
   },
   form: { email: 'Email', password: 'Password' },
-  nav: { overview: 'Overview', orders: 'Orders', brand: 'Brand', allBrands: 'All brands', darkMode: 'Dark mode', brandProfile: 'Brand profile', campaigns: 'Campaigns', publications: 'Publishing', studio: 'Studio', acervo: 'Library', vozes: 'Voices' },
+  nav: { overview: 'Overview', orders: 'Orders', brand: 'Brand', allBrands: 'All brands', darkMode: 'Dark mode', brandProfile: 'Brand profile', campaigns: 'Campaigns', publications: 'Publishing', studio: 'Studio', acervo: 'Library', vozes: 'Voices', mensagens: 'Messages' },
   pages: {
     login: {
       title: 'Sign in to the Console',
