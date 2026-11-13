@@ -3,7 +3,7 @@
     <q-header v-if="$q.screen.lt.md" bordered :class="$q.dark.isActive ? 'bg-dark' : 'bg-white text-dark'">
       <q-toolbar>
         <q-btn flat round dense :icon="mdiMenu" @click="drawer = !drawer" />
-        <q-toolbar-title class="sora-bold">RootBoost</q-toolbar-title>
+        <q-toolbar-title class="sora-bold">Nativa</q-toolbar-title>
         <q-btn-dropdown v-if="brand.brands.length" flat dense no-caps class="brand-pick" :label="brand.selectedName || $t('nav.allBrands')">
           <q-list dense>
             <q-item v-for="b in [{ key: '', name: $t('nav.allBrands') }, ...brand.brands]" :key="b.key" v-close-popup clickable

@@ -6,7 +6,7 @@
         <q-card flat class="login-card card-rounded q-pa-lg" :class="$q.dark.isActive ? 'card-bordered-dark' : 'card-bordered-light'">
           <div class="column items-center q-mb-lg">
             <img src="/favicon.svg" alt="" width="64" height="64" />
-            <div class="text-h5 sora-bold q-mt-sm">RootBoost</div>
+            <div class="text-h5 sora-bold q-mt-sm">Nativa</div>
             <div class="text-caption text-grey-6">{{ $t('app.tagline') }}</div>
           </div>
           <div class="text-subtitle1 text-weight-medium q-mb-md">{{ $t('pages.login.title') }}</div>
