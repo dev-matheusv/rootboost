@@ -471,6 +471,7 @@ brandProfile.MapPut("/ads/campaigns/{id:guid}", async (string key, Guid id, AdCa
         draft.Update(input.Name, input.Objective == "leads" ? AdObjective.Leads : AdObjective.Traffic, (long)Math.Round(input.DailyBudget * 100),
             input.Countries ?? [], input.AgeMin, input.AgeMax, draft.VideoUrl, draft.ThumbnailUrl, input.PrimaryText, input.Headline,
             input.CallToAction, input.LinkUrl, draft.Rationale, time.GetUtcNow());
+        draft.SetTestDays(input.TestDays, time.GetUtcNow());
     }
     catch (Exception ex) when (ex is ArgumentException or InvalidOperationException) { return Results.BadRequest(new { error = ex.Message }); }
     await store.SaveAsync(draft, ct);
@@ -1786,15 +1787,16 @@ record LocalVoiceInput(string? Key, string? BrandKey, bool IsDefault);
 record LocalVoicesInput(string? WorkerId, List<LocalVoiceInput>? Voices);
 record AdCampaignProposeInput(Guid? JobId, Guid? PublicationId = null);
 record AdCampaignInput(string Name, string Objective, decimal DailyBudget, List<string>? Countries, int AgeMin, int AgeMax,
-    string PrimaryText, string Headline, string CallToAction, string LinkUrl);
+    string PrimaryText, string Headline, string CallToAction, string LinkUrl, int? TestDays = null);
 record AdCampaignDto(Guid Id, Guid? JobId, string Name, string Objective, decimal DailyBudget, IReadOnlyList<string> Countries, int AgeMin,
     int AgeMax, string VideoUrl, string? ThumbnailUrl, string PrimaryText, string Headline, string CallToAction, string LinkUrl, string Rationale,
     string Status, string? ApprovedBy, DateTimeOffset? ApprovedAt, string? ExternalCampaignId, string? ExternalAdId, string? Error, DateTimeOffset CreatedAt,
-    DateTimeOffset? PausedAt = null, AdviceDto? Advice = null)
+    DateTimeOffset? PausedAt = null, AdviceDto? Advice = null, int? TestDays = null, decimal? TotalBudget = null, DateTimeOffset? EndsAt = null)
 {
     public static AdCampaignDto From(AdCampaignDraft d) => new(d.Id, d.CreativeJobId, d.Name, d.Objective == AdObjective.Leads ? "leads" : "trafego",
         d.DailyBudgetCents / 100m, d.Countries, d.AgeMin, d.AgeMax, d.VideoUrl, d.ThumbnailUrl, d.PrimaryText, d.Headline, d.CallToAction, d.LinkUrl,
-        d.Rationale, d.Status.ToString(), d.ApprovedBy, d.ApprovedAt, d.ExternalCampaignId, d.ExternalAdId, d.Error, d.CreatedAt, d.PausedAt);
+        d.Rationale, d.Status.ToString(), d.ApprovedBy, d.ApprovedAt, d.ExternalCampaignId, d.ExternalAdId, d.Error, d.CreatedAt, d.PausedAt,
+        null, d.TestDays, d.TotalBudgetCents / 100m, d.EndsAt);
 }
 record AdviceDto(string Kind, string Message, decimal? SuggestedDailyBudget, decimal Spend, long Impressions, long Clicks, long Conversions, decimal? Ctr)
 {

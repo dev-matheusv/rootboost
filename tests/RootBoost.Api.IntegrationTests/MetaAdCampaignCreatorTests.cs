@@ -39,6 +39,32 @@ public class MetaAdCampaignCreatorTests
             b => Assert.Contains("status=PAUSED", b.Form));
     }
 
+    [Fact]
+    public async Task Test_days_send_total_budget_and_end_date_instead_of_daily()
+    {
+        var handler = new Recorder();
+        var social = new SocialAccounts(new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["Social:Accounts:0:Brand"] = "medlycare", ["Social:Accounts:0:Channel"] = "Facebook",
+            ["Social:Accounts:0:AccountId"] = "page1", ["Social:Accounts:0:AccessToken"] = "t",
+        }).Build());
+        var creator = new MetaAdCampaignCreator(new Factory(handler), Options.Create(new MetaOptions { AdsAccessToken = "x", ApiVersion = "v27.0" }), social);
+        var now = new DateTimeOffset(2026, 11, 13, 12, 0, 0, TimeSpan.Zero);
+        var d = new AdCampaignDraft(BrandKeys.MedlyCare, null, now);
+        d.Update("Teste", AdObjective.Traffic, 1000, ["BR"], 25, 55, "https://cdn.example.com/v.mp4", null, "Texto.", "Título", "LEARN_MORE", "https://medlycare.com.br", null, now);
+        d.SetTestDays(5, now);
+        Assert.Equal(5000, d.TotalBudgetCents);
+
+        await creator.CreatePausedAsync(d, new AdAccount("medlycare", "meta", "123"), () => Task.CompletedTask, now);
+
+        var adset = handler.Bodies.Single(b => b.Path.EndsWith("/adsets")).Form;
+        Assert.Contains("lifetime_budget=5000", adset);
+        Assert.Contains($"end_time={now.AddDays(5).ToUnixTimeSeconds()}", adset);
+        Assert.DoesNotContain("daily_budget", adset);
+        Assert.Equal(now.AddDays(5), d.EndsAt);
+        Assert.Throws<ArgumentException>(() => new AdCampaignDraft(BrandKeys.MedlyCare, null, now).SetTestDays(31, now));
+    }
+
     private sealed class Recorder : HttpMessageHandler
     {
         public List<(string Path, string Form)> Bodies { get; } = [];

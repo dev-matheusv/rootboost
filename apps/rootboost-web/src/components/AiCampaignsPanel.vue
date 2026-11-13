@@ -66,7 +66,17 @@
         <div class="row q-col-gutter-sm">
           <q-input v-model="forms[c.id]!.name" outlined dense class="col-12 col-md-6" :label="$t('aiCampaigns.f.name')" />
           <q-select v-model="forms[c.id]!.objective" outlined dense emit-value map-options class="col-6 col-md-3" :options="objectives" :label="$t('aiCampaigns.f.objective')" />
-          <q-input v-model.number="forms[c.id]!.dailyBudget" outlined dense type="number" step="1" min="6" max="500" class="col-6 col-md-3" :label="$t('aiCampaigns.f.budget')" prefix="R$" />
+          <!-- Orçamento (13/11): por dia, sem fim, ou total do teste dividido em X dias (a Meta não passa do total). -->
+          <div class="col-12 col-md-3">
+            <q-btn-toggle v-model="forms[c.id]!.mode" spread no-caps dense unelevated toggle-color="primary" class="q-mb-xs"
+              :options="[{ label: $t('aiCampaigns.f.modeTotal'), value: 'total' }, { label: $t('aiCampaigns.f.modeDaily'), value: 'daily' }]" />
+          </div>
+          <template v-if="forms[c.id]!.mode === 'total'">
+            <q-input v-model.number="forms[c.id]!.total" outlined dense type="number" step="1" min="6" class="col-6 col-md-3" :label="$t('aiCampaigns.f.total')" prefix="R$" />
+            <q-input v-model.number="forms[c.id]!.days" outlined dense type="number" step="1" min="1" max="30" class="col-6 col-md-2" :label="$t('aiCampaigns.f.days')"
+              :hint="perDay(forms[c.id]!)" />
+          </template>
+          <q-input v-else v-model.number="forms[c.id]!.dailyBudget" outlined dense type="number" step="1" min="6" max="500" class="col-6 col-md-3" :label="$t('aiCampaigns.f.budget')" prefix="R$" />
           <q-input v-model="countries[c.id]" outlined dense class="col-6 col-md-3" :label="$t('aiCampaigns.f.countries')" />
           <q-input v-model.number="forms[c.id]!.ageMin" outlined dense type="number" class="col-3 col-md-2" :label="$t('aiCampaigns.f.ageMin')" />
           <q-input v-model.number="forms[c.id]!.ageMax" outlined dense type="number" class="col-3 col-md-2" :label="$t('aiCampaigns.f.ageMax')" />
@@ -84,7 +94,9 @@
       <div v-else class="text-body2">
         {{ c.primaryText }}
         <div class="text-caption text-grey-7 q-mt-xs">
-          R$ {{ c.dailyBudget.toFixed(2) }}/{{ $t('aiCampaigns.day') }} · {{ c.countries.join(', ') }} · {{ c.ageMin }} a {{ c.ageMax }} anos
+          <template v-if="c.testDays">{{ $t('aiCampaigns.totalFor', { total: (c.totalBudget ?? 0).toFixed(2), days: c.testDays }) }}<template v-if="c.endsAt"> · {{ $t('aiCampaigns.endsAt', { date: new Date(c.endsAt).toLocaleDateString() }) }}</template></template>
+          <template v-else>R$ {{ c.dailyBudget.toFixed(2) }}/{{ $t('aiCampaigns.day') }}</template>
+          · {{ c.countries.join(', ') }} · {{ c.ageMin }} a {{ c.ageMax }} anos
           <template v-if="c.externalCampaignId"> · {{ $t('aiCampaigns.metaId') }} {{ c.externalCampaignId }}</template>
         </div>
         <div v-if="c.status === 'Created' && !c.advice" class="text-caption text-positive q-mt-xs">{{ $t('aiCampaigns.createdNote') }}</div>
@@ -121,6 +133,7 @@ interface AdCampaign {
   ageMin: number; ageMax: number; videoUrl: string; thumbnailUrl: string | null; primaryText: string; headline: string;
   callToAction: string; linkUrl: string; rationale: string; status: 'Draft' | 'Approved' | 'Creating' | 'Created' | 'Failed';
   externalCampaignId: string | null; externalAdId: string | null; error: string | null; pausedAt: string | null;
+  testDays: number | null; totalBudget: number | null; endsAt: string | null;
   advice: { kind: 'Wait' | 'Keep' | 'Scale' | 'ReviewCreative' | 'Pause'; message: string; suggestedDailyBudget: number | null;
     spend: number; impressions: number; clicks: number; conversions: number; ctr: number | null } | null;
 }
@@ -129,7 +142,8 @@ interface RankedPost {
   externalId: string; productType: string; caption: string; permalink: string | null; thumbnailUrl: string | null;
   postedAt: string; publicationId: string | null; views: number; reach: number; saves: number; shares: number;
 }
-type Form = Pick<AdCampaign, 'name' | 'objective' | 'dailyBudget' | 'ageMin' | 'ageMax' | 'primaryText' | 'headline' | 'callToAction' | 'linkUrl'>;
+type Form = Pick<AdCampaign, 'name' | 'objective' | 'dailyBudget' | 'ageMin' | 'ageMax' | 'primaryText' | 'headline' | 'callToAction' | 'linkUrl'>
+  & { mode: 'daily' | 'total'; total: number; days: number };
 
 const props = defineProps<{ brandKey: string }>();
 const { t } = useI18n();
@@ -172,9 +186,12 @@ function fail(e: unknown) {
   $q.notify({ type: 'negative', message: msg });
 }
 
+const perDay = (f: Form) => f.days > 0 ? `R$ ${(f.total / f.days).toFixed(2)} ${t('aiCampaigns.perDay')}` : '';
+
 function fill(c: AdCampaign) {
   forms[c.id] = { name: c.name, objective: c.objective, dailyBudget: c.dailyBudget, ageMin: c.ageMin, ageMax: c.ageMax,
-    primaryText: c.primaryText, headline: c.headline, callToAction: c.callToAction, linkUrl: c.linkUrl };
+    primaryText: c.primaryText, headline: c.headline, callToAction: c.callToAction, linkUrl: c.linkUrl,
+    mode: c.testDays ? 'total' : 'daily', total: c.totalBudget ?? c.dailyBudget * 5, days: c.testDays ?? 5 };
   countries[c.id] = c.countries.join(', ');
 }
 
@@ -228,7 +245,11 @@ async function propose(source?: string) {
 async function save(c: AdCampaign) {
   busy.value = c.id + 'save';
   try {
-    const body = { ...forms[c.id], countries: countries[c.id]!.split(',').map((s) => s.trim()).filter(Boolean) };
+    const f = forms[c.id]!;
+    // Total do teste: o diário é o total dividido pelos dias (a Meta recebe o total e a data de fim).
+    const total = f.mode === 'total';
+    const body = { ...f, dailyBudget: total ? Math.round((f.total / Math.max(1, f.days)) * 100) / 100 : f.dailyBudget,
+      testDays: total ? f.days : null, countries: countries[c.id]!.split(',').map((s) => s.trim()).filter(Boolean) };
     upsert((await api.put<AdCampaign>(`/admin/brands/${props.brandKey}/ads/campaigns/${c.id}`, body)).data);
     return true;
   } catch (e) { fail(e); return false; } finally { busy.value = null; }
@@ -236,7 +257,9 @@ async function save(c: AdCampaign) {
 
 function approve(c: AdCampaign) {
   // Aprovação explícita: cria na Meta, mas pausada. Gasto só começa quando a pessoa ativa no Gerenciador de Anúncios.
-  $q.dialog({ title: t('aiCampaigns.confirmTitle'), message: t('aiCampaigns.confirmText', { budget: forms[c.id]!.dailyBudget }), cancel: true })
+  const f = forms[c.id]!;
+  const message = f.mode === 'total' ? t('aiCampaigns.confirmTextTotal', { total: f.total, days: f.days }) : t('aiCampaigns.confirmText', { budget: f.dailyBudget });
+  $q.dialog({ title: t('aiCampaigns.confirmTitle'), message, cancel: true })
     .onOk(() => void createPaused(c));
 }
 
