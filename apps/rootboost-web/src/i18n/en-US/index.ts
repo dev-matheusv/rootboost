@@ -144,6 +144,18 @@ export default {
     denied: 'The browser blocked notifications. Allow them in the site settings.',
     error: 'Could not turn on alerts on this device.',
   },
+  assistant: {
+    title: 'Ask the AI',
+    subtitle: 'About the brand numbers: organic, ads and videos. It suggests; you decide.',
+    placeholder: 'E.g.: which video should I advertise with R$ 50?',
+    thinking: 'Thinking about the numbers…',
+    clear: 'New conversation',
+    empty: 'The AI gave no answer. Try asking another way.',
+    error: 'Could not reach the AI right now.',
+    ex1: 'Which video should I advertise?',
+    ex2: 'What should I post next week?',
+    ex3: 'How is the test campaign doing?',
+  },
   weeklyReport: {
     organic: 'Organic (Instagram)',
     paid: 'Paid (ads)',

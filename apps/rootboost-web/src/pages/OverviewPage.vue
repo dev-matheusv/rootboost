@@ -43,6 +43,7 @@
     </div>
 
     <WeeklyReportCard v-if="brand.selected" :key="brand.selected" :brand-key="brand.selected" />
+    <AssistantCard v-if="brand.selected" :key="'ia-' + brand.selected" :brand-key="brand.selected" />
 
     <div class="row items-end q-mb-md q-gutter-sm">
       <div class="col">
@@ -121,6 +122,7 @@ import { OPEN_ALERTS_EVENT, firstName, greetingKey } from 'src/utils/overview';
 import { formatInt, formatMoney, formatPercent, sumByCurrency } from 'src/utils/format';
 import { brandParams, useBrandStore } from 'src/stores/brandStore';
 import WeeklyReportCard from 'src/components/WeeklyReportCard.vue';
+import AssistantCard from 'src/components/AssistantCard.vue';
 
 defineOptions({ name: 'OverviewPage' });
 
