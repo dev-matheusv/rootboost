@@ -51,12 +51,13 @@ public sealed class InstagramInboxReader : IInboxReader
         var page = _accounts.For(brandKey, SocialChannel.Facebook);
         var igId = _accounts.For(brandKey, SocialChannel.Instagram).AccountId;
         var http = _factory.CreateClient("meta");
+        var token = await PageTokenAsync(http, page.AccountId, page.AccessToken, ct);
 
         var conversations = new List<string>();
         string? next = $"{_version}/{page.AccountId}/conversations?platform=instagram&fields=id,updated_time";
         for (var p = 0; next is not null && p < MaxConversationPages; p++)
         {
-            using var doc = await GraphApi.SendAsync(http, HttpMethod.Get, next, page.AccessToken, null, ct);
+            using var doc = await GraphApi.SendAsync(http, HttpMethod.Get, next, token, null, ct);
             var old = false;
             if (doc.RootElement.TryGetProperty("data", out var data) && data.ValueKind == JsonValueKind.Array)
                 foreach (var c in data.EnumerateArray())
@@ -70,7 +71,7 @@ public sealed class InstagramInboxReader : IInboxReader
         var rows = new List<InboxMessageRow>();
         foreach (var conversation in conversations)
         {
-            using var doc = await GraphApi.SendAsync(http, HttpMethod.Get, $"{_version}/{conversation}?fields=messages", page.AccessToken, null, ct);
+            using var doc = await GraphApi.SendAsync(http, HttpMethod.Get, $"{_version}/{conversation}?fields=messages", token, null, ct);
             if (!doc.RootElement.TryGetProperty("messages", out var msgs) || !msgs.TryGetProperty("data", out var list)) continue;
             foreach (var m in list.EnumerateArray().Take(MaxDetailPerConversation))
             {
@@ -80,7 +81,7 @@ public sealed class InstagramInboxReader : IInboxReader
                 try
                 {
                     using var detail = await GraphApi.SendAsync(http, HttpMethod.Get, $"{_version}/{id}?fields=id,created_time,from,to,message",
-                        page.AccessToken, null, ct);
+                        token, null, ct);
                     if (Parse(conversation, igId, detail.RootElement) is { } row) rows.Add(row);
                 }
                 catch (InvalidOperationException ex)
@@ -91,6 +92,33 @@ public sealed class InstagramInboxReader : IInboxReader
             }
         }
         return rows;
+    }
+
+    private readonly Dictionary<string, (string Token, DateTimeOffset At)> _pageTokens = new();
+
+    /// <summary>
+    /// Conversa só sai com token da Página (13/11: "(#190) This method must be called with a Page Access Token"). O token
+    /// configurado é de usuário; a Página devolve o dela em <c>GET /{page-id}?fields=access_token</c>. Guardado 1 hora.
+    /// Sem permissão pra isso, segue com o token configurado e o erro da Meta aparece no Console.
+    /// </summary>
+    private async Task<string> PageTokenAsync(HttpClient http, string pageId, string configured, CancellationToken ct)
+    {
+        lock (_pageTokens)
+            if (_pageTokens.TryGetValue(pageId, out var c) && DateTimeOffset.UtcNow - c.At < TimeSpan.FromHours(1)) return c.Token;
+        try
+        {
+            using var doc = await GraphApi.SendAsync(http, HttpMethod.Get, $"{_version}/{pageId}?fields=access_token", configured, null, ct);
+            if (Str(doc.RootElement, "access_token") is { Length: > 0 } t)
+            {
+                lock (_pageTokens) _pageTokens[pageId] = (t, DateTimeOffset.UtcNow);
+                return t;
+            }
+        }
+        catch (InvalidOperationException ex)
+        {
+            _log.LogWarning("Token da Página {Page} não veio, sigo com o configurado: {Error}", pageId, ex.Message);
+        }
+        return configured;
     }
 
     /// <summary>Lê o detalhe de uma mensagem. A pessoa é quem mandou, ou o destinatário quando foi a marca que mandou.</summary>
