@@ -9,7 +9,10 @@ public enum AlertKind
     AdsSyncFailed,
 
     /// <summary>Checagem diária: a conta da Meta (Instagram, Página) não responde com o token configurado.</summary>
-    MetaConnection
+    MetaConnection,
+
+    /// <summary>Gasto da IA no mês chegou perto do teto ou passou dele.</summary>
+    AiBudget
 }
 
 /// <summary>

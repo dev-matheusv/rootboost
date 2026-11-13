@@ -295,7 +295,19 @@ async function loginFields(cdp) {
  * @param ask (state) => Promise<{ action, target, text, reason }>, a chamada à API.
  */
 /** prepare: passo fora do vídeo (preparo da conta). Vale o mesmo controle da IA, sem tempo mínimo e sem gerar mp4. */
-export async function recordScene({ brandKey, scene, account, outDir, name, ask, prepare = false, log = console.log }) {
+export async function recordScene({ brandKey, scene, scenes, account, outDir, name, ask, prepare = false, log = console.log }) {
+  // Gravação contínua (13/11): com `scenes`, uma sessão só grava o processo inteiro, da tela inicial ao resultado, e cada
+  // "pronto" marca o fim de uma cena. Gravar cena por cena deixava a IA preparar a tela fora da câmera (caminho e datas
+  // sumiam) e o vídeo ficava travado na mesma tela do começo ao fim.
+  const flow = Array.isArray(scenes) && scenes.length > 0;
+  const list = flow ? scenes : [scene];
+  let sceneIndex = 0;
+  const flowScene = (i) => `Vídeo contínuo, cena ${i + 1} de ${list.length}. A gravação já está valendo: tudo o que você fizer aparece no vídeo. ` +
+    `Não existe preparo nem comecar; a tela está onde a cena anterior terminou${i === 0 ? " (tela inicial, logo depois do login)" : ""}. ` +
+    `Faça só as ações desta cena, na ordem, sem voltar ao início, e responda pronto quando o resultado dela aparecer.
+${list[i]}`;
+  scene = flow ? flowScene(0) : scene;
+  const marks = []; // fim de cada cena, em segundos desde o primeiro quadro (só no contínuo)
   mkdirSync(join(outDir, "quadros"), { recursive: true });
   const { cdp, close } = await openChrome();
   const frames = [];
@@ -356,12 +368,13 @@ export async function recordScene({ brandKey, scene, account, outDir, name, ask,
     let outcome = "desistir";
     let stopReason = `passou de ${MAX_SECONDS} s sem terminar`;
     let deadClicks = 0;
-    let started_scene = false;
+    let sceneStart = 0; // passo em que a cena atual começou (contínuo)
+    let started_scene = flow; // no contínuo a cena já começa gravando
     let acted = 0;
     let personalDetours = 0; // dado real visto no preparo: troca de paciente até 2 vezes
     let byScript = false; // o clique do navegador não chegou na página: segue clicando por dentro dela
     await evaluate(cdp, WATCH_CLICKS);
-    for (let step = 0; Date.now() - started < (prepare ? 2 * MAX_SECONDS : MAX_SECONDS) * 1000; step++) {
+    for (let step = 0; Date.now() - started < (prepare ? 2 * MAX_SECONDS : MAX_SECONDS * list.length) * 1000; step++) {
       elements = await evaluate(cdp, LIST_ELEMENTS);
       // Foto em 1x (540x600) pra IA: um quarto dos pixels da gravação, bem menos tokens por passo (custo).
       // O recorte conta a partir do topo do documento: sem somar a rolagem, a foto saía em branco depois de rolar.
@@ -376,8 +389,8 @@ export async function recordScene({ brandKey, scene, account, outDir, name, ask,
       const chosen = elements.find((e) => e.id === next.target);
       note(`passo ${step + 1} em ${url}: ${next.action} ${chosen ? `"${chosen.text}"` : next.target ?? ""} ${next.text ?? ""} (${next.reason})`);
       // Cena de dois segundos vira imagem parada no vídeo: manda mostrar a ação antes de encerrar.
-      const shown = frames.length ? frames.at(-1).t - frames[0].t : 0;
-      if (!prepare && next.action === "pronto" && shown < MIN_SCENE_SECONDS && step < 20) {
+      const shown = frames.length ? frames.at(-1).t - frames[0].t - (marks.at(-1) ?? 0) : 0;
+      if (!prepare && next.action === "pronto" && shown < (flow ? 3 : MIN_SCENE_SECONDS) && step - sceneStart < 20) {
         note(`  pronto recusado: só ${shown.toFixed(1)} s de cena`);
         history.push(`recusado: a cena tem só ${shown.toFixed(1)} s; mostre a ação acontecendo antes de encerrar`);
         continue;
@@ -385,17 +398,31 @@ export async function recordScene({ brandKey, scene, account, outDir, name, ask,
       // Cena que pede ação (tocar, escolher, digitar) só termina depois de a ação acontecer na tela (12/11: a IA dizia
       // "a data já está preenchida" e encerrava; o vídeo ficou com datas que a fala não citou e tela parada).
       // Sem comecar, o preparo inteiro entraria no vídeo (12/11: o caminho e as datas apareciam de novo em cada bloco).
-      if (!prepare && next.action === "pronto" && !started_scene && step < 30) {
+      if (!prepare && next.action === "pronto" && !started_scene && step - sceneStart < 30) {
         note("  pronto recusado: a cena não foi marcada com comecar");
         history.push("recusado: responda comecar no ponto de partida da cena antes de mostrar as ações; o que veio antes é preparo e sai do vídeo");
         continue;
       }
-      if (!prepare && next.action === "pronto" && started_scene && acted === 0 && ACTION_WORDS.test(scene) && step < 30) {
+      if (!prepare && next.action === "pronto" && started_scene && acted === 0 && ACTION_WORDS.test(list[sceneIndex] ?? scene) && step - sceneStart < 30) {
         note("  pronto recusado: nenhuma ação feita depois do comecar");
         history.push("recusado: a cena pede ação e nada foi feito depois do comecar. Faça na tela cada passo que a cena descreve, mesmo que o campo já tenha valor (troque pelo valor da cena)");
         continue;
       }
+      if (flow && next.action === "pronto" && sceneIndex + 1 < list.length) {
+        // Fim de uma cena no contínuo: marca o ponto de corte e segue pra próxima sem parar a gravação.
+        await wait(1200); // segura o resultado da cena um instante
+        await grab();
+        marks.push(frames.at(-1).t - frames[0].t);
+        note(`  cena ${sceneIndex + 1} concluída em ${marks.at(-1).toFixed(1)} s`);
+        sceneIndex++;
+        scene = flowScene(sceneIndex);
+        acted = 0;
+        sceneStart = step;
+        history.push(`cena ${sceneIndex} concluída; agora a cena ${sceneIndex + 1}, continuando da tela atual`);
+        continue;
+      }
       if (next.action === "pronto" || next.action === "desistir") { outcome = next.action; stopReason = next.reason; break; }
+      if (flow && next.action === "comecar") { history.push("recusado: vídeo contínuo, a gravação já está valendo; siga com a ação da cena"); continue; }
       if (next.action === "comecar") {
         // Só o primeiro vale: repetir apagava a ação já gravada e o vídeo saía parado.
         if (started_scene) { history.push("recusado: a cena já começou, siga mostrando a ação"); continue; }
@@ -559,7 +586,10 @@ export async function recordScene({ brandKey, scene, account, outDir, name, ask,
       ff.on("exit", (c) => (c === 0 ? ok() : fail(new Error(`ffmpeg saiu com ${c}`))));
     });
     rmSync(join(outDir, "quadros"), { recursive: true, force: true });
-    return { path: out, duration: (frames.at(-1).t - frames[0].t) + 0.04, steps };
+    const duration = (frames.at(-1).t - frames[0].t) + 0.04;
+    // Contínuo: trechos [início, fim] de cada cena, pra montagem cortar o vídeo inteiro nos pontos certos.
+    const segments = flow ? list.map((_, i) => ({ start: i === 0 ? 0 : marks[i - 1], end: i < marks.length ? marks[i] : duration })) : null;
+    return { path: out, duration, steps, segments };
   } finally {
     close();
   }

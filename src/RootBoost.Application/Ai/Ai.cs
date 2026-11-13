@@ -268,7 +268,11 @@ public sealed class ScriptWriter
         sb.AppendLine("- Cada bloco tem título curto no topo da tela, subtítulo, a fala daquele trecho e a cena: o que a tela mostra, passo a passo, pra quem for gravar.");
         sb.AppendLine("- A cena começa dizendo em que tela parte (\"Começa em: tela inicial\") e lista cada toque até o resultado, com os valores exatos " +
             "(datas como 01/11/2026 a 30/11/2026, nome do profissional, opção do seletor). Mostre o caminho: como chegar na tela também é passo a passo. " +
-            "A fala do bloco descreve exatamente essas ações, na mesma ordem e com os mesmos valores: o que a fala diz tem de aparecer na tela naquele trecho.");
+            "A cena é instrução pra quem grava; a fala é pra quem assiste.");
+        sb.AppendLine("- A fala soa como alguém mostrando o sistema pra um possível cliente, natural e fluida: diz o que a pessoa faz e pra quê " +
+            "(\"escolha a data inicial e a data final do período\", \"deixe o profissional em branco pra trazer todo mundo\", \"toque em gerar e o relatório aparece\"). " +
+            "Nunca dite valor exato nem detalhe de clique (nada de \"toque no ícone do calendário\", \"toque no dia primeiro\", \"agosto de 2026\"). " +
+            "A fala acompanha a mesma ordem da cena, sem prometer nada que a tela não mostra.");
         sb.AppendLine(format switch
         {
             VideoFormat.Explainer => "- Formato explicativo (obrigatório): toda cena com narração (audio narracao) e fala.",

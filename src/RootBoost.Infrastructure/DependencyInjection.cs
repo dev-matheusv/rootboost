@@ -54,13 +54,19 @@ public static class DependencyInjection
         config.GetSection("Ai").Bind(ai);
         ai.ApiKey ??= config["Anthropic:ApiKey"] ?? Environment.GetEnvironmentVariable("ANTHROPIC_API_KEY");
         services.AddSingleton(ai);
-        services.AddSingleton<RootBoost.Application.Ai.ILanguageModel>(sp => ai.Mode switch
+        services.AddScoped<RootBoost.Application.Ai.IAiBudgetStore, RootBoost.Infrastructure.Ai.EfAiBudgetStore>();
+        services.AddScoped<RootBoost.Application.Ai.AiCredit>();
+        // Teto do mês (13/11): toda chamada passa pela guarda, que recusa depois do teto e avisa perto dele.
+        services.AddSingleton(sp => new RootBoost.Infrastructure.Ai.AiBudgetGuard(BuildModel(sp),
+            sp.GetRequiredService<Microsoft.Extensions.DependencyInjection.IServiceScopeFactory>(), sp.GetRequiredService<TimeProvider>()));
+        services.AddSingleton<RootBoost.Application.Ai.ILanguageModel>(sp => sp.GetRequiredService<RootBoost.Infrastructure.Ai.AiBudgetGuard>());
+        RootBoost.Application.Ai.ILanguageModel BuildModel(IServiceProvider sp) => ai.Mode switch
         {
             RootBoost.Application.Ai.AiMode.Fake => new RootBoost.Infrastructure.Ai.FakeLanguageModel(),
             RootBoost.Application.Ai.AiMode.Claude when !string.IsNullOrWhiteSpace(ai.ApiKey) => new RootBoost.Infrastructure.Ai.ClaudeLanguageModel(ai,
                 sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<RootBoost.Infrastructure.Ai.ClaudeLanguageModel>>()),
             _ => new RootBoost.Infrastructure.Ai.DisabledLanguageModel(),
-        });
+        };
         services.AddScoped<RootBoost.Application.Ai.IAiUsageStore, EfAiUsageStore>();
         services.AddScoped<RootBoost.Application.Ai.ScriptWriter>();
         services.AddScoped<RootBoost.Application.Ai.IBrandProductStore, EfBrandProductStore>();

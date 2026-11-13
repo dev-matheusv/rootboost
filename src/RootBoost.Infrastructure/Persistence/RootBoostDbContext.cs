@@ -32,6 +32,7 @@ public sealed class RootBoostDbContext : DbContext
     public DbSet<AdInsightDaily> AdInsights => Set<AdInsightDaily>();
     public DbSet<OrganicPost> OrganicPosts => Set<OrganicPost>();
     public DbSet<InboxMessage> InboxMessages => Set<InboxMessage>();
+    public DbSet<AiBudget> AiBudgets => Set<AiBudget>();
 
     /// <summary>Avisos de operação pro humano (post que falhou, sync de anúncio, conexão da Meta). RB-58.</summary>
     public DbSet<OpsAlert> OpsAlerts => Set<OpsAlert>();
@@ -140,6 +141,12 @@ public sealed class RootBoostDbContext : DbContext
         // Chave natural: um post do canal é uma linha só, reler atualiza.
         org.HasIndex(x => new { x.Channel, x.ExternalId }).IsUnique();
         org.HasIndex(x => new { x.BrandKey, x.PostedAt });
+
+        var budget = b.Entity<AiBudget>();
+        budget.HasKey(x => x.Key);
+        budget.Property(x => x.Key).HasMaxLength(32);
+        budget.Property(x => x.MonthlyLimitUsd).HasPrecision(12, 2);
+        budget.Property(x => x.UpdatedAt).HasConversion(Utc);
 
         var inbox = b.Entity<InboxMessage>();
         inbox.HasKey(x => x.Id);

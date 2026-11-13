@@ -58,6 +58,8 @@ const cfg = {
   defaultVoice: process.env.STUDIO_DEFAULT_VOICE ?? "",
   // Voz por bloco no passo a passo (método do marketing, 12/11). STUDIO_BLOCK_VOICE=0 volta pra voz contínua.
   blockVoice: process.env.STUDIO_BLOCK_VOICE !== "0",
+  // Gravação contínua do passo a passo (13/11); STUDIO_CONTINUOUS=0 volta a gravar cena por cena.
+  continuousRecording: process.env.STUDIO_CONTINUOUS !== "0",
   // Vozes clonadas de pessoas: voz:marca. A do Matheus só narra o MedlyCare.
   privateVoices: parsePrivateVoices(process.env.STUDIO_PRIVATE_VOICES ?? "matheus2a:medlycare,matheus2b:medlycare,medlyfem:medlycare,medlyfem2:medlycare,medlynat1:medlycare"),
   // Passos da síntese por voz (voz:passos), pra sair igual à amostra aprovada. Sem entrada: 32.
@@ -314,7 +316,38 @@ async function round() {
         clearInterval(beat);
       }
     }
-    for (const [i, s] of scenes.entries()) {
+    // Passo a passo com voz por bloco (13/11): grava o processo inteiro numa sessão só e corta nos fins de cena. Cena por
+    // cena, a IA preparava a tela fora da câmera e o vídeo ficava travado na mesma tela do começo ao fim.
+    if (blockMode && cfg.continuousRecording) {
+      await progress(job.id, 6, `gravando a tela: o processo inteiro, ${scenes.length} cenas seguidas`);
+      const beat = setInterval(() => void progress(job.id, 6, "gravando a tela: o processo inteiro").catch(() => {}), cfg.heartbeatSeconds * 1000);
+      try {
+        const whole = `${nome}-continuo`;
+        const r = await recordScene({ brandKey: job.brandKey, scenes: scenes.map((x) => x.scene), account, outDir: `${cfg.base}/brutos/${whole}`, name: whole,
+          ask: async (state) => (await call("POST", "/worker/ai/next-action", { ...state, scene: guide + state.scene })).data });
+        for (const [i, s] of scenes.entries()) {
+          const source = `${nome}-bloco-${s.index + 1}`;
+          const seg = r.segments[i];
+          const dir = `${cfg.base}/brutos/${source}`;
+          mkdirSync(dir, { recursive: true });
+          const out = `${dir}/${source}.mp4`;
+          const cut = spawnSync(FFMPEG, ["-y", "-loglevel", "error", "-ss", seg.start.toFixed(2), "-to", seg.end.toFixed(2), "-i", r.path,
+            "-c:v", "libx264", "-preset", "medium", "-crf", "16", "-pix_fmt", "yuv420p", "-an", out], { encoding: "utf8" });
+          if (cut.status !== 0) throw new Error(`corte da cena ${i + 1} falhou: ${cut.stderr}`);
+          const fz = spawnSync(FFMPEG, ["-hide_banner", "-i", out, "-vf", "freezedetect=n=0.003:d=1,metadata=mode=print", "-an", "-f", "null", "-"],
+            { encoding: "utf8", maxBuffer: 64 << 20 });
+          recordings.push({ index: s.index, source, duration: seg.end - seg.start, freezes: parseDetect(`${fz.stdout}
+${fz.stderr}`).freezes });
+          console.log(`[${now()}] cena ${i + 1}: ${seg.start.toFixed(1)} a ${seg.end.toFixed(1)} s`);
+        }
+        await learn(scenes.map((x) => x.scene).join(" | "), r.steps);
+      } catch (e) {
+        return fail(job.id, `gravação contínua: ${e.message}`, !e.personalData && !e.aiGaveUp && !/crédito da IA/.test(e.message));
+      } finally {
+        clearInterval(beat);
+      }
+    }
+    for (const [i, s] of (blockMode && cfg.continuousRecording ? [] : scenes).entries()) {
       const source = `${nome}-bloco-${s.index + 1}`;
       const percent = 5 + Math.round((i / scenes.length) * 25);
       await progress(job.id, percent, `gravando a tela: ${s.scene}`);
