@@ -263,6 +263,8 @@ public sealed class RootBoostDbContext : DbContext
             camp.Property(f).HasMaxLength(64);
         camp.Property(x => x.ApprovedAt).HasConversion(Utc);
         camp.Property(x => x.PausedAt).HasConversion(Utc);
+        camp.Property(x => x.EndsAt).HasConversion(Utc);
+        camp.Ignore(x => x.TotalBudgetCents);
         camp.Property(x => x.PausedBy).HasMaxLength(200);
         camp.Property(x => x.CreatedAt).HasConversion(Utc);
         camp.Property(x => x.UpdatedAt).HasConversion(Utc);

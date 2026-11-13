@@ -73,12 +73,21 @@ public sealed class MetaAdCampaignCreator : IAdCampaignCreator
             {
                 ["name"] = draft.Name,
                 ["campaign_id"] = draft.ExternalCampaignId!,
-                ["daily_budget"] = draft.DailyBudgetCents.ToString(),
+                // Orçamento: total com data de fim quando há dias de teste (lifetime_budget exige end_time, doc oficial
+                // conferida em 13/11), senão diário. Mesma unidade do daily_budget (centavos da moeda da conta).
                 ["billing_event"] = "IMPRESSIONS",
                 ["bid_strategy"] = "LOWEST_COST_WITHOUT_CAP",
                 ["targeting"] = targeting,
                 ["status"] = "PAUSED",
             };
+            if (draft.TestDays is int days)
+            {
+                var endsAt = now.AddDays(days);
+                form["lifetime_budget"] = (draft.DailyBudgetCents * days).ToString();
+                form["end_time"] = endsAt.ToUnixTimeSeconds().ToString();
+                draft.SetEndsAt(endsAt);
+            }
+            else form["daily_budget"] = draft.DailyBudgetCents.ToString();
             if (draft.Objective == AdObjective.Leads)
             {
                 form["optimization_goal"] = "OFFSITE_CONVERSIONS";

@@ -108,6 +108,9 @@ namespace RootBoost.Infrastructure.Persistence.Migrations
                     b.Property<long>("DailyBudgetCents")
                         .HasColumnType("bigint");
 
+                    b.Property<DateTimeOffset?>("EndsAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("Error")
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)");
@@ -173,6 +176,9 @@ namespace RootBoost.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasMaxLength(16)
                         .HasColumnType("character varying(16)");
+
+                    b.Property<int?>("TestDays")
+                        .HasColumnType("integer");
 
                     b.Property<string>("ThumbnailUrl")
                         .HasMaxLength(1000)

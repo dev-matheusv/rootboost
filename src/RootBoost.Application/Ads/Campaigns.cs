@@ -136,6 +136,8 @@ public sealed class CampaignProposer
             Str(r, "textoPrincipal"), Str(r, "titulo"),
             AdCampaignDraft.CallsToAction.Contains(cta) ? cta : "LEARN_MORE",
             link, Str(r, "motivo"), now);
+        // Campanha de teste nasce com prazo (13/11): 5 dias, orçamento total = diário x 5. A pessoa muda ou tira no Console.
+        draft.SetTestDays(5, now);
         return new CampaignProposal(draft, result.CostUsd);
     }
 
