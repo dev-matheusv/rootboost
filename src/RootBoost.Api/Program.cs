@@ -527,6 +527,31 @@ brandProfile.MapPost("/report/advice", async (string key, int? days, RootBoost.A
     return Results.Ok(await advisor.AdviseAsync(report, lessons, await products.GetAsync(brandKey, ct), ct));
 });
 
+// Assistente de conversa (13/11): pergunta sobre os números da marca; a IA responde com o resumo da semana (orgânico e
+// pago), o histórico dos vídeos e o produto. Só conversa: não publica nem gasta.
+brandProfile.MapPost("/assistant/chat", async (string key, OnboardingChatInput input, IBrandStore brands,
+    RootBoost.Application.Publishing.IPublicationStore pubs, RootBoost.Application.Studio.ICreativeJobStore jobs,
+    RootBoost.Application.Ads.IAdInsightStore insights, RootBoost.Application.Ads.IAdCampaignStore campaigns,
+    RootBoost.Application.Ads.AdsStopRule rule, RootBoost.Application.Organic.IOrganicPostStore organic,
+    RootBoost.Application.Ai.IBrandProductStore products, RootBoost.Application.Reports.MarketingAssistant assistant,
+    TimeProvider time, CancellationToken ct) =>
+{
+    var brandKey = key.ToLowerInvariant();
+    var brand = (await brands.ListAsync(ct)).FirstOrDefault(b => b.Key == brandKey);
+    if (brand is null) return Results.NotFound();
+    var turns = (input.Messages ?? []).Select(m => new RootBoost.Application.Ai.ChatTurn(m.Role == "user" ? "user" : "assistant",
+        (m.Text ?? string.Empty).Length > 4000 ? m.Text![..4000] : m.Text ?? string.Empty)).ToList();
+    try
+    {
+        var report = await BuildWeeklyReport(brandKey, 7, pubs, jobs, insights, campaigns, rule, organic, time, ct);
+        var lessons = await RootBoost.Application.Organic.ContentLessons.ForBrandAsync(organic, brandKey, time.GetUtcNow(), ct);
+        var answer = await assistant.AskAsync(brandKey, brand.Name, await products.GetAsync(brandKey, ct), report, lessons, turns, ct);
+        return Results.Ok(new { answer });
+    }
+    catch (RootBoost.Application.Ai.AiDisabledException ex) { return Results.Conflict(new { error = ex.Message }); }
+    catch (InvalidOperationException ex) { return Results.BadRequest(new { error = ex.Message }); }
+});
+
 static async Task<RootBoost.Application.Reports.WeeklyReport> BuildWeeklyReport(string key, int? days,
     RootBoost.Application.Publishing.IPublicationStore pubs, RootBoost.Application.Studio.ICreativeJobStore jobs,
     RootBoost.Application.Ads.IAdInsightStore insights, RootBoost.Application.Ads.IAdCampaignStore campaigns,
