@@ -81,6 +81,16 @@ public sealed class FakeLanguageModel : ILanguageModel
     {
         if (request.Purpose == "onboarding-chat") return Task.FromResult(Interview(request));
         if (request.Purpose == "screen-recording") return Task.FromResult(Screen(request));
+        if (request.Purpose == "marketing-assistant")
+            return Task.FromResult(new LanguageModelResult(JsonSerializer.Serialize(new
+            {
+                resposta = "Pelos números da semana, o vídeo da ficha foi o que mais o público salvou. Próximo passo: anunciar esse vídeo em Campanhas com um teste de 5 dias.",
+            }), "fake", 0, 0, 0m));
+        if (request.Purpose == "weekly-advice")
+            return Task.FromResult(new LanguageModelResult(JsonSerializer.Serialize(new
+            {
+                sugestoes = new[] { new { titulo = "Anuncie o vídeo mais salvo", porque = "Ele tem a maior nota do ranking.", acao = "Em Campanhas, monte campanha com ele.", area = "pago" } },
+            }), "fake", 0, 0, 0m));
         if (request.Purpose == "ads-campaign")
             return Task.FromResult(new LanguageModelResult(JsonSerializer.Serialize(new
             {

@@ -144,6 +144,18 @@ export default {
     denied: 'O navegador bloqueou as notificações. Libere nas configurações do site.',
     error: 'Não consegui ligar os avisos neste aparelho.',
   },
+  assistant: {
+    title: 'Pergunte à IA',
+    subtitle: 'Sobre os números da marca: orgânico, anúncios e vídeos. Ela sugere; quem decide é você.',
+    placeholder: 'Ex.: qual vídeo eu anuncio com R$ 50?',
+    thinking: 'Pensando nos números…',
+    clear: 'Nova conversa',
+    empty: 'A IA não trouxe resposta. Tente perguntar de outro jeito.',
+    error: 'Não deu para falar com a IA agora.',
+    ex1: 'Qual vídeo eu devo anunciar?',
+    ex2: 'O que postar na próxima semana?',
+    ex3: 'Como está a campanha de teste?',
+  },
   weeklyReport: {
     organic: 'Orgânico (Instagram)',
     paid: 'Pago (anúncios)',
