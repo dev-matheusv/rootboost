@@ -1132,6 +1132,19 @@ app.MapGet("/admin/ai/usage", async (int? days, RootBoost.Application.Ai.IAiUsag
         By(rows, r => r.Purpose), By(rows, r => r.BrandKey ?? "geral")) });
 }).RequireAuthorization(AuthSetup.AdminPolicy);
 
+// Crédito da IA (13/11, uso interno): gasto do mês contra o teto, e o teto editável.
+app.MapGet("/admin/ai/credit", async (RootBoost.Application.Ai.AiCredit credit, CancellationToken ct) =>
+    Results.Ok(await credit.StatusAsync(ct))).RequireAuthorization(AuthSetup.AdminPolicy);
+
+app.MapPut("/admin/ai/credit", async (AiBudgetInput input, RootBoost.Application.Ai.AiCredit credit,
+    RootBoost.Infrastructure.Ai.AiBudgetGuard guard, CancellationToken ct) =>
+{
+    if (input.MonthlyLimitUsd is < 0 or > 100_000) return Results.BadRequest(new { error = "teto entre 0 e 100 mil dólares" });
+    await credit.SetAsync(input.MonthlyLimitUsd, input.AlertPercent ?? 80, ct);
+    guard.Invalidate();
+    return Results.Ok(await credit.StatusAsync(ct));
+}).RequireAuthorization(AuthSetup.AdminPolicy);
+
 brandProfile.MapGet("/ai/status", (RootBoost.Application.Ai.AiOptions ai) =>
     Results.Ok(new { mode = ai.Mode.ToString(), enabled = ai.Mode == RootBoost.Application.Ai.AiMode.Fake ||
         (ai.Mode == RootBoost.Application.Ai.AiMode.Claude && !string.IsNullOrWhiteSpace(ai.ApiKey)) }));
@@ -1941,3 +1954,5 @@ record TrackViewRequest(string ProductKey, string? Lang = null);
 
 // Exposed for integration tests (WebApplicationFactory needs a public entry point type).
 public partial class Program { }
+
+public sealed record AiBudgetInput(decimal? MonthlyLimitUsd, int? AlertPercent);
