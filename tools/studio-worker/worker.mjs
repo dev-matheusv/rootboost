@@ -407,7 +407,7 @@ ${fz.stderr}`).freezes });
     joinRecordings(plan);
     writeFileSync(`${projectDir}/roteiro.json`, JSON.stringify(plan.roteiro, null, 1));
     writeFileSync(`${projectDir}/tela.json`, JSON.stringify(plan.tela));
-    pipelineArgs = [`${cfg.tools}/narrado-passo.mjs`, nome, "--voz-dir", voiceDir(seed), ...(blockMode ? [] : ["--pausar"])];
+    pipelineArgs = [`${cfg.tools}/narrado-passo.mjs`, nome, "--voz-dir", voiceDir(seed), ...(blockMode ? [] : ["--pausar"]), "--legenda", "frase"];
   }
   const { code, log } = await runPipeline(job.id, cfg.bin, pipelineArgs);
   if (code !== 0) {
