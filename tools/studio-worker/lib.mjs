@@ -278,8 +278,8 @@ export function stepByStepPlan(roteiro, recordings, nome, durations = []) {
     return segments;
   });
   const hasOpening = Array.isArray(roteiro.abertura) && !!roteiro.abertura[0];
-  const [lastStart, lastEnd] = steps.at(-1)[0];
-  const teaser = [[round(Math.max(lastStart, lastEnd - 5)), lastEnd], { hold: round(lastEnd - 0.05) }];
+  // Abertura sobre a tela de partida (13/11): abrir com o resultado e depois "voltar" pro formulário vazio confundia.
+  const teaser = [{ hold: round(steps[0][0][0] + 0.05) }];
   const numbered = blocos.map((b, i) => ({ ...b, titulo: `${i + 1}. ${b.titulo}` }));
   const hook = { ...blocos[0], titulo: roteiro.abertura?.[0], sub: "" };
   const { abertura: _unused, ...rest } = roteiro;

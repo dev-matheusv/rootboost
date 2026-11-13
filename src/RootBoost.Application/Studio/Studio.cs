@@ -214,7 +214,7 @@ public static class ScriptGates
     {
         CreativeKind.Ad => (13, 16),
         CreativeKind.Prospecting => (60, 120),
-        _ => (45, 90),
+        _ => (30, 90), // fluxo simples fica fluido em 30 a 45 s (13/11)
     };
 
     public static ScriptReview Review(CreativeKind kind, JsonElement script, JsonElement lines,

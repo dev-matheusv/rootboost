@@ -54,12 +54,12 @@ test("acabamento da voz: lê o nome e separa a pasta", () => {
   assert.equal(voiceFolder("medlynat1", 64, 1, -1, "corpo-forte"), "medlynat1-p64-s1-t-1-corpo-forte");
 });
 
-test("passo a passo: junta as gravações, numera os títulos e abre sobre o resultado", () => {
+test("passo a passo: junta as gravações, numera os títulos e abre na tela de partida", () => {
   const roteiro = { abertura: ["Ficha no papel?", "sub"], fecho: ["a", "b"], blocos: [{ titulo: "Abra" }, { titulo: "Salve" }] };
   const plan = stepByStepPlan(roteiro, [{ index: 1, source: "x-bloco-2", duration: 10 }, { index: 0, source: "x-bloco-1", duration: 20 }], "x");
   assert.deepEqual(plan.files, ["x-bloco-1", "x-bloco-2"]);
   assert.deepEqual(plan.tela.blocos.slice(1), [[[0.5, 19.8]], [[20.5, 29.8]]]);
-  assert.deepEqual(plan.tela.blocos[0], [[24.8, 29.8], { hold: 29.75 }]);
+  assert.deepEqual(plan.tela.blocos[0], [{ hold: 0.55 }]);
   assert.deepEqual(plan.roteiro.blocos.map((b) => b.titulo), ["Ficha no papel?", "1. Abra", "2. Salve"]);
   assert.equal(plan.roteiro.abertura, undefined);
 });
