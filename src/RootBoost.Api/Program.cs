@@ -387,6 +387,16 @@ brandProfile.MapGet("/ads/campaigns", async (string key, RootBoost.Application.A
     }));
 });
 
+// Tira a campanha da lista do Console (só o registro daqui; nada é apagado na Meta).
+brandProfile.MapDelete("/ads/campaigns/{id:guid}", async (string key, Guid id, RootBoost.Application.Ads.IAdCampaignStore store, CancellationToken ct) =>
+{
+    var draft = await store.GetAsync(id, ct);
+    if (draft is null || draft.BrandKey != key.ToLowerInvariant()) return Results.NotFound();
+    if (!draft.CanRemove) return Results.BadRequest(new { error = "campanha criada e sem pausa: pause antes de remover da lista" });
+    await store.RemoveAsync(draft, ct);
+    return Results.NoContent();
+});
+
 brandProfile.MapPost("/ads/campaigns/{id:guid}/pause", async (string key, Guid id, System.Security.Claims.ClaimsPrincipal user,
     RootBoost.Application.Ads.IAdCampaignStore store, RootBoost.Application.Ads.IAdCampaignActuator actuator, TimeProvider time,
     ILoggerFactory lf, CancellationToken ct) =>
@@ -1791,12 +1801,12 @@ record AdCampaignInput(string Name, string Objective, decimal DailyBudget, List<
 record AdCampaignDto(Guid Id, Guid? JobId, string Name, string Objective, decimal DailyBudget, IReadOnlyList<string> Countries, int AgeMin,
     int AgeMax, string VideoUrl, string? ThumbnailUrl, string PrimaryText, string Headline, string CallToAction, string LinkUrl, string Rationale,
     string Status, string? ApprovedBy, DateTimeOffset? ApprovedAt, string? ExternalCampaignId, string? ExternalAdId, string? Error, DateTimeOffset CreatedAt,
-    DateTimeOffset? PausedAt = null, AdviceDto? Advice = null, int? TestDays = null, decimal? TotalBudget = null, DateTimeOffset? EndsAt = null)
+    DateTimeOffset? PausedAt = null, AdviceDto? Advice = null, int? TestDays = null, decimal? TotalBudget = null, DateTimeOffset? EndsAt = null, bool CanRemove = false)
 {
     public static AdCampaignDto From(AdCampaignDraft d) => new(d.Id, d.CreativeJobId, d.Name, d.Objective == AdObjective.Leads ? "leads" : "trafego",
         d.DailyBudgetCents / 100m, d.Countries, d.AgeMin, d.AgeMax, d.VideoUrl, d.ThumbnailUrl, d.PrimaryText, d.Headline, d.CallToAction, d.LinkUrl,
         d.Rationale, d.Status.ToString(), d.ApprovedBy, d.ApprovedAt, d.ExternalCampaignId, d.ExternalAdId, d.Error, d.CreatedAt, d.PausedAt,
-        null, d.TestDays, d.TotalBudgetCents / 100m, d.EndsAt);
+        null, d.TestDays, d.TotalBudgetCents / 100m, d.EndsAt, d.CanRemove);
 }
 record AdviceDto(string Kind, string Message, decimal? SuggestedDailyBudget, decimal Spend, long Impressions, long Clicks, long Conversions, decimal? Ctr)
 {

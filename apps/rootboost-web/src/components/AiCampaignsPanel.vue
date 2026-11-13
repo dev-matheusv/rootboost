@@ -58,6 +58,9 @@
       <div class="row items-center q-mb-sm">
         <div class="col text-subtitle1 text-weight-bold">{{ c.name }}</div>
         <q-chip dense :color="chipColor(c.status)" text-color="white">{{ $t(`aiCampaigns.status.${c.status}`) }}</q-chip>
+        <q-btn v-if="c.canRemove" flat round dense size="sm" color="negative" :icon="mdiDeleteOutline" :loading="busy === c.id + 'rm'" @click="remove(c)">
+          <q-tooltip>{{ $t('aiCampaigns.remove') }}</q-tooltip>
+        </q-btn>
       </div>
       <div v-if="c.rationale" class="text-caption text-grey-7 q-mb-sm">{{ c.rationale }}</div>
       <q-banner v-if="c.error" dense rounded class="bg-red-1 text-negative q-mb-sm">{{ c.error }}</q-banner>
@@ -124,7 +127,7 @@ import { useQuasar } from 'quasar';
 import { isAxiosError } from 'axios';
 import { api } from 'src/services/api';
 import type { CreativeJob, Publication } from 'src/types/api';
-import { mdiRefresh } from '@quasar/extras/mdi-v7';
+import { mdiDeleteOutline, mdiRefresh } from '@quasar/extras/mdi-v7';
 
 defineOptions({ name: 'AiCampaignsPanel' });
 
@@ -133,7 +136,7 @@ interface AdCampaign {
   ageMin: number; ageMax: number; videoUrl: string; thumbnailUrl: string | null; primaryText: string; headline: string;
   callToAction: string; linkUrl: string; rationale: string; status: 'Draft' | 'Approved' | 'Creating' | 'Created' | 'Failed';
   externalCampaignId: string | null; externalAdId: string | null; error: string | null; pausedAt: string | null;
-  testDays: number | null; totalBudget: number | null; endsAt: string | null;
+  testDays: number | null; totalBudget: number | null; endsAt: string | null; canRemove: boolean;
   advice: { kind: 'Wait' | 'Keep' | 'Scale' | 'ReviewCreative' | 'Pause'; message: string; suggestedDailyBudget: number | null;
     spend: number; impressions: number; clicks: number; conversions: number; ctr: number | null } | null;
 }
@@ -253,6 +256,19 @@ async function save(c: AdCampaign) {
     upsert((await api.put<AdCampaign>(`/admin/brands/${props.brandKey}/ads/campaigns/${c.id}`, body)).data);
     return true;
   } catch (e) { fail(e); return false; } finally { busy.value = null; }
+}
+
+// Só o registro do Console sai; na Meta nada é apagado (lá a pessoa apaga no Gerenciador, se quiser).
+function remove(c: AdCampaign) {
+  $q.dialog({ title: t('aiCampaigns.removeTitle'), message: t('aiCampaigns.removeText'), cancel: true }).onOk(() => void removeNow(c));
+}
+
+async function removeNow(c: AdCampaign) {
+  busy.value = c.id + 'rm';
+  try {
+    await api.delete(`/admin/brands/${props.brandKey}/ads/campaigns/${c.id}`);
+    campaigns.value = campaigns.value.filter((x) => x.id !== c.id);
+  } catch (e) { fail(e); } finally { busy.value = null; }
 }
 
 function approve(c: AdCampaign) {

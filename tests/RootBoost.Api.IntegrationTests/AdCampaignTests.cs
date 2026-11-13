@@ -145,6 +145,18 @@ public class AdCampaignTests
         public Task SaveAsync(AdCampaignDraft draft, CancellationToken ct = default) => Task.CompletedTask;
         public Task<IReadOnlyList<AdCampaignDraft>> ListByBrandAsync(string brandKey, CancellationToken ct = default) =>
             Task.FromResult<IReadOnlyList<AdCampaignDraft>>(_items.Where(i => i.BrandKey == brandKey).ToList());
+        public Task RemoveAsync(AdCampaignDraft draft, CancellationToken ct = default) { _items.Remove(draft); return Task.CompletedTask; }
+    }
+
+    [Fact]
+    public void Only_campaigns_that_cannot_be_spending_leave_the_list()
+    {
+        var d = Draft();
+        Assert.True(d.CanRemove); // rascunho
+        d.Approve("dono@x", Now);
+        Assert.True(d.CanRemove);
+        d.StartCreating(Now);
+        Assert.False(d.CanRemove); // sendo criada
     }
 
     private sealed class Accounts(bool empty = false) : IAdAccountDirectory

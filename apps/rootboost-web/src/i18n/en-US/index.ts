@@ -161,6 +161,9 @@ export default {
     nextSteps: 'What to do now',
   },
   aiCampaigns: {
+    remove: 'Remove from list',
+    removeTitle: 'Remove from list?',
+    removeText: 'It only leaves the Console. Nothing is deleted on Meta.',
     totalFor: 'R$ {total} over {days} days',
     endsAt: 'ends {date}',
     perDay: 'per day',
