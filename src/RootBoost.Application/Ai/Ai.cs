@@ -272,7 +272,7 @@ public sealed class ScriptWriter
         sb.AppendLine("- A fala soa como alguém mostrando o sistema pra um possível cliente, natural e fluida: diz o que a pessoa faz e pra quê " +
             "(\"escolha a data inicial e a data final do período\", \"deixe o profissional em branco pra trazer todo mundo\", \"toque em gerar e o relatório aparece\"). " +
             "Nunca dite valor exato nem detalhe de clique (nada de \"toque no ícone do calendário\", \"toque no dia primeiro\", \"agosto de 2026\"). " +
-            "A fala acompanha a mesma ordem da cena, sem prometer nada que a tela não mostra.");
+            "A fala acompanha a mesma ordem da cena, sem prometer nada que a tela não mostra. Um passo, uma frase. Fluxo simples (uma tela, poucos campos) fica fluido em 30 a 45 segundos.");
         sb.AppendLine(format switch
         {
             VideoFormat.Explainer => "- Formato explicativo (obrigatório): toda cena com narração (audio narracao) e fala.",
