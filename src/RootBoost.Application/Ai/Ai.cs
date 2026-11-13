@@ -273,6 +273,11 @@ public sealed class ScriptWriter
             "(\"escolha a data inicial e a data final do período\", \"deixe o profissional em branco pra trazer todo mundo\", \"toque em gerar e o relatório aparece\"). " +
             "Nunca dite valor exato nem detalhe de clique (nada de \"toque no ícone do calendário\", \"toque no dia primeiro\", \"agosto de 2026\"). " +
             "A fala acompanha a mesma ordem da cena, sem prometer nada que a tela não mostra. Um passo, uma frase. Fluxo simples (uma tela, poucos campos) fica fluido em 30 a 45 segundos.");
+        sb.AppendLine("- Registro único, o falado: \"você\" com imperativo informal (\"toca\", \"escolhe\", \"deixa\", \"rola\"), nunca misturado com \"toque\", \"escolha\", \"deixe\". " +
+            "Nada de frase de enchimento (\"veja o caminho inteiro\", \"simples assim\"): cada frase descreve o que a tela mostra naquele trecho. " +
+            "Só cite campo, total ou botão que aparece na tela no mesmo trecho; o que não aparece, não cite. " +
+            "Exemplo bom: \"Na data inicial, escolhe o dia que você quer no calendário. Faz o mesmo na data final. Quer ver de um profissional só? Escolhe ele aqui. Pra trazer todo mundo, deixa em branco.\"");
+        sb.AppendLine("- Fecho: frase curta com o benefício e a oferta padrão da marca falada; o \"link na bio\" fica só na cartela, não na fala.");
         sb.AppendLine(format switch
         {
             VideoFormat.Explainer => "- Formato explicativo (obrigatório): toda cena com narração (audio narracao) e fala.",
