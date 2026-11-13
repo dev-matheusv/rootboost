@@ -214,7 +214,10 @@ async function round() {
     const parts = [["workerId", cfg.workerId]];
     // Versão limpa primeiro; se a mesma palavra nunca casa no Whisper (ex.: termo técnico), até 3 palavras a conferir
     // vão pra pessoa ouvir, com o aviso. Quem decide é o ouvido, não o alinhamento.
-    const MAX_TO_CHECK = 3;
+    // Limite proporcional ao texto (12/11): o Whisper escreve "2026" pra "dois mil e vinte e seis" e erra sobrenome,
+    // então texto longo com data e nome passava de 3 sem par com a voz perfeita. 5% das palavras, mínimo 3.
+    const totalWords = (job.falas ?? []).join(" ").split(/\s+/).filter(Boolean).length;
+    const MAX_TO_CHECK = Math.max(3, Math.round(totalWords * 0.05));
     // Para na primeira versão aceitável (12/11: buscava zero palavras sem par e gerou três versões de 25 min cada;
     // termo como "Médico um" nunca casa no Whisper e quem decide é o ouvido).
     const candidates = [];
@@ -248,7 +251,7 @@ async function round() {
   // Voz escolhida: confere o cache (rápido) e segue com essa semente, sem trocar.
   const chosen = await makeVoice(seed, `conferindo a voz escolhida (semente ${seed})`);
   if (chosen.error) return fail(job.id, chosen.error, chosen.retry);
-  if (chosen.unmatched > 3) return fail(job.id, `a voz escolhida (semente ${seed}) mudou no cache; peça outras versões`, false);
+  if (chosen.unmatched > Math.max(3, Math.round((job.falas ?? []).join(" ").split(/\s+/).filter(Boolean).length * 0.05))) return fail(job.id, `a voz escolhida (semente ${seed}) mudou no cache; peça outras versões`, false);
 
   // 3. Gravação de tela (RB-50): blocos que a IA escreveu com "cena" e trecho "gravar-bloco-N" são gravados agora.
   const recordings = [];
@@ -357,7 +360,14 @@ async function round() {
 
   // 4. Montagem. Toda cena gravada: passo a passo contínuo com a voz inteira (narrado-passo). Com acervo ou cena sem
   // gravação, segue o narrado-calmo, que reaproveita a voz e o alinhamento da semente aprovada.
-  const plan = stepByStepPlan(job.roteiro, recordings, nome);
+  // Duração de cada fala de bloco (alinhamento da voz aprovada): a montagem só corta espera quando a tela não cabe.
+  let blockDurations = [];
+  try {
+    const al = JSON.parse(readFileSync(`${voiceDir(seed)}/alinhamento.json`, "utf8")).falas;
+    const offset = Array.isArray(job.roteiro.abertura) && job.roteiro.abertura[0] ? 1 : 0;
+    blockDurations = (job.roteiro.blocos ?? []).map((_, i) => (al[i + offset + 1]?.s ?? al[i + offset]?.e ?? 0) - (al[i + offset]?.s ?? 0));
+  } catch { blockDurations = []; }
+  const plan = stepByStepPlan(job.roteiro, recordings, nome, blockDurations);
   const vars = { nome, voz: voice, seed, tools: cfg.tools, base: cfg.base };
   let pipelineArgs = [...buildArgs(cfg.args, vars), ...stepArgs];
   if (plan) {

@@ -274,8 +274,16 @@ test("vídeo pessoal: tela cheia, fala original e narração só onde há fala",
 
 test("activeSegments tira as esperas e guarda os toques", () => {
   // 12 s de gravação com espera de 3 a 7 s: fica 0,5 a 3,3 e 6,9 a 11,8.
-  assert.deepEqual(activeSegments(12, [{ start: 3, end: 7 }]).map(([a, b]) => [+a.toFixed(1), +b.toFixed(1)]), [[0.5, 3.3], [6.9, 11.8]]);
+  assert.deepEqual(activeSegments(12, [{ start: 3, end: 7 }], 0.3, 0).map(([a, b]) => [+a.toFixed(1), +b.toFixed(1)]), [[0.5, 3.3], [6.9, 11.8]]);
   // Espera curta (menos de 1 s) fica; sem esperas, o trecho inteiro.
   assert.deepEqual(activeSegments(10, [{ start: 2, end: 2.6 }]), [[0.5, 9.8]]);
   assert.deepEqual(activeSegments(10), [[0.5, 9.8]]);
+});
+
+test("activeSegments só corta espera quando a tela não cabe na fala", () => {
+  // Tela de 11,3 s e fala que aceita 12 s: nada sai.
+  assert.deepEqual(activeSegments(12, [{ start: 3, end: 7 }], 0.3, 12), [[0.5, 11.8]]);
+  // Aceita só 9 s: sai a espera maior (3 a 7) e para.
+  const r = activeSegments(12, [{ start: 3, end: 7 }, { start: 8, end: 9.2 }], 0.3, 9).map(([a, b]) => [+a.toFixed(1), +b.toFixed(1)]);
+  assert.deepEqual(r, [[0.5, 3.3], [6.9, 11.8]]);
 });
