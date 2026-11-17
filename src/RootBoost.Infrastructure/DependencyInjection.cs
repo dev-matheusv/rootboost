@@ -74,6 +74,12 @@ public static class DependencyInjection
         services.AddScoped<RootBoost.Application.Ai.ProductInterviewer>();
         services.AddScoped<RootBoost.Application.Ai.ScreenAgent>();
         services.AddScoped<RootBoost.Application.Ai.PathCleaner>();
+        // Pauta de conteúdos (17/11): fila que escreve o roteiro e manda renderizar, um tema por vez.
+        services.AddScoped<RootBoost.Application.Studio.IContentIdeaStore, RootBoost.Infrastructure.Persistence.EfContentIdeaStore>();
+        services.AddScoped<RootBoost.Application.Studio.StudioScripts>();
+        services.AddScoped<RootBoost.Application.Studio.PautaRunner>();
+        if (!string.Equals(config["Pauta:Enabled"], "false", StringComparison.OrdinalIgnoreCase))
+            services.AddHostedService<RootBoost.Infrastructure.Persistence.PautaScheduler>();
         services.AddScoped<RootBoost.Application.Ai.ScreenGuideWriter>();
         services.AddScoped<RootBoost.Application.Ai.SystemMapper>();
         services.AddSingleton<RootBoost.Application.Ai.IDocumentTextExtractor, RootBoost.Infrastructure.Documents.DocumentTextExtractor>();

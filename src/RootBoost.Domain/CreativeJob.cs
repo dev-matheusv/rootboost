@@ -83,6 +83,8 @@ public sealed class CreativeJob
     /// <summary>Versões da voz geradas pro "Revisão da voz" e se a pessoa já escolheu (aí o worker monta com ela).</summary>
     public string VoiceTakesJson { get; private set; } = "[]";
     public bool VoiceApproved { get; private set; }
+    /// <summary>Veio da pauta com "aprovar a voz sozinho": a versão que passou na conferência segue direto pra gravação.</summary>
+    public bool AutoVoice { get; private set; }
 
     public IReadOnlyList<VoiceTake> VoiceTakes => JsonSerializer.Deserialize<List<VoiceTake>>(VoiceTakesJson, Json) ?? [];
 
@@ -156,6 +158,14 @@ public sealed class CreativeJob
         WorkerId = null;
         LeaseUntil = null;
         Error = null;
+        UpdatedAt = now;
+        // Pauta com voz automática (17/11): o worker só entrega versão que passou na conferência; fica a melhor.
+        if (AutoVoice) ChooseVoice(takes.OrderBy(t => t.Unmatched).First().Seed, now);
+    }
+
+    public void EnableAutoVoice(DateTimeOffset now)
+    {
+        AutoVoice = true;
         UpdatedAt = now;
     }
 

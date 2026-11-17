@@ -1011,6 +1011,109 @@ brandProfile.MapPut("/creative-jobs/{id:guid}/script", async (string key, Guid i
 });
 
 // A IA escreve roteiro e falas com o perfil, as provas e o playbook (RB-45); passa pelos mesmos portões.
+// --- Pauta de conteúdos (17/11): temas guardados e fila que cria o vídeo, escreve o roteiro e manda renderizar. ---
+static async Task<object> PautaDto(ContentIdea i, RootBoost.Application.Studio.ICreativeJobStore jobs, CancellationToken ct)
+{
+    var job = i.JobId is { } jid ? await jobs.GetAsync(jid, ct) : null;
+    return new { i.Id, i.Title, i.Request, i.Group, i.Order, Status = i.Status.ToString(), i.AutoVoice, i.JobId, i.Note,
+        JobStatus = job?.Status.ToString(), JobProgress = job?.Progress, i.UpdatedAt };
+}
+
+brandProfile.MapGet("/pauta", async (string key, RootBoost.Application.Studio.IContentIdeaStore ideas,
+    RootBoost.Application.Studio.ICreativeJobStore jobs, CancellationToken ct) =>
+{
+    var list = new List<object>();
+    foreach (var i in await ideas.ListAsync(key.ToLowerInvariant(), ct)) list.Add(await PautaDto(i, jobs, ct));
+    return Results.Ok(list);
+});
+
+brandProfile.MapPost("/pauta", async (string key, PautaInput input, IBrandStore brands, RootBoost.Application.Studio.IContentIdeaStore ideas,
+    RootBoost.Application.Studio.ICreativeJobStore jobs, TimeProvider time, CancellationToken ct) =>
+{
+    var brandKey = key.ToLowerInvariant();
+    if (!(await brands.ListAsync(ct)).Any(b => b.Key == brandKey)) return Results.NotFound();
+    try
+    {
+        var order = (await ideas.ListAsync(brandKey, ct)).Select(x => x.Order).DefaultIfEmpty(0).Max() + 1;
+        var idea = new ContentIdea(brandKey, input.Title ?? "", input.Request ?? "", input.Group, input.Order ?? order, time.GetUtcNow());
+        await ideas.AddAsync(idea, ct);
+        return Results.Ok(await PautaDto(idea, jobs, ct));
+    }
+    catch (ArgumentException ex) { return Results.BadRequest(new { error = ex.Message }); }
+});
+
+// Carrega vários temas de uma vez (o roadmap da marca); título que já existe é pulado.
+brandProfile.MapPost("/pauta/import", async (string key, PautaImportInput input, IBrandStore brands,
+    RootBoost.Application.Studio.IContentIdeaStore ideas, TimeProvider time, CancellationToken ct) =>
+{
+    var brandKey = key.ToLowerInvariant();
+    if (!(await brands.ListAsync(ct)).Any(b => b.Key == brandKey)) return Results.NotFound();
+    if (input.Items is not { Count: > 0 } || input.Items.Count > 100) return Results.BadRequest(new { error = "mande de 1 a 100 temas" });
+    var existing = (await ideas.ListAsync(brandKey, ct)).ToList();
+    var titles = existing.Select(x => x.Title.ToLowerInvariant()).ToHashSet();
+    var order = existing.Select(x => x.Order).DefaultIfEmpty(0).Max();
+    var added = 0;
+    try
+    {
+        foreach (var it in input.Items)
+        {
+            if (string.IsNullOrWhiteSpace(it.Title) || !titles.Add(it.Title.Trim().ToLowerInvariant())) continue;
+            await ideas.AddAsync(new ContentIdea(brandKey, it.Title, it.Request ?? "", it.Group, ++order, time.GetUtcNow()), ct);
+            added++;
+        }
+    }
+    catch (ArgumentException ex) { return Results.BadRequest(new { error = ex.Message, added }); }
+    return Results.Ok(new { added });
+});
+
+brandProfile.MapPut("/pauta/{id:guid}", async (string key, Guid id, PautaInput input, RootBoost.Application.Studio.IContentIdeaStore ideas,
+    RootBoost.Application.Studio.ICreativeJobStore jobs, TimeProvider time, CancellationToken ct) =>
+{
+    var idea = await ideas.GetAsync(id, ct);
+    if (idea is null || idea.BrandKey != key.ToLowerInvariant()) return Results.NotFound();
+    try { idea.Edit(input.Title ?? "", input.Request ?? "", input.Group, input.Order ?? idea.Order, time.GetUtcNow()); }
+    catch (ArgumentException ex) { return Results.BadRequest(new { error = ex.Message }); }
+    await ideas.SaveAsync(idea, ct);
+    return Results.Ok(await PautaDto(idea, jobs, ct));
+});
+
+brandProfile.MapDelete("/pauta/{id:guid}", async (string key, Guid id, RootBoost.Application.Studio.IContentIdeaStore ideas, CancellationToken ct) =>
+{
+    var idea = await ideas.GetAsync(id, ct);
+    if (idea is null || idea.BrandKey != key.ToLowerInvariant()) return Results.NotFound();
+    if (idea.Status == ContentIdeaStatus.Queued) return Results.Conflict(new { error = "o tema está na fila; espere virar vídeo" });
+    await ideas.RemoveAsync(idea, ct);
+    return Results.NoContent();
+});
+
+// Volta o tema pra pauta (pra pedir de novo depois de apagar o vídeo ou de uma falha).
+brandProfile.MapPost("/pauta/{id:guid}/plan", async (string key, Guid id, RootBoost.Application.Studio.IContentIdeaStore ideas,
+    RootBoost.Application.Studio.ICreativeJobStore jobs, TimeProvider time, CancellationToken ct) =>
+{
+    var idea = await ideas.GetAsync(id, ct);
+    if (idea is null || idea.BrandKey != key.ToLowerInvariant()) return Results.NotFound();
+    idea.BackToPlan(time.GetUtcNow());
+    await ideas.SaveAsync(idea, ct);
+    return Results.Ok(await PautaDto(idea, jobs, ct));
+});
+
+// Manda os temas escolhidos pra fila: a plataforma cria o vídeo, escreve o roteiro e manda renderizar, um por vez.
+brandProfile.MapPost("/pauta/queue", async (string key, PautaQueueInput input, RootBoost.Application.Studio.IContentIdeaStore ideas,
+    TimeProvider time, CancellationToken ct) =>
+{
+    if (input.Ids is not { Count: > 0 } || input.Ids.Count > 50) return Results.BadRequest(new { error = "escolha de 1 a 50 temas" });
+    var queued = 0;
+    var skipped = new List<string>();
+    foreach (var id in input.Ids.Distinct())
+    {
+        var idea = await ideas.GetAsync(id, ct);
+        if (idea is null || idea.BrandKey != key.ToLowerInvariant()) continue;
+        try { idea.Enqueue(input.AutoVoice, time.GetUtcNow()); await ideas.SaveAsync(idea, ct); queued++; }
+        catch (InvalidOperationException ex) { skipped.Add(ex.Message); }
+    }
+    return Results.Ok(new { queued, skipped });
+});
+
 brandProfile.MapPost("/creative-jobs/{id:guid}/write-script", async (string key, Guid id, WriteScriptInput? input,
     RootBoost.Application.Studio.ICreativeJobStore store, IBrandProfileStore profiles, RootBoost.Application.Ai.ScriptWriter writer,
     RootBoost.Application.Ai.IBrandProductStore products, RootBoost.Application.Media.IMediaAssetStore assets,
@@ -1973,3 +2076,6 @@ public partial class Program { }
 public sealed record AiBudgetInput(decimal? MonthlyLimitUsd, int? AlertPercent);
 record CleanPathInput(string? BrandKey, List<string>? Scenes, List<CleanPathActionInput>? Actions);
 record CleanPathActionInput(int Index, int Scene, string? Action, string? Text, string? Typed, bool Changed, string? Reason);
+record PautaInput(string? Title, string? Request, string? Group, int? Order);
+record PautaImportInput(List<PautaInput>? Items);
+record PautaQueueInput(List<Guid>? Ids, bool AutoVoice);
