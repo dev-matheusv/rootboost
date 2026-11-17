@@ -478,6 +478,64 @@ namespace RootBoost.Infrastructure.Persistence.Migrations
                     b.ToTable("ConsoleCredentials");
                 });
 
+            modelBuilder.Entity("RootBoost.Domain.ContentIdea", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("AutoVoice")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("BrandKey")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Group")
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)");
+
+                    b.Property<Guid?>("JobId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<int>("Order")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Request")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("BrandKey", "Order");
+
+                    b.ToTable("ContentIdeas");
+                });
+
             modelBuilder.Entity("RootBoost.Domain.CreativeJob", b =>
                 {
                     b.Property<Guid>("Id")
@@ -486,6 +544,9 @@ namespace RootBoost.Infrastructure.Persistence.Migrations
 
                     b.Property<int>("Attempts")
                         .HasColumnType("integer");
+
+                    b.Property<bool>("AutoVoice")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("BrandKey")
                         .IsRequired()
