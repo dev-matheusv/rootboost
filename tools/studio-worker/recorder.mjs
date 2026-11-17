@@ -384,7 +384,9 @@ ${list[i]}`;
       // Foto em 1x (540x600) pra IA: um quarto dos pixels da gravação, bem menos tokens por passo (custo).
       // O recorte conta a partir do topo do documento: sem somar a rolagem, a foto saía em branco depois de rolar.
       const scroll = await evaluate(cdp, "({ x: scrollX, y: scrollY })");
-      const shot = await cdp.send("Page.captureScreenshot", { format: "jpeg", quality: 55, clip: { ...scroll, width: VIEW.width, height: VIEW.height, scale: 1 / VIEW.scale } });
+      // Foto que trava uma vez (16/11: o Chrome não respondeu em 30 s e o vídeo inteiro voltou pra fila) tenta de novo.
+      const shotParams = { format: "jpeg", quality: 55, clip: { ...scroll, width: VIEW.width, height: VIEW.height, scale: 1 / VIEW.scale } };
+      const shot = await cdp.send("Page.captureScreenshot", shotParams).catch(async () => { await wait(2000); return cdp.send("Page.captureScreenshot", shotParams); });
       const url = await evaluate(cdp, "location.href");
       recording = false;
       const asked = Date.now();
@@ -515,6 +517,11 @@ ${list[i]}`;
           if (!changed) note(`  teste das rotas: ${await evaluate(cdp, ROUTER_TEST)}`);
         }
         actions.push({ scene: sceneIndex, action: "clicar", text: el.text, role: el.role, x: at.x, y: at.y, spot: !!spot, url, changed, reason: next.reason });
+        // Toque repetido que não muda nada (16/11: "Gerar relatório" 5 vezes; o resultado já tinha carregado abaixo da
+        // parte visível): avisa a IA que o primeiro toque funcionou, em vez de deixar ela insistir até parar.
+        const prevOk = actions.slice(0, -1).reverse().find((x) => x.action === "clicar");
+        if (!changed && prevOk && prevOk.text === el.text && prevOk.changed)
+          history.push(`o toque anterior em "${el.text}" já funcionou; o resultado pode estar abaixo da parte visível: role pra baixo ou, se a cena já mostrou o que pedia, responda pronto. Não toque de novo`);
         deadClicks = changed ? 0 : deadClicks + 1;
         if (deadClicks >= MAX_DEAD_CLICKS) {
           stopReason = `${deadClicks} cliques seguidos sem mudar a tela`;
