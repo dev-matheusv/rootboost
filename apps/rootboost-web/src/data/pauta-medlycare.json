@@ -1,0 +1,116 @@
+[
+ {
+  "title": "Relatório do mês",
+  "request": "Passo a passo do relatório de atendimentos: Mais, Relatórios, data inicial e final, profissional em branco pra trazer todo mundo, gerar, rolar a lista, imprimir PDF ou exportar.",
+  "group": "Onda 1: sistema do dia a dia (conta de demonstração pronta)",
+  "demo": "pronto (em produção)"
+ },
+ {
+  "title": "Fila de espera",
+  "request": "Paciente chegou sem hora marcada: como atender pela Fila de Espera, aba Fila, botão Atender, e ver os já atendidos na aba Realizados.",
+  "group": "Onda 1: sistema do dia a dia (conta de demonstração pronta)",
+  "demo": "pronto"
+ },
+ {
+  "title": "Onde tem vaga?",
+  "request": "Achar o próximo horário livre: o painel que varre os próximos 30 dias e leva direto ao dia escolhido na agenda.",
+  "group": "Onda 1: sistema do dia a dia (conta de demonstração pronta)",
+  "demo": "conferir"
+ },
+ {
+  "title": "Central de confirmações",
+  "request": "Confirmar as consultas do dia numa tela só: a fila de lembretes com o botão que abre o WhatsApp com a mensagem pronta.",
+  "group": "Onda 1: sistema do dia a dia (conta de demonstração pronta)",
+  "demo": "conferir"
+ },
+ {
+  "title": "Férias sem dor de cabeça",
+  "request": "Bloquear a agenda por férias ou congresso e ver na hora quem tinha consulta marcada, com a mensagem de remarcação pronta.",
+  "group": "Onda 1: sistema do dia a dia (conta de demonstração pronta)",
+  "demo": "preparar"
+ },
+ {
+  "title": "Tabela de preço e pacotes",
+  "request": "Cadastrar o preço de cada atendimento e montar um pacote de sessões, com o saldo do pacote aparecendo no atendimento.",
+  "group": "Onda 1: sistema do dia a dia (conta de demonstração pronta)",
+  "demo": "pronto"
+ },
+ {
+  "title": "Convênios",
+  "request": "Cadastrar convênio e tipo de paciente (particular, convênio) pra separar quem paga como.",
+  "group": "Onda 1: sistema do dia a dia (conta de demonstração pronta)",
+  "demo": "pronto"
+ },
+ {
+  "title": "Dar acesso à recepção",
+  "request": "Criar um perfil de acesso e um usuário pra recepção, cada um vendo só o que precisa.",
+  "group": "Onda 1: sistema do dia a dia (conta de demonstração pronta)",
+  "demo": "pronto"
+ },
+ {
+  "title": "Assinatura digital",
+  "request": "Documento assinado com certificado digital e QR Code: quem recebe confere a autenticidade sem ver o conteúdo clínico.",
+  "group": "Onda 2: documentos e assinatura",
+  "demo": "preparar (certificado de teste)"
+ },
+ {
+  "title": "Kits de exames",
+  "request": "Pedir vários exames de uma vez com o kit montado pelo profissional, aplicado num clique.",
+  "group": "Onda 2: documentos e assinatura",
+  "demo": "conferir"
+ },
+ {
+  "title": "Termo de consentimento",
+  "request": "Termo que já sai preenchido com os dados da clínica e do paciente, pronto pra enviar por WhatsApp ou imprimir.",
+  "group": "Onda 2: documentos e assinatura",
+  "demo": "conferir"
+ },
+ {
+  "title": "Receita com a lista da ANVISA",
+  "request": "Receita que já vem preenchida desde a primeira vez, com a sugestão de medicamento pela lista oficial da ANVISA.",
+  "group": "Onda 2: documentos e assinatura",
+  "demo": "conferir"
+ },
+ {
+  "title": "Agenda online",
+  "request": "O paciente marca sozinho, nos horários que o profissional abriu: como ligar a agenda online em Minha empresa e no perfil do profissional.",
+  "group": "Onda 3: portal do paciente e agenda online (novidades)",
+  "demo": "preparar"
+ },
+ {
+  "title": "Vitrine \"Encontre um profissional\"",
+  "request": "O paciente acha o profissional por especialidade ou cidade, vê o próximo horário livre e agenda sem ligar.",
+  "group": "Onda 3: portal do paciente e agenda online (novidades)",
+  "demo": "preparar"
+ },
+ {
+  "title": "Portal do paciente",
+  "request": "O que o paciente vê no portal: agendamentos, documentos assinados pra baixar e o pedido de correção dos dados.",
+  "group": "Onda 3: portal do paciente e agenda online (novidades)",
+  "demo": "preparar (conta de paciente de demonstração)"
+ },
+ {
+  "title": "Aprovar agendamento",
+  "request": "Pedido de horário que chega pelo portal: aprovar ou recusar direto no sino.",
+  "group": "Onda 3: portal do paciente e agenda online (novidades)",
+  "demo": "preparar"
+ },
+ {
+  "title": "Histórico pro paciente",
+  "request": "O paciente pede o histórico e cada profissional libera a sua parte, do jeito que a LGPD pede.",
+  "group": "Onda 3: portal do paciente e agenda online (novidades)",
+  "demo": "preparar"
+ },
+ {
+  "title": "Consulta que vira texto",
+  "request": "Gravar a consulta e ter a transcrição pronta pra revisar e inserir no prontuário assim que a gravação termina.",
+  "group": "Onda 4: inteligência artificial (novidades)",
+  "demo": "preparar (sem áudio de paciente real)"
+ },
+ {
+  "title": "Assistente de IA do MedlyCare",
+  "request": "Perguntar ao assistente e ver a ação proposta, que só acontece depois de confirmar.",
+  "group": "Onda 4: inteligência artificial (novidades)",
+  "demo": "preparar"
+ }
+]

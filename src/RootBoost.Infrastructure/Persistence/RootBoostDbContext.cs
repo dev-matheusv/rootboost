@@ -33,6 +33,7 @@ public sealed class RootBoostDbContext : DbContext
     public DbSet<OrganicPost> OrganicPosts => Set<OrganicPost>();
     public DbSet<InboxMessage> InboxMessages => Set<InboxMessage>();
     public DbSet<AiBudget> AiBudgets => Set<AiBudget>();
+    public DbSet<ContentIdea> ContentIdeas => Set<ContentIdea>();
 
     /// <summary>Avisos de operação pro humano (post que falhou, sync de anúncio, conexão da Meta). RB-58.</summary>
     public DbSet<OpsAlert> OpsAlerts => Set<OpsAlert>();
@@ -141,6 +142,19 @@ public sealed class RootBoostDbContext : DbContext
         // Chave natural: um post do canal é uma linha só, reler atualiza.
         org.HasIndex(x => new { x.Channel, x.ExternalId }).IsUnique();
         org.HasIndex(x => new { x.BrandKey, x.PostedAt });
+
+        var idea = b.Entity<ContentIdea>();
+        idea.HasKey(x => x.Id);
+        idea.Property(x => x.BrandKey).HasMaxLength(64).IsRequired();
+        idea.Property(x => x.Title).HasMaxLength(120).IsRequired();
+        idea.Property(x => x.Request).HasMaxLength(ContentIdea.MaxRequest).IsRequired();
+        idea.Property(x => x.Group).HasMaxLength(80);
+        idea.Property(x => x.Note).HasMaxLength(500);
+        idea.Property(x => x.Status).HasConversion<string>().HasMaxLength(16);
+        idea.Property(x => x.CreatedAt).HasConversion(Utc);
+        idea.Property(x => x.UpdatedAt).HasConversion(Utc);
+        idea.HasIndex(x => new { x.BrandKey, x.Order });
+        idea.HasIndex(x => x.Status);
 
         var budget = b.Entity<AiBudget>();
         budget.HasKey(x => x.Key);
