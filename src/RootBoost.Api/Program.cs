@@ -622,6 +622,30 @@ brandProfile.MapGet("/inbox/{conversationId}", async (string key, string convers
         : Results.Ok(messages.Select(m => new { m.Id, channel = m.Channel.ToString(), m.ContactName, m.FromBusiness, m.Text, m.HasAttachment, m.SentAt }));
 });
 
+// Responder (18/11): a IA só sugere; quem envia é a pessoa pelo botão. Regras do canal: 24 h e 1000 bytes.
+brandProfile.MapPost("/inbox/{conversationId}/suggest", async (string key, string conversationId, IBrandStore brands,
+    RootBoost.Application.Ai.IBrandProductStore products, RootBoost.Application.Inbox.InboxReplies replies, CancellationToken ct) =>
+{
+    var brandKey = key.ToLowerInvariant();
+    var brand = (await brands.ListAsync(ct)).FirstOrDefault(b => b.Key == brandKey);
+    if (brand is null) return Results.NotFound();
+    try { return Results.Ok(new { text = await replies.SuggestAsync(brandKey, brand.Name, await products.GetAsync(brandKey, ct), conversationId, ct) }); }
+    catch (RootBoost.Application.Ai.AiDisabledException ex) { return Results.Conflict(new { error = ex.Message }); }
+    catch (InvalidOperationException ex) { return Results.BadRequest(new { error = ex.Message }); }
+});
+
+brandProfile.MapPost("/inbox/{conversationId}/reply", async (string key, string conversationId, InboxReplyInput input,
+    RootBoost.Application.Inbox.InboxReplies replies, CancellationToken ct) =>
+{
+    try
+    {
+        var m = await replies.SendAsync(key.ToLowerInvariant(), conversationId, input.Text ?? "", ct);
+        return Results.Ok(new { m.Id, channel = m.Channel.ToString(), m.ContactName, m.FromBusiness, m.Text, m.HasAttachment, m.SentAt });
+    }
+    catch (RootBoost.Application.Inbox.InboxReplyRefused ex) { return Results.BadRequest(new { error = ex.Message }); }
+    catch (InvalidOperationException ex) { return Results.Json(new { error = "o Instagram recusou: " + ex.Message }, statusCode: 502); }
+});
+
 // Lê agora as mensagens novas da marca (o agendador já faz a cada 10 min).
 brandProfile.MapPost("/inbox/sync", async (string key, RootBoost.Application.Inbox.SyncInbox sync, CancellationToken ct) =>
 {
@@ -2079,3 +2103,4 @@ record CleanPathActionInput(int Index, int Scene, string? Action, string? Text, 
 record PautaInput(string? Title, string? Request, string? Group, int? Order);
 record PautaImportInput(List<PautaInput>? Items);
 record PautaQueueInput(List<Guid>? Ids, bool AutoVoice);
+record InboxReplyInput(string? Text);

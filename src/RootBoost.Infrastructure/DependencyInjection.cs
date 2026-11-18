@@ -180,16 +180,20 @@ public static class DependencyInjection
         // fictícias, None (padrão) não chama nada. ---
         services.AddScoped<RootBoost.Application.Inbox.IInboxStore, RootBoost.Infrastructure.Inbox.EfInboxStore>();
         services.AddScoped<RootBoost.Application.Inbox.SyncInbox>();
+        services.AddScoped<RootBoost.Application.Inbox.InboxReplies>();
         var inboxReader = config["Inbox:Reader"] ?? "None";
         if (string.Equals(inboxReader, "Fake", StringComparison.OrdinalIgnoreCase))
             services.AddSingleton<RootBoost.Application.Inbox.IInboxReader>(sp => new RootBoost.Infrastructure.Inbox.FakeInboxReader(
                 (config["Inbox:FakeBrands"] ?? "medlycare").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries),
                 sp.GetRequiredService<TimeProvider>()));
+        if (string.Equals(inboxReader, "Fake", StringComparison.OrdinalIgnoreCase))
+            services.AddSingleton<RootBoost.Application.Inbox.IInboxSender, RootBoost.Infrastructure.Inbox.FakeInboxSender>();
         else if (string.Equals(inboxReader, "Meta", StringComparison.OrdinalIgnoreCase))
         {
             Microsoft.Extensions.DependencyInjection.Extensions.ServiceCollectionDescriptorExtensions.TryAddSingleton(services,
                 new RootBoost.Infrastructure.Publishing.SocialAccounts(config));
             services.AddSingleton<RootBoost.Application.Inbox.IInboxReader, RootBoost.Infrastructure.Inbox.InstagramInboxReader>();
+            services.AddSingleton<RootBoost.Application.Inbox.IInboxSender, RootBoost.Infrastructure.Inbox.InstagramInboxSender>();
         }
         if (!string.Equals(inboxReader, "None", StringComparison.OrdinalIgnoreCase) &&
             !string.Equals(config["Inbox:SyncEnabled"], "false", StringComparison.OrdinalIgnoreCase))

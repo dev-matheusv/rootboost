@@ -184,8 +184,8 @@ Começar pelo Instagram Direct (maior volume e mesma conta Meta), depois e-mail.
 **Feito em 13/11 (passo 1, só leitura):** tela Mensagens no Console com as conversas do Instagram Direct, lidas a
 cada 10 minutos pelo token da Página (`GET /{page-id}/conversations?platform=instagram`, depois `fields=messages` e o
 detalhe das 20 mais recentes; doc conferida em 13/11). Liga com `Inbox__Reader=Meta` no Railway. Mostra quem está
-esperando resposta e até quando a janela de 24 h deixa responder. Próximo: responder pelo Console (`POST /me/messages`),
-com a IA sugerindo o texto e a pessoa enviando.
+esperando resposta e até quando a janela de 24 h deixa responder. Feito em 18/11: responder pelo Console (`POST /{page-id}/messages` com o token da Página), com a IA
+sugerindo o texto e a pessoa confirmando o envio; janela de 24 h e 1000 bytes conferidos antes de enviar.
 
 ### Onda 5: experiência e avisos
 ~~**RB-30/RB-14**~~ PWA e visual no molde do MedlyCare (roxo Ametista; Publicações com Fila, Semana e Mês, arrastar, Ctrl+K, Visão geral com "hoje", PWA sem cache: feito 28/10) → **RB-37** notificação de pendência
