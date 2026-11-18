@@ -526,3 +526,32 @@ export function buildPersonalSpec({ name, brandKey, roteiro, falas, voice, seed,
     audio: { narration, normalize: "two-pass" },
   };
 }
+
+/** Tempos de troca de tela que o filtro select(scene) imprimiu (metadata=mode=print). */
+export function parseSceneCuts(stderr) {
+  const cuts = [];
+  for (const line of String(stderr).split(/\r?\n/)) {
+    const m = /pts_time:([\d.]+)/.exec(line);
+    if (m) cuts.push(Number(m[1]));
+  }
+  return [...new Set(cuts)].sort((a, b) => a - b);
+}
+
+/**
+ * Conferência (método do marketing): o passo a passo precisa trocar de tela. Poucas trocas para o número de blocos,
+ * ou um trecho longo sem troca nenhuma, é o defeito do vídeo "preso na tela inicial" (16/11).
+ */
+export function reviewScreens({ duration, cuts, blocks }, rules = {}) {
+  const r = { maxStill: 15, endCard: 8, ...rules };
+  const issues = [];
+  const fmt = (t) => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, "0")}`;
+  // Uma transição gera vários quadros de troca seguidos: troca a menos de 1 s da anterior conta como a mesma.
+  const useful = cuts.filter((t) => t > 0.5 && t < duration - r.endCard).reduce((kept, t) => (kept.length && t - kept.at(-1) < 1 ? kept : [...kept, t]), []);
+  const want = Math.max(2, (blocks ?? 0) - 1);
+  if (useful.length < want) issues.push(`AVISO: a tela troca só ${useful.length} vez(es) em ${duration.toFixed(0)} s para ${blocks ?? "?"} blocos; confira se o vídeo não ficou preso numa tela`);
+  const marks = [0, ...useful, Math.max(duration - r.endCard, 0)];
+  for (let i = 1; i < marks.length; i++) {
+    if (marks[i] - marks[i - 1] > r.maxStill) { issues.push(`AVISO: ${(marks[i] - marks[i - 1]).toFixed(0)} s na mesma tela a partir de ${fmt(marks[i - 1])}; confira se a gravação andou`); break; }
+  }
+  return issues;
+}

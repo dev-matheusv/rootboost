@@ -287,3 +287,17 @@ test("activeSegments só corta espera quando a tela não cabe na fala", () => {
   const r = activeSegments(12, [{ start: 3, end: 7 }, { start: 8, end: 9.2 }], 0.3, 9).map(([a, b]) => [+a.toFixed(1), +b.toFixed(1)]);
   assert.deepEqual(r, [[0.5, 3.3], [6.9, 11.8]]);
 });
+
+test("conferência: lê as trocas de tela e reprova vídeo preso numa tela", async () => {
+  const { parseSceneCuts, reviewScreens } = await import("./lib.mjs");
+  const cuts = parseSceneCuts("[Parsed_metadata_2 @ 0x1] frame:0 pts:300 pts_time:2.5\nlavfi.scene_score=0.4\n[x] frame:1 pts:900 pts_time:7.1\n");
+  assert.deepEqual(cuts, [2.5, 7.1]);
+  assert.equal(reviewScreens({ duration: 40, cuts: [], blocks: 5 }).length, 2);
+  assert.deepEqual(reviewScreens({ duration: 40, cuts: [3, 8, 13, 18, 24], blocks: 5 }), []);
+  assert.match(reviewScreens({ duration: 60, cuts: [3, 6, 9, 30], blocks: 4 })[0], /21 s na mesma tela a partir de 0:09/);
+});
+
+test("conferência: quadros de uma mesma transição contam como uma troca", async () => {
+  const { reviewScreens } = await import("./lib.mjs");
+  assert.match(reviewScreens({ duration: 46, cuts: [24.1, 24.1, 24.7, 26, 27.2, 27.3], blocks: 5 })[0], /troca só 3 vez/);
+});
