@@ -94,6 +94,8 @@ public sealed class FakeLanguageModel : ILanguageModel
                 if (parts[5].Trim() == "sim" && int.TryParse(parts[1], out var sc) && sc >= 1 && sc <= scenes) keep[sc - 1].Add(int.Parse(parts[0]));
             return Task.FromResult(new LanguageModelResult(JsonSerializer.Serialize(new { cenas = keep.Select(k => new { acoes = k }) }), "fake", 0, 0, 0m));
         }
+        if (request.Purpose == "inbox-reply")
+            return Task.FromResult(new LanguageModelResult(JsonSerializer.Serialize(new { resposta = "Oi! Tem sim, a agenda online já vem no sistema. Quer testar três meses grátis?" }), "fake", 0, 0, 0m));
         if (request.Purpose == "marketing-assistant")
             return Task.FromResult(new LanguageModelResult(JsonSerializer.Serialize(new
             {

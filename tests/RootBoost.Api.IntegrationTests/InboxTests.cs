@@ -84,6 +84,30 @@ public class InboxApiPostgresTests : IClassFixture<PostgresWebApplicationFactory
     }
 
     [Fact]
+    public async Task Reply_respects_the_24h_window_and_size_and_suggestion_never_sends()
+    {
+        var client = _factory.WithWebHostBuilder(b => { b.UseSetting("Inbox:Reader", "Fake"); b.UseSetting("Ai:Mode", "Fake"); }).CreateClient();
+        await client.PostAsync("/admin/brands/medlycare/inbox/sync", null);
+
+        var suggest = await client.PostAsync("/admin/brands/medlycare/inbox/fake-conv-1/suggest", null);
+        Assert.Equal(HttpStatusCode.OK, suggest.StatusCode);
+        Assert.False(string.IsNullOrWhiteSpace((await suggest.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("text").GetString()));
+        Assert.Equal(3, (await client.GetFromJsonAsync<JsonElement>("/admin/brands/medlycare/inbox/fake-conv-1")).GetArrayLength());
+
+        var sent = await client.PostAsJsonAsync("/admin/brands/medlycare/inbox/fake-conv-1/reply", new { text = "Custa a partir do plano básico, te mando os detalhes!" });
+        Assert.Equal(HttpStatusCode.OK, sent.StatusCode);
+        var conv = await client.GetFromJsonAsync<JsonElement>("/admin/brands/medlycare/inbox/fake-conv-1");
+        Assert.Equal(4, conv.GetArrayLength());
+        Assert.True(conv[3].GetProperty("fromBusiness").GetBoolean());
+
+        var tooLong = await client.PostAsJsonAsync("/admin/brands/medlycare/inbox/fake-conv-1/reply", new { text = new string('a', 1001) });
+        Assert.Equal(HttpStatusCode.BadRequest, tooLong.StatusCode);
+        var closed = await client.PostAsJsonAsync("/admin/brands/medlycare/inbox/fake-conv-2/reply", new { text = "Oi" });
+        Assert.Equal(HttpStatusCode.BadRequest, closed.StatusCode);
+        Assert.Contains("24 horas", await closed.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
     public async Task Without_reader_sync_says_why()
     {
         var res = await _factory.CreateClient().PostAsync("/admin/brands/medlycare/inbox/sync", null);

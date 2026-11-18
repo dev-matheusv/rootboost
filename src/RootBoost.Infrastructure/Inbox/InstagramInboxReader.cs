@@ -51,7 +51,7 @@ public sealed class InstagramInboxReader : IInboxReader
         var page = _accounts.For(brandKey, SocialChannel.Facebook);
         var igId = _accounts.For(brandKey, SocialChannel.Instagram).AccountId;
         var http = _factory.CreateClient("meta");
-        var token = await PageTokenAsync(http, page.AccountId, page.AccessToken, ct);
+        var token = await PageTokenAsync(http, _version, page.AccountId, page.AccessToken, _log, ct);
 
         var conversations = new List<string>();
         string? next = $"{_version}/{page.AccountId}/conversations?platform=instagram&fields=id,updated_time";
@@ -94,29 +94,29 @@ public sealed class InstagramInboxReader : IInboxReader
         return rows;
     }
 
-    private readonly Dictionary<string, (string Token, DateTimeOffset At)> _pageTokens = new();
+    private static readonly Dictionary<string, (string Token, DateTimeOffset At)> PageTokens = new();
 
     /// <summary>
     /// Conversa só sai com token da Página (13/11: "(#190) This method must be called with a Page Access Token"). O token
     /// configurado é de usuário; a Página devolve o dela em <c>GET /{page-id}?fields=access_token</c>. Guardado 1 hora.
     /// Sem permissão pra isso, segue com o token configurado e o erro da Meta aparece no Console.
     /// </summary>
-    private async Task<string> PageTokenAsync(HttpClient http, string pageId, string configured, CancellationToken ct)
+    internal static async Task<string> PageTokenAsync(HttpClient http, string version, string pageId, string configured, ILogger log, CancellationToken ct)
     {
-        lock (_pageTokens)
-            if (_pageTokens.TryGetValue(pageId, out var c) && DateTimeOffset.UtcNow - c.At < TimeSpan.FromHours(1)) return c.Token;
+        lock (PageTokens)
+            if (PageTokens.TryGetValue(pageId, out var c) && DateTimeOffset.UtcNow - c.At < TimeSpan.FromHours(1)) return c.Token;
         try
         {
-            using var doc = await GraphApi.SendAsync(http, HttpMethod.Get, $"{_version}/{pageId}?fields=access_token", configured, null, ct);
+            using var doc = await GraphApi.SendAsync(http, HttpMethod.Get, $"{version}/{pageId}?fields=access_token", configured, null, ct);
             if (Str(doc.RootElement, "access_token") is { Length: > 0 } t)
             {
-                lock (_pageTokens) _pageTokens[pageId] = (t, DateTimeOffset.UtcNow);
+                lock (PageTokens) PageTokens[pageId] = (t, DateTimeOffset.UtcNow);
                 return t;
             }
         }
         catch (InvalidOperationException ex)
         {
-            _log.LogWarning("Token da Página {Page} não veio, sigo com o configurado: {Error}", pageId, ex.Message);
+            log.LogWarning("Token da Página {Page} não veio, sigo com o configurado: {Error}", pageId, ex.Message);
         }
         return configured;
     }
