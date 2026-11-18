@@ -10,7 +10,7 @@ import { appendFileSync, copyFileSync, existsSync, mkdirSync, openAsBlob, readdi
 import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
-  applyLibrary, applyRecordings, buildArgs, buildPersonalSpec, libraryScenes, photoClipArgs, expectedOutputs, isScriptProblem, lastLine, parsePrivateVoices, logFileName, oldLogs, addPath, mapIsStale, pathsText, parseDetect, reviewVideo, parseVoiceFinish, parseVoiceTones, preparationsFor, stepByStepPlan, voiceFolder, parseUnmatched, parseVoiceSteps, stepsFor, projectName, scenesToRecord,
+  applyLibrary, applyRecordings, buildArgs, buildPersonalSpec, libraryScenes, photoClipArgs, expectedOutputs, isScriptProblem, lastLine, parsePrivateVoices, logFileName, oldLogs, addPath, mapIsStale, pathsText, parseDetect, reviewVideo, parseSceneCuts, reviewScreens, parseVoiceFinish, parseVoiceTones, preparationsFor, stepByStepPlan, voiceFolder, parseUnmatched, parseVoiceSteps, stepsFor, projectName, scenesToRecord,
   seedFor, voiceProblem, warningsFrom,
 } from "./lib.mjs";
 import { exploreSystem, recordScene, replayPath } from "./recorder.mjs";
@@ -439,22 +439,46 @@ ${fz.stderr}`).freezes });
   if (missing.length) return fail(job.id, `arquivo esperado não apareceu: ${missing.join(", ")}`, false);
 
   await progress(job.id, 90, `subindo ${found.length} arquivos`);
+  // Conferência: sem a grade do narrado-calmo, monta uma folha de quadros pra olhar o vídeo de relance.
+  const igPath = found.find((o) => o.role === "video-instagram")?.path;
+  if (igPath && !found.some((o) => o.role === "grade")) {
+    const sheet = contactSheet(igPath, `${projectDir}/conferencia-quadros.jpg`);
+    if (sheet) found.push({ role: "grade", path: sheet });
+  }
   const outputs = [];
   for (const o of found) outputs.push({ role: o.role, url: await upload(job.brandKey, o.path) });
-  const review = inspectVideo(found.find((o) => o.role === "video-instagram")?.path);
+  const review = inspectVideo(igPath, (job.roteiro?.blocos ?? []).length);
   for (const w of review) console.log(`[${now()}] ${w}`);
   const done = await call("POST", `/worker/jobs/${job.id}/deliver`, { workerId: cfg.workerId, outputs, warnings: [...review, ...warningsFrom(log)].slice(0, 20), seed });
   console.log(`[${now()}] entregue: ${done.status}`);
 }
 
 /** Revisão automática do vídeo pronto (RB-47): silêncio longo, imagem parada e duração. Falha ao medir vira aviso, nunca derruba a entrega. */
-function inspectVideo(path) {
+function videoSeconds(path) {
+  const probe = spawnSync(FFPROBE, ["-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", path], { encoding: "utf8" });
+  return Number(probe.stdout.trim());
+}
+
+/** Folha com 12 quadros espalhados pelo vídeo (6x2). Falha vira null: a entrega segue sem ela. */
+function contactSheet(path, out) {
+  try {
+    const duration = videoSeconds(path);
+    if (!(duration > 0)) return null;
+    const r = spawnSync(FFMPEG, ["-y", "-hide_banner", "-loglevel", "error", "-i", path, "-vf", `fps=12/${duration.toFixed(2)},scale=270:-2,tile=6x2:padding=6:color=white`,
+      "-frames:v", "1", "-q:v", "3", out], { encoding: "utf8" });
+    return r.status === 0 && existsSync(out) ? out : null;
+  } catch { return null; }
+}
+
+function inspectVideo(path, blocks = 0) {
   if (!path) return [];
   try {
-    const probe = spawnSync(FFMPEG.replace(/ffmpeg(\.exe)?$/, "ffprobe$1"), ["-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", path], { encoding: "utf8" });
-    const duration = Number(probe.stdout.trim());
+    const duration = videoSeconds(path);
     const run = spawnSync(FFMPEG, ["-hide_banner", "-i", path, "-af", "silencedetect=n=-45dB:d=1.2", "-vf", "crop=iw*0.8:ih*0.5:iw*0.1:ih*0.2,freezedetect=n=0.003:d=6,metadata=mode=print", "-f", "null", "-"], { encoding: "utf8", maxBuffer: 64 << 20 });
-    return reviewVideo({ duration, ...parseDetect(run.stderr) });
+    // Trocas de tela na faixa do sistema (sem título e legenda): o passo a passo tem que andar.
+    const sc = spawnSync(FFMPEG, ["-hide_banner", "-i", path, "-an", "-vf", "crop=iw*0.8:ih*0.5:iw*0.1:ih*0.2,scale=320:-2,select='gt(scene,0.04)',metadata=mode=print", "-f", "null", "-"], { encoding: "utf8", maxBuffer: 64 << 20 });
+    const screens = blocks > 1 ? reviewScreens({ duration, cuts: parseSceneCuts(sc.stderr), blocks }) : [];
+    return [...screens, ...reviewVideo({ duration, ...parseDetect(run.stderr) })];
   } catch (e) {
     return [`AVISO: a revisão automática não rodou (${e.message})`];
   }
