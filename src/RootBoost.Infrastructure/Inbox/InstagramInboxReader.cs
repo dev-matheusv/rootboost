@@ -50,11 +50,11 @@ public sealed class InstagramInboxReader : IInboxReader
     {
         var page = _accounts.For(brandKey, SocialChannel.Facebook);
         var igId = _accounts.For(brandKey, SocialChannel.Instagram).AccountId;
-        var http = _factory.CreateClient("meta");
+        var http = _factory.CreateClient("meta-inbox");
         var token = await PageTokenAsync(http, _version, page.AccountId, page.AccessToken, _log, ct);
 
         var conversations = new List<string>();
-        string? next = $"{_version}/{page.AccountId}/conversations?platform=instagram&fields=id,updated_time";
+        string? next = $"{_version}/{page.AccountId}/conversations?platform=instagram&fields=id,updated_time&limit=25";
         for (var p = 0; next is not null && p < MaxConversationPages; p++)
         {
             using var doc = await GraphApi.SendAsync(http, HttpMethod.Get, next, token, null, ct);
