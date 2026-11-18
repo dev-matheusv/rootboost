@@ -33,7 +33,7 @@ public sealed class InstagramInboxSender : IInboxSender
     public async Task<string> SendAsync(string brandKey, string contactId, string text, CancellationToken ct = default)
     {
         var page = _accounts.For(brandKey, SocialChannel.Facebook);
-        var http = _factory.CreateClient("meta");
+        var http = _factory.CreateClient("meta-inbox");
         var token = await InstagramInboxReader.PageTokenAsync(http, _version, page.AccountId, page.AccessToken, _log, ct);
         using var doc = await GraphApi.SendAsync(http, HttpMethod.Post, $"{_version}/{page.AccountId}/messages", token, new Dictionary<string, string>
         {

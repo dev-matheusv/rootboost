@@ -272,6 +272,14 @@ public static class DependencyInjection
         services.Configure<MetaOptions>(config.GetSection(MetaOptions.Section));
         services.AddHttpClient("meta", c => c.BaseAddress = new Uri("https://graph.facebook.com/"))
             .AddStandardResilienceHandler();
+        // Caixa de entrada: a lista de conversas do Instagram leva ~9 s na Graph API; 10 s por tentativa estourava.
+        services.AddHttpClient("meta-inbox", c => c.BaseAddress = new Uri("https://graph.facebook.com/"))
+            .AddStandardResilienceHandler(o =>
+            {
+                o.AttemptTimeout.Timeout = TimeSpan.FromSeconds(30);
+                o.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(60);
+                o.TotalRequestTimeout.Timeout = TimeSpan.FromSeconds(90);
+            });
         if (string.Equals(config["Tracker"], "Meta", StringComparison.OrdinalIgnoreCase))
             services.AddSingleton<IConversionTracker, MetaConversionTracker>();
         else
