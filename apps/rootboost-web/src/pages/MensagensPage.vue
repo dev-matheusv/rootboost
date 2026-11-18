@@ -53,9 +53,16 @@
               <div class="text-caption text-grey-6 text-right">{{ when(m.sentAt) }}</div>
             </div>
           </div>
-          <q-banner rounded dense class="q-mt-md note text-grey-7">
-            {{ current?.canReply ? $t('inbox.replySoon', { until: when(current.replyUntil!) }) : $t('inbox.windowClosed') }}
-          </q-banner>
+          <!-- Responder (18/11): a IA só sugere; quem envia é a pessoa. Fora da janela de 24 h o Instagram não deixa. -->
+          <div v-if="current?.canReply" class="q-mt-md column q-gutter-y-sm">
+            <q-input v-model="reply" outlined dense autogrow :maxlength="1000" counter :placeholder="$t('inbox.replyPlaceholder')"
+              :hint="$t('inbox.replyUntil', { until: when(current.replyUntil!) })" />
+            <div class="row q-gutter-sm justify-end">
+              <q-btn flat no-caps color="primary" :icon="mdiCreationOutline" :loading="suggesting" :label="$t('inbox.suggest')" @click="suggest" />
+              <q-btn unelevated no-caps color="primary" :icon="mdiSend" :loading="sending" :disable="!reply.trim()" :label="$t('inbox.send')" @click="send" />
+            </div>
+          </div>
+          <q-banner v-else rounded dense class="q-mt-md note text-grey-7">{{ $t('inbox.windowClosed') }}</q-banner>
         </div>
       </div>
     </div>
@@ -67,7 +74,7 @@ import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useQuasar } from 'quasar';
 import { isAxiosError } from 'axios';
-import { mdiArrowLeft, mdiInboxOutline, mdiRefresh } from '@quasar/extras/mdi-v7';
+import { mdiArrowLeft, mdiCreationOutline, mdiInboxOutline, mdiRefresh, mdiSend } from '@quasar/extras/mdi-v7';
 import { api } from 'src/services/api';
 import { useBrandStore } from 'src/stores/brandStore';
 
@@ -87,6 +94,9 @@ const messages = ref<Message[]>([]);
 const open = ref('');
 const loading = ref(false);
 const syncing = ref(false);
+const reply = ref('');
+const suggesting = ref(false);
+const sending = ref(false);
 const current = computed(() => threads.value.find((x) => x.conversationId === open.value));
 
 function initial(name: string | null) { return (name || '?').charAt(0).toUpperCase(); }
@@ -111,6 +121,7 @@ async function load() {
 }
 
 async function openThread(id: string) {
+  if (open.value !== id) reply.value = '';
   open.value = id;
   try {
     messages.value = (await api.get<Message[]>(`/admin/brands/${brand.selected}/inbox/${encodeURIComponent(id)}`)).data;
@@ -127,6 +138,33 @@ async function sync() {
     else $q.notify({ type: 'positive', message: t('inbox.synced', { n: data.reduce((s, r) => s + r.inserted, 0) }) });
     await load();
   } catch (e) { fail(e); } finally { syncing.value = false; }
+}
+
+async function suggest() {
+  suggesting.value = true;
+  try {
+    const { data } = await api.post<{ text: string }>(`/admin/brands/${brand.selected}/inbox/${encodeURIComponent(open.value)}/suggest`, null, { timeout: 120_000 });
+    reply.value = data.text;
+  } catch (e) { fail(e); } finally { suggesting.value = false; }
+}
+
+async function doSend(text: string) {
+  sending.value = true;
+  try {
+    await api.post(`/admin/brands/${brand.selected}/inbox/${encodeURIComponent(open.value)}/reply`, { text });
+    reply.value = '';
+    $q.notify({ type: 'positive', message: t('inbox.sent') });
+    const id = open.value;
+    threads.value = (await api.get<Thread[]>(`/admin/brands/${brand.selected}/inbox`)).data;
+    await openThread(id);
+  } catch (e) { fail(e); } finally { sending.value = false; }
+}
+
+function send() {
+  const text = reply.value.trim();
+  if (!text) return;
+  const who = current.value?.contactName ? '@' + current.value.contactName : t('inbox.unknown');
+  $q.dialog({ title: t('inbox.sendTitle'), message: t('inbox.sendConfirm', { who }), cancel: true }).onOk(() => void doSend(text));
 }
 
 watch(() => brand.selected, () => void load());
