@@ -202,12 +202,13 @@ public sealed record ScriptReview(IReadOnlyList<string> Errors, IReadOnlyList<st
 /// <summary>
 /// Portões do roteiro (RB-44, etapa 9 do pacote), antes de gastar render:
 /// checklist de copy da marca nas falas e nos textos de tela (o que bloquearia a legenda bloqueia aqui também),
-/// duração estimada pela faixa do formato (~2,4 palavras por segundo) e número escrito em algarismo
+/// duração estimada pela faixa do formato (~2,2 palavras por segundo) e número escrito em algarismo
 /// (a voz tropeça; o roteiro pede por extenso).
 /// </summary>
 public static class ScriptGates
 {
-    public const double WordsPerSecond = 2.4;
+    /// <summary>Ritmo do R4 aprovado, contando as pausas (19/11). A nutrição a 2,6 foi reprovada por atropelar.</summary>
+    public const double WordsPerSecond = 2.2;
 
     /// <summary>Faixa de duração por formato, em segundos (pacote do marketing, etapa 1).</summary>
     public static (int Min, int Max) Range(CreativeKind kind) => kind switch
