@@ -34,6 +34,8 @@
           <div>{{ $t('studio.empty') }}</div>
         </div>
         <div v-else class="column no-wrap q-gutter-y-sm">
+          <q-btn v-if="failedCount > 0" flat dense no-caps color="negative" :icon="mdiDeleteOutline" class="self-end"
+            :label="$t('studio.deleteFailed', { n: failedCount })" @click="deleteFailed" />
           <div v-for="j in jobs" :key="j.id" class="job-row card-rounded q-pa-sm" :class="{ selected: j.id === selectedId }"
             role="button" tabindex="0" @click="select(j)" @keydown.enter="select(j)">
             <div class="row items-center no-wrap q-gutter-x-sm">
@@ -86,6 +88,8 @@
 
           <q-banner v-if="job.error" rounded class="bg-red-1 text-negative">
             {{ job.error }}
+            <!-- O que fazer (A7): todo erro conhecido diz a ação que corrige. -->
+            <div v-if="failHint(job.error)" class="text-body2 text-weight-medium q-mt-xs">{{ $t(`studio.fix.${failHint(job.error)}`) }}</div>
             <!-- Mídia barrada pela proteção de dado pessoal: o caminho é o Acervo. -->
             <template v-if="job.error.includes('Acervo')" #action>
               <q-btn flat no-caps color="negative" :icon="mdiImageMultipleOutline" :label="$t('studio.openAcervo')" to="/acervo" />
@@ -366,6 +370,7 @@ import {
 import { api } from 'src/services/api';
 import VoicePicker from 'src/components/VoicePicker.vue';
 import PautaCard from 'src/components/PautaCard.vue';
+import { failHint } from 'src/utils/studioErrors';
 import DemoTermsCard from 'src/components/DemoTermsCard.vue';
 import DictateButton from 'src/components/DictateButton.vue';
 import type { PickableVoice, VideoFormat } from 'src/types/api';
@@ -698,6 +703,19 @@ function stopJob() {
       })
       .catch((e: unknown) => $q.notify({ type: 'negative', message: apiError(e) }))
       .finally(() => { stopping.value = false; });
+  });
+}
+
+const failedCount = computed(() => jobs.value.filter((x) => x.status === 'Failed').length);
+function deleteFailed() {
+  $q.dialog({ title: t('studio.deleteFailed', { n: failedCount.value }), message: t('studio.deleteFailedConfirm'), cancel: true }).onOk(() => {
+    void api.delete<{ deleted: number }>(`${base.value}/failed`)
+      .then(({ data }) => {
+        jobs.value = jobs.value.filter((x) => x.status !== 'Failed');
+        if (!jobs.value.some((x) => x.id === selectedId.value)) selectedId.value = jobs.value[0]?.id ?? null;
+        $q.notify({ type: 'positive', message: t('studio.deletedFailed', { n: data.deleted }) });
+      })
+      .catch((e: unknown) => $q.notify({ type: 'negative', message: apiError(e) }));
   });
 }
 
