@@ -85,6 +85,9 @@ public sealed class FakeLanguageModel : ILanguageModel
         if (request.Purpose == "onboarding-chat") return Task.FromResult(Interview(request));
         if (request.Purpose == "screen-recording") return Task.FromResult(Screen(request));
         // Fake: a folha de quadros está sempre aprovada.
+        // Fake: ajuste pontual troca só a primeira fala.
+        if (request.Purpose == "script-adjust")
+            return Task.FromResult(new LanguageModelResult("{\"mudancas\":[{\"alvo\":\"fala\",\"indice\":0,\"texto\":\"Fala ajustada pelo pedido.\"}]}", "fake", 0, 0, 0m));
         if (request.Purpose == "frame-review") return Task.FromResult(new LanguageModelResult("{\"problemas\":[]}", "fake", 0, 0, 0m));
         if (request.Purpose == "clean-path")
         {

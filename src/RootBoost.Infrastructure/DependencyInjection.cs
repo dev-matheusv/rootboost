@@ -75,6 +75,7 @@ public static class DependencyInjection
         services.AddScoped<RootBoost.Application.Ai.ScreenAgent>();
         services.AddScoped<RootBoost.Application.Ai.PathCleaner>();
         services.AddScoped<RootBoost.Application.Ai.FrameReviewer>();
+        services.AddScoped<RootBoost.Application.Ai.ScriptAdjuster>();
         // Pauta de conteúdos (17/11): fila que escreve o roteiro e manda renderizar, um tema por vez.
         services.AddScoped<RootBoost.Application.Studio.IContentIdeaStore, RootBoost.Infrastructure.Persistence.EfContentIdeaStore>();
         services.AddScoped<RootBoost.Application.Studio.StudioScripts>();

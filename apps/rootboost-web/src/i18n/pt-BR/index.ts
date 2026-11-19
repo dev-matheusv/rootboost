@@ -35,6 +35,8 @@ export default {
     ai: {
       editIdeas: 'Ideias de edição (um toque refaz com ela)',
       write: 'Escrever com a IA',
+      adjust: 'Ajustar só isso',
+      rewriteAll: 'Reescrever o roteiro inteiro',
       rewrite: 'Reescrever com a IA',
       writeTitle: 'A IA escreve o roteiro e as falas',
       rewriteTitle: 'Quer outra versão?',
