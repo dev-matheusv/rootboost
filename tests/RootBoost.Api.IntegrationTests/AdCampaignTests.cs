@@ -172,3 +172,14 @@ public class AdCampaignTests
             Task.FromResult<IReadOnlyList<AiUsageEntry>>(Items);
     }
 }
+
+public class PixelEventTests
+{
+    [Theory]
+    [InlineData("offsite_conversion.fb_pixel_complete_registration", "COMPLETE_REGISTRATION")]
+    [InlineData("offsite_conversion.fb_pixel_lead", "LEAD")]
+    [InlineData(null, "COMPLETE_REGISTRATION")]
+    [InlineData("algo_estranho", "COMPLETE_REGISTRATION")]
+    public void Campaign_optimizes_for_the_same_event_the_metrics_count(string? action, string expected) =>
+        Assert.Equal(expected, RootBoost.Infrastructure.Ads.MetaAdCampaignCreator.PixelEventFor(action));
+}
