@@ -97,6 +97,17 @@ Domínio e e-mail da Nativa, termos e privacidade, cobrança, Vercel Pro, white 
   do tamanho da fala, legenda de frase, avisos e folha de quadros (#284). Anúncios só FB/IG com otimização por
   visualização da página (#277). Próximo: A5 conferência pela IA.
 
+## Sugestões do Douglas (19/11, via Matheus; avaliar com ele)
+| # | Sugestão | Situação |
+|---|---|---|
+| 1 | Instalador completo (dependências, worker e DMaker numa máquina sem o projeto; na dele faltava quase tudo e a capa saiu com o logo bugado) | Vira **B1**, sobe pra prioridade: é o que trava outra pessoa usar. |
+| 2 | Todo erro diz qual ação corrige | Novo **A7**: mensagem de falha com "o que fazer" e botão quando der (reenviar, abrir contas, trocar mídia). |
+| 3 | Cancelar o processo em andamento | Feito (**A1**, #280). |
+| 4 | Excluir os itens com falha | Apagar um por um já existe fora do render; falta **apagar em lote** os que falharam (A7). |
+| 5 | Pasta de identidade visual por projeto no acervo, aceitando manual escrito (.md, pasta, zip) | Novo **C4**, junto do kit visual por marca (E9) e dos documentos da empresa (C1). |
+| 6 | Ajuste pontual não pode reescrever o roteiro inteiro | Confirmado: hoje a instrução manda reescrever tudo. Novo **A8**: ajuste por trecho, o resto do roteiro e das falas fica igual. |
+| 7 | Renderizar pela placa de vídeo | Do DMaker (codificador da GPU); pedido no Jira DMK. Na nuvem entra na escolha da máquina (B5). |
+
 ## 3. Próximas duas semanas (ordem)
 1. A1 Parar e apagar vídeo · A2 checagem da conta demo · A3 portão de ritmo.
 2. A4 regras do vídeo com fotos · A5 conferência pela IA.
