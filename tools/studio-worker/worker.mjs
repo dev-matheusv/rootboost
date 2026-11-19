@@ -50,7 +50,8 @@ const cfg = {
   key: process.env.ROOTBOOST_WORKER_KEY ?? "",
   workerId: process.env.STUDIO_WORKER_ID ?? `worker-${process.env.COMPUTERNAME ?? "pc"}`,
   base: process.env.STUDIO_BASE ?? "C:/Users/devma/Videos/MedlyCare Reels",
-  tools: process.env.STUDIO_TOOLS ?? "C:/Users/devma/Documents/MedlyCare Marketing/ferramentas",
+  // Ferramentas de montagem no repositório (19/11); STUDIO_TOOLS aponta pra outra pasta se precisar.
+  tools: process.env.STUDIO_TOOLS ?? join(here, "..", "pipeline").replaceAll("\\", "/"),
   // Executável e argumentos do pipeline. {nome} {voz} {seed} {tools} {base} são trocados por job.
   bin: process.env.STUDIO_PIPELINE_BIN ?? process.execPath,
   args: process.env.STUDIO_PIPELINE_ARGS ?? "{tools}/narrado-calmo.mjs {nome} --voz {voz} --semente {seed}",
