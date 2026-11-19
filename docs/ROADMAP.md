@@ -76,6 +76,10 @@ pra qualquer negócio (sistema, site, loja, serviço), não só o MedlyCare.
 2. **Fontes automáticas:** dúvidas da caixa de entrada e comentários viram pauta; site e Instagram relidos por semana;
    mapa do sistema refeito por semana, com tela nova virando sugestão de conteúdo. (C2)
 3. Assistente geral no Console (molde do MedlyCare v14) usando documentos, métricas e pauta.
+4. **Memória da IA versionada (19/11):** todo aprendizado entra versionado e volta pra IA. Feito: `knowledge/learnings`
+   no prompt do roteirista e da campanha, mapa do sistema e caminhos aprendidos no git. Falta: a reprovação no Console
+   virar aprendizado sozinha (com o motivo), o worker mandar mapa e caminhos pra API (por marca, com histórico, pra
+   cliente que não é da casa) e a gravação ler os caminhos que já deram certo antes de explorar de novo.
 
 ### Fase D — Métricas e Nativa Ads
 1. **Evento de cadastro do MedlyCare** no Pixel e na Conversions API (pedido ao chat de desenvolvimento do MedlyCare)

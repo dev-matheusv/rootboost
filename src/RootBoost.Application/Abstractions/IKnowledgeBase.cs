@@ -17,6 +17,25 @@ public interface IKnowledgeBase
     KnowledgeDocument? Find(string name);
 }
 
+/// <summary>Aprendizados versionados (knowledge/learnings): o que já foi testado, aprovado ou reprovado, por canal.</summary>
+public static class Learnings
+{
+    /// <summary>Texto pro prompt: "testado → resultado", só dos canais pedidos, do mais novo pro mais antigo.</summary>
+    public static string ForPrompt(IKnowledgeBase knowledge, params string[] channels)
+    {
+        var doc = knowledge.Find("learnings/learnings");
+        if (doc is null) return string.Empty;
+        var lines = doc.Items.EnumerateArray()
+            .Where(i => channels.Length == 0 || channels.Contains(i.TryGetProperty("channel", out var c) ? c.GetString() : null))
+            .OrderByDescending(i => i.TryGetProperty("date", out var d) ? d.GetString() : string.Empty, StringComparer.Ordinal)
+            .Take(20)
+            .Select(i => $"- {Text(i, "tested")} → {Text(i, "result")} (confiança {Text(i, "confidence")})");
+        return string.Join(Environment.NewLine, lines);
+    }
+
+    private static string Text(JsonElement e, string name) => e.TryGetProperty(name, out var v) ? v.GetString() ?? string.Empty : string.Empty;
+}
+
 /// <summary>Um arquivo JSON do knowledge/, já validado (envelope e ids únicos).</summary>
 public sealed record KnowledgeDocument(
     string Name, int Version, DateOnly UpdatedAt, string Source, string? Notes, JsonElement Raw)
