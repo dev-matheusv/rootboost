@@ -161,6 +161,27 @@ public class StudioApiTests : IClassFixture<StudioWebApplicationFactory>
     }
 
     [Fact]
+    public async Task Failed_jobs_are_deleted_in_one_go_and_others_stay()
+    {
+        var c = _factory.CreateClient();
+        var worker = Worker();
+        var falas = new[] { "Psicólogo com agenda no papel perde sessão.", "Você marca uma vez.", "A evolução vai pronta.", "Três meses grátis." };
+        var failed = await NewJob(c);
+        var kept = await NewJob(c);
+        foreach (var id in new[] { failed, kept })
+            Assert.Equal(HttpStatusCode.OK, (await c.PutAsJsonAsync($"{Base}/{id}/script", new { roteiro = Roteiro, falas })).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await c.PostAsync($"{Base}/{failed}/render", null)).StatusCode);
+        await ClaimUntil(worker, failed);
+        Assert.Equal(HttpStatusCode.OK, (await worker.PostAsJsonAsync($"/worker/jobs/{failed}/fail", new { workerId = "pc-teste", error = "a voz saiu com 4 palavras sem par", retry = false })).StatusCode);
+
+        var res = await c.DeleteAsync($"{Base}/failed");
+        Assert.Equal(HttpStatusCode.OK, res.StatusCode);
+        Assert.True((await res.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("deleted").GetInt32() >= 1);
+        Assert.Equal(HttpStatusCode.NotFound, (await c.GetAsync($"{Base}/{failed}")).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await c.GetAsync($"{Base}/{kept}")).StatusCode);
+    }
+
+    [Fact]
     public async Task Copy_checklist_blocks_the_script_and_soft_gates_become_warnings_kept_after_delivery()
     {
         var c = _factory.CreateClient();
