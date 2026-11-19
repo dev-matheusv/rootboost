@@ -85,6 +85,8 @@ public sealed class CreativeJob
     public bool VoiceApproved { get; private set; }
     /// <summary>Veio da pauta com "aprovar a voz sozinho": a versão que passou na conferência segue direto pra gravação.</summary>
     public bool AutoVoice { get; private set; }
+    /// <summary>A pessoa pediu pra parar com o computador trabalhando: o worker vê, encerra e devolve (19/11).</summary>
+    public bool StopRequested { get; private set; }
 
     public IReadOnlyList<VoiceTake> VoiceTakes => JsonSerializer.Deserialize<List<VoiceTake>>(VoiceTakesJson, Json) ?? [];
 
@@ -139,6 +141,7 @@ public sealed class CreativeJob
         if (Status is not (CreativeJobStatus.ScriptReady or CreativeJobStatus.Failed) || Script is null)
             throw new InvalidOperationException($"só roteiro pronto (ou job que falhou) vai pra fila (status atual: {Status})");
         Status = CreativeJobStatus.Queued;
+        StopRequested = false;
         Attempts = 0;
         Error = null;
         Progress = 0;
@@ -150,6 +153,7 @@ public sealed class CreativeJob
     public void DeliverVoice(string workerId, IReadOnlyList<VoiceTake> takes, DateTimeOffset now)
     {
         EnsureOwner(workerId);
+        if (StopRequested) { Stopped(now); return; }
         if (takes.Count == 0) throw new ArgumentException("nenhuma versão da voz", nameof(takes));
         VoiceTakesJson = JsonSerializer.Serialize(takes, Json);
         Status = CreativeJobStatus.VoiceReview;
@@ -201,6 +205,7 @@ public sealed class CreativeJob
         if (string.IsNullOrWhiteSpace(workerId)) throw new ArgumentException("worker sem identificação", nameof(workerId));
         if (!CanBeClaimed(now)) throw new InvalidOperationException($"job em {Status} não está disponível");
         Status = CreativeJobStatus.Rendering;
+        StopRequested = false;
         WorkerId = workerId.Trim();
         LeaseUntil = now + lease;
         Attempts++;
@@ -223,6 +228,7 @@ public sealed class CreativeJob
     public void Deliver(string workerId, IReadOnlyList<CreativeOutput> outputs, IReadOnlyList<string>? warnings, int? seed, DateTimeOffset now)
     {
         EnsureOwner(workerId);
+        if (StopRequested) { Stopped(now); return; }
         if (outputs.Count == 0) throw new ArgumentException("entrega sem arquivo", nameof(outputs));
         foreach (var o in outputs)
         {
@@ -251,6 +257,7 @@ public sealed class CreativeJob
     public void Fail(string workerId, string error, bool retry, DateTimeOffset now)
     {
         EnsureOwner(workerId);
+        if (StopRequested) { Stopped(now); return; }
         Error = Truncate(string.IsNullOrWhiteSpace(error) ? "falha sem mensagem" : error, 1000);
         Status = retry && Attempts < MaxAttempts ? CreativeJobStatus.Queued : CreativeJobStatus.Failed;
         WorkerId = null;
@@ -274,8 +281,48 @@ public sealed class CreativeJob
         UpdatedAt = now;
     }
 
-    /// <summary>Apagar só fora do worker: com ele renderizando, o arquivo ainda está sendo feito.</summary>
+    /// <summary>Apagar só fora do worker: com ele renderizando, o arquivo ainda está sendo feito (parar antes).</summary>
     public bool CanBeDeleted => Status != CreativeJobStatus.Rendering;
+
+    /// <summary>
+    /// Parar (19/11). Na fila, ou com o computador sem dar notícia (prazo vencido), para na hora. Com o computador
+    /// trabalhando, fica pedido: ele confere a cada poucos segundos, encerra e devolve. Volta pro roteiro pronto,
+    /// guardando roteiro e voz escolhida, pra mandar de novo quando quiser.
+    /// </summary>
+    /// <returns>true quando já parou; false quando ficou esperando o computador.</returns>
+    public bool RequestStop(DateTimeOffset now)
+    {
+        if (Status == CreativeJobStatus.Queued || (Status == CreativeJobStatus.Rendering && LeaseUntil < now))
+        {
+            Stopped(now);
+            return true;
+        }
+        if (Status != CreativeJobStatus.Rendering)
+            throw new InvalidOperationException($"só vídeo na fila ou sendo gerado pode parar (status atual: {Status})");
+        StopRequested = true;
+        ProgressNote = "parando a pedido";
+        UpdatedAt = now;
+        return false;
+    }
+
+    /// <summary>O computador encerrou o trabalho depois do pedido de parar.</summary>
+    public void ConfirmStopped(string workerId, DateTimeOffset now)
+    {
+        EnsureOwner(workerId);
+        Stopped(now);
+    }
+
+    private void Stopped(DateTimeOffset now)
+    {
+        Status = Script is null ? CreativeJobStatus.Draft : CreativeJobStatus.ScriptReady;
+        StopRequested = false;
+        WorkerId = null;
+        LeaseUntil = null;
+        Progress = 0;
+        ProgressNote = null;
+        Error = "Parado a pedido. Roteiro e voz escolhida continuam; mande gerar de novo quando quiser.";
+        UpdatedAt = now;
+    }
 
     /// <summary>Os rascunhos de publicação foram criados a partir dos arquivos: o job termina aqui.</summary>
     public void MarkDone(DateTimeOffset now)

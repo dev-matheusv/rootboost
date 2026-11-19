@@ -1,4 +1,4 @@
-# Plano de desenvolvimento (reavaliado em 27/10/2026, atualizado em 28/10)
+# Plano de desenvolvimento (histórico até 19/11/2026; o roadmap vivo é `ROADMAP.md`)
 
 Norte (RB-53): **o RootBoost faz o processo inteiro e o cliente só aprova.** Toda prioridade abaixo
 é medida por quanto trabalho manual ela tira do cliente, sem abrir mão de qualidade e segurança.

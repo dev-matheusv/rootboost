@@ -122,7 +122,12 @@
             <div class="text-subtitle2">{{ job.status === 'Queued' ? $t('studio.waitingWorker') : $t('studio.rendering', { n: job.progress }) }}</div>
             <q-linear-progress :value="job.progress / 100" :indeterminate="job.status === 'Queued'" color="primary" rounded size="8px" />
             <div v-if="job.progressNote" class="text-caption text-grey-7">{{ job.progressNote }}</div>
-            <div class="text-caption text-grey-6">{{ $t('studio.attempts', { n: job.attempts }) }}</div>
+            <div class="row items-center q-gutter-sm">
+              <div class="text-caption text-grey-6">{{ $t('studio.attempts', { n: job.attempts }) }}</div>
+              <q-space />
+              <q-btn outline dense no-caps color="negative" :icon="mdiStopCircleOutline" :loading="stopping || !!job.stopRequested"
+                :label="job.stopRequested ? $t('studio.stopping') : $t('studio.stop')" @click="stopJob" />
+            </div>
           </div>
 
           <!-- Roteiro: a IA escreve; a pessoa só ajusta o texto, trecho por trecho. -->
@@ -353,7 +358,7 @@ import { useI18n } from 'vue-i18n';
 import { useQuasar } from 'quasar';
 import { isAxiosError } from 'axios';
 import {
-  mdiAccountSearchOutline, mdiAccountVoice, mdiArrowULeftTop, mdiBullhornOutline, mdiCalendarPlus, mdiCheckCircleOutline, mdiCodeJson, mdiCreationOutline, mdiDeleteOutline, mdiDesktopClassic, mdiFormatQuoteOpen, mdiHeartOutline, mdiImageMultipleOutline, mdiMicrophoneOutline, mdiMonitorScreenshot, mdiMovieEditOutline, mdiMovieOpenPlayOutline, mdiMusicNote, mdiPlay, mdiPlus, mdiRefresh, mdiSchoolOutline,
+  mdiAccountSearchOutline, mdiAccountVoice, mdiArrowULeftTop, mdiBullhornOutline, mdiCalendarPlus, mdiCheckCircleOutline, mdiCodeJson, mdiCreationOutline, mdiDeleteOutline, mdiDesktopClassic, mdiStopCircleOutline, mdiFormatQuoteOpen, mdiHeartOutline, mdiImageMultipleOutline, mdiMicrophoneOutline, mdiMonitorScreenshot, mdiMovieEditOutline, mdiMovieOpenPlayOutline, mdiMusicNote, mdiPlay, mdiPlus, mdiRefresh, mdiSchoolOutline,
 } from '@quasar/extras/mdi-v7';
 import { api } from 'src/services/api';
 import VoicePicker from 'src/components/VoicePicker.vue';
@@ -671,6 +676,23 @@ async function rejectJob() {
   } finally {
     busy.value = false;
   }
+}
+
+// Parar (19/11): na fila para na hora; com o computador, ele encerra em segundos e o vídeo volta pro roteiro pronto.
+const stopping = ref(false);
+function stopJob() {
+  const j = job.value;
+  if (!j) return;
+  $q.dialog({ title: t('studio.stop'), message: t('studio.stopConfirm'), cancel: true }).onOk(() => {
+    stopping.value = true;
+    void api.post<{ stopped: boolean; job: CreativeJob }>(`${base.value}/${j.id}/stop`)
+      .then(({ data }) => {
+        jobs.value = jobs.value.map((x) => (x.id === j.id ? data.job : x));
+        $q.notify({ type: 'info', message: data.stopped ? t('studio.stopped') : t('studio.stopAsked') });
+      })
+      .catch((e: unknown) => $q.notify({ type: 'negative', message: apiError(e) }))
+      .finally(() => { stopping.value = false; });
+  });
 }
 
 function deleteJob() {
