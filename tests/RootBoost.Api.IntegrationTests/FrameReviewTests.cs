@@ -28,6 +28,28 @@ public class FrameReviewTests : IClassFixture<StudioAiWebApplicationFactory>
     }
 
     [Fact]
+    public void With_the_demo_terms_accepted_real_data_is_not_flagged()
+    {
+        const string json = """{"problemas":[{"quadro":5,"tipo":"dado-real","descricao":"Nome parece real."},{"quadro":2,"tipo":"texto-duplo","descricao":"Dois textos."}]}""";
+        Assert.Equal(2, FrameReviewer.Read(json).Count);
+        Assert.Equal(["Conferência da IA, quadro 2: Dois textos."], FrameReviewer.Read(json, demoConfirmed: true));
+    }
+
+    [Fact]
+    public async Task Demo_terms_are_saved_with_who_and_when_and_can_be_undone()
+    {
+        var c = _factory.CreateClient();
+        var before = await c.GetFromJsonAsync<JsonElement>("/admin/brands/medlycare/demo-account");
+        Assert.Contains("dados fictícios", before.GetProperty("terms").GetString());
+        var ok = await (await c.PostAsync("/admin/brands/medlycare/demo-account/confirm", null)).Content.ReadFromJsonAsync<JsonElement>();
+        Assert.True(ok.GetProperty("confirmed").GetBoolean());
+        Assert.False(string.IsNullOrWhiteSpace(ok.GetProperty("confirmedBy").GetString()));
+        Assert.NotEqual(JsonValueKind.Null, ok.GetProperty("confirmedAt").ValueKind);
+        var undone = await (await c.DeleteAsync("/admin/brands/medlycare/demo-account/confirm")).Content.ReadFromJsonAsync<JsonElement>();
+        Assert.False(undone.GetProperty("confirmed").GetBoolean());
+    }
+
+    [Fact]
     public async Task Endpoint_needs_the_sheet_and_returns_the_problems()
     {
         var client = _factory.CreateClient();

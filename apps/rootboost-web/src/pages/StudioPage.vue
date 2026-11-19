@@ -10,6 +10,7 @@
     </div>
 
     <q-banner v-if="!brand.selected" rounded class="bg-blue-1 text-primary">{{ $t('studio.pickBrand') }}</q-banner>
+    <DemoTermsCard v-if="brand.selected" :brand-key="brand.selected" />
     <PautaCard v-if="brand.selected" :key="'pauta-' + brand.selected" :brand-key="brand.selected" @queued="load()" />
 
     <!-- Nenhum computador ligado: o job não fica parado na fila sem explicação. -->
@@ -363,6 +364,7 @@ import {
 import { api } from 'src/services/api';
 import VoicePicker from 'src/components/VoicePicker.vue';
 import PautaCard from 'src/components/PautaCard.vue';
+import DemoTermsCard from 'src/components/DemoTermsCard.vue';
 import DictateButton from 'src/components/DictateButton.vue';
 import type { PickableVoice, VideoFormat } from 'src/types/api';
 import type { CreativeJob, CreativeKind, Publication } from 'src/types/api';

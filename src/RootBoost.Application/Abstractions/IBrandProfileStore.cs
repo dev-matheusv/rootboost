@@ -10,6 +10,8 @@ public interface IBrandProfileStore
     Task<bool> RetireProofAsync(string brandKey, Guid proofId, CancellationToken ct = default);
     Task AddPhraseAsync(CustomerPhrase phrase, CancellationToken ct = default);
     Task<bool> SetVoiceAsync(string brandKey, BrandVoice voice, CancellationToken ct = default);
+    /// <summary>Confirma (by preenchido) ou desfaz (by nulo) o termo de conta de demonstração só com dado fictício.</summary>
+    Task<Brand?> SetDemoFictionalAsync(string brandKey, string? by, DateTimeOffset now, CancellationToken ct = default);
 
     /// <summary>
     /// Carga inicial de um perfil (ex.: o MedlyCare a partir do playbook). Só roda com o perfil vazio, então
