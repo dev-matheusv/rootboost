@@ -1,142 +1,109 @@
-# RootBoost — Roadmap
+# Nativa (RootBoost) — Roadmap
 
-Documento vivo. Espelho no Notion: página **RootBoost — Roadmap** (dentro de "RootBoost — Documentação").
-Cards no Jira: projeto **RB** (nativalabs). Cada item abaixo vira um card; o número entra aqui quando existir.
+Refeito em 19/11/2026 a partir do pente fino pedido pelo Matheus. Substitui o roadmap por fases de 22/10 (marcado como
+desatualizado) e junta o que sobrou do `PLANO.md`. Norte: **a plataforma faz o processo inteiro e o cliente só aprova**,
+pra qualquer negócio (sistema, site, loja, serviço), não só o MedlyCare.
 
-> **Mudança de rumo (2026-10-22):** antes valia "não construir plataforma antes de ter dado de venda".
-> O dono decidiu construir a plataforma agora, porque ela já atende mais de uma frente (loja, livros,
-> marketing do MedlyCare, conteúdo de terceiros) e o fluxo de desenvolvimento está rendendo. O registro
-> completo da decisão está no `CLAUDE.md` (§0). A loja continua no ar e vendendo; nada aqui mexe nela
-> sem flag.
+## 1. Pente fino (o que está aberto, com evidência)
 
-## O que o RootBoost vira
+### Estúdio
+| # | Achado | Evidência |
+|---|---|---|
+| E1 | Não dá pra **parar** um vídeo que está sendo gerado, nem apagar: só esperar terminar ou falhar. | `CanBeDeleted` recusa em `Rendering`; não existe cancelar na API nem no worker. |
+| E2 | O vídeo do relatório levou ~15 tentativas desde 07/11 e ainda não saiu. As falhas vieram da **conta de demonstração**, não do roteiro: dado vazio no período, CPF real na conta demo, tela que não muda, senha recusada (19/11). | Logs do worker de 07 a 19/11. |
+| E3 | Não existe checagem da conta demo **antes** de gastar voz e IA: o erro só aparece no meio da gravação. | Idem. |
+| E4 | **Vídeo com fotos do acervo sai fraco:** no teaser da IA (17/11), 12 dos 34 s são o logo ampliado e pixelado (faltou mídia), dois textos na tela ao mesmo tempo (título no meio e legenda embaixo), legenda cortando frase e legenda por cima da cartela final. | Folha de quadros do teaser. |
+| E5 | **Ritmo da voz:** a nutrição (79 palavras em 30 s, pausa de 0,23 s entre frases) foi reprovada por atropelar. O R4 aprovado tem 0,5 a 0,6 s de pausa e 2,2 palavras por segundo no vídeo. Não há portão de densidade no roteiro nem de pausa na voz. | Alinhamentos de todos os reels (19/11). |
+| E6 | A montagem depende de scripts **fora do repositório** (`Documents\MedlyCare Marketing\ferramentas`), do DMaker em `C:\DMaker` e de caminhos do PC do Matheus. Outra pessoa não consegue instalar. | `worker.mjs`: `STUDIO_TOOLS`, `FFMPEG`, `DMAKER`. |
+| E7 | Instalar o worker é manual (Node, Chrome, ffmpeg, DMaker, `worker.env` com chave colada, `contas.json`). Não há tela de computadores no Console nem atualização guiada. | `docs/ESTUDIO.md`, `worker.env.example`. |
+| E8 | Conferência existe só como aviso (folha de quadros e tela parada, 18/11). Ninguém **olha** os quadros antes de entregar; não há refação automática. | #274. |
+| E9 | O explicativo ainda usa constantes visuais do MedlyCare; outra marca não tem kit (cores, logo, fonte) configurável no Console. | `PLANO.md`, RB-43. |
 
-Um **estúdio de marketing** com um ciclo só: **criar → publicar → medir → otimizar**, servindo várias
-marcas (RootBoost loja, MedlyCare, livros, clientes). Cada etapa é um módulo com porta própria, modo
-Fake pra rodar sem credencial e modo Desligado por padrão em produção.
+### Conhecimento da IA
+| # | Achado |
+|---|---|
+| C1 | Não há onde subir **documentos da empresa** (PDF, Word, planilha, link) pra IA se basear. O acervo aceita foto e vídeo; o perfil da marca é texto curto. Depende da Root.IA (RAG do RootFlow), em desenvolvimento no outro chat. |
+| C2 | Fontes que já temos e não alimentam o roteiro: perguntas que chegam na caixa de entrada, comentários dos posts, mapa do sistema explorado. |
 
-```
-            ┌──────────── Console (web) ─────────────┐
-            │ visão geral · pedidos · produtos ·      │
-            │ campanhas · criativos · agenda · IA     │
-            └───────────────┬─────────────────────────┘
-                            │ JWT
-┌───────────────────────────▼──────────────────────────────────┐
-│ RootBoost.Api (.NET 9, Railway)                               │
-│  Loja (pedido, CJ, Stripe)  · Ads (Meta, Google)  · Estúdio   │
-│  Publicação (Postiz)        · IA (Claude, advisor) · Insights │
-└───────┬──────────────────────────┬───────────────────────────┘
-        │ fila de jobs (pull)      │ APIs externas
-┌───────▼─────────┐        Meta Marketing API · Google Ads API ·
-│ Worker local    │        Postiz · Stripe · CJ · Resend
-│ DMaker + voz    │
-│ (PC do Matheus) │
-└─────────────────┘
-```
+### Uso por outras pessoas
+| # | Achado |
+|---|---|
+| U1 | Um login por marca, sem convite de equipe nem papéis (dono, equipe, agência). Sem "esqueci a senha" (depende do domínio e e-mail). |
+| U2 | Cliente novo não consegue conectar a própria conta Meta: tokens são variáveis no Railway e o app da Meta não está Live (RB-41). |
+| U3 | Fila sem prioridade nem justiça entre marcas; um computador só; render na nuvem sem provedor decidido. |
+| U4 | Sem cobrança, termos de uso e política de privacidade publicados; Vercel Hobby não serve pra uso comercial. |
 
-**Por que o render roda num worker local que puxa jobs:** o DMaker com voz clonada é pesado (CPU, modelos
-de voz, FFmpeg) e hoje roda no PC. O worker **puxa** o trabalho da API, então não precisa abrir porta
-nenhuma na rede de casa, e trocar o PC por uma máquina na nuvem depois é só mudar onde o worker roda.
+### Anúncios e métricas
+| # | Achado |
+|---|---|
+| A1 | Teste de R$ 50 (13 a 17/11): 97% do gasto na Audience Network, 287 cliques e só 65 visitas à página. **Corrigido** no #277 (só Instagram e Facebook, otimização por visualização da página). |
+| A2 | **Sem evento de cadastro:** o MedlyCare não manda "cadastro feito" pro Pixel e pra Conversions API, então nenhuma campanha consegue otimizar por cliente, só por clique ou visita. |
+| A3 | A plataforma não avisa sozinha quando o dinheiro vai pra um posicionamento ruim ou quando clique não vira visita. |
+| A4 | O ranking orgânico não sabe a voz, o ritmo nem a duração de cada vídeo, então "qual voz funciona melhor" não tem resposta com número. |
 
-## Público e módulos
+## 2. Fases (ordem de entrega)
 
-**Foco principal:** empresas e agências de marketing que querem fazer marketing com IA. **Também:** a loja
-de dropshipping e a venda de livros na Amazon, que são nossos testes reais de venda.
+### Fase A — Estúdio confiável (agora)
+1. **Controle do vídeo:** botão Parar (a API marca o pedido de parada, o worker confere a cada etapa e encerra o
+   processo), Apagar a qualquer momento (para antes), Retomar do ponto salvo (voz aprovada e ensaio reaproveitados) e
+   histórico de tentativas com o motivo em português claro. (E1)
+2. **Checagem da conta demo antes de gastar:** login, período com dados, nenhum dado real, telas do roteiro existentes.
+   Falhou, para na hora com o motivo e a correção. Tela "Conta de demonstração" no Console com o último resultado. (E2, E3)
+3. **Portão de ritmo:** no roteiro, no máximo 2,2 palavras por segundo do vídeo; na voz, pausa mínima de 0,45 s entre
+   frases (o worker estica o silêncio, nunca acelera a fala). Valores tirados do R4 aprovado. (E5)
+4. **Vídeo com fotos e vídeos do cliente** (formato pessoal, acervo): resolução mínima por imagem (nunca ampliar logo
+   ou foto pequena), um texto por vez na tela, legenda que nunca corta frase, cartela final limpa, e quando falta
+   mídia a IA encurta o vídeo ou pede mais fotos em vez de encher. Usar os vídeos do cliente com corte nos melhores
+   trechos (momentos, já existe). (E4)
+5. **Conferência de verdade:** a IA olha a folha de quadros antes de entregar (texto ilegível, tela errada, dado real,
+   texto duplo, logo pixelado) e refaz sozinha uma vez; o aviso só sobe se a refação também falhar. (E8)
+6. **Pipeline dentro do repositório:** trazer `narrado-passo`, `narrado-calmo`, `acabar-voz` e `pausar-voz` pra
+   `tools/pipeline` (com o acordo do marketing), tirar caminhos fixos, kit visual por marca no Console. (E6, E9)
 
-A plataforma é **modular**: cada cliente usa só o que precisa, e cada módulo funciona sozinho.
-- **Tráfego:** subir anúncio, analisar campanha, otimizar (Meta, Google).
-- **Criativo e vídeo:** só criar peças e editar vídeo com o DMaker, sem tocar em anúncio.
-- **Publicação:** agenda nas redes.
-- **Loja e marketplace:** canais de venda próprios (loja, Amazon).
-Isso vira plano e permissão por módulo na Fase 6 (contas), mas o código já nasce separado por módulo.
+### Fase B — Instalar e usar por outras pessoas
+1. **Instalador do worker** em um comando (confere e baixa Node, Chrome, ffmpeg e DMaker) com **pareamento por código**
+   mostrado no Console, sem colar chave. Tela "Computadores": ligado, versão, último vídeo, atualizar. (E7)
+2. **Conta demo no servidor**, criptografada, em vez de `contas.json` no PC. (já decidido em 28/10 pra quando entrar cliente)
+3. **Equipe:** convidar pessoa por e-mail, papéis por marca (dono, equipe, agência), esqueci a senha. (U1)
+4. **Cliente conecta a própria Meta** com "Entrar com Facebook" (exige o app Live e a verificação do negócio, RB-41). (U2)
+5. **Fila com prioridade** (data de postagem mais perto primeiro, refação na frente), justiça entre marcas, vários
+   computadores, e decisão do **render na nuvem** (máquina com GPU pra voz; custo por vídeo calculado). (U3)
 
-**Ferramentas de criativo:** DMaker (vídeo e voz), Higgsfield (imagem e vídeo por IA) e Canva (design por
-template), cada uma atrás de porta própria, escolhida pelo que entrega melhor em cada peça.
+### Fase C — A IA conhece a empresa
+1. **Documentos da empresa** no Console (PDF, Word, planilha, link do site), por marca, com a Root.IA fazendo a busca
+   e o roteiro citando de onde tirou cada fato. Ponte enquanto a Root.IA não chega: extrair texto e guardar um resumo
+   por documento. (C1)
+2. **Fontes automáticas:** dúvidas da caixa de entrada e comentários viram pauta; site e Instagram relidos por semana;
+   mapa do sistema refeito por semana, com tela nova virando sugestão de conteúdo. (C2)
+3. Assistente geral no Console (molde do MedlyCare v14) usando documentos, métricas e pauta.
 
-## Fases
+### Fase D — Métricas e Nativa Ads
+1. **Evento de cadastro do MedlyCare** no Pixel e na Conversions API (pedido ao chat de desenvolvimento do MedlyCare)
+   e campanha otimizando por cadastro. Sem isso não dá pra saber o custo por cliente. (A2)
+2. **Alertas de campanha:** mais da metade do gasto num posicionamento, menos de 40% dos cliques virando visita,
+   frequência alta. (A3)
+3. **Ranking com atributos:** voz, palavras por segundo, duração, gancho e formato em cada vídeo, junto com retenção e
+   tempo médio assistido (campos conferidos na doc oficial antes de codar). Responde "qual voz vende mais" com dado. (A4)
+4. **Teste A/B pronto:** mesma peça em duas versões (voz ou gancho), R$ 20 cada, a plataforma monta e lê o resultado.
+5. Orgânico do Facebook, relatório semanal por push ou e-mail.
 
-### Fase 0 — Fundação (em andamento)
-- [x] Roadmap e registro da decisão (este arquivo, `CLAUDE.md` §0).
-- [x] Fluxo de trabalho igual ao MedlyCare: `main` (produção), `develop` (integração), `feat/rb-XX-...`,
-      PR com CI obrigatório, squash merge, conventional commits com o card no escopo.
-- [x] CI no GitHub Actions: build e testes do backend, lint, tipos e build do front.
-- [ ] Documentação no Notion e projeto RB no Jira.
+### Fase E — Produto pra vender
+Domínio e e-mail da Nativa, termos e privacidade, cobrança, Vercel Pro, white label pra agência, WhatsApp oficial
+(caixa de entrada e aprovação), LinkedIn quando houver acesso de parceiro, marca registrada (INPI, nome composto).
 
-### Fase 1 — Console (painel com login)
-- [x] **Postgres no lugar do SQLite** (padrão da casa; libera pgvector e analytics). Virada feita em 2026-10-23:
-      2 pedidos e 29 visitas copiados e conferidos.
-- [x] **Login com JWT** emitido pelo backend, no mesmo molde do RootFlow (`JwtTokenGenerator`, 8 h).
-      Usuário dono criado por configuração. A API key continua valendo pra scripts.
-- [ ] **Marca como conceito desde o início** (`Brand`): pedidos, produtos, campanhas e criativos
-      pertencem a uma marca. Evita refazer o modelo quando entrar o marketing do MedlyCare.
-- [x] **Front `apps/rootboost-web`** (esqueleto, login, Visão geral e Pedidos) no molde do front do MedlyCare (`C:/SFA_Sistema/apps/web`): Vue 3,
-      Quasar 2, Pinia, vue-i18n, axios, vitest, PWA. Paleta própria do RootBoost. Deploy em projeto
-      próprio na Vercel.
-- [ ] Telas: Visão geral (visitas, pedidos, receita, conversão por produto), Pedidos, Produtos,
-      Crescimento (o `GrowthPlanner` que já existe) e Tráfego (o plano em dry-run que já existe).
+## 3. Próximas duas semanas (ordem)
+1. A1 Parar e apagar vídeo · A2 checagem da conta demo · A3 portão de ritmo.
+2. A4 regras do vídeo com fotos · A5 conferência pela IA.
+3. D1 pedido do evento de cadastro ao MedlyCare · D2 alertas de campanha.
+4. A6 pipeline no repositório (combinar com o marketing) · B1 instalador e pareamento.
+5. C1 documentos da empresa (alinhar com a Root.IA no RootFlow).
 
-### Fase 2 — Anúncios, só leitura
-- [ ] **Meta Ads**: `ICampaignInsightsSource` real (Marketing API, insights por campanha, conjunto e anúncio).
-- [ ] **Google Ads**: mesma porta, implementação com GAQL. Pré-requisito do dono: developer token
-      aprovado, conta MCC, OAuth e customer id.
-- [ ] Snapshot diário das métricas no Postgres e telas de campanha com custo, ROAS, CPA e CTR.
-- [ ] Nenhuma escrita nas contas de anúncio nesta fase.
-
-### Fase 3 — Estúdio (criar)
-- [ ] **Base de conhecimento de marketing que aprende** (RB-15). Parte 1 feita: `knowledge/` com playbook,
-      gatilhos, ganchos, checklist, limites, políticas, formatos, regras de teste e aprendizados, validados por
-      teste e servidos em `/admin/knowledge`. Perfil da marca (voz, prova, frases) na API (RB-15), checklist (RB-18) e
-      tela no Console (RB-19: abas Prova, Voz, Frases e Testar copy) feitos. Falta: ciclo de aprendizado. `knowledge/` versionado, voz e **inventário de
-      prova** por marca, checklist automática antes do humano. Desenho em `docs/BASE-DE-CONHECIMENTO.md`.
-- [ ] Fila de jobs de criativo na API e worker local que roda o DMaker (render, voz clonada, legendas).
-- [ ] Voz em fala contínua (lição do MedlyCare: síntese frase a frase soa picotada). Pedido ao Douglas
-      no Jira DMK; enquanto isso, o worker chama o OmniVoice direto.
-- [ ] Regras de formato por canal (zona segura do Reels: margem 0.14, legenda em y=0.753).
-- [ ] Biblioteca de criativos com proveniência (de onde veio, custo, qual hook, qual produto).
-- [ ] Higgsfield como gerador de imagem atrás de porta (`IAssetGenerator`), com orçamento.
-
-### Fase 4 — Publicação própria (sem Postiz)
-Decisão de 2026-10-23: o RootBoost publica e agenda sozinho pelas APIs oficiais (grátis pras nossas contas),
-em vez do Postiz (US$ 29/mês). Desenho em `docs/PUBLICACAO.md`. Até existir, publicação manual pelo Meta Business
-Suite e pela página do LinkedIn, com a planilha que o marketing do MedlyCare prepara.
-- [ ] App na Meta (tipo Empresa) + usuário do sistema + permissões, e pedido do Community Management API no
-      LinkedIn (demora dias: pedir cedo). O mesmo app da Meta serve pra Fase 2 (`ads_read`).
-- [x] Modelo `Publication`, porta `ISocialPublisher`, `FakePublisher`, aprovação auditável e job de publicação (RB-21).
-- [ ] Instagram (Reels) e Página do Facebook atrás de `Social:Live`.
-- [ ] Calendário editorial no Console. **Nada publica sem aprovação post a post.**
-- [ ] LinkedIn (página da empresa) quando o acesso for aprovado.
-- [ ] Insights orgânicos (alcance, plays, salvamentos) no ciclo de aprendizado.
-
-### Fase 5 — IA que otimiza
-- [ ] Módulo `Ia` portado do RootFlow, no molde do MedlyCare v14 (e o painel do assistente, em Vue, reaproveitado no Console): `IModeloLinguagem` com tool use e
-      streaming, implementações Claude e Fake, `Ia__Modo=Desligado` por padrão, uso e custo gravados.
-- [ ] Advisor lê insights e propõe ações (escalar, pausar, trocar criativo, testar hook).
-- [ ] **Ação só grava com confirmação humana**: proposta assinada, uso único, válida por 15 min
-      (mesmo padrão do assistente do MedlyCare). Actuators de Meta e Google atrás de `Traffic:Live=true`.
-- [ ] Autopilot agendado, começando em dry-run.
-
-### Fase 6 — Produto
-- [ ] Várias contas (workspaces) no molde do RootFlow, cobrança, onboarding.
-- [ ] Estúdio aberto para pessoas comuns (ideia de `docs/VIDEO-DMAKER.md`), conversando com o Douglas.
-
-## Pedidos avaliados em 24/10/2026 (Matheus)
-
-| Pedido | Vale? | Onde entra | Avaliação |
-|---|---|---|---|
-| **Postgres também no local, sem SQLite** (RB-29) | Sim, já | Antes do próximo card de banco | Produção já é Postgres com migrações; o SQLite local usa `EnsureCreated` e não ganha tabela nova (já travou o dev 3 vezes). Os testes já rodam em Postgres via Testcontainers. Plano: `docker compose` com Postgres 16 pro dev, migrações nos dois, SQLite fora do código. Requer Docker Desktop no PC (já usado pelos testes). |
-| **PWA igual ao MedlyCare** (RB-30) | Sim | Junto da identidade visual | O front já está no molde do MedlyCare (Quasar tem modo PWA pronto). Ícone, manifest, instalar no celular, cache do shell. Barato. |
-| **Interface mais próxima do MedlyCare + roxo próprio** (RB-14, ampliado) | Sim | Junto da PWA | Reaproveitar componentes, espaçamentos, tipografia e cards do MedlyCare (`C:\SFA_Sistemapps\web`). Paleta: 3 propostas de roxo (do mais sóbrio ao mais vivo), testadas no claro e no escuro, escolha do Matheus antes de aplicar. |
-| **Campanha de teste montada pela IA, Matheus só aprova** (RB-31) | Sim, com cuidado | Fase 5 | Hoje o conector só lê. Montar campanha exige escrita na Marketing API (`ads_management`): criar campanha, conjunto e anúncio **sempre PAUSADOS**, mostrar o resumo (orçamento, público, criativos, link com UTM) e só ativar com o clique do Matheus. Limite de gasto da conta (R$ 250) é a trava final. |
-| **WhatsApp** (RB-32) | Avaliar | Depois | Duas rotas: a extensão do Chrome feita com o Douglas (ver código/doc no MedlyCare) ou a API oficial do WhatsApp Business (Cloud API, pago por conversa). Decidir quando o uso estiver claro (avisos de aprovação? atendimento de lead?). |
-| **Upload de mídia** (RB-33) | Sim, aprovado | Próximo | Bucket de objetos no Railway, link temporário assinado pro Instagram baixar. Custo por uso (ver Railway Pricing); com poucos GB, centavos de dólar por mês. |
-| **Domínio próprio** | Aguarda o nome | Antes da 1ª venda | Destrava e-mail (RB-28), LinkedIn e "esqueci a senha". Confirmar se o nome fica RootBoost. |
+## 4. Depende do Matheus
+- Senha da conta `demonstracao` (recusada em 19/11) e dados fictícios do período nela.
+- Quantos cadastros entraram de 13 a 17/11 (custo por cadastro do teste).
+- Ok do marketing pra trazer as ferramentas de montagem pro repositório.
+- Decisões de custo: render na nuvem, Vercel Pro, domínio da Nativa.
 
 ## Fronteira com o DMaker
-
-O DMaker é do Douglas e tem o próprio Jira (**DMK**). Regra: mudança no DMaker vira card no DMK e quem
-mexe é ele; o RootBoost só consome por CLI ou MCP e guarda os specs do nosso lado
-(`tools/video/`). Mudança no RootBoost vira card no **RB**.
-
-## Credenciais que só o dono fornece (env var, nunca no chat)
-Meta Business (app, token de sistema, ad account), Google Ads (developer token, OAuth client, refresh
-token, customer id, login customer id), Postiz (API key), Claude (chave ou Bedrock), storage de mídia.
+O DMaker (repo e Jira do Douglas) segue separado: voz, montagem e editor. A Nativa consome por CLI no worker e abre o
+projeto no editor pra ajuste fino. Melhoria de montagem que é do DMaker vira pedido no Jira DMK.
