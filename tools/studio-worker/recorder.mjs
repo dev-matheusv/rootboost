@@ -304,6 +304,29 @@ async function loginFields(cdp) {
  * @param ask (state) => Promise<{ action, target, text, reason }>, a chamada à API.
  */
 /** prepare: passo fora do vídeo (preparo da conta). Vale o mesmo controle da IA, sem tempo mínimo e sem gerar mp4. */
+/**
+ * Checagem da conta de demonstração antes de gastar voz e IA (roadmap A2, 19/11): abre o sistema, entra e sai.
+ * Um login só por job (sem repetir, pra não bloquear a conta). Falhou: devolve o motivo e o print da tela.
+ */
+export async function checkDemoLogin({ account, outDir, log = console.log }) {
+  mkdirSync(outDir, { recursive: true });
+  const { cdp, close } = await openChrome();
+  try {
+    await cdp.send("Page.navigate", { url: account.url });
+    await wait(2500);
+    const fields = await loginFields(cdp);
+    if (!fields) { log("conta demo: já entra sem login"); return { ok: true }; }
+    const r = await login(cdp, fields, account);
+    if (r.ok) { log("conta demo: login ok"); return { ok: true }; }
+    const shot = await cdp.send("Page.captureScreenshot", { format: "jpeg", quality: 70 });
+    const file = join(outDir, "login-falhou.jpg");
+    writeFileSync(file, Buffer.from(shot.data, "base64"));
+    return { ok: false, error: r.error, shot: file };
+  } finally {
+    close();
+  }
+}
+
 export async function recordScene({ brandKey, scene, scenes, account, outDir, name, ask, prepare = false, rehearse = false, log = console.log }) {
   // Gravação contínua (13/11): com `scenes`, uma sessão só grava o processo inteiro, da tela inicial ao resultado, e cada
   // "pronto" marca o fim de uma cena. Gravar cena por cena deixava a IA preparar a tela fora da câmera (caminho e datas

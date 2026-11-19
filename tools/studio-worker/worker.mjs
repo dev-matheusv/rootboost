@@ -13,7 +13,7 @@ import {
   applyLibrary, applyRecordings, buildArgs, buildPersonalSpec, libraryScenes, photoClipArgs, expectedOutputs, isScriptProblem, lastLine, parsePrivateVoices, logFileName, oldLogs, addPath, mapIsStale, pathsText, parseDetect, reviewVideo, parseSceneCuts, reviewScreens, parseVoiceFinish, parseVoiceTones, preparationsFor, stepByStepPlan, voiceFolder, parseUnmatched, parseVoiceSteps, stepsFor, projectName, scenesToRecord,
   seedFor, voiceProblem, warningsFrom,
 } from "./lib.mjs";
-import { closeAllChromes, exploreSystem, recordScene, replayPath } from "./recorder.mjs";
+import { checkDemoLogin, closeAllChromes, exploreSystem, recordScene, replayPath } from "./recorder.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 loadEnvFile(join(here, "worker.env"));
@@ -191,6 +191,10 @@ async function work(job) {
       return fail(job.id, `sem conta de demonstração da marca ${job.brandKey} em tools/studio-worker/contas.json`, false);
     const up = await fetch(account.url, { signal: AbortSignal.timeout(10_000) }).then((r) => r.status < 500).catch(() => false);
     if (!up) return fail(job.id, `o sistema da gravação não respondeu (${account.url}); ligue o app e mande renderizar de novo`, false);
+    // Entra na conta demo antes de gastar voz e IA: senha errada aparecia só depois da voz (19/11).
+    const lg = await checkDemoLogin({ account, outDir: `${cfg.base}/brutos/${nome}-conta-demo` }).catch((e) => ({ ok: false, error: e.message }));
+    if (!lg.ok) return fail(job.id, `a conta de demonstração não entrou (${lg.error}); confira usuário e senha em tools/studio-worker/contas.json e mande gerar de novo${lg.shot ? `. Print em ${lg.shot}` : ""}`, false);
+    await progress(job.id, 3, "conta de demonstração conferida");
   }
   for (const s of libraryScenes(job.roteiro))
     if (!(job.media ?? []).some((m) => m.id === s.id))
