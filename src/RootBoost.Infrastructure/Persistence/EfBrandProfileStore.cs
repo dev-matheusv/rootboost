@@ -53,6 +53,16 @@ public sealed class EfBrandProfileStore : IBrandProfileStore
         return true;
     }
 
+    public async Task<Brand?> SetDemoFictionalAsync(string brandKey, string? by, DateTimeOffset now, CancellationToken ct = default)
+    {
+        var brand = await _db.Brands.FirstOrDefaultAsync(b => b.Key == brandKey, ct);
+        if (brand is null) return null;
+        if (by is null) brand.RevokeDemoFictional();
+        else brand.ConfirmDemoFictional(by, now);
+        await _db.SaveChangesAsync(ct);
+        return brand;
+    }
+
     public async Task<bool> ImportIfEmptyAsync(string brandKey, BrandVoice voice, IReadOnlyList<ProofItem> proof,
         IReadOnlyList<CustomerPhrase> phrases, CancellationToken ct = default)
     {

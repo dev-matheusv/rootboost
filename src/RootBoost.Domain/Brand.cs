@@ -21,6 +21,31 @@ public sealed class Brand
     /// <summary>Dados de demonstração conhecidos da marca, pra IA reconhecer como fictícios (ex.: "Clínica Vitta, CPF 999.000.00x").</summary>
     public string? FictionalMarkers { get; private set; }
 
+    /// <summary>
+    /// Termo aceito (19/11, decisão do Matheus): a pessoa confirmou que a conta de demonstração usada na gravação só tem
+    /// dados fictícios. Com ele, a gravação e a conferência deixam de adivinhar o que é dado pessoal. Guarda quem e quando.
+    /// </summary>
+    public DateTimeOffset? DemoFictionalConfirmedAt { get; private set; }
+    public string? DemoFictionalConfirmedBy { get; private set; }
+    public bool DemoFictionalConfirmed => DemoFictionalConfirmedAt is not null;
+
+    public const string DemoFictionalTerms =
+        "Confirmo que a conta de demonstração usada nas gravações tem só dados fictícios (nenhum paciente, cliente ou " +
+        "pessoa real) e que posso mostrar tudo o que aparece nela em vídeos públicos da marca.";
+
+    public void ConfirmDemoFictional(string by, DateTimeOffset now)
+    {
+        if (string.IsNullOrWhiteSpace(by)) throw new ArgumentException("quem confirmou é obrigatório", nameof(by));
+        DemoFictionalConfirmedBy = by.Trim()[..Math.Min(by.Trim().Length, 200)];
+        DemoFictionalConfirmedAt = now;
+    }
+
+    public void RevokeDemoFictional()
+    {
+        DemoFictionalConfirmedAt = null;
+        DemoFictionalConfirmedBy = null;
+    }
+
     public void SetPrivacy(PersonalDataPolicy policy, string? fictionalMarkers)
     {
         Privacy = policy;
