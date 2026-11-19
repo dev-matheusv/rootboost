@@ -478,13 +478,12 @@ ${fz.stderr}`).freezes });
   await progress(job.id, 90, `subindo ${found.length} arquivos`);
   // Conferência: sem a grade do narrado-calmo, monta uma folha de quadros pra olhar o vídeo de relance.
   const igPath = found.find((o) => o.role === "video-instagram")?.path;
-  if (igPath && !found.some((o) => o.role === "grade")) {
-    const sheet = contactSheet(igPath, `${projectDir}/conferencia-quadros.jpg`);
-    if (sheet) found.push({ role: "grade", path: sheet });
-  }
+  const sheet = igPath ? contactSheet(igPath, `${projectDir}/conferencia-quadros.jpg`) : null;
+  if (sheet && !found.some((o) => o.role === "grade")) found.push({ role: "grade", path: sheet });
   const outputs = [];
   for (const o of found) outputs.push({ role: o.role, url: await upload(job.brandKey, o.path) });
   const review = inspectVideo(igPath, (job.roteiro?.blocos ?? []).length);
+  review.push(...(await aiReview(job, sheet)));
   // Ritmo medido na voz que foi pro vídeo (a versão com pausas, quando existe).
   try {
     const dir = existsSync(`${voiceDir(seed)}-final/alinhamento.json`) ? `${voiceDir(seed)}-final` : voiceDir(seed);
@@ -499,6 +498,19 @@ ${fz.stderr}`).freezes });
 function videoSeconds(path) {
   const probe = spawnSync(FFPROBE, ["-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", path], { encoding: "utf8" });
   return Number(probe.stdout.trim());
+}
+
+/** Conferência pela IA (roadmap A5): a folha de quadros vai pra API, que devolve os problemas como aviso. Nunca derruba a entrega. */
+async function aiReview(job, sheet) {
+  if (!sheet || !existsSync(sheet)) return [];
+  try {
+    const r = await call("POST", "/worker/ai/review-frames", { brandKey: job.brandKey, theme: job.theme, lines: job.falas ?? [], image: readFileSync(sheet).toString("base64") });
+    if (r.status !== 200) return [`AVISO: a conferência da IA não rodou (${r.data?.error ?? r.status})`];
+    for (const p of r.data?.problems ?? []) console.log(`[${now()}] ${p}`);
+    return r.data?.problems ?? [];
+  } catch (e) {
+    return [`AVISO: a conferência da IA não rodou (${e.message})`];
+  }
 }
 
 /** Folha com 12 quadros espalhados pelo vídeo (6x2). Falha vira null: a entrega segue sem ela. */
@@ -664,10 +676,9 @@ async function renderPersonal(job, nome, projectDir, voice, seed) {
   }
   if ([...uses.values()].some((n) => n > 2)) notes.push("AVISO: a mesma mídia aparece em mais de duas cenas; mande mais fotos ou vídeos pro Acervo pra variar");
   const igFile = found.find((o) => o.role === "video-instagram")?.path;
-  if (igFile) {
-    const sheet = contactSheet(igFile, `${projectDir}/conferencia-quadros.jpg`);
-    if (sheet) outputs.push({ role: "grade", url: await upload(job.brandKey, sheet) });
-  }
+  const sheet = igFile ? contactSheet(igFile, `${projectDir}/conferencia-quadros.jpg`) : null;
+  if (sheet) outputs.push({ role: "grade", url: await upload(job.brandKey, sheet) });
+  notes.push(...(await aiReview(job, sheet)));
   const done = await call("POST", `/worker/jobs/${job.id}/deliver`, { workerId: cfg.workerId, outputs, warnings: [...notes, ...warningsFrom(log)].slice(0, 20), seed });
   console.log(`[${now()}] entregue (pessoal): ${done.status}`);
 }
