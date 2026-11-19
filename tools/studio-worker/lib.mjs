@@ -555,3 +555,23 @@ export function reviewScreens({ duration, cuts, blocks }, rules = {}) {
   }
   return issues;
 }
+
+/**
+ * Ritmo da voz (19/11): medido no alinhamento. O R4 aprovado tem ~2,7 palavras/s na fala e 0,5 s entre frases; a
+ * nutrição reprovada tinha 0,23 s entre frases. Mais de 3,1 palavras/s ou pausa mediana abaixo de 0,35 s vira aviso.
+ */
+export function reviewRhythm(words, rules = {}) {
+  const r = { maxRate: 3.1, minPause: 0.35, ...rules };
+  if (!Array.isArray(words) || words.length < 10) return [];
+  const gaps = words.slice(1).map((w, i) => w.s - words[i].e);
+  const talk = words.reduce((t, w) => t + (w.e - w.s), 0) + gaps.filter((g) => g < 0.25).reduce((a, b) => a + b, 0);
+  const rate = words.length / talk;
+  const pauses = words.slice(0, -1).filter((w) => /[.!?]$/.test(w.w)).map((w, _, __) => gaps[words.indexOf(w)]).sort((a, b) => a - b);
+  const issues = [];
+  if (rate > r.maxRate) issues.push(`AVISO: a voz fala ${rate.toFixed(1)} palavras por segundo; acima de ${r.maxRate} soa corrido`);
+  if (pauses.length >= 2) {
+    const median = pauses[Math.floor(pauses.length / 2)];
+    if (median < r.minPause) issues.push(`AVISO: pausa entre frases de ${median.toFixed(2)} s; abaixo de ${r.minPause} s as frases atropelam`);
+  }
+  return issues;
+}

@@ -301,3 +301,11 @@ test("conferência: quadros de uma mesma transição contam como uma troca", asy
   const { reviewScreens } = await import("./lib.mjs");
   assert.match(reviewScreens({ duration: 46, cuts: [24.1, 24.1, 24.7, 26, 27.2, 27.3], blocks: 5 })[0], /troca só 3 vez/);
 });
+
+test("ritmo: frases emendadas viram aviso, pausa de meio segundo passa", async () => {
+  const { reviewRhythm } = await import("./lib.mjs");
+  const frase = (t0, gap) => ["Uma", "frase", "curta", "aqui."].map((w, i) => ({ w, s: t0 + i * 0.35, e: t0 + i * 0.35 + 0.3 })).map((x, i, a) => x).concat([]);
+  const build = (gap) => { const out = []; let t = 0; for (let k = 0; k < 4; k++) { const f = frase(t); out.push(...f); t = f.at(-1).e + gap; } return out; };
+  assert.match(reviewRhythm(build(0.2)).join(), /pausa entre frases de 0.20 s/);
+  assert.deepEqual(reviewRhythm(build(0.5)), []);
+});
