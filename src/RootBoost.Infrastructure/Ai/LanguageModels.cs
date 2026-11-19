@@ -84,6 +84,8 @@ public sealed class FakeLanguageModel : ILanguageModel
     {
         if (request.Purpose == "onboarding-chat") return Task.FromResult(Interview(request));
         if (request.Purpose == "screen-recording") return Task.FromResult(Screen(request));
+        // Fake: a folha de quadros está sempre aprovada.
+        if (request.Purpose == "frame-review") return Task.FromResult(new LanguageModelResult("{\"problemas\":[]}", "fake", 0, 0, 0m));
         if (request.Purpose == "clean-path")
         {
             // Fake: mantém toda ação que mudou a tela, na cena em que aconteceu.

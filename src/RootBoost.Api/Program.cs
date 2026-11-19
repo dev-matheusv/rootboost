@@ -1698,6 +1698,20 @@ worker.MapPost("/ai/clean-path", async (CleanPathInput input, RootBoost.Applicat
     catch (InvalidOperationException ex) { return Results.BadRequest(new { error = ex.Message }); }
 });
 
+// Conferência pela IA (roadmap A5): a folha de quadros do vídeo pronto vira aviso na revisão.
+worker.MapPost("/ai/review-frames", async (FrameReviewInput input, RootBoost.Application.Ai.FrameReviewer reviewer, CancellationToken ct) =>
+{
+    if (string.IsNullOrWhiteSpace(input.Image) || input.Image.Length > 2_000_000)
+        return Results.BadRequest(new { error = "folha de quadros (JPEG base64, até ~1,5 MB) é obrigatória" });
+    try
+    {
+        var problems = await reviewer.ReviewAsync(input.BrandKey ?? string.Empty, input.Theme ?? string.Empty, input.Lines ?? [], input.Image, ct);
+        return Results.Ok(new { problems });
+    }
+    catch (RootBoost.Application.Ai.AiDisabledException ex) { return Results.Conflict(new { error = ex.Message }); }
+    catch (InvalidOperationException ex) { return Results.BadRequest(new { error = ex.Message }); }
+});
+
 // O worker sobe vídeo, capa e grade pelo mesmo bucket do Console e recebe o link público pra entregar no job.
 worker.MapPost("/media/{brandKey}", async (string brandKey, IFormFile file, HttpRequest req, IBrandStore brands,
     RootBoost.Application.Media.UploadMedia upload, RootBoost.Application.Media.IMediaAssetStore assets, RootBoost.Application.Media.MediaOptions options, CancellationToken ct) =>
@@ -2130,6 +2144,8 @@ record TrackViewRequest(string ProductKey, string? Lang = null);
 public partial class Program { }
 
 public sealed record AiBudgetInput(decimal? MonthlyLimitUsd, int? AlertPercent);
+record FrameReviewInput(string? BrandKey, string? Theme, List<string>? Lines, string? Image);
+
 record CleanPathInput(string? BrandKey, List<string>? Scenes, List<CleanPathActionInput>? Actions);
 record CleanPathActionInput(int Index, int Scene, string? Action, string? Text, string? Typed, bool Changed, string? Reason);
 record PautaInput(string? Title, string? Request, string? Group, int? Order);
