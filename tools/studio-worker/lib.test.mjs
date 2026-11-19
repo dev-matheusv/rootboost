@@ -309,3 +309,25 @@ test("ritmo: frases emendadas viram aviso, pausa de meio segundo passa", async (
   assert.match(reviewRhythm(build(0.2)).join(), /pausa entre frases de 0.20 s/);
   assert.deepEqual(reviewRhythm(build(0.5)), []);
 });
+
+test("vídeo pessoal (19/11): logo pequeno não é ampliado, um texto por vez e a cena cabe a fala", async () => {
+  const { buildPersonalSpec, smallForReels, brandMargin } = await import("./lib.mjs");
+  assert.equal(smallForReels(600, 600), true);
+  assert.equal(smallForReels(1080, 1350), false);
+  assert.equal(smallForReels(4000, 3000), false);
+  assert.equal(brandMargin(400), 0.269);
+  const fala = "No financeiro você vê o que entra e o que sai no período, tudo num lugar só.";
+  const spec = buildPersonalSpec({ name: "t", brandKey: "b", voice: "v", seed: 1, falas: [fala, ""],
+    media: { "acervo-a": { path: "logo.png", isVideo: false, width: 600, height: 600 } },
+    roteiro: { blocos: [{ titulo: "Financeiro do mês", trechos: [["acervo-a", 0, 3]], audio: "narracao" }], fecho: ["Novidade", "link na bio"] } });
+  const img = spec.timeline[0];
+  assert.equal(img.reframe.mode, "brand");
+  assert.equal(img.motion_amount, 0.03);
+  assert.ok(img.duration >= 17 / 2.6, `cena de ${img.duration} s não cabe a fala`);
+  assert.equal(spec.overlays.length, 0); // com narração, sem título no meio da imagem
+  assert.equal(spec.captions.style.max_words, 8);
+  const clip = buildPersonalSpec({ name: "c", brandKey: "b", voice: "v", seed: 1, falas: [fala],
+    media: { "acervo-a": { path: "a.mp4", isVideo: true, duration: 5 } },
+    roteiro: { blocos: [{ trechos: [["acervo-a", 1, 3]], audio: "narracao" }] } });
+  assert.equal(clip.timeline[0].end, 5); // vídeo não passa do fim do arquivo
+});
