@@ -248,6 +248,8 @@ export interface CreativeJob {
   attempts: number;
   progress: number;
   progressNote: string | null;
+  /** Pediu pra parar com o computador trabalhando: some quando ele devolve. */
+  stopRequested?: boolean;
   error: string | null;
   createdAt: string;
   updatedAt: string;

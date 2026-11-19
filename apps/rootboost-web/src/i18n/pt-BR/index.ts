@@ -82,6 +82,11 @@ export default {
     reject: 'Reprovar e refazer',
     rejectHint: 'Volta pro roteiro com o mesmo texto e a mesma voz; ajuste e mande renderizar de novo.',
     delete: 'Apagar vídeo',
+    stop: 'Parar',
+    stopping: 'Parando…',
+    stopConfirm: 'O vídeo para e volta pro roteiro pronto. Roteiro e voz escolhida continuam salvos.',
+    stopped: 'Parado. Mande gerar de novo quando quiser.',
+    stopAsked: 'Pedido enviado. O computador encerra em alguns segundos.',
     deleteConfirm: 'O vídeo sai do Estúdio. Arquivos que já viraram post continuam no Acervo.',
     newDialog: {
       format: 'Formato do vídeo',

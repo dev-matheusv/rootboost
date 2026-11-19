@@ -953,6 +953,19 @@ brandProfile.MapDelete("/creative-jobs/{id:guid}", async (string key, Guid id, R
     return Results.NoContent();
 });
 
+// Parar (19/11): na fila para na hora; com o computador trabalhando, ele encerra em segundos e devolve.
+brandProfile.MapPost("/creative-jobs/{id:guid}/stop", async (string key, Guid id, RootBoost.Application.Studio.ICreativeJobStore store,
+    TimeProvider time, CancellationToken ct) =>
+{
+    var job = await store.GetAsync(id, ct);
+    if (job is null || job.BrandKey != key.ToLowerInvariant()) return Results.NotFound();
+    bool stopped;
+    try { stopped = job.RequestStop(time.GetUtcNow()); }
+    catch (InvalidOperationException ex) { return Results.Conflict(new { error = ex.Message }); }
+    await store.SaveAsync(job, ct);
+    return Results.Ok(new { stopped, job = CreativeJobDto.From(job) });
+});
+
 // Revisão da voz: ouvir (com login), escolher ou pedir outras duas.
 brandProfile.MapGet("/creative-jobs/{id:guid}/voice/{seed:int}", async (string key, Guid id, int seed,
     RootBoost.Application.Studio.ICreativeJobStore store, RootBoost.Application.Media.IMediaStorage storage, CancellationToken ct) =>
@@ -1443,6 +1456,24 @@ worker.MapPost("/jobs/{id:guid}/progress", async (Guid id, WorkerProgressInput i
     var job = await store.GetAsync(id, ct);
     if (job is null) return Results.NotFound();
     try { job.ReportProgress(input.WorkerId, input.Percent, input.Note, time.GetUtcNow(), options.Lease); }
+    catch (Exception ex) when (ex is ArgumentException or InvalidOperationException) { return Results.Conflict(new { error = ex.Message }); }
+    await store.SaveAsync(job, ct);
+    return Results.NoContent();
+});
+
+// O worker confere a cada poucos segundos se a pessoa pediu pra parar (job apagado também é parar).
+worker.MapGet("/jobs/{id:guid}/stop", async (Guid id, RootBoost.Application.Studio.ICreativeJobStore store, CancellationToken ct) =>
+{
+    var job = await store.GetAsync(id, ct);
+    return Results.Ok(new { stop = job is null || job.StopRequested || job.Status != CreativeJobStatus.Rendering });
+});
+
+worker.MapPost("/jobs/{id:guid}/stopped", async (Guid id, WorkerProgressInput input, RootBoost.Application.Studio.ICreativeJobStore store,
+    TimeProvider time, CancellationToken ct) =>
+{
+    var job = await store.GetAsync(id, ct);
+    if (job is null) return Results.NoContent();
+    try { job.ConfirmStopped(input.WorkerId, time.GetUtcNow()); }
     catch (Exception ex) when (ex is ArgumentException or InvalidOperationException) { return Results.Conflict(new { error = ex.Message }); }
     await store.SaveAsync(job, ct);
     return Results.NoContent();
@@ -2045,12 +2076,13 @@ record WorkerFailInput(string WorkerId, string? Error, bool Retry);
 record CreativeJobDto(Guid Id, string BrandKey, string Kind, string Theme, string? VoiceKey, string Status,
     System.Text.Json.JsonElement? Roteiro, System.Text.Json.JsonElement? Falas, int? Seed, IReadOnlyList<string> Warnings,
     IReadOnlyList<CreativeOutput> Outputs, int Attempts, int Progress, string? ProgressNote, string? Error,
-    DateTimeOffset CreatedAt, DateTimeOffset UpdatedAt, bool VoiceApproved, IReadOnlyList<VoiceTakeDto> VoiceTakes, string Format)
+    DateTimeOffset CreatedAt, DateTimeOffset UpdatedAt, bool VoiceApproved, IReadOnlyList<VoiceTakeDto> VoiceTakes, string Format,
+    bool StopRequested = false)
 {
     public static CreativeJobDto From(CreativeJob j) => new(j.Id, j.BrandKey, j.Kind.ToString(), j.Theme, j.VoiceKey,
         j.Status.ToString(), Parse(j.Script), Parse(j.Lines), j.Seed, j.Warnings, j.Outputs, j.Attempts, j.Progress,
         j.ProgressNote, j.Error, j.CreatedAt, j.UpdatedAt, j.VoiceApproved, j.VoiceTakes.Select(t => new VoiceTakeDto(t.Seed, t.Unmatched)).ToList(),
-        j.Format.ToString());
+        j.Format.ToString(), j.StopRequested);
 
     public static System.Text.Json.JsonElement? Parse(string? json) =>
         json is null ? null : System.Text.Json.JsonDocument.Parse(json).RootElement.Clone();

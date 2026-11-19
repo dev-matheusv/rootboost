@@ -606,6 +606,9 @@ namespace RootBoost.Infrastructure.Persistence.Migrations
                         .HasMaxLength(16)
                         .HasColumnType("character varying(16)");
 
+                    b.Property<bool>("StopRequested")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("Theme")
                         .IsRequired()
                         .HasMaxLength(300)
