@@ -55,7 +55,7 @@ estiver pronto).
 ## Regras de cada vídeo (valem pra todos)
 
 - Fala no jeito falado ("toca", "escolhe", "deixa"), um passo por frase, sem enchimento, só o que a tela mostra.
-- 30 a 45 s pra fluxo simples; até 90 s quando o processo é maior.
+- A tela manda e a fala acompanha: fluxo inteiro a 1,0x (só sai tempo morto), cada ação explicada quando acontece, 60 a 90 s. Curto e picado foi reprovado (nutrição v2, 19/11).
 - Só dado fictício. Nada da conta de produção com paciente real.
 - Fecho curto com a oferta (teste grátis de 3 meses, sem cartão); "link na bio" fica na cartela.
 - Roteiro revisado pelo chat de marketing antes de aprovar a voz, até o método estar estável.
