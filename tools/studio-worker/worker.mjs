@@ -10,7 +10,7 @@ import { appendFileSync, copyFileSync, existsSync, mkdirSync, openAsBlob, readdi
 import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
-  applyLibrary, applyRecordings, buildArgs, buildPersonalSpec, libraryScenes, photoClipArgs, expectedOutputs, isScriptProblem, lastLine, parsePrivateVoices, logFileName, oldLogs, addPath, mapIsStale, pathsText, parseDetect, reviewVideo, parseSceneCuts, reviewScreens, parseVoiceFinish, parseVoiceTones, preparationsFor, stepByStepPlan, voiceFolder, parseUnmatched, parseVoiceSteps, stepsFor, projectName, scenesToRecord,
+  applyLibrary, applyRecordings, buildArgs, buildPersonalSpec, libraryScenes, photoClipArgs, expectedOutputs, isScriptProblem, lastLine, parsePrivateVoices, logFileName, oldLogs, addPath, mapIsStale, pathsText, parseDetect, reviewVideo, parseSceneCuts, reviewScreens, reviewRhythm, parseVoiceFinish, parseVoiceTones, preparationsFor, stepByStepPlan, voiceFolder, parseUnmatched, parseVoiceSteps, stepsFor, projectName, scenesToRecord,
   seedFor, voiceProblem, warningsFrom,
 } from "./lib.mjs";
 import { checkDemoLogin, closeAllChromes, exploreSystem, recordScene, replayPath } from "./recorder.mjs";
@@ -484,6 +484,11 @@ ${fz.stderr}`).freezes });
   const outputs = [];
   for (const o of found) outputs.push({ role: o.role, url: await upload(job.brandKey, o.path) });
   const review = inspectVideo(igPath, (job.roteiro?.blocos ?? []).length);
+  // Ritmo medido na voz que foi pro vídeo (a versão com pausas, quando existe).
+  try {
+    const dir = existsSync(`${voiceDir(seed)}-final/alinhamento.json`) ? `${voiceDir(seed)}-final` : voiceDir(seed);
+    review.push(...reviewRhythm(JSON.parse(readFileSync(`${dir}/alinhamento.json`, "utf8")).palavras));
+  } catch { /* sem alinhamento: a conferência de ritmo fica de fora */ }
   for (const w of review) console.log(`[${now()}] ${w}`);
   const done = await call("POST", `/worker/jobs/${job.id}/deliver`, { workerId: cfg.workerId, outputs, warnings: [...review, ...warningsFrom(log)].slice(0, 20), seed });
   console.log(`[${now()}] entregue: ${done.status}`);

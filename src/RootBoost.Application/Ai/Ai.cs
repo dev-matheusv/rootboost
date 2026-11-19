@@ -256,7 +256,7 @@ public sealed class ScriptWriter
         sb.AppendLine("O vídeo mostra o produto de verdade na tela (gravação de tela ou imagem do cliente) com a voz do fundador narrando.");
         sb.AppendLine();
         sb.AppendLine("Regras do roteiro:");
-        sb.AppendLine($"- Duração da voz entre {min} e {max} segundos, a cerca de 2,4 palavras por segundo.");
+        sb.AppendLine($"- Duração da voz entre {min} e {max} segundos, a cerca de 2,2 palavras por segundo contando as pausas: no máximo {(int)(max * ScriptGates.WordsPerSecond)} palavras no total. Menos palavras e uma pausa entre as frases soa natural; texto apertado atropela.");
         sb.AppendLine(kind == CreativeKind.Ad
             ? "- Anúncio: sem abertura; o título do primeiro bloco é o gancho, curto e forte."
             : "- Abertura com a dor do público (título curto e subtítulo), depois blocos de 5 a 15 segundos, cada um com um passo.");
