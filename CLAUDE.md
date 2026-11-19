@@ -83,7 +83,7 @@ tráfego. Por isso o backend é próprio: **somos donos do servidor**, o que per
 | Pagamento (futuro) | Stripe atrás de feature flag | Quando houver LLC US/EU. Backend já preparado para os dois. |
 | Fornecedor | **CJ Dropshipping** (armazém US/EU, entrega ~1 semana) | Nunca AliExpress cru (20–40 dias = reembolso + conta congelada). |
 | Persistência | **EF Core + SQLite** em volume persistente | Zero custo, sobrevive a restart. |
-| Runtime | **.NET 9** (`net9.0`) | Só o SDK 9.0.308 está instalado. O brief citava .NET 8; migração é trivial se necessário. |
+| Runtime | **.NET 10** (`net10.0`, SDK 10.0.404) | Migrado em 19/11/2026, junto com RootFlow e MedlyCare (v15), antes da Root.IA. |
 | Produto #1 (ATUAL) | **TidyRide** — organizador de banco de carro (`carorganizer`) | Rack não tinha armazém US/EU na CJ. Car organizer: armazém US, Listas 8323, no-disputes, custo ~US$5-17, demo forte pra vídeo. Ver CHECKPOINT. |
 | Produtos legados (inativos) | `rack` (SpinRack), `snackspin` | Sem sourcing US/EU viável na CJ. Landings antigas em `/rack/*` ficam órfãs. |
 | E-mail (INotifier) | **Resend** (API HTTP) | Tier grátis, boa entregabilidade, config simples via API key. |
