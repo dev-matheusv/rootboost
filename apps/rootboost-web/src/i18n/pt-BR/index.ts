@@ -285,6 +285,14 @@ export default {
     local: 'No computador',
     isDefault: 'padrão',
   },
+  demoTerms: {
+    title: 'Conta de demonstração das gravações',
+    why: 'A IA grava a tela do seu sistema com a conta de demonstração. Confirme que ela só tem dados fictícios e a gravação segue sem parar a cada nome ou CPF na tela. Fica registrado quem confirmou e quando.',
+    confirm: 'Confirmar',
+    confirmed: 'Conta de demonstração com dados fictícios, confirmado por {who} em {when}.',
+    undo: 'Desfazer',
+    error: 'Não deu pra salvar. Tente de novo.',
+  },
   pauta: {
     title: 'Pauta de conteúdos',
     subtitle: '{planned} na pauta · {queued} na fila · {made} viraram vídeo',

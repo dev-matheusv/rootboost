@@ -672,6 +672,9 @@ static string MediaPublicUrl(RootBoost.Application.Media.MediaOptions options, H
     return $"{baseUrl}/media/{a.Id:N}/{a.FileName}";
 }
 
+static object DemoTermsDto(Brand b) => new { confirmed = b.DemoFictionalConfirmed, confirmedBy = b.DemoFictionalConfirmedBy,
+    confirmedAt = b.DemoFictionalConfirmedAt, terms = Brand.DemoFictionalTerms };
+
 static object MediaDto(RootBoost.Application.Media.MediaOptions options, HttpRequest req, MediaAsset a) => new
 {
     id = a.Id, brandKey = a.BrandKey, fileName = a.FileName, contentType = a.ContentType, sizeBytes = a.SizeBytes,
@@ -767,8 +770,24 @@ brandProfile.MapPost("/demo/reset", async (string key, RootBoost.Application.Stu
 
 brandProfile.MapGet("/privacy", async (string key, IBrandStore brands, CancellationToken ct) =>
     (await brands.ListAsync(ct)).FirstOrDefault(b => b.Key == key.ToLowerInvariant()) is { } b
-        ? Results.Ok(new { policy = b.Privacy.ToString(), fictionalMarkers = b.FictionalMarkers })
+        ? Results.Ok(new { policy = b.Privacy.ToString(), fictionalMarkers = b.FictionalMarkers, demo = DemoTermsDto(b) })
         : Results.NotFound());
+
+// Termo da conta de demonstração (19/11): a pessoa confirma que só tem dado fictício; fica salvo com quem e quando.
+brandProfile.MapGet("/demo-account", async (string key, IBrandStore brands, CancellationToken ct) =>
+    (await brands.ListAsync(ct)).FirstOrDefault(b => b.Key == key.ToLowerInvariant()) is { } b ? Results.Ok(DemoTermsDto(b)) : Results.NotFound());
+brandProfile.MapPost("/demo-account/confirm", async (string key, System.Security.Claims.ClaimsPrincipal user, IBrandProfileStore store,
+    TimeProvider time, CancellationToken ct) =>
+{
+    var who = user.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value ?? user.Identity?.Name ?? "console";
+    var b = await store.SetDemoFictionalAsync(key.ToLowerInvariant(), who, time.GetUtcNow(), ct);
+    return b is null ? Results.NotFound() : Results.Ok(DemoTermsDto(b));
+});
+brandProfile.MapDelete("/demo-account/confirm", async (string key, IBrandProfileStore store, TimeProvider time, CancellationToken ct) =>
+{
+    var b = await store.SetDemoFictionalAsync(key.ToLowerInvariant(), null, time.GetUtcNow(), ct);
+    return b is null ? Results.NotFound() : Results.Ok(DemoTermsDto(b));
+});
 
 brandProfile.MapPut("/media/{id:guid}/description", async (string key, Guid id, MediaDescriptionInput input, HttpRequest req,
     RootBoost.Application.Media.IMediaAssetStore assets, RootBoost.Application.Media.MediaOptions options, CancellationToken ct) =>
@@ -1671,12 +1690,12 @@ worker.MapPost("/ai/next-action", async (ScreenStateInput input, RootBoost.Appli
 {
     if (string.IsNullOrWhiteSpace(input.Scene) || string.IsNullOrWhiteSpace(input.Image) || input.Image.Length > 2_000_000)
         return Results.BadRequest(new { error = "cena e foto (JPEG base64, até ~1,5 MB) são obrigatórias" });
+    var brand = (await brands.ListAsync(ct)).FirstOrDefault(b => b.Key == input.BrandKey?.ToLowerInvariant());
     try
     {
         var state = new RootBoost.Application.Ai.ScreenState(input.BrandKey ?? string.Empty, input.Scene, input.Url ?? string.Empty,
             (input.Elements ?? []).Select(e => new RootBoost.Application.Ai.ScreenElement(e.Id ?? string.Empty, e.Role ?? string.Empty, e.Text ?? string.Empty)).ToList(),
-            input.History ?? [], Math.Max(0, input.Step), input.Image,
-            (await brands.ListAsync(ct)).FirstOrDefault(b => b.Key == input.BrandKey?.ToLowerInvariant())?.FictionalMarkers);
+            input.History ?? [], Math.Max(0, input.Step), input.Image, brand?.FictionalMarkers, brand?.DemoFictionalConfirmed ?? false);
         return Results.Ok(await agent.NextAsync(state, ct));
     }
     catch (RootBoost.Application.Ai.AiDisabledException ex) { return Results.Conflict(new { error = ex.Message }); }
@@ -1699,13 +1718,14 @@ worker.MapPost("/ai/clean-path", async (CleanPathInput input, RootBoost.Applicat
 });
 
 // Conferência pela IA (roadmap A5): a folha de quadros do vídeo pronto vira aviso na revisão.
-worker.MapPost("/ai/review-frames", async (FrameReviewInput input, RootBoost.Application.Ai.FrameReviewer reviewer, CancellationToken ct) =>
+worker.MapPost("/ai/review-frames", async (FrameReviewInput input, RootBoost.Application.Ai.FrameReviewer reviewer, IBrandStore brands, CancellationToken ct) =>
 {
     if (string.IsNullOrWhiteSpace(input.Image) || input.Image.Length > 2_000_000)
         return Results.BadRequest(new { error = "folha de quadros (JPEG base64, até ~1,5 MB) é obrigatória" });
     try
     {
-        var problems = await reviewer.ReviewAsync(input.BrandKey ?? string.Empty, input.Theme ?? string.Empty, input.Lines ?? [], input.Image, ct);
+        var demoOk = (await brands.ListAsync(ct)).FirstOrDefault(b => b.Key == input.BrandKey?.ToLowerInvariant())?.DemoFictionalConfirmed ?? false;
+        var problems = await reviewer.ReviewAsync(input.BrandKey ?? string.Empty, input.Theme ?? string.Empty, input.Lines ?? [], input.Image, ct, demoOk);
         return Results.Ok(new { problems });
     }
     catch (RootBoost.Application.Ai.AiDisabledException ex) { return Results.Conflict(new { error = ex.Message }); }

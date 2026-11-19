@@ -311,6 +311,12 @@ namespace RootBoost.Infrastructure.Persistence.Migrations
                         .HasMaxLength(8)
                         .HasColumnType("character varying(8)");
 
+                    b.Property<DateTimeOffset?>("DemoFictionalConfirmedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DemoFictionalConfirmedBy")
+                        .HasColumnType("text");
+
                     b.Property<string>("FictionalMarkers")
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");

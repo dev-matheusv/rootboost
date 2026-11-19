@@ -25,7 +25,7 @@ public sealed class FrameReviewer
     }
 
     public async Task<IReadOnlyList<string>> ReviewAsync(string brandKey, string theme, IReadOnlyList<string> lines,
-        string sheetJpegBase64, CancellationToken ct = default)
+        string sheetJpegBase64, CancellationToken ct = default, bool demoConfirmed = false)
     {
         if (string.IsNullOrWhiteSpace(sheetJpegBase64)) throw new InvalidOperationException("folha de quadros vazia");
         var user = new StringBuilder();
@@ -33,17 +33,18 @@ public sealed class FrameReviewer
         user.AppendLine("Falas da narração, na ordem:");
         foreach (var l in lines.Where(l => !string.IsNullOrWhiteSpace(l)).Take(30)) user.AppendLine($"- {Clip(l, 200)}");
         user.AppendLine();
+        if (demoConfirmed) user.AppendLine("O cliente confirmou que a conta de demonstração tem só dados fictícios: não aponte dado-real.");
         user.AppendLine("A imagem tem 12 quadros do vídeo em ordem, da esquerda pra direita e de cima pra baixo (1 a 12).");
 
         var result = await _model.GenerateJsonAsync(new LanguageModelRequest(Prompt, user.ToString(), Schema, "frame-review", brandKey,
             sheetJpegBase64), ct);
         await _usage.AddAsync(new AiUsageEntry(Guid.NewGuid(), brandKey, "frame-review", result.Model, result.InputTokens,
             result.OutputTokens, result.CostUsd, _time.GetUtcNow()), ct);
-        return Read(result.Json);
+        return Read(result.Json, demoConfirmed);
     }
 
     /// <summary>Lê a resposta: no máximo 6 problemas, cada um com quadro de 1 a 12 e tipo conhecido.</summary>
-    public static IReadOnlyList<string> Read(string json)
+    public static IReadOnlyList<string> Read(string json, bool demoConfirmed = false)
     {
         using var doc = JsonDocument.Parse(json);
         var outList = new List<string>();
@@ -53,6 +54,7 @@ public sealed class FrameReviewer
             var kind = p.TryGetProperty("tipo", out var t) ? t.GetString() : null;
             var text = p.TryGetProperty("descricao", out var d) ? d.GetString()?.Trim() : null;
             if (string.IsNullOrWhiteSpace(text) || kind is null || !Kinds.Contains(kind)) continue;
+            if (demoConfirmed && kind == "dado-real") continue; // termo aceito: o cliente responde pelos dados da conta demo
             outList.Add($"Conferência da IA{(frame > 0 ? $", quadro {frame}" : "")}: {Clip(text, 220)}");
             if (outList.Count == 6) break;
         }

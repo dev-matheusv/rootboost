@@ -8,7 +8,7 @@ public sealed record ScreenElement(string Id, string Role, string Text);
 
 /// <param name="Image">Foto da tela em JPEG (base64), já reduzida pelo worker.</param>
 public sealed record ScreenState(string BrandKey, string Scene, string Url, IReadOnlyList<ScreenElement> Elements,
-    IReadOnlyList<string> History, int Step, string ImageJpegBase64, string? FictionalMarkers = null);
+    IReadOnlyList<string> History, int Step, string ImageJpegBase64, string? FictionalMarkers = null, bool DemoConfirmed = false);
 
 /// <summary>
 /// Próximo passo da gravação. <see cref="Action"/>: clicar, digitar, colar-imagem, rolar, esperar, login, comecar, pronto, desistir, ou
@@ -57,6 +57,9 @@ public sealed class ScreenAgent
                 "nesse sistema. Pare de alternar: mostre o que existe de mais próximo que cumpre o objetivo da cena (ex.: a lista do " +
                 "período em vez de uma visão que não existe) e siga, ou responda pronto se o essencial já apareceu. Diga no motivo o que adaptou.");
         user.AppendLine($"Dados de demonstração conhecidos da marca (fictícios): {state.FictionalMarkers ?? "nenhum informado"}");
+        if (state.DemoConfirmed)
+            user.AppendLine("O cliente confirmou por escrito que esta conta de demonstração tem só dados fictícios: todo nome, CPF, " +
+                "telefone ou e-mail na tela é de demonstração. Não pare por dado pessoal; siga a cena.");
         user.AppendLine("Elementos da página (id: tipo: texto):");
         foreach (var e in state.Elements.Take(150)) user.AppendLine($"{e.Id}: {e.Role}: {Clip(e.Text, 80)}");
 
@@ -73,7 +76,8 @@ public sealed class ScreenAgent
         var reason = r.TryGetProperty("motivo", out var m) ? m.GetString() ?? string.Empty : string.Empty;
 
         // Dado de pessoa real na tela: nada desta gravação pode virar vídeo (proteção de dado pessoal, 29/10).
-        if (r.TryGetProperty("dadoPessoalReal", out var pd) && pd.ValueKind == JsonValueKind.True)
+        // Com o termo da conta demo aceito (19/11), a gravação não para por dado pessoal: o cliente responde pelos dados.
+        if (!state.DemoConfirmed && r.TryGetProperty("dadoPessoalReal", out var pd) && pd.ValueKind == JsonValueKind.True)
             return new ScreenAction("dado-pessoal", null, null, string.IsNullOrWhiteSpace(reason) ? "a tela mostrou dado pessoal real" : reason);
 
         if (!Actions.Contains(action)) return new ScreenAction("esperar", null, null, "passo desconhecido");

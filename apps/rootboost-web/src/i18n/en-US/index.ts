@@ -285,6 +285,14 @@ export default {
     local: 'On the computer',
     isDefault: 'default',
   },
+  demoTerms: {
+    title: 'Demo account used in recordings',
+    why: 'The AI records your system with the demo account. Confirm it only has fictional data and recording keeps going instead of stopping at every name or ID on screen. Who confirmed and when is recorded.',
+    confirm: 'Confirm',
+    confirmed: 'Demo account with fictional data, confirmed by {who} on {when}.',
+    undo: 'Undo',
+    error: 'Could not save. Try again.',
+  },
   pauta: {
     title: 'Content plan',
     subtitle: '{planned} planned · {queued} queued · {made} became videos',
