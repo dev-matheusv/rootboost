@@ -36,3 +36,17 @@ Os JSONs são validados por teste (`KnowledgeBaseTests`): arquivo quebrado não 
 O inventário de prova da marca diz **o que é verdade**; este conhecimento diz **como dizer**. A IA entende a
 empresa, a oferta e o público e escreve copy nova, humana e persuasiva, que só afirma o que é verdade. Nunca
 copia trecho de documento pro anúncio.
+
+## Pacote por marca e memória versionada (19/11/2026)
+
+Pedido do Matheus: tudo que já aprendemos (RootBoost, MedlyCare, RootFlow) e tudo que a IA aprender vira conhecimento
+versionado aqui, e a IA usa ao criar conteúdo, analisar campanha e gravar a tela.
+
+- `learnings/learnings.json`: o que foi testado, aprovado e reprovado, por canal (`video`, `copy`, `meta-ads`,
+  `publicacao`). Entra no prompt do roteirista (vídeo e copy) e da proposta de campanha (meta-ads e copy).
+- `marcas/<marca>/*.md`: pacote da marca da casa (hoje o catálogo de funcionalidades do MedlyCare, vindo do
+  repositório do MedlyCare). Entra no prompt do roteirista daquela marca e de nenhuma outra. Cliente de fora fica no
+  banco, por marca, nunca aqui.
+- Portão (`KnowledgeGuardTests`): nada aqui pode ter CPF, e-mail, telefone ou chave; o CI reprova.
+- Mudança só por PR, com a origem e o porquê. Mapa do sistema e caminhos aprendidos da gravação ficam em
+  `tools/studio-worker/guias/`. Desenho comum da família Root: `C:\RootFlow\docs\root-ia-plano.md`, seção 4.6.

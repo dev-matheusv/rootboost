@@ -1,7 +1,7 @@
 {
   "version": 1,
   "updatedAt": "2026-11-19",
-  "source": "aprendizados.txt v1",
+  "source": "aprendizados.txt v1 + decisões do CLAUDE.md e memória do projeto (19/11)",
   "notes": "Só princípio + número agregado + etiquetas; nunca texto ou vídeo de cliente. confidence: baixa (1 marca, poucos dados), media (1 marca, dado significativo), alta (3+ marcas). Desempenho em anúncio ainda vazio: o primeiro teste é a matriz de 9 ganchos do cliente zero no Meta Ads.",
   "items": [
     {
@@ -82,6 +82,106 @@
       "tested": "logo ou imagem pequena ampliada pra encher a tela x imagem inteira sobre o fundo da marca",
       "result": "ampliada saiu pixelada (teaser da IA); com pouca mídia, encurtar ou pedir mais fotos",
       "confidence": "baixa",
+      "brands": 1
+    },
+    {
+      "id": "2026-10-26-screen-speed-cap",
+      "date": "2026-10-26",
+      "niche": "software-clinicas",
+      "channel": "video",
+      "tested": "tela acelerada até 3x ou 4,9x x tela a no máximo 1,25x",
+      "result": "acelerada reprovada; cortar em vez de acelerar, segurar o resultado 1,2 s, pausa entre falas",
+      "confidence": "media",
+      "brands": 1
+    },
+    {
+      "id": "2026-11-05-voice-tone",
+      "date": "2026-11-05",
+      "niche": "software-clinicas",
+      "channel": "video",
+      "tested": "voz feminina no tom original x um semitom abaixo por reamostragem (sem rubberband)",
+      "result": "um tom abaixo aprovado pelo dono e pelo marketing; rubberband deixava eco",
+      "confidence": "media",
+      "brands": 1
+    },
+    {
+      "id": "2026-11-06-voice-whole-audio",
+      "date": "2026-11-06",
+      "niche": "geral",
+      "channel": "video",
+      "tested": "voz sintetizada picada por frase x áudio contínuo por bloco com cortes escolhidos à mão",
+      "result": "picada soou cortada e travada; contínua perto de 1x aprovada",
+      "confidence": "media",
+      "brands": 1
+    },
+    {
+      "id": "2026-11-06-legend-below-screen",
+      "date": "2026-11-06",
+      "niche": "software-clinicas",
+      "channel": "video",
+      "tested": "legenda por cima da gravação de tela x legenda abaixo da tela, títulos numerados, sem cartão de abertura",
+      "result": "por cima comia a tela; abaixo, com passos numerados, aprovado no R4",
+      "confidence": "media",
+      "brands": 1
+    },
+    {
+      "id": "2026-11-13-natural-speech",
+      "date": "2026-11-13",
+      "niche": "software-clinicas",
+      "channel": "video",
+      "tested": "fala que dita valor e clique (\"coloque a data 1 de agosto\") x fala natural que explica pra que serve",
+      "result": "ditada soou robotizada; natural, como quem mostra o sistema a um cliente, aprovada",
+      "confidence": "media",
+      "brands": 1
+    },
+    {
+      "id": "2026-11-16-continuous-recording",
+      "date": "2026-11-16",
+      "niche": "software-clinicas",
+      "channel": "video",
+      "tested": "gravação de cada cena numa sessão nova com a IA ao vivo x ensaio, caminho limpo e gravação contínua",
+      "result": "sessões separadas deixaram o vídeo preso na tela inicial; método do marketing (ensaio, caminho limpo, gravação, conferência) é o padrão",
+      "confidence": "media",
+      "brands": 1
+    },
+    {
+      "id": "2026-10-23-grounded-copy",
+      "date": "2026-10-23",
+      "niche": "geral",
+      "channel": "copy",
+      "tested": "copy que copia trecho de documento x copy fundamentada nas provas e escrita pro público",
+      "result": "copiar documento soa robotizado; o documento diz o que é verdade, o playbook diz como dizer",
+      "confidence": "media",
+      "brands": 1
+    },
+    {
+      "id": "2026-10-30-forbidden-words",
+      "date": "2026-10-30",
+      "niche": "geral",
+      "channel": "copy",
+      "tested": "palavras de IA (otimize, eleve, potencialize, jornada, experiência) x linguagem do dia a dia",
+      "result": "palavras de IA reprovadas pelo dono",
+      "confidence": "media",
+      "brands": 1
+    },
+    {
+      "id": "2026-10-24-caption-before-post",
+      "date": "2026-10-24",
+      "niche": "geral",
+      "channel": "publicacao",
+      "tested": "publicar sem mostrar a legenda x mostrar a legenda exata antes de criar o post",
+      "result": "o primeiro post saiu com o texto alternativo no lugar da legenda; conferir sempre a legenda final",
+      "confidence": "media",
+      "brands": 1
+    },
+    {
+      "id": "2026-11-19-no-hyphen",
+      "date": "2026-11-19",
+      "niche": "geral",
+      "channel": "copy",
+      "tested": "copy com hífen e travessão x vírgula, ponto ou frase reescrita",
+      "result": "padrão da casa: texto pro cliente sem hífen e sem travessão",
+      "confidence": "alta",
       "brands": 1
     }
   ]
