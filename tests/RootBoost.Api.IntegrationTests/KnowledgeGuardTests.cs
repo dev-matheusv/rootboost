@@ -18,7 +18,7 @@ public class KnowledgeGuardTests
 
     private static readonly (string Name, Regex Pattern)[] Forbidden =
     [
-        ("CPF", new Regex(@"\b\d{3}\.\d{3}\.\d{3}-\d{2}\b")),
+        ("CPF", new Regex(@"\b(?!000\.000\.000-00)\d{3}\.\d{3}\.\d{3}-\d{2}\b")), // 000.000.000-00 é o modelo de formato
         ("e-mail", new Regex(@"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[a-z]{2,}", RegexOptions.IgnoreCase)),
         ("telefone", new Regex(@"\(?\b\d{2}\)?\s?9\d{4}-?\d{4}\b")),
         ("chave", new Regex(@"(sk-ant-|sk_live_|sk_test_|EAA[A-Za-z0-9]{20,}|ghp_[A-Za-z0-9]{20,})")),
