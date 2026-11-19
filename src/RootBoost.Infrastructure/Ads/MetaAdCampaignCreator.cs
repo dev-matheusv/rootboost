@@ -68,6 +68,12 @@ public sealed class MetaAdCampaignCreator : IAdCampaignCreator
                 // Desde a v23 a Meta exige dizer se o público Advantage+ está ligado (erro 100 no teste de 12/11). Ligado,
                 // ela fixa idade máxima em 65 e mínima entre 18 e 25: desligado (0) respeita o público que a pessoa aprovou.
                 targeting_automation = new { advantage_audience = 0 },
+                // Só Instagram e Facebook. No teste de 13/11 (posicionamento automático) 97% do dinheiro foi pra Audience
+                // Network: muito clique (CTR 7,8%) e só 22% chegava na página. Campos validados na Meta em 19/11
+                // (validate_only); "explore" do Instagram está obsoleto na v26.
+                publisher_platforms = new[] { "facebook", "instagram" },
+                facebook_positions = new[] { "feed", "facebook_reels", "story" },
+                instagram_positions = new[] { "stream", "reels", "story" },
             });
             var form = new Dictionary<string, string>
             {
@@ -95,7 +101,8 @@ public sealed class MetaAdCampaignCreator : IAdCampaignCreator
             }
             else
             {
-                form["optimization_goal"] = "LINK_CLICKS";
+                // Visualização da página, não clique: a Meta entrega pra quem espera a página abrir (validado em 19/11).
+                form["optimization_goal"] = "LANDING_PAGE_VIEWS";
                 form["destination_type"] = "WEBSITE";
             }
             draft.SetAdSet(await Post($"{act}/adsets", form, ct));
