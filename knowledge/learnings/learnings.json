@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-23",
+  "updatedAt": "2026-11-19",
   "source": "aprendizados.txt v1",
   "notes": "Só princípio + número agregado + etiquetas; nunca texto ou vídeo de cliente. confidence: baixa (1 marca, poucos dados), media (1 marca, dado significativo), alta (3+ marcas). Desempenho em anúncio ainda vazio: o primeiro teste é a matriz de 9 ganchos do cliente zero no Meta Ads.",
   "items": [
@@ -31,6 +31,56 @@
       "channel": "video",
       "tested": "mesmo final em todos os reels x final próprio por reel",
       "result": "dono pediu variação; fala e cartão final precisam dizer a mesma coisa",
+      "confidence": "baixa",
+      "brands": 1
+    },
+    {
+      "id": "2026-11-19-step-by-step-length",
+      "date": "2026-11-19",
+      "niche": "software-clinicas",
+      "channel": "video",
+      "tested": "passo a passo curto (30 s, só um pedaço) x fluxo inteiro a 1x com a fala explicando cada ação (60 a 90 s)",
+      "result": "curto reprovado como picado e superficial (nutrição v2); fluxo inteiro aprovado (R4 06/11)",
+      "confidence": "media",
+      "brands": 1
+    },
+    {
+      "id": "2026-11-19-pause-between-sentences",
+      "date": "2026-11-19",
+      "niche": "geral",
+      "channel": "video",
+      "tested": "pausa entre frases de 0,23 s x 0,5 a 0,6 s na voz sintetizada",
+      "result": "0,23 s reprovado (frases atropelando); 0,5 a 0,6 s aprovado no R4; a velocidade da fala (~2,9 palavras/s) era a mesma nos dois",
+      "confidence": "media",
+      "brands": 1
+    },
+    {
+      "id": "2026-11-19-screen-speed",
+      "date": "2026-11-19",
+      "niche": "software-clinicas",
+      "channel": "video",
+      "tested": "tela acelerada (~3x) x tela a 1x com corte do tempo morto",
+      "result": "acelerada reprovada; cortar em vez de acelerar, teto 1,25x",
+      "confidence": "media",
+      "brands": 1
+    },
+    {
+      "id": "2026-11-19-placements-audience-network",
+      "date": "2026-11-19",
+      "niche": "software-clinicas",
+      "channel": "meta-ads",
+      "tested": "posicionamento automático x só Instagram e Facebook (campanha de tráfego, R$ 49,77)",
+      "result": "automático: 97% na Audience Network, CTR 7,8%, só 22% dos cliques abriram a página e 0 cadastros; usar só FB/IG e otimizar por visualização da página ou cadastro",
+      "confidence": "media",
+      "brands": 1
+    },
+    {
+      "id": "2026-11-19-photo-video-small-images",
+      "date": "2026-11-19",
+      "niche": "geral",
+      "channel": "video",
+      "tested": "logo ou imagem pequena ampliada pra encher a tela x imagem inteira sobre o fundo da marca",
+      "result": "ampliada saiu pixelada (teaser da IA); com pouca mídia, encurtar ou pedir mais fotos",
       "confidence": "baixa",
       "brands": 1
     }

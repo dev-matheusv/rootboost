@@ -316,6 +316,14 @@ public sealed class ScriptWriter
         sb.AppendLine();
         sb.AppendLine("Como escrever copy (playbook da plataforma):");
         sb.AppendLine(_knowledge.Playbook);
+        // O que já foi aprovado e reprovado nos vídeos (knowledge/learnings, versionado): a IA não repete erro conhecido.
+        var learned = RootBoost.Application.Abstractions.Learnings.ForPrompt(_knowledge, "video");
+        if (learned.Length > 0)
+        {
+            sb.AppendLine();
+            sb.AppendLine("Aprendizados de vídeos anteriores (siga, não repita o que foi reprovado):");
+            sb.AppendLine(learned);
+        }
 
         if (product is not null && !string.IsNullOrWhiteSpace(product.Name))
         {

@@ -47,5 +47,6 @@ tools/studio-worker/contas.json
 tools/studio-worker/acervo-enviados.json
 tools/studio-worker/worker.lock
 tools/studio-worker/logs/
-tools/studio-worker/guias/*.caminhos.json
-tools/studio-worker/guias/*.mapa.json*
+# Mapa do sistema e caminhos aprendidos ficam versionados (19/11): são o conhecimento da IA sobre o sistema do cliente.
+# Só marcas da casa (MedlyCare); de cliente, o mesmo conteúdo fica no banco, por marca.
+tools/studio-worker/guias/*.mapa.json.*
