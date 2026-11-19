@@ -972,6 +972,19 @@ brandProfile.MapDelete("/creative-jobs/{id:guid}", async (string key, Guid id, R
     return Results.NoContent();
 });
 
+// Apagar em lote os vídeos que falharam (roadmap A7, pedido do Douglas): limpa a lista sem abrir um por um.
+brandProfile.MapDelete("/creative-jobs/failed", async (string key, RootBoost.Application.Studio.ICreativeJobStore store,
+    RootBoost.Application.Media.IMediaStorage storage, CancellationToken ct) =>
+{
+    var failed = (await store.ListByBrandAsync(key.ToLowerInvariant(), ct)).Where(j => j.Status == CreativeJobStatus.Failed && j.CanBeDeleted).ToList();
+    foreach (var job in failed)
+    {
+        foreach (var t in job.VoiceTakes) await storage.DeleteAsync(t.StorageKey, ct);
+        await store.RemoveAsync(job, ct);
+    }
+    return Results.Ok(new { deleted = failed.Count });
+});
+
 // Parar (19/11): na fila para na hora; com o computador trabalhando, ele encerra em segundos e devolve.
 brandProfile.MapPost("/creative-jobs/{id:guid}/stop", async (string key, Guid id, RootBoost.Application.Studio.ICreativeJobStore store,
     TimeProvider time, CancellationToken ct) =>
