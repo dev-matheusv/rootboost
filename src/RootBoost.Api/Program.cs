@@ -1173,13 +1173,29 @@ brandProfile.MapPost("/pauta/queue", async (string key, PautaQueueInput input, R
 brandProfile.MapPost("/creative-jobs/{id:guid}/write-script", async (string key, Guid id, WriteScriptInput? input,
     RootBoost.Application.Studio.ICreativeJobStore store, IBrandProfileStore profiles, RootBoost.Application.Ai.ScriptWriter writer,
     RootBoost.Application.Ai.IBrandProductStore products, RootBoost.Application.Media.IMediaAssetStore assets,
-    RootBoost.Application.Organic.IOrganicPostStore organic, TimeProvider time, CancellationToken ct) =>
+    RootBoost.Application.Organic.IOrganicPostStore organic, RootBoost.Application.Ai.ScriptAdjuster adjuster, TimeProvider time, CancellationToken ct) =>
 {
     var job = await store.GetAsync(id, ct);
     if (job is null || job.BrandKey != key.ToLowerInvariant()) return Results.NotFound();
     try
     {
         var profile = await profiles.GetAsync(job.BrandKey, ct);
+        // Ajuste pontual (A8, 19/11): com roteiro pronto e um pedido, a IA muda só o que foi pedido; o resto fica igual.
+        if (job.Script is not null && !string.IsNullOrWhiteSpace(input?.Instructions) && input is { Rewrite: false })
+        {
+            try
+            {
+                var adj = await adjuster.AdjustAsync(job, profile, input.Instructions!, ct);
+                job.SetScript(adj.Script.GetRawText(), adj.Lines.GetRawText(), time.GetUtcNow(),
+                    adj.Warnings.Select(w => CreativeJob.ScriptWarningPrefix + w).ToList());
+                await store.SaveAsync(job, ct);
+                return Results.Ok(new { job = CreativeJobDto.From(job), hooks = Array.Empty<string>(), editIdeas = Array.Empty<string>(), changes = adj.Changes });
+            }
+            catch (RootBoost.Application.Ai.ScriptAdjustRefused ex)
+            {
+                return Results.UnprocessableEntity(new { error = ex.Message, errors = ex.Errors });
+            }
+        }
         var policy = profile?.Brand.Privacy ?? PersonalDataPolicy.Blur;
         // Mídia com dado pessoal sem borrar (ou real, em marca só fictício) nem aparece pra IA.
         var library = (await assets.ListByBrandAsync(job.BrandKey, 100, ct)).Where(m => m.BlockedReason(policy) is null && !m.Finished).ToList();
@@ -2025,7 +2041,8 @@ record OrderDto(string PaymentId, string ProductKey, int Quantity, string Status
 record PushKeys(string P256dh, string Auth);
 record PushDeviceInput(string Endpoint, PushKeys Keys);
 record PushRemoveInput(string Endpoint);
-record WriteScriptInput(string? Instructions);
+/// <param name="Rewrite">true reescreve o roteiro inteiro; com roteiro pronto e instrução, o padrão é ajuste pontual (A8).</param>
+record WriteScriptInput(string? Instructions, bool Rewrite = false);
 record MediaDescriptionInput(string? Description, string? Tags);
 record RedactionBoxInput(double X, double Y, double W, double H);
 record RedactionInput(string? Status, List<RedactionBoxInput>? Boxes);

@@ -151,9 +151,11 @@
                 @keydown.enter.exact.prevent="writeWithAi()">
                 <template #append><DictateButton v-model="instructions" /></template>
               </q-input>
-              <div class="row q-gutter-sm">
+              <div class="row items-center q-gutter-sm">
                 <q-btn unelevated color="primary" no-caps :icon="mdiCreationOutline" :loading="busy"
-                  :label="segments.length ? $t('studio.ai.rewrite') : $t('studio.ai.write')" @click="writeWithAi()" />
+                  :label="!segments.length ? $t('studio.ai.write') : instructions.trim() && !rewriteAll ? $t('studio.ai.adjust') : $t('studio.ai.rewrite')" @click="writeWithAi()" />
+                <!-- Ajuste pontual (19/11): com pedido, muda só o que foi pedido; marcar reescreve tudo. -->
+                <q-checkbox v-if="segments.length && instructions.trim()" v-model="rewriteAll" dense :label="$t('studio.ai.rewriteAll')" />
               </div>
             </div>
             <q-banner v-else-if="canEditScript && !segments.length" rounded class="bg-blue-1 text-primary">{{ $t('studio.ai.off') }}</q-banner>
@@ -402,6 +404,7 @@ const scriptOpen = ref(true);
 const aiEnabled = ref(false);
 const writing = ref(false);
 const instructions = ref('');
+const rewriteAll = ref(false);
 const hooks = ref<string[]>([]);
 const editIdeas = ref<string[]>([]);
 
@@ -438,12 +441,13 @@ async function writeWithAi(extra?: string) {
   scriptErrors.value = [];
   try {
     const { data } = await api.post<{ job: CreativeJob; hooks: string[]; editIdeas: string[] }>(`${base.value}/${job.value.id}/write-script`,
-      { instructions: (extra ?? instructions.value).trim() || null }, { timeout: 5 * 60_000 });
+      { instructions: (extra ?? instructions.value).trim() || null, rewrite: rewriteAll.value }, { timeout: 5 * 60_000 });
     replace(data.job);
     select(data.job);
     hooks.value = data.hooks;
     editIdeas.value = data.editIdeas ?? [];
     instructions.value = '';
+    rewriteAll.value = false;
   } catch (e) {
     const errors = isAxiosError(e) && e.response?.status === 422 ? (e.response.data?.errors as string[] | undefined) : undefined;
     if (errors) scriptErrors.value = errors;

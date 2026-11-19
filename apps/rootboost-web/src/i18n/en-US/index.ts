@@ -35,6 +35,8 @@ export default {
     ai: {
       editIdeas: 'Edit ideas (one tap redoes with it)',
       write: 'Write with AI',
+      adjust: 'Adjust just this',
+      rewriteAll: 'Rewrite the whole script',
       rewrite: 'Rewrite with AI',
       writeTitle: 'AI writes the script and lines',
       rewriteTitle: 'Want another version?',
