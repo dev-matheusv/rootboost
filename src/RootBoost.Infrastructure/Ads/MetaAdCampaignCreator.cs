@@ -97,7 +97,8 @@ public sealed class MetaAdCampaignCreator : IAdCampaignCreator
             if (draft.Objective == AdObjective.Leads)
             {
                 form["optimization_goal"] = "OFFSITE_CONVERSIONS";
-                form["promoted_object"] = JsonSerializer.Serialize(new { pixel_id = account.PixelId, custom_event_type = "LEAD" });
+                // Otimiza pelo mesmo evento que as métricas contam (19/11): o MedlyCare manda CompleteRegistration, não Lead.
+                form["promoted_object"] = JsonSerializer.Serialize(new { pixel_id = account.PixelId, custom_event_type = PixelEventFor(account.ConversionAction) });
             }
             else
             {
@@ -158,5 +159,16 @@ public sealed class MetaAdCampaignCreator : IAdCampaignCreator
             throw new InvalidOperationException($"Meta recusou {path.Split('/').Last()}: {msg}");
         }
         return doc.RootElement.TryGetProperty("id", out var id) ? id.GetString()! : throw new InvalidOperationException($"Meta não devolveu id em {path}");
+    }
+
+    /// <summary>
+    /// "offsite_conversion.fb_pixel_complete_registration" (ação que o leitor de métricas conta) vira o evento do Pixel
+    /// que a campanha otimiza ("COMPLETE_REGISTRATION"). Sem configuração, cadastro, igual ao padrão do leitor.
+    /// </summary>
+    public static string PixelEventFor(string? conversionAction)
+    {
+        const string prefix = "offsite_conversion.fb_pixel_";
+        var action = string.IsNullOrWhiteSpace(conversionAction) ? MetaAdsInsightsReader.DefaultConversionAction : conversionAction.Trim();
+        return action.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) ? action[prefix.Length..].ToUpperInvariant() : "COMPLETE_REGISTRATION";
     }
 }
