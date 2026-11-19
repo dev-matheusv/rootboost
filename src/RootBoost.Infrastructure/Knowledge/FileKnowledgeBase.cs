@@ -12,11 +12,16 @@ public sealed class FileKnowledgeBase : IKnowledgeBase
 {
     private readonly Dictionary<string, KnowledgeDocument> _byName;
 
-    private FileKnowledgeBase(string playbook, Dictionary<string, KnowledgeDocument> byName)
+    private readonly Dictionary<string, string> _brandNotes;
+
+    private FileKnowledgeBase(string playbook, Dictionary<string, KnowledgeDocument> byName, Dictionary<string, string> brandNotes)
     {
         Playbook = playbook;
         _byName = byName;
+        _brandNotes = brandNotes;
     }
+
+    public string BrandNotes(string brandKey) => _brandNotes.GetValueOrDefault(brandKey.Trim().ToLowerInvariant()) ?? string.Empty;
 
     public string Playbook { get; }
 
@@ -41,7 +46,18 @@ public sealed class FileKnowledgeBase : IKnowledgeBase
             docs[name] = Parse(name, File.ReadAllText(file));
         }
 
-        return new FileKnowledgeBase(File.ReadAllText(playbookPath), docs);
+        // Pacote por marca (19/11): todo .md de knowledge/marcas/<marca>/, em ordem de nome.
+        var brands = new Dictionary<string, string>(StringComparer.Ordinal);
+        var brandRoot = Path.Combine(root, "marcas");
+        if (Directory.Exists(brandRoot))
+            foreach (var dir in Directory.EnumerateDirectories(brandRoot))
+            {
+                var text = string.Join(Environment.NewLine + Environment.NewLine,
+                    Directory.EnumerateFiles(dir, "*.md").OrderBy(f => f, StringComparer.Ordinal).Select(File.ReadAllText));
+                if (text.Length > 0) brands[Path.GetFileName(dir).ToLowerInvariant()] = text;
+            }
+
+        return new FileKnowledgeBase(File.ReadAllText(playbookPath), docs, brands);
     }
 
     /// <summary>Valida o envelope comum: version, updatedAt, source, items com id único e não vazio.</summary>

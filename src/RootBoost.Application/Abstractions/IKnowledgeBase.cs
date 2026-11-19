@@ -15,6 +15,12 @@ public interface IKnowledgeBase
 
     /// <summary>Documento pelo caminho relativo sem extensão, ex.: "copy/checklist".</summary>
     KnowledgeDocument? Find(string name);
+
+    /// <summary>
+    /// Pacote de conhecimento da marca (knowledge/marcas/&lt;marca&gt;/*.md, versionado): o que o produto faz, como o
+    /// sistema funciona. Vazio quando a marca não tem pacote (cliente de fora fica no banco, por marca).
+    /// </summary>
+    string BrandNotes(string brandKey) => string.Empty;
 }
 
 /// <summary>Aprendizados versionados (knowledge/learnings): o que já foi testado, aprovado ou reprovado, por canal.</summary>
