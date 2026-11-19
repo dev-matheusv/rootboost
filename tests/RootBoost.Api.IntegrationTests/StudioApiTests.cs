@@ -127,6 +127,40 @@ public class StudioApiTests : IClassFixture<StudioWebApplicationFactory>
     }
 
     [Fact]
+    public async Task Stop_in_the_queue_is_immediate_and_with_the_worker_it_waits_for_it_to_hand_back()
+    {
+        var c = _factory.CreateClient();
+        var worker = Worker();
+        var falas = new[] { "Psicólogo com agenda no papel perde sessão.", "Você marca uma vez.", "A evolução vai pronta.", "Três meses grátis." };
+        var id = await NewJob(c);
+        Assert.Equal(HttpStatusCode.OK, (await c.PutAsJsonAsync($"{Base}/{id}/script", new { roteiro = Roteiro, falas })).StatusCode);
+        Assert.Equal(HttpStatusCode.Conflict, (await c.PostAsync($"{Base}/{id}/stop", null)).StatusCode); // nada rodando
+
+        // Na fila: para na hora e volta pro roteiro pronto.
+        Assert.Equal(HttpStatusCode.OK, (await c.PostAsync($"{Base}/{id}/render", null)).StatusCode);
+        var queued = await (await c.PostAsync($"{Base}/{id}/stop", null)).Content.ReadFromJsonAsync<JsonElement>();
+        Assert.True(queued.GetProperty("stopped").GetBoolean());
+        Assert.Equal("ScriptReady", queued.GetProperty("job").GetProperty("status").GetString());
+
+        // Com o computador: fica pedido, o worker vê, e a entrega que chega depois não vale.
+        Assert.Equal(HttpStatusCode.OK, (await c.PostAsync($"{Base}/{id}/render", null)).StatusCode);
+        await ClaimUntil(worker, id);
+        Assert.False((await worker.GetFromJsonAsync<JsonElement>($"/worker/jobs/{id}/stop")).GetProperty("stop").GetBoolean());
+        var asked = await (await c.PostAsync($"{Base}/{id}/stop", null)).Content.ReadFromJsonAsync<JsonElement>();
+        Assert.False(asked.GetProperty("stopped").GetBoolean());
+        Assert.True(asked.GetProperty("job").GetProperty("stopRequested").GetBoolean());
+        Assert.True((await worker.GetFromJsonAsync<JsonElement>($"/worker/jobs/{id}/stop")).GetProperty("stop").GetBoolean());
+        Assert.Equal(HttpStatusCode.Conflict, (await c.DeleteAsync($"{Base}/{id}")).StatusCode); // ainda com o computador
+
+        Assert.Equal(HttpStatusCode.NoContent, (await worker.PostAsJsonAsync($"/worker/jobs/{id}/stopped", new { workerId = "pc-teste", percent = 0 })).StatusCode);
+        var after = await c.GetFromJsonAsync<JsonElement>($"{Base}/{id}");
+        Assert.Equal("ScriptReady", after.GetProperty("status").GetString());
+        Assert.False(after.GetProperty("stopRequested").GetBoolean());
+        Assert.Equal(HttpStatusCode.NoContent, (await c.DeleteAsync($"{Base}/{id}")).StatusCode);
+        Assert.True((await worker.GetFromJsonAsync<JsonElement>($"/worker/jobs/{id}/stop")).GetProperty("stop").GetBoolean()); // apagado = parar
+    }
+
+    [Fact]
     public async Task Copy_checklist_blocks_the_script_and_soft_gates_become_warnings_kept_after_delivery()
     {
         var c = _factory.CreateClient();

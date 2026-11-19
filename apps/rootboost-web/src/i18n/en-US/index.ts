@@ -82,6 +82,11 @@ export default {
     reject: 'Reject and redo',
     rejectHint: 'Back to the script with the same text and voice; adjust and render again.',
     delete: 'Delete video',
+    stop: 'Stop',
+    stopping: 'Stopping…',
+    stopConfirm: 'The video stops and goes back to the ready script. Script and chosen voice stay saved.',
+    stopped: 'Stopped. Send it to render again whenever you want.',
+    stopAsked: 'Request sent. The computer stops within a few seconds.',
     deleteConfirm: 'The video leaves the Studio. Files already used in posts stay in the Library.',
     newDialog: {
       format: 'Video format',

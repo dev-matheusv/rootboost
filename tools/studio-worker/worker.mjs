@@ -13,7 +13,7 @@ import {
   applyLibrary, applyRecordings, buildArgs, buildPersonalSpec, libraryScenes, photoClipArgs, expectedOutputs, isScriptProblem, lastLine, parsePrivateVoices, logFileName, oldLogs, addPath, mapIsStale, pathsText, parseDetect, reviewVideo, parseSceneCuts, reviewScreens, parseVoiceFinish, parseVoiceTones, preparationsFor, stepByStepPlan, voiceFolder, parseUnmatched, parseVoiceSteps, stepsFor, projectName, scenesToRecord,
   seedFor, voiceProblem, warningsFrom,
 } from "./lib.mjs";
-import { exploreSystem, recordScene, replayPath } from "./recorder.mjs";
+import { closeAllChromes, exploreSystem, recordScene, replayPath } from "./recorder.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 loadEnvFile(join(here, "worker.env"));
@@ -77,6 +77,10 @@ if (!cfg.api || !cfg.key) {
   process.exit(2);
 }
 
+// Parar (19/11): enquanto um vídeo roda, o worker confere a cada 10 s se a pessoa pediu pra parar no Console; se
+// pediu, encerra voz, montagem e Chrome da gravação e devolve o job. Fica acima do laço (TDZ, ver worker-tdz).
+const current = { jobId: null, stopping: false, procs: new Set(), timer: null };
+
 const once = process.argv.includes("--once");
 const RESTART = 75;
 
@@ -127,7 +131,35 @@ do {
 async function round() {
   const res = await call("POST", "/worker/jobs/claim", { workerId: cfg.workerId });
   if (res.status === 204) return;
-  const job = res.data;
+  watchStop(res.data.id);
+  try { await work(res.data); } finally { await endWatch(); }
+}
+
+function watchStop(jobId) {
+  clearInterval(current.timer);
+  Object.assign(current, { jobId, stopping: false });
+  current.timer = setInterval(async () => {
+    if (current.stopping) return;
+    const r = await call("GET", `/worker/jobs/${jobId}/stop`).catch(() => null);
+    if (!r?.data?.stop) return;
+    current.stopping = true;
+    console.log(`[${now()}] pedido de parar no Console: encerrando`);
+    for (const pid of current.procs) spawnSync("taskkill", ["/pid", String(pid), "/t", "/f"], { stdio: "ignore" });
+    current.procs.clear();
+    closeAllChromes();
+  }, 10_000);
+}
+
+async function endWatch() {
+  clearInterval(current.timer);
+  if (current.stopping && current.jobId) {
+    await call("POST", `/worker/jobs/${current.jobId}/stopped`, { workerId: cfg.workerId, percent: 0 }).catch(() => {});
+    console.log(`[${now()}] parado a pedido`);
+  }
+  Object.assign(current, { jobId: null, stopping: false });
+}
+
+async function work(job) {
   const nome = projectName(job.roteiro, job.id);
   // Voz já escolhida no Console: a semente é a dela, sem somar tentativas.
   let seed = job.voiceApproved && Number.isInteger(job.seed) ? job.seed : seedFor(job);
@@ -678,9 +710,11 @@ function writeScript(projectDir, job, backup = true) {
 
 /** Roda o pipeline sem shell, guarda o log e manda a última linha como progresso (renova o prazo do job). */
 function runPipeline(jobId, bin, args) {
+  if (current.stopping) return Promise.resolve({ code: 1, log: "parado a pedido" });
   return new Promise((resolve) => {
     let log = "";
     const child = spawn(bin, args, { env: { ...process.env, PYTHONIOENCODING: "utf-8" }, windowsHide: true });
+    if (child.pid) current.procs.add(child.pid);
     const take = (chunk) => {
       const text = chunk.toString();
       log += text;
@@ -693,6 +727,7 @@ function runPipeline(jobId, bin, args) {
       log += `\n${e.message}`;
     });
     child.on("close", (code) => {
+      current.procs.delete(child.pid);
       clearInterval(beat);
       resolve({ code: code ?? 1, log });
     });

@@ -28,6 +28,12 @@ const MIN_SCENE_SECONDS = 8; // abaixo disso não dá pra cobrir a fala com aç�
 const MAX_DEAD_CLICKS = 4; // cliques seguidos sem mudar nada na tela: para antes de gastar mais IA
 const CDP_TIMEOUT_MS = 30_000; // comando sem resposta do Chrome vira erro, nunca espera infinita
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+// Chromes abertos pela gravação: o worker fecha todos quando a pessoa pede pra parar (19/11).
+const CHROMES = new Set();
+export function closeAllChromes() {
+  for (const pid of CHROMES) spawnSync("taskkill", ["/pid", String(pid), "/t", "/f"], { stdio: "ignore" });
+  CHROMES.clear();
+}
 
 class Cdp {
   constructor(url) {
@@ -125,9 +131,10 @@ async function openChrome() {
   const proc = spawn(CHROME, ["--headless=new", "--remote-debugging-port=0", `--user-data-dir=${profile}`, "--no-first-run",
     "--no-default-browser-check", "--password-store=basic", "--disable-save-password-bubble", "--disable-notifications", "--hide-scrollbars", "--mute-audio", "--lang=pt-BR", `--window-size=${VIEW.width},${VIEW.height}`, "about:blank"],
   { stdio: "ignore" });
+  if (proc.pid) CHROMES.add(proc.pid);
   // Porta livre a cada gravação (o Chrome escolhe e grava no perfil): porta fixa pegava um Chrome velho ainda fechando.
   const close = () => {
-    if (proc.pid) spawnSync("taskkill", ["/pid", String(proc.pid), "/t", "/f"], { stdio: "ignore" });
+    if (proc.pid) { spawnSync("taskkill", ["/pid", String(proc.pid), "/t", "/f"], { stdio: "ignore" }); CHROMES.delete(proc.pid); }
     try { rmSync(profile, { recursive: true, force: true }); } catch { /* arquivo preso, o Windows limpa depois */ }
   };
   const portFile = join(profile, "DevToolsActivePort");
