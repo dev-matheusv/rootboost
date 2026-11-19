@@ -468,6 +468,21 @@ export function parseMomentsList(text) {
  * de vida real em tela cheia, cortados no foco; legenda só quando alguém fala.
  *   media: { "<fonte>": { path, isVideo, focus? } }
  */
+/** Velocidade da voz sem as pausas, medida nas vozes da casa (~2,9 palavras/s; 2,6 deixa folga). */
+const PERSONAL_RATE = 2.6;
+
+/** Precisa ampliar mais de 1,5x pra cobrir 1080x1920: não dá pra encher a tela sem pixelar. */
+export function smallForReels(width, height) {
+  if (!(width > 0 && height > 0)) return false;
+  return Math.max(1080 / width, 1920 / height) > 1.5;
+}
+
+/** Margem do modo brand: imagem estreita fica no tamanho perto do real (no máximo 1,25x), nunca esticada. */
+export function brandMargin(width) {
+  const shown = Math.min(width * 1.25, 1080 * 0.9);
+  return +Math.min(0.3, Math.max(0.05, (1080 - shown) / 2 / 1080)).toFixed(3);
+}
+
 export function buildPersonalSpec({ name, brandKey, roteiro, falas, voice, seed, media }) {
   const FADE = 0.4;
   // Transições de movimento do DMaker v2 pedem um pouco mais de tempo e a curva suave (entra e assenta).
@@ -496,15 +511,23 @@ export function buildPersonalSpec({ name, brandKey, roteiro, falas, voice, seed,
     const [src, a = 0, z] = b.trechos?.[0] ?? [];
     const file = media[src];
     if (!file) throw new Error(`mídia ${src} do bloco ${i + 1} não foi preparada`);
-    const dur = Math.max(1.5, Number(z) - Number(a) || 4);
+    // A cena dura o que a narração precisa (19/11): fala maior que a cena vazava pra próxima e pra cartela final.
+    const said = b.audio === "narracao" ? falas[lineOffset + i] : null;
+    const need = said ? said.split(/\s+/).filter(Boolean).length / PERSONAL_RATE + 0.8 : 0;
+    let dur = Math.max(1.5, Number(z) - Number(a) || 4, need);
+    if (file.isVideo && file.duration) dur = Math.min(dur, Math.max(1.5, file.duration - Number(a)));
     const focus = file.focus ? [file.focus.x + file.focus.w / 2, file.focus.y + file.focus.h / 2] : [0.5, 0.5];
-    const reframe = { mode: "crop", focus };
+    // Imagem pequena (logo, print) não é ampliada pra encher a tela: vai inteira sobre o fundo da marca (19/11, teaser
+    // da IA com o logo pixelado em 12 s).
+    const small = !file.isVideo && smallForReels(file.width, file.height);
+    const reframe = small ? { mode: "brand", margin: brandMargin(file.width) } : { mode: "crop", focus };
     const seg = file.isVideo
       ? { type: "clip", src: file.path, start: Number(a), end: Number(a) + dur, reframe, transition: b.transicao,
           ...(b.audio === "original" ? { audio_mode: "voice", volume: 1.2 } : { mute: true }) }
-      : { type: "image", src: file.path, duration: dur, motion: b.movimento ?? "zoom-in", motion_amount: 0.08, reframe, transition: b.transicao };
+      : { type: "image", src: file.path, duration: dur, motion: b.movimento ?? "zoom-in", motion_amount: small ? 0.03 : 0.08, reframe, transition: b.transicao };
     const start = push(seg, dur);
-    if (b.titulo) overlays.push({ type: "text", text: b.titulo, role: "title", start: +(start + 0.3).toFixed(2), end: +(start + Math.max(1, Math.min(dur - 0.7, 3.5))).toFixed(2), animation: "fade", style: { box_shape: "rounded" } });
+    // Um texto por vez: com narração a legenda já conta a cena; o título no meio da imagem virava texto duplo.
+    if (b.titulo && !said) overlays.push({ type: "text", text: b.titulo, role: "title", start: +(start + 0.3).toFixed(2), end: +(start + Math.max(1, Math.min(dur - 0.7, 3.5))).toFixed(2), animation: "fade", style: { box_shape: "rounded" } });
     if (b.audio === "narracao" && falas[lineOffset + i]) {
       narration.push({ text: falas[lineOffset + i], voice, seed, start: +(start + 0.3).toFixed(2) });
     }
@@ -521,7 +544,8 @@ export function buildPersonalSpec({ name, brandKey, roteiro, falas, voice, seed,
     overlays,
     // "auto" transcreve o som dos clipes (a fala original); só com narração, a legenda vem do texto da narração.
     ...(original || narration.length
-      ? { captions: { source: original ? "auto" : "narration", language: "pt", style: { mode: "rounded" } } }
+      // Frase inteira na legenda (o padrão de 4 palavras cortava no meio); o DMaker já quebra na pontuação.
+      ? { captions: { source: original ? "auto" : "narration", language: "pt", style: { mode: "rounded", size: 56, max_words: 8, max_chars: 40 } } }
       : {}),
     audio: { narration, normalize: "two-pass" },
   };

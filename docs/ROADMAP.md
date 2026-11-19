@@ -91,6 +91,12 @@ pra qualquer negócio (sistema, site, loja, serviço), não só o MedlyCare.
 Domínio e e-mail da Nativa, termos e privacidade, cobrança, Vercel Pro, white label pra agência, WhatsApp oficial
 (caixa de entrada e aprovação), LinkedIn quando houver acesso de parceiro, marca registrada (INPI, nome composto).
 
+## Andamento
+- 19/11: **A1** botão Parar (#280, em produção) · **A2** conta demo conferida antes da voz (#282) · **A3** portão de
+  ritmo e aviso de frases atropeladas (#282) · **A4** vídeo com fotos: imagem pequena inteira, um texto por vez, cena
+  do tamanho da fala, legenda de frase, avisos e folha de quadros (#284). Anúncios só FB/IG com otimização por
+  visualização da página (#277). Próximo: A5 conferência pela IA.
+
 ## 3. Próximas duas semanas (ordem)
 1. A1 Parar e apagar vídeo · A2 checagem da conta demo · A3 portão de ritmo.
 2. A4 regras do vídeo com fotos · A5 conferência pela IA.

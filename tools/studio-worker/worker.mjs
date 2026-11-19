@@ -10,7 +10,7 @@ import { appendFileSync, copyFileSync, existsSync, mkdirSync, openAsBlob, readdi
 import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
-  applyLibrary, applyRecordings, buildArgs, buildPersonalSpec, libraryScenes, photoClipArgs, expectedOutputs, isScriptProblem, lastLine, parsePrivateVoices, logFileName, oldLogs, addPath, mapIsStale, pathsText, parseDetect, reviewVideo, parseSceneCuts, reviewScreens, reviewRhythm, parseVoiceFinish, parseVoiceTones, preparationsFor, stepByStepPlan, voiceFolder, parseUnmatched, parseVoiceSteps, stepsFor, projectName, scenesToRecord,
+  applyLibrary, applyRecordings, buildArgs, buildPersonalSpec, libraryScenes, photoClipArgs, expectedOutputs, isScriptProblem, lastLine, parsePrivateVoices, logFileName, oldLogs, addPath, mapIsStale, pathsText, parseDetect, reviewVideo, parseSceneCuts, reviewScreens, reviewRhythm, smallForReels, parseVoiceFinish, parseVoiceTones, preparationsFor, stepByStepPlan, voiceFolder, parseUnmatched, parseVoiceSteps, stepsFor, projectName, scenesToRecord,
   seedFor, voiceProblem, warningsFrom,
 } from "./lib.mjs";
 import { checkDemoLogin, closeAllChromes, exploreSystem, recordScene, replayPath } from "./recorder.mjs";
@@ -50,7 +50,8 @@ const cfg = {
   key: process.env.ROOTBOOST_WORKER_KEY ?? "",
   workerId: process.env.STUDIO_WORKER_ID ?? `worker-${process.env.COMPUTERNAME ?? "pc"}`,
   base: process.env.STUDIO_BASE ?? "C:/Users/devma/Videos/MedlyCare Reels",
-  tools: process.env.STUDIO_TOOLS ?? "C:/Users/devma/Documents/MedlyCare Marketing/ferramentas",
+  // Ferramentas de montagem no repositório (19/11); STUDIO_TOOLS aponta pra outra pasta se precisar.
+  tools: process.env.STUDIO_TOOLS ?? join(here, "..", "pipeline").replaceAll("\\", "/"),
   // Executável e argumentos do pipeline. {nome} {voz} {seed} {tools} {base} são trocados por job.
   bin: process.env.STUDIO_PIPELINE_BIN ?? process.execPath,
   args: process.env.STUDIO_PIPELINE_ARGS ?? "{tools}/narrado-calmo.mjs {nome} --voz {voz} --semente {seed}",
@@ -634,7 +635,7 @@ async function renderPersonal(job, nome, projectDir, voice, seed) {
     if (!m) return fail(job.id, `mídia do acervo ${id} não veio no job: foi apagada do Acervo ou é de outra marca`, false);
     await progress(job.id, 5 + Math.round((i / blocks.length) * 30), `baixando a mídia da cena ${i + 1}`);
     try {
-      media[`acervo-${id}`] = { path: await downloadForPersonal(m), isVideo: m.isVideo, focus: m.focus };
+      media[`acervo-${id}`] = { ...(await downloadForPersonal(m)), isVideo: m.isVideo, focus: m.focus };
     } catch (e) {
       return fail(job.id, `mídia da cena ${i + 1}: ${e.message}`, true);
     }
@@ -653,7 +654,21 @@ async function renderPersonal(job, nome, projectDir, voice, seed) {
   await progress(job.id, 90, `subindo ${found.length} arquivos`);
   const outputs = [];
   for (const o of found) outputs.push({ role: o.role, url: await upload(job.brandKey, o.path) });
-  const done = await call("POST", `/worker/jobs/${job.id}/deliver`, { workerId: cfg.workerId, outputs, warnings: warningsFrom(log), seed });
+  // Conferência do pessoal: mídia pequena ou repetida avisa a pessoa (mais fotos deixam o vídeo melhor).
+  const notes = [];
+  const uses = new Map();
+  for (const [i, b] of blocks.entries()) {
+    const f = media[b.trechos[0][0]];
+    uses.set(b.trechos[0][0], (uses.get(b.trechos[0][0]) ?? 0) + 1);
+    if (!f.isVideo && smallForReels(f.width, f.height)) notes.push(`AVISO: a cena ${i + 1} usa uma imagem pequena (${f.width}x${f.height}); mostrei inteira sobre o fundo da marca. Uma foto maior fica melhor`);
+  }
+  if ([...uses.values()].some((n) => n > 2)) notes.push("AVISO: a mesma mídia aparece em mais de duas cenas; mande mais fotos ou vídeos pro Acervo pra variar");
+  const igFile = found.find((o) => o.role === "video-instagram")?.path;
+  if (igFile) {
+    const sheet = contactSheet(igFile, `${projectDir}/conferencia-quadros.jpg`);
+    if (sheet) outputs.push({ role: "grade", url: await upload(job.brandKey, sheet) });
+  }
+  const done = await call("POST", `/worker/jobs/${job.id}/deliver`, { workerId: cfg.workerId, outputs, warnings: [...notes, ...warningsFrom(log)].slice(0, 20), seed });
   console.log(`[${now()}] entregue (pessoal): ${done.status}`);
 }
 
@@ -679,11 +694,15 @@ async function downloadForPersonal(media) {
   if (!res.ok) throw new Error(`download ${res.status}`);
   const raw = `${dir}/original${media.isVideo ? ".video" : ".jpg"}`;
   writeFileSync(raw, Buffer.from(await res.arrayBuffer()));
-  if (!media.isVideo) return raw;
+  // Tamanho real (imagem pequena não é ampliada) e duração (a cena não passa do fim do vídeo), 19/11.
+  const [width, height] = execFileSync(FFPROBE, ["-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height", "-of", "csv=p=0", raw])
+    .toString().trim().split(",").map(Number);
+  if (!media.isVideo) return { path: raw, width, height };
   const out = `${dir}/com-som.mp4`;
   execFileSync(FFMPEG, ["-y", "-i", raw, "-vf", "scale='min(1080,iw)':-2,format=yuv420p", "-r", "30", "-c:v", "libx264", "-preset", "medium",
     "-crf", "18", "-c:a", "aac", "-b:a", "160k", "-movflags", "+faststart", out], { stdio: "ignore" });
-  return out;
+  const duration = Number(execFileSync(FFPROBE, ["-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", out]).toString().trim());
+  return { path: out, width, height, duration };
 }
 
 /** Kit mínimo do DMaker pra marca nova: só o nome e as regras da casa; cores, fonte e estilo ficam no padrão do DMaker. */

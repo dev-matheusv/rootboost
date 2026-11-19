@@ -272,7 +272,7 @@ public sealed class ScriptWriter
         sb.AppendLine("- A fala soa como alguém mostrando o sistema pra um possível cliente, natural e fluida: diz o que a pessoa faz e pra quê " +
             "(\"escolha a data inicial e a data final do período\", \"deixe o profissional em branco pra trazer todo mundo\", \"toque em gerar e o relatório aparece\"). " +
             "Nunca dite valor exato nem detalhe de clique (nada de \"toque no ícone do calendário\", \"toque no dia primeiro\", \"agosto de 2026\"). " +
-            "A fala acompanha a mesma ordem da cena, sem prometer nada que a tela não mostra. Um passo, uma frase. Fluxo simples (uma tela, poucos campos) fica fluido em 30 a 45 segundos.");
+            "A fala acompanha a mesma ordem da cena, sem prometer nada que a tela não mostra. Um passo, uma frase. A tela manda e a fala acompanha: mostre o fluxo inteiro, explicando cada ação no momento em que ela acontece e pra que serve, no tom de quem apresenta o sistema a um cliente. Mire de 60 a 90 segundos; vídeo curto que só mostra um pedaço foi reprovado como superficial (19/11).");
         sb.AppendLine("- Registro único, o falado: \"você\" com imperativo informal (\"toca\", \"escolhe\", \"deixa\", \"rola\"), nunca misturado com \"toque\", \"escolha\", \"deixe\". " +
             "Nada de frase de enchimento (\"veja o caminho inteiro\", \"simples assim\"): cada frase descreve o que a tela mostra naquele trecho. " +
             "Só cite campo, total ou botão que aparece na tela no mesmo trecho; o que não aparece, não cite. " +
