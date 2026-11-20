@@ -21,7 +21,8 @@ const DEMO_FACE = join(dirname(fileURLToPath(import.meta.url)), "demo", "rosto-r
 const MOBILE_UA = "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36";
 // Tela de celular de verdade (13/11, método do marketing): em 540x600 o relatório não cabia e o resultado ficava
 // espremido numa faixa embaixo. STUDIO_VIEW=540x600 volta ao tamanho antigo.
-const VIEW = (() => { const [w, h] = (process.env.STUDIO_VIEW ?? "430x760").split("x").map(Number); return { width: w || 430, height: h || 760, scale: 2 }; })();
+// 540x600 a 2x = 1080x1200, o formato que o marketing gravava e a montagem espera (20/11: o 430x760 saiu pequeno e repuxado).
+const VIEW = (() => { const [w, h] = (process.env.STUDIO_VIEW ?? "540x600").split("x").map(Number); return { width: w || 540, height: h || 600, scale: 2 }; })();
 // Tempo total da cena, contando a espera pela IA (essa espera não entra no vídeo).
 const MAX_SECONDS = 240;
 const MIN_SCENE_SECONDS = 8; // abaixo disso não dá pra cobrir a fala com ação
@@ -129,7 +130,7 @@ async function openChrome() {
   mkdirSync(join(profile, "Default"), { recursive: true });
   writeFileSync(join(profile, "Default", "Preferences"), JSON.stringify({ credentials_enable_service: false, profile: { password_manager_enabled: false, password_manager_leak_detection: false } }));
   const proc = spawn(CHROME, ["--headless=new", "--remote-debugging-port=0", `--user-data-dir=${profile}`, "--no-first-run",
-    "--no-default-browser-check", "--password-store=basic", "--disable-save-password-bubble", "--disable-notifications", "--hide-scrollbars", "--mute-audio", "--lang=pt-BR", `--window-size=${VIEW.width},${VIEW.height}`, "about:blank"],
+    "--no-default-browser-check", "--password-store=basic", "--disable-save-password-bubble", "--disable-notifications", "--hide-scrollbars", "--mute-audio", "--lang=pt-BR", `--window-size=${VIEW.width},${VIEW.height}`, `--force-device-scale-factor=${VIEW.scale}`, "about:blank"],
   { stdio: "ignore" });
   if (proc.pid) CHROMES.add(proc.pid);
   // Porta livre a cada gravação (o Chrome escolhe e grava no perfil): porta fixa pegava um Chrome velho ainda fechando.
