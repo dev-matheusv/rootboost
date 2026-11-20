@@ -3,13 +3,17 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
 # Restore first (layer cache) — copy csproj/sln then restore.
+# Root.Ia.* vem do GitHub Packages privado. O Railway só entrega variável no build por ARG; ela existe só neste estágio
+# (a imagem final começa do zero no estágio runtime) e nunca vai pra arquivo: o nuget.config guarda só o nome.
+ARG ROOTIA_PACKAGES_TOKEN
+COPY nuget.config ./
 COPY RootBoost.sln ./
 COPY src/RootBoost.Domain/RootBoost.Domain.csproj src/RootBoost.Domain/
 COPY src/RootBoost.Application/RootBoost.Application.csproj src/RootBoost.Application/
 COPY src/RootBoost.Infrastructure/RootBoost.Infrastructure.csproj src/RootBoost.Infrastructure/
 COPY src/RootBoost.Api/RootBoost.Api.csproj src/RootBoost.Api/
 COPY tests/RootBoost.Application.Tests/RootBoost.Application.Tests.csproj tests/RootBoost.Application.Tests/
-RUN dotnet restore src/RootBoost.Api/RootBoost.Api.csproj
+RUN ROOTIA_PACKAGES_TOKEN="$ROOTIA_PACKAGES_TOKEN" dotnet restore src/RootBoost.Api/RootBoost.Api.csproj
 
 # Copy the rest and publish.
 COPY . .
