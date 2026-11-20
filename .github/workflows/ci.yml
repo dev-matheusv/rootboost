@@ -23,6 +23,8 @@ jobs:
       # Imagem dos testes de integracao com Postgres (Testcontainers); baixar antes evita timeout no primeiro teste.
       - run: docker pull postgres:16-alpine
       - run: dotnet restore
+        env:
+          ROOTIA_PACKAGES_TOKEN: ${{ secrets.ROOTIA_PACKAGES_TOKEN }}
       - run: dotnet build --no-restore --configuration Release
       - run: dotnet test --no-build --configuration Release --verbosity normal
 
