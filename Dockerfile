@@ -13,7 +13,8 @@ COPY src/RootBoost.Application/RootBoost.Application.csproj src/RootBoost.Applic
 COPY src/RootBoost.Infrastructure/RootBoost.Infrastructure.csproj src/RootBoost.Infrastructure/
 COPY src/RootBoost.Api/RootBoost.Api.csproj src/RootBoost.Api/
 COPY tests/RootBoost.Application.Tests/RootBoost.Application.Tests.csproj tests/RootBoost.Application.Tests/
-RUN ROOTIA_PACKAGES_TOKEN="$ROOTIA_PACKAGES_TOKEN" dotnet restore src/RootBoost.Api/RootBoost.Api.csproj
+# O ARG já é variável de ambiente neste estágio: o comando NÃO cita a variável, senão o log do Railway mostra o valor (19/11).
+RUN dotnet restore src/RootBoost.Api/RootBoost.Api.csproj
 
 # Copy the rest and publish.
 COPY . .
