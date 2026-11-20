@@ -458,7 +458,7 @@ ${fz.stderr}`).freezes });
     joinRecordings(plan);
     writeFileSync(`${projectDir}/roteiro.json`, JSON.stringify(plan.roteiro, null, 1));
     writeFileSync(`${projectDir}/tela.json`, JSON.stringify(plan.tela));
-    pipelineArgs = [`${cfg.tools}/narrado-passo.mjs`, nome, "--voz-dir", voiceDir(seed), ...(blockMode ? [] : ["--pausar"]), "--legenda", "frase", ...(blockMode && cfg.continuousRecording ? ["--tela-alta"] : [])];
+    pipelineArgs = [`${cfg.tools}/narrado-passo.mjs`, nome, "--voz-dir", voiceDir(seed), ...(blockMode ? [] : ["--pausar"]), "--legenda", "frase"]; // tela-alta saiu (20/11): era do formato 430x760
   }
   const { code, log } = await runPipeline(job.id, cfg.bin, pipelineArgs);
   if (code !== 0) {
@@ -547,7 +547,8 @@ function joinRecordings(plan) {
   const dir = `${cfg.base}/brutos/${plan.source}`;
   mkdirSync(dir, { recursive: true });
   const inputs = plan.files.flatMap((f) => ["-i", `${cfg.base}/brutos/${f}/${f}.mp4`]);
-  const norm = plan.files.map((_, i) => `[${i}:v]fps=30,setsar=1,scale=1080:1200[v${i}]`).join(";");
+  // Nunca estica (20/11): cabe em 1080x1200 mantendo a proporção e completa a borda com branco.
+  const norm = plan.files.map((_, i) => `[${i}:v]fps=30,scale=1080:1200:force_original_aspect_ratio=decrease,pad=1080:1200:(ow-iw)/2:(oh-ih)/2:white,setsar=1[v${i}]`).join(";");
   const graph = `${norm};${plan.files.map((_, i) => `[v${i}]`).join("")}concat=n=${plan.files.length}:v=1:a=0[v]`;
   execFileSync(FFMPEG, ["-y", ...inputs, "-filter_complex", graph, "-map", "[v]", "-c:v", "libx264", "-crf", "14", "-preset", "fast",
     "-pix_fmt", "yuv420p", `${dir}/${plan.source}.mp4`], { stdio: "ignore" });
